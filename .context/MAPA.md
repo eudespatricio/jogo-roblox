@@ -12,6 +12,7 @@
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
+| `docs/referencias-tower-defense.md` | jogos e vídeos de referência | antes de decidir game feel |
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |
 | `sim/core.luau` | motor: RNG, mul32, Battle | qualquer mudança de simulação |
