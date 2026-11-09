@@ -266,6 +266,10 @@ tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 > **Recorte consciente:** o PoC usa 1 armadilha por lane (5 no total) para provar o motor.
 > A spec de produção é grade **5×5 (25 células)**, com armadilhas por célula e 5 lanes de caminhada —
 > ou seja, várias armadilhas por lane. O PoC não é a arquitetura final; é a prova de determinismo.
+>
+> **Decisão de 09/11/2026 (Q2):** produção com **N=5 armadilhas ativas** e colocação livre nas 25
+> células; o PoC usa N=5, mas preso a 1 por lane. O port da P0 preserva a matemática e o hash; a
+> grade entra no schema e na cena.
 
 | Teste | Resultado (motor v2, inteiro) |
 |---|---|

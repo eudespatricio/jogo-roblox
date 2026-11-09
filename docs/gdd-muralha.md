@@ -197,7 +197,8 @@ Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 ## 9. Escopo do MVP (30 dias) e não-objetivos
 
 **Entra:**
-- 1 muralha (grid **5×5**), 5 armadilhas, 3 unidades inimigas, 1 comandante;
+- 1 muralha (grid **5×5**, **N=5 armadilhas ativas**), 5 tipos de armadilha, 3 unidades inimigas,
+  1 comandante;
 - drop-in de 5s;
 - cercos livres + 3 Grandes Saques/dia;
 - raid assíncrona contra fantasma;
@@ -248,7 +249,7 @@ gênero e pedidos explícitos dos jogadores. As que entram no design:
 
 | # | Decisão | Consequência técnica |
 |---|---|---|
-| 1 | **Grade 5×5 no MVP**, expandindo para 7×5 no nível 5 da muralha | layouts salvos por índice de célula; expansão adiciona colunas à direita, células antigas mantêm coordenada; migração de save trivial |
+| 1 | **Grade 5×5 no MVP, com N=5 armadilhas ativas e colocação livre nas 25 células**, expandindo para 7×5 no nível 5 | N=5 é o orçamento simultâneo (não o nº de células nem de tipos); layouts salvos por índice de célula; 7×5 adiciona espaço, não N; migração de save trivial |
 | 2 | **Cercos livres**, com **3 Grandes Saques/dia** (blueprints) | sem timer duro; economia controlada pelo loot, não pela porta |
 | 3 | **Derrota perde só pontos de liga** + muralha fumegando no login + conserto grátis | nunca destrói nível de armadilha; o gatilho é emocional, não punitivo |
 | 4 | **Nome localizado**: `A MURALHA` (PT-BR) · `WALLBREAKER` (EN) | título/descrição por locale no Creator Dashboard |
@@ -257,3 +258,9 @@ gênero e pedidos explícitos dos jogadores. As que entram no design:
 Ponto de atenção na decisão 1: a grade 5×5 fixa no código; a expansão é **dado**, não código novo
 (`gridWidth` no save). Se o jogador voltar de 7×5 para 5×5 (não previsto), células fora da grade
 ficam dormentes, não são apagadas.
+
+**Q2 fechada (09/11/2026):** a grade é 5×5 com armadilhas por célula e 5 lanes; **N = 5 armadilhas
+ativas simultâneas** no MVP, com **colocação livre entre as 25 células** — C(25,5) = 53.130 layouts.
+O modelo de “5 slots” (1 por lane) é um caso particular (N=5 com restrição), não a arquitetura de
+produção. Crescer N é progressão (P2), não reabre Q2. Fallback de playtest: se a primeira vitória
+ficar < 50% ou a 1ª colocação > 20s, testar 15 células (5×3) antes de voltar para 5 slots.

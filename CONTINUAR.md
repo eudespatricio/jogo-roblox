@@ -23,7 +23,7 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 - Motor determinístico v2 provado em `sim/` (inteiro, 1.200 ticks, `mul32`/`add32`).
 - Tooling: Rokit + CLI/GUI, CI ativo (runs #1–#5 verdes), estação calibrada; ProfileStore
   vendorizado; wrapper/schema na P0.
-- Auditoria `context-recovery` concluída: 7 contradições resolvidas, **2 abertas (Q1/Q2)**.
+- Auditoria `context-recovery` concluída: 7 contradições resolvidas; **Q2 fechada**, **Q1 aberta**.
 - Contexto residente instalado e dentro do teto.
 - Monetização decidida (base 2% × US$ 2; gate líquido US$ 0,005); ProfileStore vendorizado;
   taxonomia de analytics v1 escrita.
@@ -59,21 +59,22 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 | invariantes | **10/10** (`sim/invariants.luau`) |
 | contexto residente | ESTADO 67/80 · MAPA 50/60 · REJEITADOS 16/40 |
 | monetização | base 2% × US$ 2 · topo 4,5% × US$ 5 · gate ARPDAU líquido US$ 0,005 |
+| Q2 | 5×5, N=5 ativas, colocação livre (09/11/2026) |
 
 ---
 
-## Pesquisa de apoio a Q1/Q2 (09/11/2026)
+## Pesquisa de apoio a Q2 (fechada) e Q1 (aberta)
 
 `docs/pesquisa-grade-e-prototipo.md` levanta a evidência para as duas perguntas:
 
-- **Q2:** profundidade não vem do número de células (Kingdom Rush 4–6 torres, Super Auto Pets 5
-  slots); 25 células × 5 armadilhas ativas = 53.130 layouts; 25 armadilhas simultâneas seria fora
-  da curva. Falta um A/B de 20–30 jogadores (protocolo no doc, §5).
+- **Q2 (fechada em 09/11/2026):** 5×5 com **N=5 armadilhas ativas** e colocação livre → C(25,5) =
+  53.130 layouts; 25 simultâneas seria fora da curva. O A/B de 20–30 jogadores (§5) vira fallback
+  de playtest, não pré-requisito.
 - **Q1:** o protótipo tem 442 linhas, 0% de sobreposição com a Muralha e embute o DataStore caseiro
   já rejeitado; `rojo build` funciona com um stub de 10 linhas (8,6 KB vs 440 B). A evidência
   favorece apagar na P1 com tag + stub + CI.
 
-Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
+Q2 foi decidida em 09/11/2026; Q1 continua em `docs/auditoria/CONTRADICOES.md`.
 
 ---
 
@@ -131,7 +132,7 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 
 ---
 
-## A decisão que a próxima sessão precisa fechar
+## A decisão que a próxima sessão precisa fechar: Q1
 
 ### Q1 — protótipo de moedas em `src/**`
 
@@ -140,18 +141,15 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 | **(a) apagar na P1** (recomendado) | remove ambiguidade; histórico fica no git |
 | (b) manter como cena de teste | preserva pipeline Rojo, mas confunde "o que é o jogo" |
 
-### Q2 — grade de produção
+**Q2 fechada em 09/11/2026:** grade 5×5, **N=5 armadilhas ativas**, colocação livre nas 25 células
+(GDD decisão 1). O modelo de 5 slots (1 por lane) fica como fallback de playtest, não como
+arquitetura de produção.
 
-| Opção | Efeito |
-|---|---|
-| **(a) 5×5 com 25 células**, armadilhas por célula, 5 lanes de caminhada (recomendado) | profundidade real; exige o motor de produção |
-| (b) 5 slots (1 por lane), como no PoC | mais simples, porém raso e igual a todo TD do Roblox |
-
-**Depois de responder:** apagar `docs/auditoria/CONTRADICOES.md` e registrar a decisão no GDD
+**Depois de responder Q1:** apagar `docs/auditoria/CONTRADICOES.md` e registrar a decisão no GDD
 (design) ou em `.context/REJEITADOS.md` (descarte).
 
-**Próximo passo sugerido (antes da P0):** aprovar a taxonomia de analytics e implementá-la na P0
-(`docs/taxonomia-analytics.md`) — o motor precisa emitir os eventos, e mudar depois custa retrabalho.
+**Próximo passo sugerido:** iniciar a P0 no escopo do GDD (port + harness de 1.000 batalhas +
+contrato de analytics). A taxonomia v1 já está escrita em `docs/taxonomia-analytics.md`.
 
 ---
 
@@ -166,7 +164,7 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras |
 | `docs/tese-produto-e-economia.md` + `docs/modelo-financeiro.xlsx` | economia unitária |
 | `docs/referencias-tower-defense.md` | jogos/vídeos para estudar |
-| `docs/auditoria/CONTRADICOES.md` | **temporário**: 7 resolvidas + Q1/Q2 |
+| `docs/auditoria/CONTRADICOES.md` | **temporário**: 7 resolvidas + Q2 fechada + Q1 |
 | `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo) e Q2 (grade vs slots) |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
 | `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P0 |
@@ -217,4 +215,4 @@ Cole na nova sessão:
 > `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
 > `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não inicie P0/P1. A estação
 > está completa e o CI verde. O próximo passo é o teste de produto de 3 semanas de
-> `docs/revisao-direcao.md` §7; Q1 (src legado) e Q2 (grade 25 células vs 5 slots) seguem abertas.
+> `docs/revisao-direcao.md` §7; Q1 (src legado) segue aberta; Q2 (5×5, N=5 ativas) foi fechada.

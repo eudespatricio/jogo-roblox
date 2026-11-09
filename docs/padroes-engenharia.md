@@ -116,13 +116,16 @@ exatamente o tipo de bug que gera review negativo.
 ```lua
 type Profile = {
     schemaVersion: number,   -- migração obrigatória ao subir
-    wall: { gridWidth: number, cells: { [number]: Cell } },
+    wall: { gridWidth: number, activeTrapLimit: number, cells: { [number]: Cell } },
     gold: number,
     league: { points: number, season: number },
     cosmetics: { [string]: boolean },
     stats: { raids: number, defenses: number, lastSeenAt: number },
 }
 ```
+
+No MVP, `activeTrapLimit = 5` e `gridWidth = 5`; a expansão para 7 é dado, não código (Q2,
+09/11/2026).
 
 Regras: migração testada com fixture de versão antiga; nenhum campo é removido sem migração;
 `lastSeenAt` é a base do D1/D7; nada de PII.

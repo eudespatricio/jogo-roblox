@@ -1,8 +1,10 @@
-# Pesquisa — Q2 (grade de produção) e Q1 (protótipo legado)
+# Pesquisa — Q2 (grade de produção, fechada) e Q1 (protótipo legado)
 
 > 09/11/2026 · encomenda do diretor: **decidir com dados e feedback, não com opinião**.
-> **Este documento não fecha Q1 nem Q2.** As perguntas continuam abertas em
-> [`auditoria/CONTRADICOES.md`](auditoria/CONTRADICOES.md); aqui está só a evidência e a leitura dela.
+> **Q2 fechada em 09/11/2026:** 5×5 com **N=5 armadilhas ativas** e colocação livre nas 25 células;
+> registro no [GDD](gdd-muralha.md) (decisão 1). **Q1 continua aberta** em
+> [`auditoria/CONTRADICOES.md`](auditoria/CONTRADICOES.md); aqui está a evidência e a leitura dela.
+> O experimento da §5 vira o fallback de playtest, não um pré-requisito.
 >
 > Níveis: **A** = oficial/primário (Roblox, dados de plataforma) · **B** = comunidade estruturada
 > (wiki com histórico, guia de fã com método) · **C** = comentário isolado (sinal, não prova).
@@ -213,6 +215,8 @@ protótipo for **de fato usado** como cena de teste nos próximos 30 dias — n�
 ---
 
 ## 5. Experimento que fecharia a Q2 (barato, pré-P0)
+
+> **Atualização (09/11/2026):** Q2 foi fechada com N=5 e colocação livre; este experimento vira o fallback de playtest.
 
 Dois greyboxes jogáveis, mesma arte, mesma economia, 20–30 jogadores do público 13–34 (não a equipe):
 

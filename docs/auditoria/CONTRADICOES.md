@@ -14,15 +14,16 @@
 | C5 | `docs/gdd-muralha.md:43` | "+3 moedas" no drop-in | trocado por "ouro" |
 | C6 | `docs/padroes-engenharia.md:120` | schema com `coins` | trocado por `gold` |
 | C7 | `docs/spec...:263` vs GDD | PoC com 1 armadilha/lane vs grade 5×5 | nota de recorte: PoC prova o motor, não é a arquitetura |
+| C8 | `docs/gdd-muralha.md` decisão 1 | Q2: 25 células vs 5 slots; N de armadilhas ativas indefinido | **Q2 fechada em 09/11/2026:** 5×5, N=5 ativas, colocação livre; 5 slots vira fallback de playtest |
 
 ## Abertas — precisam de decisão humana
 
 | # | Pergunta | Evidência | Opções |
 |---|---|---|---|
 | Q1 | O protótipo de moedas em `src/**` é descartado na P1? | `src/server/CoinService.luau` (172 linhas) não tem relação com a Muralha · evidência: [pesquisa §3](../pesquisa-grade-e-prototipo.md) | (a) apagar na P1 · (b) manter como cena de teste de pipeline |
-| Q2 | A grade de produção é 5 colunas × 5 linhas com armadilhas **por célula**, e 5 lanes de caminhada (várias armadilhas por lane)? | spec §4 diz 5×5; PoC usa 1 por lane · evidência: [pesquisa §2](../pesquisa-grade-e-prototipo.md) | (a) confirmar 25 células · (b) manter 5 slots (1 por lane) no MVP |
 
 ## Regra de saída
 
-Quando Q1 e Q2 forem respondidas: aplicar a correção, apagar este arquivo e registrar a decisão em
-`docs/gdd-muralha.md` (se for design) ou `.context/REJEITADOS.md` (se for descarte).
+Quando Q1 for respondida: aplicar a correção, apagar este arquivo e registrar a decisão em
+`docs/gdd-muralha.md` (se for design) ou em `.context/REJEITADOS.md` (se for descarte).
+Q2 já está registrada no GDD (decisão 1).

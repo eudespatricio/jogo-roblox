@@ -40,11 +40,12 @@ protótipo legado de moedas em `src/`.
 
 - P0 não iniciado (decisão do diretor).
 - `src/` ainda é o protótipo de moedas — legado, não arquitetura final.
-- Q1/Q2 aguardam decisão; evidência em `docs/pesquisa-grade-e-prototipo.md`.
+- Q1 aguarda decisão; Q2 fechada (5×5, N=5 ativas, colocação livre) — `docs/gdd-muralha.md` decisão 1.
+- P0 desbloqueada no escopo do GDD (port + harness + analytics); início de execução aguarda o diretor.
 - Revisão de direção: teste de produto de 3 semanas antes da P0 — `docs/revisao-direcao.md`.
 - Analytics: taxonomia v1 escrita; instrumentação no motor é P0 — `docs/taxonomia-analytics.md`.
 - Ferramentas: estação completa (doctor), CI verde, `.luaurc` strict e calibração Blender; ProfileStore vendorizado; `pesde.toml` adiado — `docs/estacao-de-trabalho.md`.
-- Sem cena de Studio, sem UI, sem DataStore, sem monetização.
+- Sem cena de Studio, sem UI, sem DataStore, sem loja implementada.
 
 ## Congelado
 
