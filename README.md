@@ -62,6 +62,31 @@ python skills\context-recovery\scan_repo.py --root . --check
 Versões fixadas em [`rokit.toml`](rokit.toml): Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746.
 `rokit install` reproduz o ambiente; `.tools/` não é versionado.
 
+## Publicar no GitHub
+
+```bash
+git branch -M main                     # opcional (o repo nasceu como master)
+git remote add origin git@github.com:<usuario>/jogo-roblox.git
+git push -u origin main
+```
+
+Antes do push: `git status` limpo, sem `.tools/` (já ignorado) e sem segredos (varredura feita em
+09/11/2026). O workflow de CI ainda não existe — entra na P0.
+
+## Rodar no WSL
+
+```bash
+# uma vez: clonar no ext4 (não no /mnt/c)
+git clone git@github.com:<usuario>/jogo-roblox.git ~/jogo-roblox
+cd ~/jogo-roblox
+bash scripts/setup-wsl.sh
+```
+
+O script instala Rokit + ferramentas, valida os 10 invariantes, checa os tetos do contexto e imprime
+o IP do WSL para o plugin do Rojo. **Bloqueio conhecido:** o firewall do Windows impede o Studio de
+alcançar o `localhost` do WSL; o comando de liberação está no próprio script e no
+[`CONTINUAR.md`](CONTINUAR.md).
+
 ## Regras que não se negociam
 
 1. Servidor é a fonte da verdade; o cliente só manda intenção.

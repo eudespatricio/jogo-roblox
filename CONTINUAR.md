@@ -28,6 +28,20 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 
 ---
 
+## Migração para WSL (pendente)
+
+- Repo canônico passa a ser o **GitHub**; no WSL, clonar em `/home/eudespatricio/jogo-roblox`.
+- Depois do clone: `bash scripts/setup-wsl.sh` (instala Rokit + ferramentas, roda invariantes e
+  `--check`, imprime o IP do WSL).
+- **Bloqueio conhecido:** o firewall do Windows impede o Studio de alcançar o `localhost` do WSL.
+  Liberar TCP 34872 como admin (comando no script) ou usar Rojo no Windows via UNC
+  (`\\wsl.localhost\Ubuntu\home\eudespatricio\jogo-roblox`) — build funciona, watch ao vivo não
+  confirmado.
+- `.tools/` é binário Windows e não é versionado; no WSL as ferramentas vêm do `rokit install`.
+- Se a pasta no WSL estiver vazia, o repo ainda não foi clonado — clone antes de ler o resto.
+
+---
+
 ## Fatos (não reinventar)
 
 | Métrica | Valor |

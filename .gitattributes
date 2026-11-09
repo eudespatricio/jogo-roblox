@@ -1,0 +1,9 @@
+# scripts shell sempre com LF (o Windows não deve converter)
+*.sh text eol=lf
+
+# Luau e docs: LF (o repo já é LF; evita ruído de CRLF)
+*.luau text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.yml  text eol=lf
