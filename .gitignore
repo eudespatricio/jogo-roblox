@@ -15,3 +15,16 @@ sourcemap.json
 # artefatos gerados pela radiografia (regeneraveis)
 .context/radiografia.md
 .context/radiografia.json
+
+# modelos importados do Blender (versionados via LFS)
+!assets/models/**/*.rbxm
+!assets/models/**/*.rbxmx
+
+# std gerado pelo Selene (regeneravel)
+roblox.yml
+
+# autosave do Blender
+*.blend1
+
+# renders gerados
+art/renders/

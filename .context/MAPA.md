@@ -12,6 +12,10 @@
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
+| `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo legado) e Q2 (grade vs slots) | **antes de decidir Q1/Q2** |
+| `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita | **antes de decidir preço/loja** |
+| `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas antes da P0 | **antes de autorizar P0** |
+| `docs/ferramentas.md` | auditoria do toolchain, pipeline Blender→Studio e orçamentos | **antes de produzir asset/código** |
 | `docs/referencias-tower-defense.md` | jogos e vídeos de referência | antes de decidir game feel |
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |

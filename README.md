@@ -62,6 +62,10 @@ python skills\context-recovery\scan_repo.py --root . --check
 Versões fixadas em [`rokit.toml`](rokit.toml): Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746.
 `rokit install` reproduz o ambiente; `.tools/` não é versionado.
 
+Auditoria completa (o que existe, o que falta e o pipeline Blender→Studio):
+[`docs/ferramentas.md`](docs/ferramentas.md). Ferramentas CLI extras (luau-lsp, Lune, Pesde,
+rbxcloud, git-lfs, oxipng, Blender 4.5) já estão instaladas em `~/.local/bin`.
+
 ## Publicar no GitHub
 
 ```bash
@@ -71,7 +75,7 @@ git push -u origin main
 ```
 
 Antes do push: `git status` limpo, sem `.tools/` (já ignorado) e sem segredos (varredura feita em
-09/11/2026). O workflow de CI ainda não existe — entra na P0.
+09/11/2026). O workflow de CI existe em `.github/workflows/ci.yml` e roda `scripts/check.sh`.
 
 ## Rodar no WSL
 
@@ -83,7 +87,11 @@ bash scripts/setup-wsl.sh
 ```
 
 O script instala Rokit + ferramentas, valida os 10 invariantes, checa os tetos do contexto e imprime
-o IP do WSL. Para o Studio falar com o Rojo: no WSL rode `rojo serve` (escuta `127.0.0.1:34872`) e
+o IP do WSL. O gate completo (build, StyLua, luau-lsp, invariantes, benchmark e contexto) é:
+
+```bash
+bash scripts/check.sh
+``` Para o Studio falar com o Rojo: no WSL rode `rojo serve` (escuta `127.0.0.1:34872`) e
 no plugin conecte em `localhost:34872`. **Não use `--address 0.0.0.0`** — o encaminhamento de
 localhost do WSL só vale para loopback; firewall não é necessário nesse caminho.
 

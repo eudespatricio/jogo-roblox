@@ -12,8 +12,17 @@ local hashes = {}
 for i = 1, 3 do
 	local r = run(42)
 	hashes[i] = r.hash
-	print(string.format("  run %d: hash=%d winner=%s wall=%d leaked=%d ticks=%d",
-		i, r.hash, r.winner, r.wallHp, r.leaked, r.ticks))
+	print(
+		string.format(
+			"  run %d: hash=%d winner=%s wall=%d leaked=%d ticks=%d",
+			i,
+			r.hash,
+			r.winner,
+			r.wallHp,
+			r.leaked,
+			r.ticks
+		)
+	)
 end
 local deterministic = hashes[1] == hashes[2] and hashes[2] == hashes[3]
 print("  -> " .. (deterministic and "OK: hash identico" or "FALHOU: divergiu"))
@@ -33,8 +42,14 @@ local distinct = 0
 for _ in pairs(seen) do
 	distinct += 1
 end
-print(string.format("  seeds=500 distintas=%d vitorias_defensor=%.1f%% vazados_medio=%.1f",
-	distinct, wins / total * 100, leakedSum / total))
+print(
+	string.format(
+		"  seeds=500 distintas=%d vitorias_defensor=%.1f%% vazados_medio=%.1f",
+		distinct,
+		wins / total * 100,
+		leakedSum / total
+	)
+)
 
 print("\n=== 3. PERFORMANCE (1000 batalhas) ===")
 local t0 = os.clock()
@@ -42,8 +57,14 @@ for seed = 1, 1000 do
 	run(seed)
 end
 local elapsed = os.clock() - t0
-print(string.format("  tempo total=%.3fs  por batalha=%.3fms  batalhas/s=%.0f",
-	elapsed, elapsed, 1000 / elapsed))
+print(
+	string.format(
+		"  tempo total=%.3fs  por batalha=%.3fms  batalhas/s=%.0f",
+		elapsed,
+		elapsed,
+		1000 / elapsed
+	)
+)
 
 print("\n=== 4. SENSIBILIDADE DE BALANCO ===")
 for _, waveCount in ipairs({ 50, 70, 90 }) do
@@ -55,8 +76,14 @@ for _, waveCount in ipairs({ 50, 70, 90 }) do
 			w += 1
 		end
 	end
-	print(string.format("  wave=%d  vitorias_defensor=%.0f%%  spawnados_medio=%.1f",
-		waveCount, w / 200 * 100, spawned / 200))
+	print(
+		string.format(
+			"  wave=%d  vitorias_defensor=%.0f%%  spawnados_medio=%.1f",
+			waveCount,
+			w / 200 * 100,
+			spawned / 200
+		)
+	)
 end
 
 print("\n=== 5. INVARIANTES INTEIROS (sem float no estado) ===")

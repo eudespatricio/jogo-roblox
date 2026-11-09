@@ -22,13 +22,13 @@ protótipo legado de moedas em `src/`.
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | invariantes | 10/10 passando (`sim/invariants.luau`) |
-| docs / código / testes | 7 docs · 10 arquivos · 2 oráculos |
+| docs / código / testes | 11 docs · 10 arquivos · 2 oráculos |
 
 ## Pronto
 
 - Conceito aprovado: `docs/gdd-muralha.md` v1.1 (decisões 1–5 fechadas).
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
-- Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`.
+- Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`, `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `sim/core.luau` (módulo) + `sim/poc.luau` (benchmark) + `sim/invariants.luau` (oráculo).
 - Tooling: Rokit (4 ferramentas fixadas), GitHub Actions, ProfileStore.
@@ -38,6 +38,10 @@ protótipo legado de moedas em `src/`.
 
 - P0 não iniciado (decisão do diretor).
 - `src/` ainda é o protótipo de moedas — legado, não arquitetura final.
+- Q1/Q2 aguardam decisão; evidência em `docs/pesquisa-grade-e-prototipo.md`.
+- Monetização: premissas de pagantes/ARPPU e gate de ARPDAU a reconciliar — `docs/pesquisa-monetizacao.md`.
+- Revisão de direção: teste de produto de 3 semanas antes da P0 — `docs/revisao-direcao.md`.
+- Ferramentas: CLI/GUI instaladas; CI + check prontos; faltam `.luaurc`, `pesde.toml` e pipeline de asset — `docs/ferramentas.md`.
 - Sem cena de Studio, sem UI, sem DataStore, sem monetização.
 
 ## Congelado

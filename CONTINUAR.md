@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `master` @ `f28436c`.
+**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `main` @ `82fb9c3`.
 Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
@@ -54,7 +54,70 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | invariantes | **10/10** (`sim/invariants.luau`) |
-| contexto residente | ESTADO 60/80 · MAPA 35/60 · REJEITADOS 16/40 |
+| contexto residente | ESTADO 64/80 · MAPA 39/60 · REJEITADOS 16/40 |
+
+---
+
+## Pesquisa de apoio a Q1/Q2 (09/11/2026)
+
+`docs/pesquisa-grade-e-prototipo.md` levanta a evidência para as duas perguntas:
+
+- **Q2:** profundidade não vem do número de células (Kingdom Rush 4–6 torres, Super Auto Pets 5
+  slots); 25 células × 5 armadilhas ativas = 53.130 layouts; 25 armadilhas simultâneas seria fora
+  da curva. Falta um A/B de 20–30 jogadores (protocolo no doc, §5).
+- **Q1:** o protótipo tem 442 linhas, 0% de sobreposição com a Muralha e embute o DataStore caseiro
+  já rejeitado; `rojo build` funciona com um stub de 10 linhas (8,6 KB vs 440 B). A evidência
+  favorece apagar na P1 com tag + stub + CI.
+
+Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
+
+---
+
+## Pesquisa de monetização (09/11/2026)
+
+`docs/pesquisa-monetizacao.md` confronta as premissas de receita com o mercado:
+
+- Os TDs do topo examinados vendem **poder e sorte**; cosmético é complemento: torres 168–1.574 R$,
+  passe 399–499, cosmético 55–360.
+- O modelo usa 4% de pagantes/mês × US$ 5/mês — ARPPU no p95 e pagantes acima da mediana; é cenário
+  de topo, não base. O relatório mede 3,8% que pagaram algo **em 12 meses**.
+- O gate ARPDAU US$ 0,02 não fecha: o cenário "Negócio" dá 0,0088 líquido (0,0375 bruto). Falta
+  definir se o gate é bruto ou líquido.
+- Canais melhores: assinatura em moeda local (100% após o 1º mês), Roblox Plus (78–88% + 750 R$ por
+  signup), regional pricing automático.
+- Preços do GDD seguem em aberto; nada foi decidido.
+
+---
+
+## Revisão de direção (09/11/2026)
+
+`docs/revisao-direcao.md` responde ao pedido original ("a vida depende dessa receita"):
+
+- Engenharia e design: **no caminho certo**. Produto e receita: **não provados**.
+- O cenário "Negócio" é TD de porte médio com **monetização de topo** — a combinação mais difícil.
+- Com premissas base, BRL 10 mil/mês exige ~39 mil DAU; BRL 50 mil, ~197 mil. Não é plano de lançamento.
+- Recomendação: **teste de produto de 3 semanas (US$ 300–500) antes da P0**, com critérios de kill
+  definidos (entendimento, diversão, oferta, D1, CTR).
+- Não pivotar sem dados; não construir mais motor antes do teste.
+
+---
+
+## Ferramentas (09/11/2026)
+
+`docs/ferramentas.md` audita o que existe e o que falta para qualidade de ponta:
+
+- **Existe:** Studio + Rojo plugin; Rokit (Rojo/StyLua/Selene/Luau); Blender 4.2 no WSL com Cycles
+  CUDA (RTX 3060); WSLg; Python 3.14.
+- **Instalado em 09/11/2026:** git-lfs 3.8.1, luau-lsp 1.70.1, Lune 0.11.1, Pesde 0.7.4,
+  rbxcloud 0.17.0, oxipng 10.2.1, Blender 4.5.15 LTS (`blender4.5`); ffmpeg 7.0.2 já existia.
+- **Pronto:** CI (`.github/workflows/ci.yml`) + `scripts/check.sh`; StyLua configurado e `sim`
+  formatado; `.gitattributes` LFS + exceção `assets/models`; Krita/Inkscape/Audacity instalados.
+- **Falta:** `.luaurc` strict + settings do editor; `pesde.toml` + ProfileStore; Selene bloqueado
+  (parser não aceita `+=`); pipeline de asset (calibração/export).
+- **Pipeline 3D:** Blender (WSL) → glTF/FBX → Studio 3D Importer → `.rbxm` versionado (LFS) → Rojo;
+  calibrar units/axes uma vez (`art/calibration.blend`).
+- **Atenção:** `.gitignore` ignora `*.rbxm`; shell não-login não acha `rojo` nem `blender`.
+- **Kit mínimo:** ~1 dia para CI+LSP+LFS+Pesde; ~1 dia para 2D/áudio + estrutura `art/`.
 
 ---
 
@@ -94,6 +157,10 @@ os eventos, e mudar depois custa retrabalho.
 | `docs/tese-produto-e-economia.md` + `docs/modelo-financeiro.xlsx` | economia unitária |
 | `docs/referencias-tower-defense.md` | jogos/vídeos para estudar |
 | `docs/auditoria/CONTRADICOES.md` | **temporário**: 7 resolvidas + Q1/Q2 |
+| `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo) e Q2 (grade vs slots) |
+| `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
+| `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P0 |
+| `docs/ferramentas.md` | toolchain auditado + pipeline Blender→Studio |
 | `sim/core.luau` · `sim/poc.luau` · `sim/invariants.luau` | motor, benchmark, oráculo |
 | `.context/ESTADO|MAPA|REJEITADOS.md` | contexto residente com teto |
 | `skills/context-recovery/` | protocolo de auditoria + scanner + templates |

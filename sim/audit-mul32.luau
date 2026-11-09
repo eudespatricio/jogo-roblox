@@ -60,9 +60,17 @@ for _, c in ipairs(casos) do
 	local ref = mul32Ref(a, b)
 	local atual = mul32Atual(a, b)
 	local novo = mul32Novo(a, b)
-	print(string.format("  %10d x %10d -> ref=%10d atual=%10d novo=%10d %s",
-		a, b, ref, atual, novo,
-		(ref == novo and (esperado == nil or ref == esperado)) and "OK" or "DIVERGE"))
+	print(
+		string.format(
+			"  %10d x %10d -> ref=%10d atual=%10d novo=%10d %s",
+			a,
+			b,
+			ref,
+			atual,
+			novo,
+			(ref == novo and (esperado == nil or ref == esperado)) and "OK" or "DIVERGE"
+		)
+	)
 end
 
 -- varredura aleatoria

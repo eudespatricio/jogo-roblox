@@ -30,17 +30,31 @@ print(string.format("  exato = %d", exato))
 print(string.format("  iguais? %s", atual == exato and "SIM" or "NAO -> bug confirmado"))
 
 local h2 = 123456789
-print(string.format("  h=%d atual=%d exato=%d iguais=%s", h2,
-	bit32.band(h2 * 16777619, 0xFFFFFFFF), mul32(h2, 16777619),
-	tostring(bit32.band(h2 * 16777619, 0xFFFFFFFF) == mul32(h2, 16777619))))
+print(
+	string.format(
+		"  h=%d atual=%d exato=%d iguais=%s",
+		h2,
+		bit32.band(h2 * 16777619, 0xFFFFFFFF),
+		mul32(h2, 16777619),
+		tostring(bit32.band(h2 * 16777619, 0xFFFFFFFF) == mul32(h2, 16777619))
+	)
+)
 
 print("\n== seed * 2654435761 ==")
 for _, seed in ipairs({ 42, 123456789, 4000000000 }) do
 	local prod = seed * 2654435761
 	local viaBand = bit32.band(prod, 0xFFFFFFFF)
 	local exato = mul32(seed, 2654435761)
-	print(string.format("  seed=%-12d prod=%.3e  band=%d  mul32=%d  iguais=%s",
-		seed, prod, viaBand, exato, tostring(viaBand == exato)))
+	print(
+		string.format(
+			"  seed=%-12d prod=%.3e  band=%d  mul32=%d  iguais=%s",
+			seed,
+			prod,
+			viaBand,
+			exato,
+			tostring(viaBand == exato)
+		)
+	)
 end
 
 print("\n== soma do xorshift (s0 + x) ==")

@@ -23,6 +23,7 @@ Leia nesta ordem, antes de qualquer ação:
 .\.tools\luau\luau.exe sim\poc.luau                 # benchmark do motor
 python skills\context-recovery\scan_repo.py --root . --ast .tools\luau\luau-ast.exe
 python skills\context-recovery\scan_repo.py --root . --check
+bash scripts/check.sh                               # gate completo no WSL (build, StyLua, tipos, invariantes)
 ```
 
 ## Fonte de verdade
