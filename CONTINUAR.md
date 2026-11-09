@@ -145,9 +145,34 @@ Q1 e Q2 foram decididas em 09/11/2026; nenhuma pergunta aberta.
 Q1 e Q2 foram fechadas em 09/11/2026. `docs/auditoria/CONTRADICOES.md` foi apagado. A remoção do
 legado é P1 — não foi executada agora.
 
-**Próximo passo:** concluir a P0 — schema v1 + ProfileStore, contrato de analytics e teste de
-sessão no Studio. A taxonomia v1 está em `docs/taxonomia-analytics.md`; o teste de 3 semanas
-continua antes da P1.
+**Próximo passo:** fechar a P0 (seção abaixo). O teste de 3 semanas continua antes da P1.
+
+## P0 — como fechar (handover para outra janela)
+
+**Feito:** motor em `src/shared/sim/core.luau`; `sim/acceptance.luau` verde (1.000 seeds × 3,
+hash `668061367`, 1.000 hashes, 64,9% defensor, ~1,5s/1.000); `check.sh` e CI verdes.
+
+| # | Entrega | Onde | Critério de pronto |
+|---|---|---|---|
+| 1 | **Schema v1 + wrapper ProfileStore** | `src/server/data/ProfileService.luau` + `src/shared/data/ProfileSchema.luau` | `StartSessionAsync` nil tratado; `EndSession` no leave; migração 0→1 com fixture; `Mock` testado; teste de sessão no Studio |
+| 2 | **Contrato de analytics** | `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau` | envelope/eventos da taxonomia validados no CI; `check.sh` passa a analisar `src/shared/analytics` e rodar o contrato; `BattleResult` expõe `seed` (sem mudar hash) |
+| 3 | **Teste de sessão no Studio** | place + 2 clientes/rejoin | carrega, salva, não duplica; sem PII; `lastSeenAt` atualizado |
+| 4 | **Fechamento** | spec, ESTADO, CONTINUAR | `check.sh` + acceptance verdes; `simVersion` inalterado (sem mudança de matemática) |
+
+**Antes do item 2:** aprovar [`docs/taxonomia-analytics.md`](docs/taxonomia-analytics.md), que ainda
+é proposta.
+
+**Não entra na P0:** cena 5×5, UI, loja, drop-in/raid/replay (P1); remoção do legado (Q1, P1).
+
+**Decisões que o handover herda:** Q2 = 5×5, N=5, colocação livre; Q1 = apagar o legado na P1, tag
+`legacy-coins`; monetização = base 2% × US$ 2, gate líquido US$ 0,005; ProfileStore vendorizado
+(Apache-2.0).
+
+**Armadilhas:** não editar `vendor/ProfileStore.luau`; ProfileStore é server-only
+(`ServerStorage.Vendor.ProfileStore`); `StartSessionAsync` pode retornar nil; `OnLastSave` pode não
+disparar; o CI headless não cobre DataStore — o teste de sessão é manual no Studio; `BattleResult`
+com campo novo não altera o hash; mudou matemática? Suba `simVersion`; `bit32` só `[0, 2^32)`.
+O legado em `src/server` ainda está montado; não reutilize `CoinService`/`DataService`.
 
 ---
 
@@ -164,7 +189,7 @@ continua antes da P1.
 | `docs/referencias-tower-defense.md` | jogos/vídeos para estudar |
 | `docs/pesquisa-grade-e-prototipo.md` | evidência e decisão de Q1/Q2 (fechadas) |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
-| `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P0 |
+| `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P1 |
 | `docs/decisao-monetizacao.md` | premissas base/topo e gate ARPDAU |
 | `docs/taxonomia-analytics.md` | eventos, funil, métricas e sink |
 | `vendor/ProfileStore.luau` + `SOURCE.md` | ProfileStore oficial vendorizado (Apache-2.0) |
@@ -208,9 +233,11 @@ continua antes da P1.
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (projeto MURALHA, P0 em andamento). Leia `AGENTS.md`,
+> Você está no repositório `jogo-roblox` (MURALHA, P0 em andamento). Leia `AGENTS.md`,
 > `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
-> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não inicie P1. A P0 já tem o
-> motor portado e o `sim/acceptance.luau` verde; faltam schema/ProfileStore, contrato de analytics
-> e teste no Studio. O teste de produto de 3 semanas continua antes da P1. Q1 e Q2 estão fechadas:
-> Q2 = 5×5 com N=5 ativas; Q1 = apagar o legado na P1, preservando `src/shared/sim/`.
+> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). **Objetivo desta janela:
+> fechar a P0** — schema v1 + wrapper ProfileStore, contrato de analytics e teste de sessão no
+> Studio. Não inicie P1; não apague `src/**` (Q1 é P1, tag `legacy-coins`); não edite
+> `vendor/ProfileStore.luau`. Q1/Q2 fechadas; Q2 = 5×5, N=5, colocação livre. Motor em
+> `src/shared/sim/core.luau`; `sim/acceptance.luau` valida 1.000 seeds × 3. Commit `c7515d9`,
+> CI verde.
