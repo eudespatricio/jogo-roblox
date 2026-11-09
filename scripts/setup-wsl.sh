@@ -112,15 +112,14 @@ $(printf '\033[1;32m============================================================
 Pronto para desenvolver.
 
 Roblox Studio (Windows) falando com o Rojo (WSL):
-  1) aqui:        rojo serve --address 0.0.0.0
-  2) no Windows (uma vez, como admin):
-     New-NetFirewallRule -DisplayName "WSL Rojo 34872" -Direction Inbound \`
-       -Action Allow -Protocol TCP -LocalPort 34872 \`
-       -RemoteAddress 172.30.0.0/16
-  3) no plugin Rojo do Studio: ${WSL_IP:-<ip-do-wsl>}:34872
+  1) aqui:   rojo serve            # escuta 127.0.0.1:34872
+  2) no plugin Rojo do Studio: localhost:34872
 
-O IP do WSL muda ao reiniciar: rode este script de novo para ver o atual.
-Sem admin? Alternativa: Rojo no Windows lendo o projeto via \\\\wsl.localhost\\Ubuntu\\home\\eudespatricio\\jogo-roblox
-(o build funciona; o sync ao vivo precisa ser testado).
+NÃO use --address 0.0.0.0: o encaminhamento de localhost do WSL só vale para
+loopback (testado em 09/11/2026: 127.0.0.1 responde, 0.0.0.0 não).
+Firewall não é necessário nesse caminho; regras clássicas/Hyper-V são inócuas
+em NAT (NATInboundRuleNotApplicable).
+
+IP do WSL (só para diagnóstico): ${WSL_IP:-<indisponível>}
 $(printf '\033[1;32m============================================================\033[0m')
 EOF

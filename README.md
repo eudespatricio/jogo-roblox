@@ -83,9 +83,9 @@ bash scripts/setup-wsl.sh
 ```
 
 O script instala Rokit + ferramentas, valida os 10 invariantes, checa os tetos do contexto e imprime
-o IP do WSL para o plugin do Rojo. **Bloqueio conhecido:** o firewall do Windows impede o Studio de
-alcançar o `localhost` do WSL; o comando de liberação está no próprio script e no
-[`CONTINUAR.md`](CONTINUAR.md).
+o IP do WSL. Para o Studio falar com o Rojo: no WSL rode `rojo serve` (escuta `127.0.0.1:34872`) e
+no plugin conecte em `localhost:34872`. **Não use `--address 0.0.0.0`** — o encaminhamento de
+localhost do WSL só vale para loopback; firewall não é necessário nesse caminho.
 
 ## Regras que não se negociam
 

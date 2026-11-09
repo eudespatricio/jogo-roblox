@@ -33,16 +33,12 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 - Repo publicado: **https://github.com/eudespatricio/jogo-roblox** (branch `main`, commit `0377925`).
 - No WSL, clonar em `/home/eudespatricio/jogo-roblox` e rodar `bash scripts/setup-wsl.sh`
   (instala Rokit + ferramentas, roda invariantes e `--check`, imprime o IP).
-- **Bloqueio de rede (medido em 09/11/2026):** a regra clássica do Windows Firewall
-  (`New-NetFirewallRule`) **não libera** o tráfego da VM do WSL. Ping funciona, TCP 34872 não.
-  O firewall efetivo é o **Hyper-V firewall**. Liberar com (admin):
-  ```powershell
-  New-NetFirewallHyperVRule -Name "WSL-Rojo-34872" -DisplayName "WSL Rojo 34872" `
-    -Direction Inbound -VMCreatorId "{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}" `
-    -Protocol TCP -LocalPorts 34872 -Action Allow
-  ```
-  Alternativas: `[wsl2] networkingMode=mirrored` em `%USERPROFILE%\.wslconfig` + `wsl --shutdown`
-  (reinicia o WSL), ou rodar o Rojo **no Windows** lendo o projeto via UNC.
+- **Rede (resolvido em 09/11/2026):** o Rojo roda no WSL escutando **`127.0.0.1:34872`** e o Windows
+  alcança **`localhost:34872`** pelo encaminhamento de localhost do WSL. **Não use
+  `--address 0.0.0.0`** (quebra o encaminhamento) e **não é necessário firewall**. Regras clássicas
+  e do Hyper-V são inócuas em modo NAT (`NATInboundRuleNotApplicable`).
+- Teste feito: `rojo serve` no WSL + `http://localhost:34872/api/rojo` → **HTTP 200** no Windows.
+- Se um dia precisar de acesso da LAN, aí sim portproxy ou `networkingMode=mirrored`.
 - `.tools/` é binário Windows e não é versionado; no WSL as ferramentas vêm do `rokit install`.
 - Se a pasta no WSL estiver vazia, o repo ainda não foi clonado — clone antes de ler o resto.
 
