@@ -184,7 +184,11 @@ bloqueando conteúdo — console/VR não suportam). Selo cosmético "verificado"
 | Replay assistido | ≥ 50% dos retornos | telemetria interna |
 | Clipes salvos | ≥ 5 por 100 sessões | CaptureService + telemetria |
 | Pagantes | ≥ 2% | monetização |
-| ARPDAU | ≥ US$ 0,02 | monetização |
+| ARPDAU **líquido** | ≥ US$ 0,005 (bruto ≈ 0,0225; ~BRL 20 mil/mês a 25 mil DAU) | monetização |
+
+Premissas de planejamento (09/11/2026): **2% de pagantes/mês sobre a MAU × ARPPU US$ 2** (base);
+**4,5% × US$ 5** é o cenário de topo que passa o gate. Ver
+[`decisao-monetizacao.md`](decisao-monetizacao.md).
 
 Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 

@@ -4,6 +4,10 @@
 > [`modelo-financeiro.xlsx`](modelo-financeiro.xlsx). **Não é decisão de preço**: é o que o mercado
 > faz, o que a plataforma permite e onde as premissas do projeto não fecham.
 >
+> **Decisão (09/11/2026):** base **2% de pagantes/mês × ARPPU US$ 2**; topo **4,5% × US$ 5**;
+> gate **ARPDAU líquido ≥ US$ 0,005** (bruto ≈ 0,0225). Registro em
+> [`decisao-monetizacao.md`](decisao-monetizacao.md).
+>
 > Níveis: **A** = oficial/primário · **B** = comunidade estruturada · **C** = estimativa/opinião.
 > Neste documento **R$ = Robux** (como no GDD); reais aparecem como **BRL**.
 
@@ -15,7 +19,7 @@
 |---|---|---|
 | 1 | Os TDs do topo que examinamos monetizam **poder e sorte**; cosmético é complemento: torres de 168–1.574 R$, passes de sorte 79–699 R$, cosmético com teto de ~200–360 R$. | alta |
 | 2 | O modelo financeiro assume **4% de pagantes/mês × US$ 5/mês** — combinação de topo (ARPPU no p95, pagantes acima da mediana). O cenário "Negócio" não é base. | alta |
-| 3 | O gate **ARPDAU ≥ US$ 0,02** e o modelo não usam a mesma base: o cenário "Negócio" dá **US$ 0,0088 líquido** e **US$ 0,0375 bruto** por DAU/dia. Falta definir se o gate é bruto ou líquido. | alta |
+| 3 | Gate **ARPDAU líquido ≥ US$ 0,005** (bruto ≈ 0,0225), decidido em 09/11/2026. Com 10% elegível, o "Negócio" dá **0,0083 líquido** / **0,0375 bruto**; a base 2% × US$ 2 dá 0,00148 e falha. | alta |
 | 4 | Cosmético-only **não tem prova no TD**; tem prova em jogos de identidade (Dress to Impress, ~US$ 820 mil/mês estimados, confiança baixa). Sem avatar, a superfície da Muralha é a própria muralha. | média |
 | 5 | O 18+ rende **+42% por dólar elegível**, mas o efeito misto é **+4,2%** (10% do gasto elegível) a **+10,5%** (25%) — não +42% no total. | alta |
 | 6 | Canais subaproveitados: **assinatura em moeda local** (100% do repasse a partir do 2º mês), **Roblox Plus** (repasse efetivo 78–88% + 750 R$ por signup) e **regional pricing** automático. | alta |
@@ -29,7 +33,7 @@
 |---|---|---|---|
 | **3,8% de jogadores pagam** | `modelo-financeiro.xlsx` B12, tratado como % mensal | GameAnalytics: **3,80% dos jogadores rastreados pagaram algo "across the period"** (ago/2025–jul/2026, 12 meses) | **provável 2–4x otimista como taxa mensal** |
 | **ARPPU US$ 5/mês** | B11 | ARPPU mediano US$ 0,70 · p75 US$ 1,25 · p90 US$ 2,33 · **p95 US$ 4,80** · p99 US$ 55,31 | **p95, não mediana** |
-| **ARPDAU ≥ US$ 0,02** | `gdd-muralha.md:187` | modelo entrega 0,0088 líquido / 0,0375 bruto no cenário "Negócio" | **base indefinida** |
+| **ARPDAU ≥ US$ 0,02** | `gdd-muralha.md:187` | resolvido: gate **líquido ≥ 0,005**; "Negócio" 0,0083 líquido / 0,0375 bruto | **decidido** |
 | **25% do gasto é 18+ US elegível** | B8 | 29% dos DAU *age-checked* globais são 18+; EUA/Canadá ~17% dos DAU (`pesquisa-tendencias-2026.md`) | **provável 2–3x otimista** |
 | **DevEx US$ 0,0038 / US$ 0,0054** | B6/B7 | confirmado oficialmente (0,0038 desde 05/09/2025; 18+ 0,0054) | **correto** |
 | **Criador fica com 70%** | B5 | confirmado (passes, dev products, assinaturas) | **correto** |
@@ -150,20 +154,21 @@ jogador gasta US$ 1 → 80 R$ → criador fica com 56 R$ (70%)
 
 | Pagantes/mês | ARPPU | Bruto/mês | Líquido/mês | BRL/mês | ARPDAU líquido | ARPDAU bruto |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1% | US$ 1 | 1.250 | 294 | 1.588 | 0,0004 | 0,0017 |
-| 2% | US$ 2 | 5.000 | 1.176 | 6.350 | 0,0016 | 0,0067 |
-| 2% | US$ 5 | 12.500 | 2.940 | 15.876 | 0,0039 | 0,0167 |
-| **4,5%** | **US$ 5** | **28.125** | **6.615** | **35.721** | **0,0088** | **0,0375** |
+| 1% | US$ 1 | 1.250 | 277 | 1.497 | 0,00037 | 0,0017 |
+| 2% | US$ 2 | 5.000 | 1.109 | 5.988 | 0,00148 | 0,0067 |
+| 2% | US$ 5 | 12.500 | 2.772 | 14.969 | 0,00370 | 0,0167 |
+| **4,5%** | **US$ 5** | **28.125** | **6.237** | **33.680** | **0,00832** | **0,0375** |
 
-### 4.3 O gate do ARPDAU não fecha com o modelo
+### 4.3 O gate do ARPDAU (resolvido em 09/11/2026)
 
 | Se o gate US$ 0,02 for… | ARPPU necessário a 2% | a 4,5% | Leitura |
 |---|---:|---:|---|
 | **líquido** (receita do estúdio) | US$ 127,55 | US$ 56,69 | p99; inatingível para cosmético |
 | **bruto** (gasto do jogador) | US$ 6,00 | US$ 2,67 | plausível, mas o gate mede outra coisa |
 
-**Recomendação de registro (não de decisão):** o GDD deve dizer **ARPDAU bruto ou líquido**. Do jeito
-que está, o cenário "Negócio" passa no gate bruto (0,0375 > 0,02) e falha no líquido (0,0088 < 0,02).
+**Decisão:** o gate passou a ser **ARPDAU líquido ≥ US$ 0,005** (≈ BRL 20,2 mil/mês a 25 mil DAU;
+bruto ≈ 0,0225) e é reportado junto com o bruto. O "Negócio" passa com 0,0083 líquido; a base
+2% × US$ 2 (0,00148) falha por 3,4×. Ver [`decisao-monetizacao.md`](decisao-monetizacao.md).
 
 ---
 
@@ -222,7 +227,7 @@ pergunta deixa de ser "qual skin vender" e passa a ser "qual conveniência hones
 
 ---
 
-## 7. Leitura para a Muralha (sem decidir)
+## 7. Leitura para a Muralha (decidida em 09/11/2026)
 
 1. **Preço do passe:** 399–499 está alinhado ao TDS; 599 é o topo da faixa. Se virar assinatura em
    moeda local, o repasse de 100% a partir do 2º mês muda a conta mais que qualquer ajuste de preço.
@@ -231,13 +236,14 @@ pergunta deixa de ser "qual skin vender" e passa a ser "qual conveniência hones
 3. **Efeito de destruição:** 99–149 é coerente com emote do TDS (55–85) e com o valor de clipe; 249
    é o teto.
 4. **Comandante:** 199–299; acima disso compete com VIP (300) que entrega várias coisas.
-5. **Planejamento de ARPPU:** US$ 1–2/mês é base realista; **US$ 5 é upside**, não orçamento.
-6. **Pagantes:** usar 1–2% mensais para planejar; 3,8% é taxa de 12 meses, não mensal.
-7. **Gate:** definir bruto vs líquido antes de usar o número como critério de go/no-go.
+5. **ARPPU de planejamento:** US$ 2/mês (base); **US$ 5 é upside**, não orçamento.
+6. **Pagantes:** 2% mensais é a base; 3,8% é taxa de 12 meses, não mensal.
+7. **Gate:** **ARPDAU líquido ≥ US$ 0,005** (bruto ≈ 0,0225; ~BRL 20 mil/mês a 25 mil DAU).
 8. **Cosmético sem avatar:** a identidade tem de morar na muralha (skin de muralha, efeito, moldura
    de replay, cenário da base). É a analogia do "scenery" do Clash of Clans, não do avatar do DTI.
 9. **Canais:** (a) assinatura local do passe; (b) prompt de Plus (750 R$ por signup); (c) regional
    pricing ligado; (d) nenhum loot box.
+10. **Decisão registrada em 09/11/2026** em [`decisao-monetizacao.md`](decisao-monetizacao.md).
 
 ---
 

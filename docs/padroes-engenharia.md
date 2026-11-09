@@ -250,6 +250,6 @@ conferidas nas releases oficiais em 09/11/2026).
 
 ### 8.3 Ainda abertas
 
-1. **Analytics:** eventos próprios via DataStore no MVP; serviço externo só se doer.
+1. **Analytics:** taxonomia v1 em `docs/taxonomia-analytics.md`; implementação do sink e do validador na P0.
 2. **Feature flags:** necessárias para testar variantes de drop-in sem republicar — provavelmente
    um `Config` remoto via `DataStore` + cache local.

@@ -61,33 +61,35 @@ jogador gasta US$ 1  →  80 Robux  →  criador ganha 70% (56 R$)  →  DevEx
                                                         18+ US: US$ 0,0054/R$ = US$ 0,302
 ```
 
-Com 25% do gasto vindo de 18+ verificado nos EUA, a **receita líquida é ~23,5% do que o jogador
-gasta**. O resto é taxa da plataforma, custo do Robux e imposto cambial.
+Com 10% do gasto vindo de 18+ verificado nos EUA, a **receita líquida é ~22,2% do que o jogador
+gasta** (com 25%, ~23,5%). O resto é taxa da plataforma, custo do Robux e imposto cambial.
 
 ### Quanto precisa para viver disso
 
-Premissas: ARPPU US$ 5/mês, 4% de pagantes, DAU/MAU 0,20, câmbio R$ 5,40.
+Premissas base: ARPPU US$ 2/mês, 2% de pagantes, DAU/MAU 0,20, câmbio R$ 5,40, líquido 22,2%.
 
 | Meta mensal | Gasto bruto necessário | Pagantes | MAU | DAU |
 |---|---|---|---|---|
-| R$ 3.000 | US$ 2.362 | 472 | 11.810 | **2.362** |
-| R$ 5.000 | US$ 3.937 | 787 | 19.684 | **3.937** |
-| R$ 10.000 | US$ 7.874 | 1.575 | 39.368 | **7.874** |
-| R$ 20.000 | US$ 15.747 | 3.149 | 78.736 | **15.747** |
-| R$ 50.000 | US$ 39.368 | 7.874 | 196.840 | **39.368** |
+| R$ 3.000 | US$ 2.505 | 1.253 | 62.630 | **12.526** |
+| R$ 5.000 | US$ 4.175 | 2.088 | 104.384 | **20.877** |
+| R$ 10.000 | US$ 8.351 | 4.175 | 208.768 | **41.754** |
+| R$ 20.000 | US$ 16.701 | 8.351 | 417.535 | **83.507** |
+| R$ 50.000 | US$ 41.754 | 20.877 | 1.043.838 | **208.768** |
 
-**Leitura dura:** R$ 10 mil/mês exige ~8 mil jogadores ativos por dia — com retenção e monetização
-acima da mediana. Não é um fim de semana de trabalho; é um produto com live ops.
+**Leitura dura:** com premissas base, R$ 10 mil/mês exige **~42 mil jogadores ativos por dia**.
+No cenário de topo (4,5% × US$ 5), cai para **~7,4 mil** — a diferença entre um plano de escala e
+uma aposta de monetização de hit. Não é um fim de semana de trabalho; é um produto com live ops.
 
 ### Cenários
 
 | Cenário | DAU | % pagantes | ARPPU | Receita/mês (BRL) | Leitura |
 |---|---|---|---|---|---|
-| Hobby validado | 2.000 | 2% | US$ 2 | ~R$ 508 | prova o loop, não paga contas |
-| Pé de meia | 8.000 | 3% | US$ 3,50 | ~R$ 5.334 | primeiro salário parcial |
-| **Negócio** | **25.000** | **4,5%** | **US$ 5** | **~R$ 35.721** | meta realista de 12 meses |
-| Escala | 80.000 | 6% | US$ 8 | ~R$ 243.855 | top 200 da plataforma |
-| Outlier | 300.000 | 9% | US$ 15 | ~R$ 2,57 mi | top 10; loteria, não plano |
+| Hobby validado | 2.000 | 2% | US$ 2 | ~R$ 479 | prova o loop, não paga contas |
+| Pé de meia | 8.000 | 3% | US$ 3,50 | ~R$ 5.030 | primeiro salário parcial |
+| **Base realista** | **25.000** | **2%** | **US$ 2** | **~R$ 5.988** | planejamento; o gate exige mais |
+| **Negócio (topo)** | **25.000** | **4,5%** | **US$ 5** | **~R$ 33.680** | topo que passa o gate; não é base |
+| Escala | 80.000 | 6% | US$ 8 | ~R$ 229.921 | top 200 da plataforma |
+| Outlier | 300.000 | 9% | US$ 15 | ~R$ 2,42 mi | top 10; loteria, não plano |
 
 Modelo editável: [`modelo-financeiro.xlsx`](modelo-financeiro.xlsx) — abas Premissas, Cenários,
 Metas e Sensibilidade (DAU × ARPPU).

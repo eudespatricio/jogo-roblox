@@ -206,6 +206,6 @@ Se o push falhar com `refusing to allow a Personal Access Token to create or upd
 
 ## 8. O que ainda falta (não é a estação)
 
-1. `pesde.toml` + ProfileStore (camada de dados da P0).
+1. ProfileStore vendorizado; wrapper + schema v1 da camada de dados (P0). `pesde.toml` fica para a 2ª dependência.
 2. Primeiro asset real de armadilha (calibração já feita).
 3. Teste de produto de 3 semanas antes da P1 — ver [`revisao-direcao.md`](revisao-direcao.md).

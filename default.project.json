@@ -15,6 +15,16 @@
       "$path": "src/server"
     },
 
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "Vendor": {
+        "$className": "Folder",
+        "ProfileStore": {
+          "$path": "vendor/ProfileStore.luau"
+        }
+      }
+    },
+
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {

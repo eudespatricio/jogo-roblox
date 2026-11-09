@@ -82,6 +82,10 @@ Premissas do modelo: 70% de repasse, DevEx misto 0,2352 por dólar gasto, câmbi
 | **Base realista** | 2% | US$ 2 | US$ 0,047 | **39,4 mil** | **78,7 mil** | **196,8 mil** |
 | **Topo do mercado** | 4,5% | US$ 5 | US$ 0,265 | **7,0 mil** | **14,0 mil** | **35,0 mil** |
 
+> **Atualização (09/11/2026):** a decisão fixou 10% de gasto 18+ elegível (22,2% líquido). Com isso,
+> os DAUs sobem ~6%: BRL 10 mil exige ~41,8 mil DAU na base e ~7,4 mil no topo. Ver
+> [decisao-monetizacao.md](decisao-monetizacao.md).
+
 Leituras:
 
 1. O cenário "Negócio" do modelo (25 mil DAU, BRL 35,7 mil) **não exige escala de topo** — é um TD

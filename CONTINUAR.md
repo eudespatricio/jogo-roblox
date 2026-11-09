@@ -22,9 +22,11 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 - Conceito aprovado (GDD v1.1, decisões 1–5 fechadas).
 - Motor determinístico v2 provado em `sim/` (inteiro, 1.200 ticks, `mul32`/`add32`).
 - Tooling: Rokit + CLI/GUI, CI ativo (runs #1–#5 verdes), estação calibrada; ProfileStore
-  decidido, mas ainda não instalado.
+  vendorizado; wrapper/schema na P0.
 - Auditoria `context-recovery` concluída: 7 contradições resolvidas, **2 abertas (Q1/Q2)**.
 - Contexto residente instalado e dentro do teto.
+- Monetização decidida (base 2% × US$ 2; gate líquido US$ 0,005); ProfileStore vendorizado;
+  taxonomia de analytics v1 escrita.
 - **Nada de P0/P1 iniciado por decisão do diretor.**
 
 ---
@@ -55,7 +57,8 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | invariantes | **10/10** (`sim/invariants.luau`) |
-| contexto residente | ESTADO 66/80 · MAPA 47/60 · REJEITADOS 16/40 |
+| contexto residente | ESTADO 67/80 · MAPA 50/60 · REJEITADOS 16/40 |
+| monetização | base 2% × US$ 2 · topo 4,5% × US$ 5 · gate ARPDAU líquido US$ 0,005 |
 
 ---
 
@@ -80,13 +83,14 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 
 - Os TDs do topo examinados vendem **poder e sorte**; cosmético é complemento: torres 168–1.574 R$,
   passe 399–499, cosmético 55–360.
-- O modelo usa 4% de pagantes/mês × US$ 5/mês — ARPPU no p95 e pagantes acima da mediana; é cenário
-  de topo, não base. O relatório mede 3,8% que pagaram algo **em 12 meses**.
-- O gate ARPDAU US$ 0,02 não fecha: o cenário "Negócio" dá 0,0088 líquido (0,0375 bruto). Falta
-  definir se o gate é bruto ou líquido.
+- O modelo usava 4% × US$ 5 — cenário de topo. A base de planejamento agora é **2% × US$ 2**;
+  o relatório mede 3,8% que pagaram algo em 12 meses, não por mês.
+- Gate resolvido em 09/11/2026: **ARPDAU líquido ≥ US$ 0,005** (bruto ≈ 0,0225; ~BRL 20 mil/mês a
+  25 mil DAU). O "Negócio" (4,5% × US$ 5) passa com 0,0083 líquido.
 - Canais melhores: assinatura em moeda local (100% após o 1º mês), Roblox Plus (78–88% + 750 R$ por
   signup), regional pricing automático.
-- Preços do GDD seguem em aberto; nada foi decidido.
+- Preços do GDD seguem em aberto; a decisão de premissas/gate está em
+  [`decisao-monetizacao.md`](decisao-monetizacao.md).
 
 ---
 
@@ -96,7 +100,7 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 
 - Engenharia e design: **no caminho certo**. Produto e receita: **não provados**.
 - O cenário "Negócio" é TD de porte médio com **monetização de topo** — a combinação mais difícil.
-- Com premissas base, BRL 10 mil/mês exige ~39 mil DAU; BRL 50 mil, ~197 mil. Não é plano de lançamento.
+- Com premissas base (22,2% líquido), BRL 10 mil/mês exige ~42 mil DAU; BRL 50 mil, ~209 mil. Não é plano de lançamento.
 - Recomendação: **teste de produto de 3 semanas (US$ 300–500) antes da P0**, com critérios de kill
   definidos (entendimento, diversão, oferta, D1, CTR).
 - Não pivotar sem dados; não construir mais motor antes do teste.
@@ -118,8 +122,8 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 - **Calibração:** importada no Studio; o importador glTF do Studio perde a cor base (cinza) e
   espelha o rótulo de face única — cosmético, documentado em `art/README.md`; reimportar no Blender
   mostra tudo correto.
-- **Falta:** `pesde.toml` + ProfileStore (P0), primeiro asset real; Selene segue bloqueado
-  (parser não aceita `+=`), lint é `luau-lsp`.
+- **Falta:** wrapper/schema v1 do ProfileStore (P0), primeiro asset real; Selene segue bloqueado
+  (parser não aceita `+=`), lint é `luau-lsp`. ProfileStore vendorizado em `vendor/`.
 - **Pipeline 3D:** Blender (WSL) → glTF/FBX → Studio 3D Importer → `.rbxm` versionado (LFS) → Rojo.
 - **Atenção:** `.gitignore` ignora `*.rbxm`, com exceção em `assets/models`; shell não-login não acha
   `rojo`/`blender`/`git-lfs` — use `source scripts/env.sh`.
@@ -146,8 +150,8 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 **Depois de responder:** apagar `docs/auditoria/CONTRADICOES.md` e registrar a decisão no GDD
 (design) ou em `.context/REJEITADOS.md` (descarte).
 
-**Próximo passo sugerido (antes da P0):** fechar a taxonomia de analytics — o motor precisa emitir
-os eventos, e mudar depois custa retrabalho.
+**Próximo passo sugerido (antes da P0):** aprovar a taxonomia de analytics e implementá-la na P0
+(`docs/taxonomia-analytics.md`) — o motor precisa emitir os eventos, e mudar depois custa retrabalho.
 
 ---
 
@@ -166,6 +170,9 @@ os eventos, e mudar depois custa retrabalho.
 | `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo) e Q2 (grade vs slots) |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
 | `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P0 |
+| `docs/decisao-monetizacao.md` | premissas base/topo e gate ARPDAU |
+| `docs/taxonomia-analytics.md` | eventos, funil, métricas e sink |
+| `vendor/ProfileStore.luau` + `SOURCE.md` | ProfileStore oficial vendorizado (Apache-2.0) |
 | `docs/ferramentas.md` | toolchain auditado + pipeline Blender→Studio |
 | `docs/estacao-de-trabalho.md` | manual operacional da estação + doctor |
 | `sim/core.luau` · `sim/poc.luau` · `sim/invariants.luau` | motor, benchmark, oráculo |

@@ -9,11 +9,13 @@
 | `.context/REJEITADOS.md` | ideias descartadas e quando reabrem | antes de propor arquitetura |
 | `docs/gdd-muralha.md` | design: loop, drop-in, modos, economia, fases | decisão de produto |
 | `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
+| `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
 | `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo legado) e Q2 (grade vs slots) | **antes de decidir Q1/Q2** |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita | **antes de decidir preço/loja** |
+| `docs/decisao-monetizacao.md` | premissas base × topo, gate bruto vs líquido, correção do modelo | **antes de decidir preço/gate** |
 | `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas antes da P0 | **antes de autorizar P0** |
 | `docs/ferramentas.md` | auditoria do toolchain, pipeline Blender→Studio e orçamentos | **antes de produzir asset/código** |
 | `docs/estacao-de-trabalho.md` | manual operacional: inventário, doctor, reconstrução e troubleshooting | **ao montar/trocar de máquina** |
@@ -24,10 +26,11 @@
 | `sim/poc.luau` | benchmark e demo | medir performance/balanço |
 | `sim/invariants.luau` | oráculo executável (10 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
+| `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
 | `src/**` | protótipo legado de moedas (Rojo) | só como referência; não é o jogo |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
-| `default.project.json` | mapeamento Rojo (legado) | build do protótipo |
+| `default.project.json` | mapeamento Rojo (legado + vendor) | build do protótipo |
 | `scripts/` | env.sh, check.sh, doctor.sh, install-tools.sh | rodar/validar ambiente |
 | `.github/workflows/ci.yml` | CI: check + artefato do place | após push/PR |
 | `art/` | calibração Blender + pipeline 3D | produzir asset |

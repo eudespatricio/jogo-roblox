@@ -31,8 +31,9 @@ protótipo legado de moedas em `src/`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`, `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `sim/core.luau` (módulo) + `sim/poc.luau` (benchmark) + `sim/invariants.luau` (oráculo).
-- Tooling: Rokit + CLI/GUI; CI ativo; estação calibrada (doctor); ProfileStore decidido, ainda não
-  instalado.
+- Tooling: Rokit + CLI/GUI; CI ativo; estação calibrada (doctor); ProfileStore vendorizado
+  (wrapper/schema na P0).
+- Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005 — `docs/decisao-monetizacao.md`.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
 
 ## Não pronto
@@ -40,9 +41,9 @@ protótipo legado de moedas em `src/`.
 - P0 não iniciado (decisão do diretor).
 - `src/` ainda é o protótipo de moedas — legado, não arquitetura final.
 - Q1/Q2 aguardam decisão; evidência em `docs/pesquisa-grade-e-prototipo.md`.
-- Monetização: premissas de pagantes/ARPPU e gate de ARPDAU a reconciliar — `docs/pesquisa-monetizacao.md`.
 - Revisão de direção: teste de produto de 3 semanas antes da P0 — `docs/revisao-direcao.md`.
-- Ferramentas: estação completa (doctor), CI verde, `.luaurc` strict e calibração Blender; falta `pesde.toml` — `docs/estacao-de-trabalho.md`.
+- Analytics: taxonomia v1 escrita; instrumentação no motor é P0 — `docs/taxonomia-analytics.md`.
+- Ferramentas: estação completa (doctor), CI verde, `.luaurc` strict e calibração Blender; ProfileStore vendorizado; `pesde.toml` adiado — `docs/estacao-de-trabalho.md`.
 - Sem cena de Studio, sem UI, sem DataStore, sem monetização.
 
 ## Congelado
