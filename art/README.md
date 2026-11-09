@@ -52,6 +52,8 @@ Saídas: `art/calibration.blend`, `art/export/calibration.glb`, `art/export/cali
 > **cinza** — o `baseColorFactor` sem textura é ignorado — e o texto de face única pode aparecer
 > **espelhado**. Nada disso afeta a calibração de escala: o critério é o `Size` das peças e o sinal de
 > `Position.Z` da `SETA_FRENTE_TIP`. O glTF em si tem os 9 materiais com as cores corretas.
+> Reimportando o `.glb` no Blender, cores e texto aparecem corretos — a perda é só no importador
+> do Studio, não no export.
 
 ## O que ainda é manual
 
