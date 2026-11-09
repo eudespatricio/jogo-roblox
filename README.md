@@ -22,6 +22,10 @@ jogo-roblox/
   .tools/rojo.exe             binario local (fora do Git)
 ```
 
+**Iluminacao**: `Technology = ShadowMap` esta fixado no projeto. O padrao antigo (`Compatibility`)
+foi descontinuado e o Studio abre um aviso de migracao para `Voxel` quando a propriedade nao existe.
+Para qualidade maxima troque para `Future` em `default.project.json` — custa performance em celular.
+
 ## Como rodar
 
 1. Abra o **Roblox Studio** e crie um lugar vazio (`Baseplate` serve).
