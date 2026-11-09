@@ -220,7 +220,7 @@ PATH. Shell não-login não encontrava `rojo`/`blender`; isso era bug de reprodu
 - Artefato: `build/place.rbxl`.
 - Cache de `~/.rokit` e `~/.pesde`.
 - Publicação com `rbxcloud` fica para depois (exige API key/segredo e um lugar de destino).
-- **Runs #1 e #2 (09/11/2026): success** — [actions/runs/42703236515](https://github.com/eudespatricio/jogo-roblox/actions/runs/42703236515).
+- **Runs iniciais #1–#5 (09/11/2026): success** — [actions/runs/42703236515](https://github.com/eudespatricio/jogo-roblox/actions/runs/42703236515).
 
 ### 7.3 Tipos e lint
 

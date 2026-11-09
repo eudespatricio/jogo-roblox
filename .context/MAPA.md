@@ -28,6 +28,11 @@
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (legado) | build do protótipo |
+| `scripts/` | env.sh, check.sh, doctor.sh, install-tools.sh | rodar/validar ambiente |
+| `.github/workflows/ci.yml` | CI: check + artefato do place | após push/PR |
+| `art/` | calibração Blender + pipeline 3D | produzir asset |
+| `.luaurc` · `.vscode/settings.json` | strict + LSP/sourcemap | editar código |
+| `.gitattributes` | LFS de binários | commitar arte/áudio |
 
 ## Armadilhas conhecidas
 
@@ -38,3 +43,5 @@
 5. **`.tools/` não é versionado.** Reinstale com `rokit install` se sumir.
 6. **`bit32` só aceita `[0, 2^32)`.** Use `add32`/`mul32`, nunca `band` em double grande.
 7. **O PoC não é a arquitetura.** Ele usa 1 armadilha por lane; produção é grade 5×5.
+8. **Binários de arte são LFS.** `git add` sem `source scripts/env.sh` falha (git-lfs not found).
+9. **Selene 0.32 não entende `+=`.** Use `luau-lsp analyze`; Selene fora do CI.

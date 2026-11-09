@@ -31,7 +31,8 @@ protótipo legado de moedas em `src/`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`, `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `sim/core.luau` (módulo) + `sim/poc.luau` (benchmark) + `sim/invariants.luau` (oráculo).
-- Tooling: Rokit (4 ferramentas fixadas), GitHub Actions, ProfileStore.
+- Tooling: Rokit + CLI/GUI; CI ativo; estação calibrada (doctor); ProfileStore decidido, ainda não
+  instalado.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
 
 ## Não pronto
@@ -53,12 +54,13 @@ protótipo legado de moedas em `src/`.
 
 ## Próximo passo (quando liberado)
 
-P0: portar `sim/core.luau` para `src/shared/sim/`, criar CI, schema v1 com ProfileStore e cena 5×5.
+Teste de produto de 3 semanas (`docs/revisao-direcao.md` §7). Só depois: P0 (portar `sim/core.luau`
+para `src/shared/sim/`, schema v1 com ProfileStore e cena 5×5).
 
 ## Como verificar o estado em 1 minuto
 
-```powershell
-.\.tools\luau\luau.exe sim\invariants.luau                       # oráculo
-python skills\context-recovery\scan_repo.py --root . --ast .tools\luau\luau-ast.exe
-python skills\context-recovery\scan_repo.py --root . --check     # tetos do contexto
+```bash
+source scripts/env.sh
+bash scripts/doctor.sh     # estação completa
+bash scripts/check.sh      # build, StyLua, luau-lsp, invariantes, contexto
 ```

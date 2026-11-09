@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `main` @ `82fb9c3`.
+**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `main` @ `10bca70`.
 Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
@@ -21,7 +21,8 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 
 - Conceito aprovado (GDD v1.1, decisões 1–5 fechadas).
 - Motor determinístico v2 provado em `sim/` (inteiro, 1.200 ticks, `mul32`/`add32`).
-- Tooling fechado: Rokit, GitHub Actions, ProfileStore.
+- Tooling: Rokit + CLI/GUI, CI ativo (runs #1–#5 verdes), estação calibrada; ProfileStore
+  decidido, mas ainda não instalado.
 - Auditoria `context-recovery` concluída: 7 contradições resolvidas, **2 abertas (Q1/Q2)**.
 - Contexto residente instalado e dentro do teto.
 - **Nada de P0/P1 iniciado por decisão do diretor.**
@@ -30,7 +31,7 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 
 ## Migração para WSL (em andamento)
 
-- Repo publicado: **https://github.com/eudespatricio/jogo-roblox** (branch `main`, commit `0377925`).
+- Repo publicado: **https://github.com/eudespatricio/jogo-roblox** (branch `main`; HEAD atual no topo do git).
 - No WSL, clonar em `/home/eudespatricio/jogo-roblox` e rodar `bash scripts/setup-wsl.sh`
   (instala Rokit + ferramentas, roda invariantes e `--check`, imprime o IP).
 - **Rede (resolvido em 09/11/2026):** o Rojo roda no WSL escutando **`127.0.0.1:34872`** e o Windows
@@ -50,11 +51,11 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 |---|---|
 | tick / cap | 0,05 s · 1.200 ticks (60 s) |
 | estado | 100% inteiro (`MILLI = 1000`) |
-| custo por batalha | 1,28 ms (~780/s) |
+| custo por batalha | ~1,3 ms (~750/s) |
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | invariantes | **10/10** (`sim/invariants.luau`) |
-| contexto residente | ESTADO 64/80 · MAPA 39/60 · REJEITADOS 16/40 |
+| contexto residente | ESTADO 66/80 · MAPA 47/60 · REJEITADOS 16/40 |
 
 ---
 
@@ -106,19 +107,23 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
 
 `docs/ferramentas.md` audita o que existe e o que falta para qualidade de ponta:
 
-- **Existe:** Studio + Rojo plugin; Rokit (Rojo/StyLua/Selene/Luau); Blender 4.2 no WSL com Cycles
-  CUDA (RTX 3060); WSLg; Python 3.14.
+- **Existe:** Studio + Rojo plugin; Rokit (Rojo/StyLua/Selene/Luau); Blender 4.5.15 LTS
+  (`blender4.5`) e 4.2 (`blender`) com Cycles CUDA (RTX 3060); WSLg; Python 3.14.
 - **Instalado em 09/11/2026:** git-lfs 3.8.1, luau-lsp 1.70.1, Lune 0.11.1, Pesde 0.7.4,
-  rbxcloud 0.17.0, oxipng 10.2.1, Blender 4.5.15 LTS (`blender4.5`); ffmpeg 7.0.2 já existia.
-- **Pronto:** CI (`.github/workflows/ci.yml`) + `scripts/check.sh`; runs #1/#2 verdes; StyLua configurado
-  e `sim` formatado; `.luaurc` strict + `.vscode/settings.json`; `.gitattributes` LFS + exceção
-  `assets/models`; `scripts/doctor.sh`; `scripts/install-tools.sh`; calibração Blender 4.5
-  (`art/calibration.blend` + `calibration.glb/fbx`); Krita/Inkscape/Audacity instalados.
-- **Falta:** `pesde.toml` + ProfileStore; Selene bloqueado (parser não aceita `+=`); primeiro asset real.
-- **Pipeline 3D:** Blender (WSL) → glTF/FBX → Studio 3D Importer → `.rbxm` versionado (LFS) → Rojo;
-  calibrar units/axes uma vez (`art/calibration.blend`).
-- **Atenção:** `.gitignore` ignora `*.rbxm`; shell não-login não acha `rojo` nem `blender`.
-- **Kit mínimo:** ~1 dia para CI+LSP+LFS+Pesde; ~1 dia para 2D/áudio + estrutura `art/`.
+  rbxcloud 0.17.0, oxipng 10.2.1, Blender 4.5.15 LTS; ffmpeg 7.0.2; Krita/Inkscape/Audacity/
+  ImageMagick/pngquant/optipng/OBS.
+- **Pronto:** `scripts/doctor.sh` (estação completa), `scripts/check.sh` (gate), CI ativo
+  (CI ativo; primeiros runs verdes), `.luaurc` strict, `.vscode/settings.json`, LFS com exceção `assets/models`,
+  calibração `art/calibration.blend` + `calibration.glb/fbx`.
+- **Calibração:** importada no Studio; o importador glTF do Studio perde a cor base (cinza) e
+  espelha o rótulo de face única — cosmético, documentado em `art/README.md`; reimportar no Blender
+  mostra tudo correto.
+- **Falta:** `pesde.toml` + ProfileStore (P0), primeiro asset real; Selene segue bloqueado
+  (parser não aceita `+=`), lint é `luau-lsp`.
+- **Pipeline 3D:** Blender (WSL) → glTF/FBX → Studio 3D Importer → `.rbxm` versionado (LFS) → Rojo.
+- **Atenção:** `.gitignore` ignora `*.rbxm`, com exceção em `assets/models`; shell não-login não acha
+  `rojo`/`blender`/`git-lfs` — use `source scripts/env.sh`.
+- **Manual operacional:** `docs/estacao-de-trabalho.md`.
 
 ---
 
@@ -202,6 +207,7 @@ os eventos, e mudar depois custa retrabalho.
 Cole na nova sessão:
 
 > Você está no repositório `jogo-roblox` (projeto MURALHA, pré-P0). Leia `AGENTS.md`,
-> `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. Rode os comandos de verificação da
-> seção 7 do CONTINUAR (invariants, poc, --check). Não inicie P0. Comece fechando Q1 (src legado)
-> e Q2 (grade 5×5 com 25 células vs 5 slots), depois proponha a taxonomia de analytics.
+> `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
+> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não inicie P0/P1. A estação
+> está completa e o CI verde. O próximo passo é o teste de produto de 3 semanas de
+> `docs/revisao-direcao.md` §7; Q1 (src legado) e Q2 (grade 25 células vs 5 slots) seguem abertas.
