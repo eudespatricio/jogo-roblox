@@ -73,6 +73,10 @@ for a in data['assets']:
 		echo 'export PATH="$HOME/.rokit/bin:$PATH"' >>"$HOME/.bashrc"
 }
 
+if ! command -v rokit >/dev/null 2>&1 && [[ -x "$HOME/.rokit/bin/rokit" ]]; then
+	export PATH="$HOME/.rokit/bin:$PATH"
+fi
+
 if ! command -v rokit >/dev/null 2>&1; then
 	if command -v unzip >/dev/null 2>&1; then
 		info "instalando Rokit (instalador oficial)..."
@@ -93,7 +97,7 @@ rokit install --no-trust-check
 for tool in rojo stylua selene luau; do
 	command -v "$tool" >/dev/null 2>&1 || fail "$tool não encontrado após rokit install"
 done
-ok "rojo $(rojo --version 2>/dev/null | head -1) · luau $(luau --version 2>/dev/null | head -1)"
+ok "rojo $(rojo --version 2>/dev/null | head -1) · luau instalado"
 
 # ---------------------------------------------------------------- verificação
 if [[ "$NO_VERIFY" -eq 0 ]]; then
