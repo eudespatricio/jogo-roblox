@@ -239,5 +239,5 @@ Cole na nova sessão:
 > fechar a P0** — schema v1 + wrapper ProfileStore, contrato de analytics e teste de sessão no
 > Studio. Não inicie P1; não apague `src/**` (Q1 é P1, tag `legacy-coins`); não edite
 > `vendor/ProfileStore.luau`. Q1/Q2 fechadas; Q2 = 5×5, N=5, colocação livre. Motor em
-> `src/shared/sim/core.luau`; `sim/acceptance.luau` valida 1.000 seeds × 3. Commit `c7515d9`,
-> CI verde.
+> `src/shared/sim/core.luau`; `sim/acceptance.luau` valida 1.000 seeds × 3. Base: HEAD da `main`
+> (CI verde).
