@@ -206,6 +206,23 @@ Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 
 Regra: **cada fase só começa se a anterior bateu o critério.** Sem exceção.
 
+### Regras herdadas da pesquisa de jogadores
+
+Levantamento em [`pesquisa-jogadores.md`](pesquisa-jogadores.md) — 9 clusters de reclamação do
+gênero e pedidos explícitos dos jogadores. As que entram no design:
+
+1. nenhuma unidade obrigatória (mata o gatekeeping);
+2. poder só se ganha jogando; Robux só compra cosmético;
+3. solo é o modo principal, dupla é bônus;
+4. ninguém depende da presença de outro jogador para jogar;
+5. replay do passado, não gravação do futuro — o motor determinístico entrega o que o
+   Video Captures API não entrega (o clipe do que já aconteceu);
+6. toda derrota tem relatório de batalha explicando o porquê;
+7. balanceamento por temporada, com compensação;
+8. mobile é o alvo, não a versão reduzida;
+9. chat curado no MVP (quick chat), sem chat livre;
+10. nenhuma recompensa depende de sorte paga (política de paid random items).
+
 ---
 
 ## 11. Decisões fechadas (09/11/2026)
