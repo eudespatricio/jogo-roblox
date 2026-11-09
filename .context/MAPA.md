@@ -13,7 +13,7 @@
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
-| `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo legado) e Q2 (fechada) | **antes de decidir Q1** |
+| `docs/pesquisa-grade-e-prototipo.md` | evidência e decisão de Q1/Q2 (fechadas) | histórico |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita | **antes de decidir preço/loja** |
 | `docs/decisao-monetizacao.md` | premissas base × topo, gate bruto vs líquido, correção do modelo | **antes de decidir preço/gate** |
 | `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas antes da P1 | histórico da decisão |
@@ -27,7 +27,7 @@
 | `sim/invariants.luau` | oráculo executável (10 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
-| `src/**` | protótipo legado de moedas (Rojo) + `src/shared/sim/` (motor de produção) | legado: só referência; sim: produção |
+| `src/**` | protótipo legado de moedas (Rojo) + `src/shared/sim/` (motor de produção) | legado: apagar na P1 (Q1); sim: produção |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (legado + vendor + sim) | build do protótipo |

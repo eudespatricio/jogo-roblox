@@ -42,7 +42,8 @@ nenhuma cena, UI ou loja. O protótipo de moedas em `src/` segue legado.
 
 - P0 em andamento: faltam schema v1 + ProfileStore, contrato de analytics e teste de sessão no Studio.
 - `src/` ainda tem o protótipo de moedas; `src/shared/sim/` já é produção.
-- Q1 aguarda decisão (apagar o legado na P1); Q2 fechada — `docs/gdd-muralha.md` decisão 1.
+- Q1 e Q2 fechadas — Q2 no GDD (decisão 1), Q1 no `REJEITADOS`; o legado será apagado na P1
+  (tag + stub + CI), preservando `src/shared/sim/`.
 - Revisão de direção: teste de produto de 3 semanas antes da P1 — `docs/revisao-direcao.md`.
 - Analytics: taxonomia v1 escrita; instrumentação no motor é P0 — `docs/taxonomia-analytics.md`.
 - Ferramentas: estação completa (doctor), CI verde, `.luaurc` strict e calibração Blender; ProfileStore vendorizado; `pesde.toml` adiado — `docs/estacao-de-trabalho.md`.

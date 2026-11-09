@@ -1,9 +1,10 @@
-# Pesquisa — Q2 (grade de produção, fechada) e Q1 (protótipo legado)
+# Pesquisa — Q2 e Q1 (fechadas)
 
 > 09/11/2026 · encomenda do diretor: **decidir com dados e feedback, não com opinião**.
 > **Q2 fechada em 09/11/2026:** 5×5 com **N=5 armadilhas ativas** e colocação livre nas 25 células;
-> registro no [GDD](gdd-muralha.md) (decisão 1). **Q1 continua aberta** em
-> [`auditoria/CONTRADICOES.md`](auditoria/CONTRADICOES.md); aqui está a evidência e a leitura dela.
+> registro no [GDD](gdd-muralha.md) (decisão 1).
+> **Q1 fechada em 09/11/2026:** apagar o legado de moedas na P1, preservando `src/shared/sim/`;
+> tag `legacy-coins` + stub de 10 linhas + `rojo build` no CI; registro em `.context/REJEITADOS.md`.
 > O experimento da §5 vira o fallback de playtest, não um pré-requisito.
 >
 > Níveis: **A** = oficial/primário (Roblox, dados de plataforma) · **B** = comunidade estruturada
@@ -199,6 +200,10 @@ prova o pipeline em cada commit. O valor de teste do protótipo é substituível
 com `rojo build` no CI, e registrar na spec a única lição aproveitável (validação de distância no
 servidor, que já existe no GDD/spec). *Confiança média-alta.* A opção (b) só se justifica se o
 protótipo for **de fato usado** como cena de teste nos próximos 30 dias — não há evidência de uso.
+
+**Decisão (09/11/2026):** (a) — apagar na P1, preservando `src/shared/sim/`, com tag `legacy-coins`,
+stub de 10 linhas e `rojo build` no CI. Reabre se o protótipo for usado como harness em 30 dias ou se
+o stub não construir.
 
 ---
 

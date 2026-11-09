@@ -24,7 +24,7 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
   `mul32`/`add32`).
 - Tooling: Rokit + CLI/GUI, CI ativo (runs #1–#5 verdes), estação calibrada; ProfileStore
   vendorizado; wrapper/schema na P0.
-- Auditoria `context-recovery` concluída: 7 contradições resolvidas; **Q2 fechada**, **Q1 aberta**.
+- Auditoria `context-recovery` concluída: 7 contradições resolvidas; **Q1 e Q2 fechadas**.
 - Contexto residente instalado e dentro do teto.
 - Monetização decidida (base 2% × US$ 2; gate líquido US$ 0,005); ProfileStore vendorizado;
   taxonomia de analytics v1 escrita.
@@ -60,24 +60,24 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | P0 acceptance | 1.000 seeds × 3 · 1.000 hashes · 64,9% defensor · 1,5s/1.000 |
 | invariantes | **10/10** (`sim/invariants.luau`) |
-| contexto residente | ESTADO 67/80 · MAPA 50/60 · REJEITADOS 16/40 |
+| contexto residente | ESTADO 70/80 · MAPA 51/60 · REJEITADOS 17/40 |
 | monetização | base 2% × US$ 2 · topo 4,5% × US$ 5 · gate ARPDAU líquido US$ 0,005 |
 | Q2 | 5×5, N=5 ativas, colocação livre (09/11/2026) |
+| Q1 | apagar o legado na P1, preservando `src/shared/sim/` (09/11/2026) |
 
 ---
 
-## Pesquisa de apoio a Q2 (fechada) e Q1 (aberta)
+## Pesquisa de apoio a Q1/Q2 (fechadas)
 
 `docs/pesquisa-grade-e-prototipo.md` levanta a evidência para as duas perguntas:
 
 - **Q2 (fechada em 09/11/2026):** 5×5 com **N=5 armadilhas ativas** e colocação livre → C(25,5) =
   53.130 layouts; 25 simultâneas seria fora da curva. O A/B de 20–30 jogadores (§5) vira fallback
   de playtest, não pré-requisito.
-- **Q1:** o protótipo tem 442 linhas, 0% de sobreposição com a Muralha e embute o DataStore caseiro
-  já rejeitado; `rojo build` funciona com um stub de 10 linhas (8,6 KB vs 440 B). A evidência
-  favorece apagar na P1 com tag + stub + CI.
+- **Q1 (fechada em 09/11/2026):** apagar o legado de moedas na P1, preservando `src/shared/sim/`,
+  com tag `legacy-coins`, stub de 10 linhas e `rojo build` no CI.
 
-Q2 foi decidida em 09/11/2026; Q1 continua em `docs/auditoria/CONTRADICOES.md`.
+Q1 e Q2 foram decididas em 09/11/2026; nenhuma pergunta aberta.
 
 ---
 
@@ -135,21 +135,15 @@ Q2 foi decidida em 09/11/2026; Q1 continua em `docs/auditoria/CONTRADICOES.md`.
 
 ---
 
-## A decisão que a próxima sessão precisa fechar: Q1
+## Decisões fechadas: Q1 e Q2
 
-### Q1 — protótipo de moedas em `src/**`
+| # | Decisão | Registro |
+|---|---|---|
+| **Q2** | Grade 5×5, **N=5 armadilhas ativas**, colocação livre nas 25 células | GDD, decisão 1 |
+| **Q1** | **Apagar o legado de moedas na P1**, preservando `src/shared/sim/`; tag `legacy-coins` + stub de 10 linhas + `rojo build` no CI | `.context/REJEITADOS.md` |
 
-| Opção | Efeito |
-|---|---|
-| **(a) apagar na P1** (recomendado) | remove ambiguidade; histórico fica no git |
-| (b) manter como cena de teste | preserva pipeline Rojo, mas confunde "o que é o jogo" |
-
-**Q2 fechada em 09/11/2026:** grade 5×5, **N=5 armadilhas ativas**, colocação livre nas 25 células
-(GDD decisão 1). O modelo de 5 slots (1 por lane) fica como fallback de playtest, não como
-arquitetura de produção.
-
-**Depois de responder Q1:** apagar `docs/auditoria/CONTRADICOES.md` e registrar a decisão no GDD
-(design) ou em `.context/REJEITADOS.md` (descarte).
+Q1 e Q2 foram fechadas em 09/11/2026. `docs/auditoria/CONTRADICOES.md` foi apagado. A remoção do
+legado é P1 — não foi executada agora.
 
 **Próximo passo:** concluir a P0 — schema v1 + ProfileStore, contrato de analytics e teste de
 sessão no Studio. A taxonomia v1 está em `docs/taxonomia-analytics.md`; o teste de 3 semanas
@@ -168,8 +162,7 @@ continua antes da P1.
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras |
 | `docs/tese-produto-e-economia.md` + `docs/modelo-financeiro.xlsx` | economia unitária |
 | `docs/referencias-tower-defense.md` | jogos/vídeos para estudar |
-| `docs/auditoria/CONTRADICOES.md` | **temporário**: 7 resolvidas + Q2 fechada + Q1 |
-| `docs/pesquisa-grade-e-prototipo.md` | evidência de Q1 (protótipo) e Q2 (grade vs slots) |
+| `docs/pesquisa-grade-e-prototipo.md` | evidência e decisão de Q1/Q2 (fechadas) |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
 | `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P0 |
 | `docs/decisao-monetizacao.md` | premissas base/topo e gate ARPDAU |
@@ -219,5 +212,5 @@ Cole na nova sessão:
 > `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
 > `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não inicie P1. A P0 já tem o
 > motor portado e o `sim/acceptance.luau` verde; faltam schema/ProfileStore, contrato de analytics
-> e teste no Studio. O teste de produto de 3 semanas continua antes da P1. Q1 segue aberta; Q2
-> fechada (5×5, N=5 ativas).
+> e teste no Studio. O teste de produto de 3 semanas continua antes da P1. Q1 e Q2 estão fechadas:
+> Q2 = 5×5 com N=5 ativas; Q1 = apagar o legado na P1, preservando `src/shared/sim/`.
