@@ -64,9 +64,10 @@ python skills\context-recovery\scan_repo.py --root . --check
 Versões fixadas em [`rokit.toml`](rokit.toml): Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746.
 `rokit install` reproduz o ambiente; `.tools/` não é versionado.
 
-Auditoria completa (o que existe, o que falta e o pipeline Blender→Studio):
-[`docs/ferramentas.md`](docs/ferramentas.md). Ferramentas CLI extras (luau-lsp, Lune, Pesde,
-rbxcloud, git-lfs, oxipng, Blender 4.5) já estão instaladas em `~/.local/bin`.
+Auditoria completa: [`docs/ferramentas.md`](docs/ferramentas.md). Manual da máquina (inventário,
+doctor, reconstrução e troubleshooting): [`docs/estacao-de-trabalho.md`](docs/estacao-de-trabalho.md).
+Ferramentas CLI extras (luau-lsp, Lune, Pesde, rbxcloud, git-lfs, oxipng, Blender 4.5) estão em
+`~/.local/bin`; `bash scripts/doctor.sh` confere tudo.
 
 ## Publicar no GitHub
 

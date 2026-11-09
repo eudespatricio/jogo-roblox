@@ -1,5 +1,5 @@
 -- Testa o comportamento de bit32 com doubles fora da faixa e a exatidao do FNV atual.
-local function mul32(a, b)
+local function mul32(a: number, b: number): number
 	a = bit32.band(a, 0xFFFFFFFF)
 	b = bit32.band(b, 0xFFFFFFFF)
 	local a0 = bit32.band(a, 0xFFFF)
@@ -44,15 +44,15 @@ print("\n== seed * 2654435761 ==")
 for _, seed in ipairs({ 42, 123456789, 4000000000 }) do
 	local prod = seed * 2654435761
 	local viaBand = bit32.band(prod, 0xFFFFFFFF)
-	local exato = mul32(seed, 2654435761)
+	local exatoLoop = mul32(seed, 2654435761)
 	print(
 		string.format(
 			"  seed=%-12d prod=%.3e  band=%d  mul32=%d  iguais=%s",
 			seed,
 			prod,
 			viaBand,
-			exato,
-			tostring(viaBand == exato)
+			exatoLoop,
+			tostring(viaBand == exatoLoop)
 		)
 	)
 end

@@ -2,7 +2,7 @@
 
 > Objetivo: responder "o que falta para entregar qualidade de ponta?" com o que **existe de fato**
 > na máquina, não com uma lista de desejos. O que é ferramenta, o que é processo e o que é armadilha
-> está separado de propósito.
+> está separado de propósito. **Manual operacional:** [`estacao-de-trabalho.md`](estacao-de-trabalho.md).
 
 ---
 
@@ -17,10 +17,10 @@
 | Scripts | **Lune 0.11.1** · **Pesde 0.7.4** · **rbxcloud 0.17.0** | ok, em `~/.local/bin` |
 | Áudio/vídeo | **ffmpeg 7.0.2 static** (já existia) | ok |
 | Imagem | **oxipng 10.2.1** | ok |
-| GPU | RTX 3060 Laptop 6 GB · **Cycles lista CUDA** | ok (falta render de teste em GPU) |
+| GPU | RTX 3060 Laptop 6 GB · **Cycles lista CUDA** | ok (render de teste em GPU pendente) |
 | WSL | Ubuntu 26.04 · WSL 3.0.3 · WSLg (`DISPLAY=:0`) | ok |
-| Git | git + GitHub (repo em `main`) + **git-lfs 3.8.1** | ok; falta configurar `.gitattributes` |
-| Formatação/lint | StyLua **sem `stylua.toml`** e com drift; Selene **sem `selene.toml`** | pendente |
+| Git | git + GitHub (repo em `main`) + **git-lfs 3.8.1** | ok; `.gitattributes` LFS configurado |
+| Formatação/lint | StyLua 2.6 com `stylua.toml` e `sim` formatado; Selene **bloqueado** (parser sem `+=`) | parcial |
 | Python | 3.14.4 (WSL) | ok |
 
 Teste feito agora, com o Blender do WSL:
@@ -44,16 +44,14 @@ O 4.5.15 LTS já está instalado no WSL como `blender4.5`; o `blender` antigo co
 
 | # | Lacuna | Por que importa | Ferramenta | Custo |
 |---|---|---|---|---|
-| 1 | **Testes de integração no Studio** | o CI atual é headless Linux; nada valida DataStore/UI/Studio | teste manual no Studio + telemetria | 0 |
-| 2 | **`.luaurc` strict + settings do editor** | luau-lsp e sourcemap já entram no check; falta o modo strict do projeto | `.luaurc` + `.vscode/settings.json` | 0 |
-| 3 | **Primeiro asset real sob LFS** | `.gitattributes` cobre blend/gltf/png/wav/rbxm e `.gitignore` abre exceção em `assets/models` | criar o primeiro asset e commitar | 0 |
-| 4 | **`pesde.toml` + ProfileStore** | Pesde instalado; falta inicializar o projeto e fixar a lib | `pesde init` + `pesde add` | 0 |
-| 5 | **Pipeline de asset** (pastas, calibração, export) | hoje não há como levar Blender → Rojo de forma repetível | Blender + Studio 3D Importer + LFS | 0 |
-| 6 | **2D/UI** | ícones, HUD, thumbnails, paleta | Krita + Inkscape + Figma | 0 |
-| 7 | **Áudio/vídeo** | SFX, música, trailer, thumbnail animada | Audacity + FFmpeg + OBS | 0 |
-| 8 | **Observabilidade** | D1/ARPDAU/erros sem telemetria não existem | AnalyticsService + schema próprio (GameAnalytics opcional) | 0 |
-| 9 | **Publicação** | build → place sem clicar no Studio | rbxcloud 0.17.0 (Open Cloud) | 0 |
-| 10 | **Performance/QA** | 60 fps em Android fraco não se adivinha | MicroProfiler + ScriptProfiler + device emulation | 0 |
+| 1 | **Testes de integração no Studio** | o CI é headless Linux; nada valida DataStore/UI/Studio | teste manual + telemetria | 0 |
+| 2 | **Primeiro asset real** (além da calibração) | a calibração prova escala/eixo; falta uma armadilha de verdade no pipeline | Blender → glb → Studio → `.rbxm` | 0 |
+| 3 | **`pesde.toml` + ProfileStore** | Pesde instalado; falta inicializar e fixar a lib | `pesde init` + `pesde add` | 0 |
+| 4 | **Style guide 2D/UI + HUD** | Krita/Inkscape instalados; falta paleta/tipografia/9-slice | Figma + Krita | 0 |
+| 5 | **Primeiro SFX/trilha + mixagem** | Audacity/FFmpeg instalados; falta o som existir | Audacity + Freesound (licença) | 0 |
+| 6 | **Observabilidade** | D1/ARPDAU/erros sem schema de eventos não existem | AnalyticsService + schema próprio | 0 |
+| 7 | **Publicação Open Cloud** | build → place sem clicar no Studio | rbxcloud + API key | 0 |
+| 8 | **Performance/QA em device fraco** | 60 fps não se adivinha | MicroProfiler + ScriptProfiler + device | 0 |
 
 ### 2.1 Instalado em 09/11/2026 (sem sudo)
 
@@ -222,7 +220,7 @@ PATH. Shell não-login não encontrava `rojo`/`blender`; isso era bug de reprodu
 - Artefato: `build/place.rbxl`.
 - Cache de `~/.rokit` e `~/.pesde`.
 - Publicação com `rbxcloud` fica para depois (exige API key/segredo e um lugar de destino).
-- **Run #1 (09/11/2026): success** — [actions/runs/42703236515](https://github.com/eudespatricio/jogo-roblox/actions/runs/42703236515).
+- **Runs #1 e #2 (09/11/2026): success** — [actions/runs/42703236515](https://github.com/eudespatricio/jogo-roblox/actions/runs/42703236515).
 
 ### 7.3 Tipos e lint
 

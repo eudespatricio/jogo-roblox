@@ -16,6 +16,7 @@
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita | **antes de decidir preço/loja** |
 | `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas antes da P0 | **antes de autorizar P0** |
 | `docs/ferramentas.md` | auditoria do toolchain, pipeline Blender→Studio e orçamentos | **antes de produzir asset/código** |
+| `docs/estacao-de-trabalho.md` | manual operacional: inventário, doctor, reconstrução e troubleshooting | **ao montar/trocar de máquina** |
 | `docs/referencias-tower-defense.md` | jogos e vídeos de referência | antes de decidir game feel |
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |

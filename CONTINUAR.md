@@ -110,10 +110,11 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
   CUDA (RTX 3060); WSLg; Python 3.14.
 - **Instalado em 09/11/2026:** git-lfs 3.8.1, luau-lsp 1.70.1, Lune 0.11.1, Pesde 0.7.4,
   rbxcloud 0.17.0, oxipng 10.2.1, Blender 4.5.15 LTS (`blender4.5`); ffmpeg 7.0.2 já existia.
-- **Pronto:** CI (`.github/workflows/ci.yml`) + `scripts/check.sh`; run #1 verde (09/11/2026); StyLua configurado e `sim`
-  formatado; `.gitattributes` LFS + exceção `assets/models`; Krita/Inkscape/Audacity instalados.
-- **Falta:** `.luaurc` strict + settings do editor; `pesde.toml` + ProfileStore; Selene bloqueado
-  (parser não aceita `+=`); pipeline de asset (calibração/export).
+- **Pronto:** CI (`.github/workflows/ci.yml`) + `scripts/check.sh`; runs #1/#2 verdes; StyLua configurado
+  e `sim` formatado; `.luaurc` strict + `.vscode/settings.json`; `.gitattributes` LFS + exceção
+  `assets/models`; `scripts/doctor.sh`; `scripts/install-tools.sh`; calibração Blender 4.5
+  (`art/calibration.blend` + `calibration.glb/fbx`); Krita/Inkscape/Audacity instalados.
+- **Falta:** `pesde.toml` + ProfileStore; Selene bloqueado (parser não aceita `+=`); primeiro asset real.
 - **Pipeline 3D:** Blender (WSL) → glTF/FBX → Studio 3D Importer → `.rbxm` versionado (LFS) → Rojo;
   calibrar units/axes uma vez (`art/calibration.blend`).
 - **Atenção:** `.gitignore` ignora `*.rbxm`; shell não-login não acha `rojo` nem `blender`.
@@ -161,6 +162,7 @@ os eventos, e mudar depois custa retrabalho.
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
 | `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P0 |
 | `docs/ferramentas.md` | toolchain auditado + pipeline Blender→Studio |
+| `docs/estacao-de-trabalho.md` | manual operacional da estação + doctor |
 | `sim/core.luau` · `sim/poc.luau` · `sim/invariants.luau` | motor, benchmark, oráculo |
 | `.context/ESTADO|MAPA|REJEITADOS.md` | contexto residente com teto |
 | `skills/context-recovery/` | protocolo de auditoria + scanner + templates |

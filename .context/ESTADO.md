@@ -22,7 +22,7 @@ protótipo legado de moedas em `src/`.
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | invariantes | 10/10 passando (`sim/invariants.luau`) |
-| docs / código / testes | 11 docs · 10 arquivos · 2 oráculos |
+| docs / código / testes | 12 docs · 10 arquivos · 2 oráculos |
 
 ## Pronto
 
@@ -41,7 +41,7 @@ protótipo legado de moedas em `src/`.
 - Q1/Q2 aguardam decisão; evidência em `docs/pesquisa-grade-e-prototipo.md`.
 - Monetização: premissas de pagantes/ARPPU e gate de ARPDAU a reconciliar — `docs/pesquisa-monetizacao.md`.
 - Revisão de direção: teste de produto de 3 semanas antes da P0 — `docs/revisao-direcao.md`.
-- Ferramentas: CLI/GUI instaladas; CI + check prontos (run #1 verde); faltam `.luaurc`, `pesde.toml` e pipeline de asset — `docs/ferramentas.md`.
+- Ferramentas: estação completa (doctor), CI verde, `.luaurc` strict e calibração Blender; falta `pesde.toml` — `docs/estacao-de-trabalho.md`.
 - Sem cena de Studio, sem UI, sem DataStore, sem monetização.
 
 ## Congelado
