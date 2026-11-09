@@ -28,15 +28,21 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 
 ---
 
-## Migração para WSL (pendente)
+## Migração para WSL (em andamento)
 
-- Repo canônico passa a ser o **GitHub**; no WSL, clonar em `/home/eudespatricio/jogo-roblox`.
-- Depois do clone: `bash scripts/setup-wsl.sh` (instala Rokit + ferramentas, roda invariantes e
-  `--check`, imprime o IP do WSL).
-- **Bloqueio conhecido:** o firewall do Windows impede o Studio de alcançar o `localhost` do WSL.
-  Liberar TCP 34872 como admin (comando no script) ou usar Rojo no Windows via UNC
-  (`\\wsl.localhost\Ubuntu\home\eudespatricio\jogo-roblox`) — build funciona, watch ao vivo não
-  confirmado.
+- Repo publicado: **https://github.com/eudespatricio/jogo-roblox** (branch `main`, commit `0377925`).
+- No WSL, clonar em `/home/eudespatricio/jogo-roblox` e rodar `bash scripts/setup-wsl.sh`
+  (instala Rokit + ferramentas, roda invariantes e `--check`, imprime o IP).
+- **Bloqueio de rede (medido em 09/11/2026):** a regra clássica do Windows Firewall
+  (`New-NetFirewallRule`) **não libera** o tráfego da VM do WSL. Ping funciona, TCP 34872 não.
+  O firewall efetivo é o **Hyper-V firewall**. Liberar com (admin):
+  ```powershell
+  New-NetFirewallHyperVRule -Name "WSL-Rojo-34872" -DisplayName "WSL Rojo 34872" `
+    -Direction Inbound -VMCreatorId "{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}" `
+    -Protocol TCP -LocalPorts 34872 -Action Allow
+  ```
+  Alternativas: `[wsl2] networkingMode=mirrored` em `%USERPROFILE%\.wslconfig` + `wsl --shutdown`
+  (reinicia o WSL), ou rodar o Rojo **no Windows** lendo o projeto via UNC.
 - `.tools/` é binário Windows e não é versionado; no WSL as ferramentas vêm do `rokit install`.
 - Se a pasta no WSL estiver vazia, o repo ainda não foi clonado — clone antes de ler o resto.
 
