@@ -40,7 +40,7 @@ Roteiro, segundo a segundo:
 | 0,5s | horda corre; som de impacto; terra tremendo | tensão sem texto |
 | 1,5s | **um único botão gigante**: "DEFENDER" | zero escolha = zero paralisia |
 | 3,0s | ao apertar: salva de catapulta, slow motion de 0,3s, corpos voando | dopamina física |
-| 5,0s | onda limpa; "+3 moedas · armadilha desbloqueada"; UI de build entra | recompensa antes do menu |
+| 5,0s | onda limpa; "+3 de ouro · armadilha desbloqueada"; UI de build entra | recompensa antes do menu |
 | 8,0s | segunda onda, mais fraca; jogador coloca a primeira armadilha | primeira decisão com contexto |
 | 25s | vitória; tela de build completa | jogador já entendeu o loop |
 
@@ -132,7 +132,7 @@ Detalhes técnicos e limitações em [`spec-motor-deterministico.md`](spec-motor
 **Blueprint:** receita de layout; pode ser compartilhado com amigo (viral).
 
 ### Curva alvo (primeiros 7 dias)
-- Dia 1: 3 raids, desbloqueia 2ª armadilha.
+- Dia 1: primeira sessão rende 3 raids e desbloqueia a 2ª armadilha.
 - Dia 2: primeira defesa bem-sucedida (replay), desbloqueia comandante.
 - Dia 3: primeira derrota dura → motivo para upgrade.
 - Dia 7: liga semanal + primeira meta de blueprint raro.
@@ -215,7 +215,7 @@ Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 |---|---|---|---|
 | P0 | 1 | motor determinístico + testes headless | 1.000 batalhas com hash estável |
 | P1 | 2–3 | drop-in, build, raid, replay | 70% de primeira vitória < 60s |
-| P2 | 4–6 | meta, energia, liga, telemetria | D1 ≥ 15% (300–500 jogadores) |
+| P2 | 4–6 | meta, liga, telemetria, loja | D1 ≥ 15% (300–500 jogadores) |
 | P3 | 7–9 | dupla assíncrona, loja, localização | pagantes ≥ 2% |
 | P4 | 10–12 | Invasão Global, temporada, candidatura Standout | D7 ≥ 3% e D30 ≥ 0,8% |
 

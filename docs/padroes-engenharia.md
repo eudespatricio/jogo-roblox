@@ -117,7 +117,7 @@ exatamente o tipo de bug que gera review negativo.
 type Profile = {
     schemaVersion: number,   -- migração obrigatória ao subir
     wall: { gridWidth: number, cells: { [number]: Cell } },
-    coins: number,
+    gold: number,
     league: { points: number, season: number },
     cosmetics: { [string]: boolean },
     stats: { raids: number, defenses: number, lastSeenAt: number },

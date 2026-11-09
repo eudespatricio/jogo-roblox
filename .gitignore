@@ -11,3 +11,7 @@ build/
 # ferramentas
 sourcemap.json
 .serena/
+
+# artefatos gerados pela radiografia (regeneraveis)
+.context/radiografia.md
+.context/radiografia.json

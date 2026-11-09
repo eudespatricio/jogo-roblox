@@ -1,79 +1,71 @@
-# jogo-roblox
+# jogo-roblox — MURALHA
 
-Projeto Roblox com **Rojo**: o codigo vive em arquivos `.luau` aqui no disco, versionados no Git,
-e o Rojo sincroniza com o Roblox Studio. Nada de editar script dentro do Studio e perder historico.
+Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
+outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-## Estado atual
+> **Status: pré-P0.** Conceito e motor provados; **nenhum código de produção do jogo ainda**.
+> O `src/` atual é o protótipo legado de coleta de moedas, usado só para validar o pipeline Rojo.
 
-MVP jogavel: um mapa com 30 moedas girando, HUD de contagem, `leaderstats` e persistencia em
-`DataStore` (as moedas continuam com o jogador depois de sair).
+## Comece por aqui
+
+| Arquivo | Para quê |
+|---|---|
+| [`.context/ESTADO.md`](.context/ESTADO.md) | fase, números atuais, o que está congelado |
+| [`.context/MAPA.md`](.context/MAPA.md) | onde cada responsabilidade mora + armadilhas |
+| [`.context/REJEITADOS.md`](.context/REJEITADOS.md) | o que já foi descartado e quando reabre |
+| [`AGENTS.md`](AGENTS.md) | regras para humanos e agentes |
+
+## Documentação de produto e engenharia
+
+- [`docs/gdd-muralha.md`](docs/gdd-muralha.md) — loop, drop-in de 5s, modos, economia, fases.
+- [`docs/spec-motor-deterministico.md`](docs/spec-motor-deterministico.md) — motor, replay, clipe, anti-cheat.
+- [`docs/padroes-engenharia.md`](docs/padroes-engenharia.md) — regras com fonte oficial.
+- [`docs/pesquisa-jogadores.md`](docs/pesquisa-jogadores.md) — reclamações, pedidos, 10 regras.
+- [`docs/pesquisa-tendencias-2026.md`](docs/pesquisa-tendencias-2026.md) — mercado e gêneros.
+- [`docs/tese-produto-e-economia.md`](docs/tese-produto-e-economia.md) + [`docs/modelo-financeiro.xlsx`](docs/modelo-financeiro.xlsx) — economia unitária.
+
+## Estrutura
 
 ```
-jogo-roblox/
-  default.project.json        mapeia pastas do disco -> servicos do Roblox
-  rokit.toml                  versao do Rojo
-  src/
-    shared/Config.luau        numeros e cores do jogo
-    server/Main.server.luau   ponto de entrada do servidor
-    server/DataService.luau   load/save no DataStore
-    server/CoinService.luau   spawn, giro e coleta das moedas
-    client/Hud.client.luau    HUD que le o leaderstats
-    world/*.model.json        baseplate e spawn
-  .tools/rojo.exe             binario local (fora do Git)
+sim/                 motor determinístico (Luau puro, roda sem Roblox)
+  core.luau          RNG, mul32/add32, Battle
+  poc.luau           benchmark e demo
+  invariants.luau    oráculo executável (10 checagens)
+  audit-*.luau       evidência das auditorias de aritmética
+src/                 protótipo legado de moedas (Rojo) — não é o jogo
+docs/                GDD, spec, pesquisas, economia
+.context/            contexto residente (teto de linhas)
+skills/context-recovery/  protocolo de auditoria + scanner + templates
 ```
 
-**Iluminacao**: `Technology = ShadowMap` esta fixado no projeto. O padrao antigo (`Compatibility`)
-foi descontinuado e o Studio abre um aviso de migracao para `Voxel` quando a propriedade nao existe.
-Para qualidade maxima troque para `Future` em `default.project.json` — custa performance em celular.
-
-## Como rodar
-
-1. Abra o **Roblox Studio** e crie um lugar vazio (`Baseplate` serve).
-2. No terminal, na pasta do projeto:
-
-   ```powershell
-   .\.tools\rojo.exe serve
-   ```
-
-3. No Studio: aba **Plugins** -> **Rojo** -> **Connect** (padrao `localhost:34872`).
-4. Aperte **Play** (F5). As moedas aparecem, o HUD conta e o save acontece ao sair.
-
-> O plugin do Rojo precisa estar instalado em `%LOCALAPPDATA%\Roblox\Plugins\Rojo.rbxm`.
-> Se o Studio ja estava aberto quando ele foi instalado, reinicie o Studio.
-
-Sem plugin? Gere um lugar pronto e abra o arquivo:
+## Comandos
 
 ```powershell
-.\.tools\rojo.exe build default.project.json -o build\jogo.rbxlx
+# oráculo do motor (falha o processo se uma regra quebrar)
+.\.tools\luau\luau.exe sim\invariants.luau
+
+# benchmark (determinismo, performance, balanço)
+.\.tools\luau\luau.exe sim\poc.luau
+
+# radiografia determinística do repositório
+python skills\context-recovery\scan_repo.py --root . --ast .tools\luau\luau-ast.exe
+
+# tetos do contexto residente
+python skills\context-recovery\scan_repo.py --root . --check
+
+# protótipo legado no Studio
+.\.tools\rojo.exe serve
 ```
 
-## Publicar
+## Tooling
 
-1. **File > Publish to Roblox** no Studio.
-2. Nome, descricao, icone e thumbnails.
-3. **Game Settings**: dispositivos suportados, genero, e deixe **privado** ate testar com amigos.
-4. Para monetizar: passes/produtos em `create.roblox.com`, e `MarketplaceService` no codigo.
+Versões fixadas em [`rokit.toml`](rokit.toml): Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746.
+`rokit install` reproduz o ambiente; `.tools/` não é versionado.
 
-## Solucao de problemas
+## Regras que não se negociam
 
-| Sintoma | Causa / correcao |
-|---|---|
-| Botao **Rojo** nao aparece no Studio | Plugin carrega na inicializacao: feche e reabra o Studio |
-| `Address already in use` ao rodar `serve` | Ja existe um servidor: feche o outro terminal ou use `--port 34873` |
-| Output: `[DataService] falhou apos 3 tentativas` | Ative **Game Settings > Security > Enable Studio Access to API Services** e publique o lugar; sem isso o jogo roda, mas nao salva |
-| Connect recusa | Confirme que o `serve` esta de pe (`http://localhost:34872`) e que o plugin e 7.x |
-| `.tools` sumiu | Rode de novo o setup ou instale global com `rokit install` |
-
-## Proximos passos (ordem sugerida)
-1. Trocar a moeda por uma mecanica central (ver "genero" abaixo).
-2. `ProfileStore` no lugar do DataService simples (session locking real).
-3. Loja com `MarketplaceService:PromptGamePassPurchase`.
-4. Tutorial/onboarding nos primeiros 30 segundos.
-5. Analytics + teste com 5 pessoas antes de divulgar.
-
-## Regras que valem desde o dia 1
-
-- Servidor manda, cliente pede. Nunca confie em valor vindo de `RemoteEvent`.
-- Todo texto de jogador passa por filtro (`TextChatService` / `TextService`).
-- `DataStore` sempre com `pcall` + retry: falha transitoria e normal.
-- Teste em **Start Server + 2 Players** desde cedo; bug de multiplayer so aparece ali.
+1. Servidor é a fonte da verdade; o cliente só manda intenção.
+2. Poder só se ganha jogando; Robux compra cosmético.
+3. Nenhuma unidade obrigatória (mata gatekeeping).
+4. Replay do passado, não gravação do futuro.
+5. Contexto residente tem teto; contradição vira teste, não markdown eterno.

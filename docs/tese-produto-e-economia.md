@@ -149,7 +149,7 @@ A linguagem traz o clique; a profundidade traz o dia 8.
 - **Fórmula:** TD (linguagem universal no Roblox) + estratégia assíncrona (profundidade).
 - **Loop:** você monta a muralha, as armadilhas e a onda de ataque; outros jogadores atacam sua
   muralha enquanto você está offline. Ao voltar, vê o relatório da batalha e ajusta.
-- **Sessão:** 3 cercos/dia de 5–8 min + ajustes de build.
+- **Sessão:** cercos livres de 5–8 min + 3 Grandes Saques/dia.
 - **Monetização:** passe de temporada, cosméticos de muralha, slots de esquadrão, "revanche".
 - **Por que encaixa:** sem avatar visível (qualifica 18+), câmera isométrica barata de produzir,
   clipe de 6s perfeito (muralha explodindo), retenção por timer/assíncrono.
@@ -204,10 +204,10 @@ O modo diário da Forja entra depois como camada de retenção, não no MVP. Esc
 
 ### MVP — 30 dias, um modo
 
-1. Muralha editável (grid 9×9), 6 armadilhas, 4 unidades.
+1. Muralha editável (grid 5×5, expansível a 7×5), 6 armadilhas, 4 unidades.
 2. Uma onda de ataque controlada por IA + "fantasma" de outro jogador (assíncrono).
 3. Relatório de batalha (o momento de "voltar amanhã").
-4. Loop de 3 cercos/dia com timer.
+4. Loop de cercos livres + 3 Grandes Saques/dia (sem timer).
 5. Tutorial de 25 segundos, sem texto (ícones + setas).
 6. Analytics desde o primeiro build: D1, sessão, bounce, funil de 60s/180s.
 

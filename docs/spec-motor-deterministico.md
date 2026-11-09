@@ -263,6 +263,10 @@ Arquivo: [`../sim/poc.luau`](../sim/poc.luau) — Luau puro, roda no CLI, sem Ro
 Modelo: 5 lanes, 5 armadilhas (uma por lane), 4 tipos de armadilha, 3 tipos de unidade,
 tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 
+> **Recorte consciente:** o PoC usa 1 armadilha por lane (5 no total) para provar o motor.
+> A spec de produção é grade **5×5 (25 células)**, com armadilhas por célula e 5 lanes de caminhada —
+> ou seja, várias armadilhas por lane. O PoC não é a arquitetura final; é a prova de determinismo.
+
 | Teste | Resultado (motor v2, inteiro) |
 |---|---|
 | Determinismo (seed 42, 3 execuções) | hash `668061367` idêntico nas três |
