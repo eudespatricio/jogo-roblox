@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `main` @ `10bca70`.
+**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `main` (sem hash fixo; veja `git log -1`).
 Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
