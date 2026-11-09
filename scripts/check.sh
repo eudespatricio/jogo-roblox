@@ -13,13 +13,16 @@ echo "== rojo build =="
 rojo build default.project.json -o build/place.rbxl
 
 echo "== stylua =="
-stylua --check sim
+stylua --check sim src/shared/sim
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim
+luau-lsp analyze --platform=standard sim src/shared/sim
 
 echo "== invariantes =="
 luau sim/invariants.luau
+
+echo "== P0 acceptance =="
+luau sim/acceptance.luau
 
 echo "== benchmark (poc) =="
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="

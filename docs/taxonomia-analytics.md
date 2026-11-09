@@ -75,7 +75,7 @@ O validador rejeita campo desconhecido, PII e string acima do limite.
 | `battle_divergence` | replay não bate o hash | `battle_id`, `expected_hash`, `actual_hash` |
 
 Regra: `battle_finished` é emitido **depois** do hash; o evento não pode alterar o resultado. O motor
-devolve um `BattleResult` imutável e o servidor emite — nada de sink dentro de `sim/core.luau`.
+devolve um `BattleResult` imutável e o servidor emite — nada de sink dentro de `src/shared/sim/core.luau`.
 
 ### 2.3 Economia e progressão
 
@@ -184,7 +184,7 @@ nada de texto livre; `PolicyService`/idade só como booleano.
 | `src/shared/analytics/AnalyticsTypes.luau` | enums, payloads tipados, `schema_version` |
 | `src/server/analytics/AnalyticsService.luau` | `emit`, sinks, lote, rate limit, idempotência |
 | `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII |
-| `sim/core.luau` | **não muda**; expõe `BattleResult` (seed, hash, winner, ticks, leaked, wall_hp) |
+| `src/shared/sim/core.luau` | **não muda**; expõe `BattleResult` (seed, hash, winner, ticks, leaked, wall_hp) |
 | CI | roda o contrato junto dos invariantes; hash 668061367 continua obrigatório |
 
 Teste de aceitação: 1.000 batalhas com hash estável **e** todos os eventos de batalha validados;

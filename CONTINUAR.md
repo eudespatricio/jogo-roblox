@@ -20,14 +20,16 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 ## Onde paramos
 
 - Conceito aprovado (GDD v1.1, decisões 1–5 fechadas).
-- Motor determinístico v2 provado em `sim/` (inteiro, 1.200 ticks, `mul32`/`add32`).
+- Motor determinístico v2 portado para `src/shared/sim/` e provado em `sim/` (inteiro, 1.200 ticks,
+  `mul32`/`add32`).
 - Tooling: Rokit + CLI/GUI, CI ativo (runs #1–#5 verdes), estação calibrada; ProfileStore
   vendorizado; wrapper/schema na P0.
 - Auditoria `context-recovery` concluída: 7 contradições resolvidas; **Q2 fechada**, **Q1 aberta**.
 - Contexto residente instalado e dentro do teto.
 - Monetização decidida (base 2% × US$ 2; gate líquido US$ 0,005); ProfileStore vendorizado;
   taxonomia de analytics v1 escrita.
-- **Nada de P0/P1 iniciado por decisão do diretor.**
+- **P0 em andamento:** port + `sim/acceptance.luau` verdes (1.000 seeds × 3, hash `668061367`).
+  **P1 não iniciada.**
 
 ---
 
@@ -56,6 +58,7 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 | custo por batalha | ~1,3 ms (~750/s) |
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
+| P0 acceptance | 1.000 seeds × 3 · 1.000 hashes · 64,9% defensor · 1,5s/1.000 |
 | invariantes | **10/10** (`sim/invariants.luau`) |
 | contexto residente | ESTADO 67/80 · MAPA 50/60 · REJEITADOS 16/40 |
 | monetização | base 2% × US$ 2 · topo 4,5% × US$ 5 · gate ARPDAU líquido US$ 0,005 |
@@ -148,8 +151,9 @@ arquitetura de produção.
 **Depois de responder Q1:** apagar `docs/auditoria/CONTRADICOES.md` e registrar a decisão no GDD
 (design) ou em `.context/REJEITADOS.md` (descarte).
 
-**Próximo passo sugerido:** iniciar a P0 no escopo do GDD (port + harness de 1.000 batalhas +
-contrato de analytics). A taxonomia v1 já está escrita em `docs/taxonomia-analytics.md`.
+**Próximo passo:** concluir a P0 — schema v1 + ProfileStore, contrato de analytics e teste de
+sessão no Studio. A taxonomia v1 está em `docs/taxonomia-analytics.md`; o teste de 3 semanas
+continua antes da P1.
 
 ---
 
@@ -173,7 +177,7 @@ contrato de analytics). A taxonomia v1 já está escrita em `docs/taxonomia-anal
 | `vendor/ProfileStore.luau` + `SOURCE.md` | ProfileStore oficial vendorizado (Apache-2.0) |
 | `docs/ferramentas.md` | toolchain auditado + pipeline Blender→Studio |
 | `docs/estacao-de-trabalho.md` | manual operacional da estação + doctor |
-| `sim/core.luau` · `sim/poc.luau` · `sim/invariants.luau` | motor, benchmark, oráculo |
+| `src/shared/sim/core.luau` · `sim/poc.luau` · `sim/invariants.luau` · `sim/acceptance.luau` | motor, benchmark, oráculo, P0 |
 | `.context/ESTADO|MAPA|REJEITADOS.md` | contexto residente com teto |
 | `skills/context-recovery/` | protocolo de auditoria + scanner + templates |
 
@@ -183,7 +187,7 @@ contrato de analytics). A taxonomia v1 já está escrita em `docs/taxonomia-anal
 
 1. **Não iniciar P0/P1 sem autorização explícita do diretor.**
 2. `src/**` é legado; não é base do jogo novo.
-3. Depois de editar `sim/core.luau`, rodar `sim/invariants.luau`.
+3. Depois de editar `src/shared/sim/core.luau`, rodar `sim/invariants.luau` e `sim/acceptance.luau`.
 4. Mudou a matemática → subir `simVersion` e registrar na spec.
 5. `bit32` só recebe `[0, 2^32)`: usar `add32`/`mul32`.
 6. Contexto residente tem teto (80/60/40); `--check` falha se estourar.
@@ -211,8 +215,9 @@ contrato de analytics). A taxonomia v1 já está escrita em `docs/taxonomia-anal
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (projeto MURALHA, pré-P0). Leia `AGENTS.md`,
+> Você está no repositório `jogo-roblox` (projeto MURALHA, P0 em andamento). Leia `AGENTS.md`,
 > `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
-> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não inicie P0/P1. A estação
-> está completa e o CI verde. O próximo passo é o teste de produto de 3 semanas de
-> `docs/revisao-direcao.md` §7; Q1 (src legado) segue aberta; Q2 (5×5, N=5 ativas) foi fechada.
+> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não inicie P1. A P0 já tem o
+> motor portado e o `sim/acceptance.luau` verde; faltam schema/ProfileStore, contrato de analytics
+> e teste no Studio. O teste de produto de 3 semanas continua antes da P1. Q1 segue aberta; Q2
+> fechada (5×5, N=5 ativas).

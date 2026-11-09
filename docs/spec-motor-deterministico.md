@@ -241,6 +241,8 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 3. **Performance:** 1.000 batalhas em < 5s no Luau CLI.
 4. **Fuzz:** placements aleatórios não quebram (sem NaN, sem loop infinito).
 5. **Regressão de versão:** `simVersion` antiga não é aceita em reward.
+6. **Aceitação P0:** `sim/acceptance.luau` roda 1.000 seeds × 3, exige hash/resultado idênticos e
+   1.000 hashes distintos; está no `check.sh` e no CI.
 
 ---
 
@@ -270,6 +272,10 @@ tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 > **Decisão de 09/11/2026 (Q2):** produção com **N=5 armadilhas ativas** e colocação livre nas 25
 > células; o PoC usa N=5, mas preso a 1 por lane. O port da P0 preserva a matemática e o hash; a
 > grade entra no schema e na cena.
+>
+> **Port P0 (09/11/2026):** o motor de produção mora em [`../src/shared/sim/core.luau`](../src/shared/sim/core.luau);
+> `sim/poc.luau`, `sim/invariants.luau` e `sim/acceptance.luau` são harnesses. O hash `668061367`
+> foi preservado.
 
 | Teste | Resultado (motor v2, inteiro) |
 |---|---|

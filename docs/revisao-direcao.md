@@ -126,7 +126,7 @@ Orçamento: **US$ 300–500** (ads + incentivo para playtesters). Nada de arte f
 
 ### Semana 1 — greybox jogável
 - 5 armadilhas, 1 raid, replay de 8s, 1 upgrade, 1 tela de resultado.
-- Reaproveitar `sim/core.luau` para a batalha; UI mínima.
+- Reaproveitar `src/shared/sim/core.luau` para a batalha; UI mínima.
 - 3 criativos: (a) "defenda sua muralha", (b) "ataque a muralha dos outros", (c) "veja o replay do
   ataque que você perdeu".
 - Meta: um jogador consegue jogar sem instrução em **≤ 60s**.

@@ -2,7 +2,7 @@
 -- Invariantes executaveis da Muralha (fase 3 do context-recovery).
 -- Roda no Luau CLI e falha o processo se qualquer regra de negocio for violada:
 --   luau sim/invariants.luau
-local Core = require("./core")
+local Core = require("../src/shared/sim/core")
 
 local failures = {}
 local checks = 0

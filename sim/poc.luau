@@ -1,7 +1,7 @@
 --!nonstrict
--- Demo/benchmark do nucleo deterministico (sim/core.luau).
+-- Demo/benchmark do nucleo deterministico (src/shared/sim/core.luau).
 -- Roda no Luau CLI:  luau sim/poc.luau
-local Core = require("./core")
+local Core = require("../src/shared/sim/core")
 local Battle = Core.Battle
 local RNG = Core.RNG
 local TUNING = Core.TUNING

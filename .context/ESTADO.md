@@ -9,8 +9,8 @@
 
 ## Fase
 
-**Pré-P0.** Nenhum código de produção do jogo. O que existe é o motor provado em `sim/` e o
-protótipo legado de moedas em `src/`.
+**P0 em andamento.** Motor determinístico portado para `src/shared/sim/` e aceito (1.000 seeds × 3);
+nenhuma cena, UI ou loja. O protótipo de moedas em `src/` segue legado.
 
 ## Números atuais (09/11/2026)
 
@@ -18,19 +18,21 @@ protótipo legado de moedas em `src/`.
 |---|---|
 | tick / cap | 0,05s · 1.200 ticks (60s) |
 | estado | 100% inteiro (MILLI = 1000) |
-| custo por batalha | 1,28 ms (~780 batalhas/s) |
+| custo por batalha | ~1,5 ms (~650 batalhas/s) |
 | determinismo | hash `668061367` (seed 42, 3 execuções) |
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
+| P0 acceptance | 1.000 seeds × 3 · 1.000 hashes · 64,9% defensor · 1,5s/1.000 |
 | invariantes | 10/10 passando (`sim/invariants.luau`) |
-| docs / código / testes | 12 docs · 10 arquivos · 2 oráculos |
+| docs / código / testes | 14 docs · 11 arquivos · 3 oráculos |
 
 ## Pronto
 
-- Conceito aprovado: `docs/gdd-muralha.md` v1.1 (decisões 1–5 fechadas).
+- Conceito aprovado: `docs/gdd-muralha.md` v1.1 (decisões 1–5 fechadas; Q2 incluída na decisão 1).
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`, `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
-- Motor: `sim/core.luau` (módulo) + `sim/poc.luau` (benchmark) + `sim/invariants.luau` (oráculo).
+- Motor: `src/shared/sim/core.luau` (produção) + `sim/poc.luau` (benchmark) + `sim/invariants.luau`
+  (oráculo) + `sim/acceptance.luau` (P0: 1.000 seeds × 3).
 - Tooling: Rokit + CLI/GUI; CI ativo; estação calibrada (doctor); ProfileStore vendorizado
   (wrapper/schema na P0).
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005 — `docs/decisao-monetizacao.md`.
@@ -38,11 +40,10 @@ protótipo legado de moedas em `src/`.
 
 ## Não pronto
 
-- P0 não iniciado (decisão do diretor).
-- `src/` ainda é o protótipo de moedas — legado, não arquitetura final.
-- Q1 aguarda decisão; Q2 fechada (5×5, N=5 ativas, colocação livre) — `docs/gdd-muralha.md` decisão 1.
-- P0 desbloqueada no escopo do GDD (port + harness + analytics); início de execução aguarda o diretor.
-- Revisão de direção: teste de produto de 3 semanas antes da P0 — `docs/revisao-direcao.md`.
+- P0 em andamento: faltam schema v1 + ProfileStore, contrato de analytics e teste de sessão no Studio.
+- `src/` ainda tem o protótipo de moedas; `src/shared/sim/` já é produção.
+- Q1 aguarda decisão (apagar o legado na P1); Q2 fechada — `docs/gdd-muralha.md` decisão 1.
+- Revisão de direção: teste de produto de 3 semanas antes da P1 — `docs/revisao-direcao.md`.
 - Analytics: taxonomia v1 escrita; instrumentação no motor é P0 — `docs/taxonomia-analytics.md`.
 - Ferramentas: estação completa (doctor), CI verde, `.luaurc` strict e calibração Blender; ProfileStore vendorizado; `pesde.toml` adiado — `docs/estacao-de-trabalho.md`.
 - Sem cena de Studio, sem UI, sem DataStore, sem loja implementada.
@@ -54,15 +55,15 @@ protótipo legado de moedas em `src/`.
 - Servidor autoritativo + replay por seed + `simVersion`.
 - Regras dos jogadores: nenhuma unidade obrigatória; poder só por gameplay; sem loot box.
 
-## Próximo passo (quando liberado)
+## Próximo passo
 
-Teste de produto de 3 semanas (`docs/revisao-direcao.md` §7). Só depois: P0 (portar `sim/core.luau`
-para `src/shared/sim/`, schema v1 com ProfileStore e cena 5×5).
+Concluir a P0: schema v1 + ProfileStore, contrato de analytics e teste de sessão no Studio. Em
+paralelo, o teste de produto de 3 semanas continua antes da P1.
 
 ## Como verificar o estado em 1 minuto
 
 ```bash
 source scripts/env.sh
 bash scripts/doctor.sh     # estação completa
-bash scripts/check.sh      # build, StyLua, luau-lsp, invariantes, contexto
+bash scripts/check.sh      # build, StyLua, luau-lsp, invariantes, P0 acceptance, contexto
 ```
