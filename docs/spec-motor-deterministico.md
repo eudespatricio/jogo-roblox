@@ -75,7 +75,9 @@ local function mul32(a, b)                        -- (a*b) mod 2^32 sem estourar
     a = band(a, 0xFFFFFFFF); b = band(b, 0xFFFFFFFF)
     local a0, a1 = band(a, 0xFFFF), rshift(a, 16)
     local b0, b1 = band(b, 0xFFFF), rshift(b, 16)
-    return band(a0 * b0 + (a0 * b1 + a1 * b0) * 65536, 0xFFFFFFFF)
+    -- 65536 * 2^16 = 2^32, então só os 16 bits baixos do termo cruzado importam
+    local mid = band(a0 * b1 + a1 * b0, 0xFFFF)
+    return add32(a0 * b0, mid * 65536)            -- nenhuma etapa passa de 2^32
 end
 
 function RNG:nextU32()
@@ -130,6 +132,34 @@ O cliente re-simula em 20 Hz e renderiza. Para os 8 segundos de vingança:
 4. compara `resultHash` com o do servidor; divergência = bug, não trapaça.
 
 **Custo:** ~40 bytes por batalha no DataStore + recomputação local. Nada de vídeo.
+
+### 5.1 "Gravar clipe": a lacuna da Video Captures API que a gente fecha
+
+A `CaptureService` só grava **para frente** (máx. 30s). O pedido mais repetido no DevForum é
+"grave os últimos 30 segundos". Como o nosso replay é uma re-simulação do passado, o fluxo fica:
+
+```
+1. jogador aperta "GRAVAR CLIPE" no replay de vingança
+2. CaptureService:StartVideoCaptureAsync(onReady)   -- começa a gravar a tela
+3. pré-roll de ~0,5s (a captura precisa "aquecer"; sem isso o começo se perde)
+4. toca a re-simulação de 8s em câmera lenta no ponto de ruptura
+5. CaptureService:StopVideoCapture()
+6. PromptSaveCapturesToGallery({videoCapture})      -- o jogador decide salvar
+```
+
+Cuidados (todos documentados pela Roblox):
+
+| Cuidado | Motivo |
+|---|---|
+| `StartVideoCaptureAsync` é assíncrono e pode falhar | checar `Enum.VideoCaptureStartedResult` e cair no fallback |
+| captura ainda não está em 100% dos usuários | fallback: replay in-game + "copiar ID da batalha" |
+| UI e nomes são removidos da captura | o replay não pode depender de HUD para fazer sentido |
+| voz não é gravada; parte da música é removida | não desenhar a experiência em cima de áudio licenciado |
+| 30s de limite | 8–12s de replay cabem com folga |
+| salvar é consentido pelo jogador | nunca publicar automaticamente |
+
+Isso transforma uma limitação da plataforma em feature de marketing: o clipe nasce **do que já
+aconteceu**, sem OBS e sem prever o futuro.
 
 ---
 
@@ -237,7 +267,7 @@ tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 |---|---|
 | Determinismo (seed 42, 3 execuções) | hash `668061367` idêntico nas três |
 | 500 seeds | 500 hashes distintos, 64,8% de vitória do defensor |
-| Performance | **1,38 ms por batalha** → 727 batalhas/s |
+| Performance | **1,28 ms por batalha** → 782 batalhas/s |
 | Invariantes inteiros | **todo o estado é inteiro** (nenhum fracionário em 100 batalhas) |
 | Fuzz (500 batalhas aleatórias) | sem NaN, sem loop infinito |
 | Curva de dificuldade | onda 50 → 96% · onda 70 → 64% · onda 90 → 49% |
@@ -282,5 +312,20 @@ servidor e o do celular. Todos os três desaparecem com aritmética inteira.
 5. Slow passou a ser temporal (20 ticks), não multiplicativo permanente — a versão anterior
    congelava a unidade para sempre e inflava a defesa.
 6. Teste de invariante: `CheckIntegers()` falha se qualquer valor do estado for fracionário.
+7. `mul32` endurecido: a versão anterior passava ~5,6×10^14 para `bit32.band`, fora da faixa
+   documentada (regra 3 violada por dentro). A nova forma reduz o termo cruzado a 16 bits antes de
+   deslocar: `mid = band(a0*b1 + a1*b0, 0xFFFF); add32(a0*b0, mid*65536)`. Nenhuma etapa passa de 2^32.
+
+### Evidência do ajuste de `mul32`
+
+| Teste | Resultado |
+|---|---|
+| 4 vetores conhecidos (0xFFFFFFFF², 2^31×2, 1×16777619, seed×42) | idênticos à referência exata |
+| 200.000 pares aleatórios vs. referência de limbs de 8 bits | **0 divergências** nas duas versões |
+| Hash da seed 42 antes/depois do ajuste | **668061367 em ambos** |
+
+Ou seja: o ajuste **não corrigiu um resultado errado** — corrigiu uma violação da própria regra de
+faixa, que poderia divergir em outra arquitetura. É endurecimento, não bugfix. Registrado assim para
+não inflar o histórico com um "bug" que não existiu.
 
 

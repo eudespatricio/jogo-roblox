@@ -26,8 +26,10 @@ local function mul32(a, b)
 	local a1 = bit32.rshift(a, 16)
 	local b0 = bit32.band(b, 0xFFFF)
 	local b1 = bit32.rshift(b, 16)
-	-- (a0 + a1*2^16)(b0 + b1*2^16) mod 2^32; termo a1*b1*2^32 cai fora
-	return bit32.band(a0 * b0 + (a0 * b1 + a1 * b0) * 65536, 0xFFFFFFFF)
+	-- (a0 + a1*2^16)(b0 + b1*2^16) mod 2^32; o termo a1*b1*2^32 cai fora.
+	-- mid so entra com 16 bits: 65536*2^16 = 2^32, entao os bits altos nao importam.
+	local mid = bit32.band(a0 * b1 + a1 * b0, 0xFFFF)
+	return add32(a0 * b0, mid * 65536) -- nenhuma etapa passa de 2^32
 end
 
 -- ---------------------------------------------------------------- RNG (uint32 puro)

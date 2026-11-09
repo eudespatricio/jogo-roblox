@@ -103,6 +103,20 @@ Uma muralha da IA com seed pública, igual para todos, uma tentativa por dia.
 Ranking por muralha restante + tempo. Recompensa: fragmento cosmético.
 Custo real: pipeline de seed + leaderboard + tela. **Não são 50 linhas** — 1 a 2 semanas.
 
+### 4.4 Clipe de Vingança (a lacuna da plataforma virando feature)
+
+A `CaptureService` da Roblox só grava **para frente** — o pedido mais repetido no DevForum é
+"grave os últimos 30 segundos". Nosso replay é re-simulação do passado, então:
+
+1. botão **GRAVAR CLIPE** aparece no replay de vingança;
+2. `StartVideoCaptureAsync()` começa a gravar a tela;
+3. pré-roll de ~0,5s (aquecimento da captura);
+4. replay de 8s em câmera lenta no momento da ruptura;
+5. `StopVideoCapture()` e `PromptSaveCapturesToGallery()` — o jogador decide salvar.
+
+É o único jeito de o jogador sair com o clipe **do que já aconteceu**, sem OBS e sem prever o futuro.
+Detalhes técnicos e limitações em [`spec-motor-deterministico.md`](spec-motor-deterministico.md#51-gravar-clipe).
+
 ---
 
 ## 5. Progressão e economia
@@ -168,6 +182,7 @@ bloqueando conteúdo — console/VR não suportam). Selo cosmético "verificado"
 | D7 | ≥ 3% | retenção |
 | Sessão média | ≥ 8 min | sessão |
 | Replay assistido | ≥ 50% dos retornos | telemetria interna |
+| Clipes salvos | ≥ 5 por 100 sessões | CaptureService + telemetria |
 | Pagantes | ≥ 2% | monetização |
 | ARPDAU | ≥ US$ 0,02 | monetização |
 

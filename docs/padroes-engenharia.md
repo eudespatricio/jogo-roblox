@@ -201,10 +201,55 @@ renderização no cliente — por isso pool de modelos, câmera fixa e LOD.
 
 ---
 
-## 8. Decisões de tooling ainda abertas
+## 8. Decisões de tooling — fechadas em 09/11/2026
 
-1. **Rokit ou Aftman?** Rokit é o sucessor; Aftman está em manutenção.
-2. **CI onde?** GitHub Actions roda `luau-analyze` + testes headless sem custo.
-3. **Analytics:** eventos próprios via DataStore ou serviço externo? MVP: próprios.
-4. **Session lock:** ProfileStore (mercado) ou implementação própria? Mercado, com auditoria.
-5. **Feature flags:** necessárias para testar variantes de drop-in sem republicar.
+| Decisão | Escolha | Evidência verificada |
+|---|---|---|
+| Gerenciador de binários | **Rokit** | repositório do Aftman está **arquivado** (`archived=true`, último push 2025-07-09); Rokit ativo (push 2026-09-27, release v1.2.0) e com compatibilidade drop-in com `aftman.toml`/`foreman.toml` |
+| CI | **GitHub Actions** | doc oficial: runners padrão em repositório **público são gratuitos** e não consomem a cota; em privado consomem a cota mensal do plano |
+| Session locking | **ProfileStore vendorizado + wrapper nosso** | ProfileStore é um ModuleScript único com session lock, `Mock` para teste, `Reconcile` para template e `VersionQuery` para rollback; a doc avisa que servidor pode crashar antes do save final e que `StartSessionAsync` pode retornar `nil` |
+
+### 8.1 Por que não escrever o session lock sozinho
+
+A documentação do ProfileStore cobre exatamente os casos que um `UpdateAsync` caseiro erra:
+
+- **hard crash sem `BindToClose`** → a sessão fica presa; o ProfileStore negocia a troca de dono
+  entre servidores em vez de esperar expirar;
+- **`StartSessionAsync` pode retornar `nil`** quando outro servidor pega a sessão no mesmo instante —
+  é preciso tratar (kick + rejoin) e não assumir que sempre funciona;
+- **`OnLastSave` pode nunca disparar** em crash de servidor (a própria doc avisa) — logo, nada de
+  lógica crítica dependendo desse evento;
+- **`EndSession()` é obrigatório**, senão o servidor acumula requests;
+- **`Profile.Mock`** permite testar o fluxo inteiro sem tocar em chave de produção.
+
+Wrapper nosso por cima: valida `schemaVersion`, migra, e só expõe `Profile.Data` tipado.
+
+### 8.2 Pipeline de CI (15–20s por push)
+
+```yaml
+name: ci
+on: [push, pull_request]
+jobs:
+  luau:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+      - run: stylua --check src sim
+      - run: selene src sim
+      - run: luau-analyze src/shared/sim
+      - run: luau sim/poc.luau
+```
+
+Observação honesta: `luau-analyze` roda limpo só no que **não** depende da API do Roblox
+(`src/shared/sim`). Módulos com `game:GetService` precisam do dump de tipos da Roblox e são
+analisados no Studio — não fingir que o CI cobre tudo.
+
+Versões fixadas em `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746 (todas
+conferidas nas releases oficiais em 09/11/2026).
+
+### 8.3 Ainda abertas
+
+1. **Analytics:** eventos próprios via DataStore no MVP; serviço externo só se doer.
+2. **Feature flags:** necessárias para testar variantes de drop-in sem republicar — provavelmente
+   um `Config` remoto via `DataStore` + cache local.

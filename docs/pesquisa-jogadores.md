@@ -54,6 +54,10 @@ Dados oficiais que sustentam o potencial de clipe (nível A): a Roblox reporta *
 screenshots** e **240 milhões de vídeos** capturados em poucas semanas após o lançamento da API,
 e **1 trilhão de views** de conteúdo Roblox no YouTube.
 
+**Como a Muralha fecha essa lacuna:** o replay é re-simulação do passado, então o botão "GRAVAR
+CLIPE" grava exatamente o que já aconteceu — o oposto da API da plataforma. Fluxo em
+[`gdd-muralha.md`](gdd-muralha.md) §4.4 e [`spec-motor-deterministico.md`](spec-motor-deterministico.md) §5.1.
+
 ---
 
 ## 3. O que isso significa para a Muralha — 10 regras não negociáveis

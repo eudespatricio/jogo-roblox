@@ -1,3 +1,6 @@
 # Fixa as versoes das ferramentas do projeto (rokit install)
 [tools]
-rojo = "7.7.1"
+rojo = "rojo-rbx/rojo@7.7.1"
+stylua = "JohnnyMorganz/StyLua@2.6.0"
+selene = "Kampfkarren/selene@0.32.0"
+luau = "luau-lang/luau@0.746"
