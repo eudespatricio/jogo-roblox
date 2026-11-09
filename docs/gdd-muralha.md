@@ -1,6 +1,6 @@
 # GDD — MURALHA 2.0
 
-Versão 0.1 · novembro/2026 · documento vivo
+Versão 1.0 · novembro/2026 · decisões fechadas em 09/11/2026
 Gênero: tower defense invertido + autobattler assíncrono + co-op de dupla
 Público: 13–34, com foco de monetização em 18+ verificado (DevEx US$ 0,54 / 100 R$)
 Plataforma: Roblox (mobile-first, PC parity)
@@ -63,10 +63,10 @@ LOGIN
   └─ Replay de vingança (8s, fast-forward da última defesa)
        ├─ "quebraram sua muralha" → CTA: VINGAR (ataca a muralha daquele jogador)
        └─ "seguraram"            → CTA: MELHORAR (upgrade no ponto mais danificado)
-  └─ 3 cercos do dia (energia)
+  └─ Cercos do dia (livres) + 3 Grandes Saques
        ├─ FASE DE BUILD   (2–4 min) posicionar armadilhas, escolher comandante, montar onda
        ├─ FASE DE RAID    (60–90s) simulação assistida 1x/4x contra muralha fantasma
-       └─ RESULTADO       ouro + XP + fragmento de blueprint
+       └─ RESULTADO       ouro + XP + fragmento de blueprint (Grande Saque)
   └─ Invasão Global do Dia (1 tentativa, mesma seed para todos)
   └─ Liga semanal (clã/dupla)
 ```
@@ -79,7 +79,7 @@ LOGIN
 | Build | 2–4 min | sessão média ≥ 8 min |
 | Raid assistida | 60–90s | tempo de sessão, clipe |
 | Sessão completa | 6–10 min | 1,56 sessões/dia de mercado |
-| Sessões/dia | 2–3 | timer de energia |
+| Cercos por dia | livres | **sem timer duro** (não corta sessão) |
 
 ---
 
@@ -137,7 +137,7 @@ velocidade), nunca por contagem — o cap de 60s trunca ondas acima de ~85 unida
 | Efeito de destruição | 99–249 | cosmético (clipe!) | não |
 | Comandante cosmético | 199–349 | visual + voz | não |
 | Slot de blueprint | 199 | conveniência (cap 10) | não |
-| Cerco extra | 25–50 | energia (cap 2/dia) | limite, não poder |
+| Grande Saque extra | 25–50 | 1 por dia, além dos 3 grátis | limite, não poder |
 
 Proibido: loot box, venda de dano/HP, odds escondidas, timer de ansiedade.
 O gatilho de conversão é **orgulho e clipe**, não frustração.
@@ -178,15 +178,16 @@ Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 ## 9. Escopo do MVP (30 dias) e não-objetivos
 
 **Entra:**
-- 1 muralha (grid 7×5), 5 armadilhas, 3 unidades inimigas, 1 comandante;
+- 1 muralha (grid **5×5**), 5 armadilhas, 3 unidades inimigas, 1 comandante;
 - drop-in de 5s;
-- 3 cercos/dia;
+- cercos livres + 3 Grandes Saques/dia;
 - raid assíncrona contra fantasma;
 - replay de defesa de 8s;
 - telemetria completa do funil.
 
 **Não entra:**
 - co-op em tempo real (só dupla assíncrona na fase 2);
+- grade 7×5 (entra no nível 5 da muralha);
 - clã, chat, UGC de blueprint;
 - segundo mapa, chefes, temporada paga;
 - física real de ragdoll no gameplay.
@@ -207,10 +208,16 @@ Regra: **cada fase só começa se a anterior bateu o critério.** Sem exceção.
 
 ---
 
-## 11. Decisões abertas (precisam de resposta antes do código)
+## 11. Decisões fechadas (09/11/2026)
 
-1. **Grade 7×5 ou 5×5?** 7×5 dá mais expressão; 5×5 é mais legível no celular.
-2. **Energia ou sem energia?** Energia controla economia e sessão, mas afasta 18+.
-3. **Derrota dói?** Perder a muralha destrói progresso permanente ou só a liga da semana?
-4. **Nome:** "Muralha" funciona em PT; em EN precisa de algo como *WALLBREAKER*.
-5. **Co-op já no MVP?** Custa ~2 semanas e adiciona risco de sincronização; retenção ganha.
+| # | Decisão | Consequência técnica |
+|---|---|---|
+| 1 | **Grade 5×5 no MVP**, expandindo para 7×5 no nível 5 da muralha | layouts salvos por índice de célula; expansão adiciona colunas à direita, células antigas mantêm coordenada; migração de save trivial |
+| 2 | **Cercos livres**, com **3 Grandes Saques/dia** (blueprints) | sem timer duro; economia controlada pelo loot, não pela porta |
+| 3 | **Derrota perde só pontos de liga** + muralha fumegando no login + conserto grátis | nunca destrói nível de armadilha; o gatilho é emocional, não punitivo |
+| 4 | **Nome localizado**: `A MURALHA` (PT-BR) · `WALLBREAKER` (EN) | título/descrição por locale no Creator Dashboard |
+| 5 | **Co-op na P3** | MVP 100% solo + fantasma assíncrono + replay de 8s |
+
+Ponto de atenção na decisão 1: a grade 5×5 fixa no código; a expansão é **dado**, não código novo
+(`gridWidth` no save). Se o jogador voltar de 7×5 para 5×5 (não previsto), células fora da grade
+ficam dormentes, não são apagadas.
