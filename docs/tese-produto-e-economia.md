@@ -262,3 +262,4 @@ O modo diário da Forja entra depois como camada de retenção, não no MVP. Esc
 - [GamesHub — Roblox's six 18+ games](https://www.gameshub.com/news/article/roblox-18-plus-games-drifters-bungie-co-founder-2885233/) (jun/2026)
 - [Newzoo — Top Roblox experiences of 2025](https://newzoo.com/articles/top-roblox-experiences-2025)
 - [4Gamer — RDC 2026: algoritmo e Brookhaven](https://www.4gamer.net/games/612/G061218/20261021046/)
+- [Pesquisa de monetização](pesquisa-monetizacao.md) (nov/2026) — preços, benchmarks e canais

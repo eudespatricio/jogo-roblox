@@ -19,8 +19,8 @@
 
 | # | Pergunta | Evidência | Opções |
 |---|---|---|---|
-| Q1 | O protótipo de moedas em `src/**` é descartado na P1? | `src/server/CoinService.luau` (172 linhas) não tem relação com a Muralha | (a) apagar na P1 · (b) manter como cena de teste de pipeline |
-| Q2 | A grade de produção é 5 colunas × 5 linhas com armadilhas **por célula**, e 5 lanes de caminhada (várias armadilhas por lane)? | spec §4 diz 5×5; PoC usa 1 por lane | (a) confirmar 25 células · (b) manter 5 slots (1 por lane) no MVP |
+| Q1 | O protótipo de moedas em `src/**` é descartado na P1? | `src/server/CoinService.luau` (172 linhas) não tem relação com a Muralha · evidência: [pesquisa §3](../pesquisa-grade-e-prototipo.md) | (a) apagar na P1 · (b) manter como cena de teste de pipeline |
+| Q2 | A grade de produção é 5 colunas × 5 linhas com armadilhas **por célula**, e 5 lanes de caminhada (várias armadilhas por lane)? | spec §4 diz 5×5; PoC usa 1 por lane · evidência: [pesquisa §2](../pesquisa-grade-e-prototipo.md) | (a) confirmar 25 células · (b) manter 5 slots (1 por lane) no MVP |
 
 ## Regra de saída
 
