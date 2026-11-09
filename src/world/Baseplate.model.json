@@ -1,0 +1,17 @@
+{
+  "className": "Part",
+  "properties": {
+    "Size": [256, 8, 256],
+    "Position": [0, -4, 0],
+    "Anchored": true,
+    "Locked": true,
+    "Color": [0.32, 0.47, 0.27],
+    "Material": "Grass",
+    "TopSurface": "Smooth",
+    "BottomSurface": "Smooth",
+    "LeftSurface": "Smooth",
+    "RightSurface": "Smooth",
+    "FrontSurface": "Smooth",
+    "BackSurface": "Smooth"
+  }
+}

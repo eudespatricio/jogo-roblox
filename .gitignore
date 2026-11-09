@@ -1,0 +1,13 @@
+# executaveis locais (baixados pelo setup)
+.tools/
+
+# artefatos de build
+build/
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# ferramentas
+sourcemap.json
+.serena/

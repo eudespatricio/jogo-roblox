@@ -1,0 +1,3 @@
+# Fixa as versoes das ferramentas do projeto (rokit install)
+[tools]
+rojo = "7.7.1"

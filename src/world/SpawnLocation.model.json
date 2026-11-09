@@ -1,0 +1,16 @@
+{
+  "className": "SpawnLocation",
+  "properties": {
+    "Size": [10, 1, 10],
+    "Position": [0, 0.5, 0],
+    "Anchored": true,
+    "Locked": true,
+    "Neutral": true,
+    "Duration": 0,
+    "AllowTeamChangeOnTouch": false,
+    "Color": [0.55, 0.55, 0.58],
+    "Material": "Concrete",
+    "TopSurface": "Smooth",
+    "BottomSurface": "Smooth"
+  }
+}
