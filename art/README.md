@@ -48,6 +48,11 @@ Saídas: `art/calibration.blend`, `art/export/calibration.glb`, `art/export/cali
 5. Salvar o modelo importado em `assets/models/<nome>.rbxm` (LFS). O Rojo mapeia
    `assets/models` para `ReplicatedStorage.Assets` quando o projeto de produção existir.
 
+> **Nota de importação (09/11/2026):** no importador glTF do Studio, os materiais podem chegar
+> **cinza** — o `baseColorFactor` sem textura é ignorado — e o texto de face única pode aparecer
+> **espelhado**. Nada disso afeta a calibração de escala: o critério é o `Size` das peças e o sinal de
+> `Position.Z` da `SETA_FRENTE_TIP`. O glTF em si tem os 9 materiais com as cores corretas.
+
 ## O que ainda é manual
 
 - Importar e salvar `.rbxm` no Studio (não há automação confiável para isso).
