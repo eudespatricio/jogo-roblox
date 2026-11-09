@@ -50,8 +50,17 @@ Sem plugin? Gere um lugar pronto e abra o arquivo:
 3. **Game Settings**: dispositivos suportados, genero, e deixe **privado** ate testar com amigos.
 4. Para monetizar: passes/produtos em `create.roblox.com`, e `MarketplaceService` no codigo.
 
-## Proximos passos (ordem sugerida)
+## Solucao de problemas
 
+| Sintoma | Causa / correcao |
+|---|---|
+| Botao **Rojo** nao aparece no Studio | Plugin carrega na inicializacao: feche e reabra o Studio |
+| `Address already in use` ao rodar `serve` | Ja existe um servidor: feche o outro terminal ou use `--port 34873` |
+| Output: `[DataService] falhou apos 3 tentativas` | Ative **Game Settings > Security > Enable Studio Access to API Services** e publique o lugar; sem isso o jogo roda, mas nao salva |
+| Connect recusa | Confirme que o `serve` esta de pe (`http://localhost:34872`) e que o plugin e 7.x |
+| `.tools` sumiu | Rode de novo o setup ou instale global com `rokit install` |
+
+## Proximos passos (ordem sugerida)
 1. Trocar a moeda por uma mecanica central (ver "genero" abaixo).
 2. `ProfileStore` no lugar do DataService simples (session locking real).
 3. Loja com `MarketplaceService:PromptGamePassPurchase`.
