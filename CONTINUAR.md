@@ -110,7 +110,7 @@ Nada foi decidido: Q1/Q2 continuam em `docs/auditoria/CONTRADICOES.md`.
   CUDA (RTX 3060); WSLg; Python 3.14.
 - **Instalado em 09/11/2026:** git-lfs 3.8.1, luau-lsp 1.70.1, Lune 0.11.1, Pesde 0.7.4,
   rbxcloud 0.17.0, oxipng 10.2.1, Blender 4.5.15 LTS (`blender4.5`); ffmpeg 7.0.2 já existia.
-- **Pronto:** CI (`.github/workflows/ci.yml`) + `scripts/check.sh`; StyLua configurado e `sim`
+- **Pronto:** CI (`.github/workflows/ci.yml`) + `scripts/check.sh`; run #1 verde (09/11/2026); StyLua configurado e `sim`
   formatado; `.gitattributes` LFS + exceção `assets/models`; Krita/Inkscape/Audacity instalados.
 - **Falta:** `.luaurc` strict + settings do editor; `pesde.toml` + ProfileStore; Selene bloqueado
   (parser não aceita `+=`); pipeline de asset (calibração/export).

@@ -1,5 +1,7 @@
 # jogo-roblox — MURALHA
 
+[![CI](https://github.com/eudespatricio/jogo-roblox/actions/workflows/ci.yml/badge.svg)](https://github.com/eudespatricio/jogo-roblox/actions/workflows/ci.yml)
+
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 

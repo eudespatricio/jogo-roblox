@@ -41,7 +41,7 @@ protótipo legado de moedas em `src/`.
 - Q1/Q2 aguardam decisão; evidência em `docs/pesquisa-grade-e-prototipo.md`.
 - Monetização: premissas de pagantes/ARPPU e gate de ARPDAU a reconciliar — `docs/pesquisa-monetizacao.md`.
 - Revisão de direção: teste de produto de 3 semanas antes da P0 — `docs/revisao-direcao.md`.
-- Ferramentas: CLI/GUI instaladas; CI + check prontos; faltam `.luaurc`, `pesde.toml` e pipeline de asset — `docs/ferramentas.md`.
+- Ferramentas: CLI/GUI instaladas; CI + check prontos (run #1 verde); faltam `.luaurc`, `pesde.toml` e pipeline de asset — `docs/ferramentas.md`.
 - Sem cena de Studio, sem UI, sem DataStore, sem monetização.
 
 ## Congelado

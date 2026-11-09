@@ -44,7 +44,7 @@ O 4.5.15 LTS já está instalado no WSL como `blender4.5`; o `blender` antigo co
 
 | # | Lacuna | Por que importa | Ferramenta | Custo |
 |---|---|---|---|---|
-| 1 | **Primeiro run do CI no GitHub** | workflow criado e check local verde; falta push/PR | GitHub Actions | 0 |
+| 1 | **Testes de integração no Studio** | o CI atual é headless Linux; nada valida DataStore/UI/Studio | teste manual no Studio + telemetria | 0 |
 | 2 | **`.luaurc` strict + settings do editor** | luau-lsp e sourcemap já entram no check; falta o modo strict do projeto | `.luaurc` + `.vscode/settings.json` | 0 |
 | 3 | **Primeiro asset real sob LFS** | `.gitattributes` cobre blend/gltf/png/wav/rbxm e `.gitignore` abre exceção em `assets/models` | criar o primeiro asset e commitar | 0 |
 | 4 | **`pesde.toml` + ProfileStore** | Pesde instalado; falta inicializar o projeto e fixar a lib | `pesde init` + `pesde add` | 0 |
@@ -222,6 +222,7 @@ PATH. Shell não-login não encontrava `rojo`/`blender`; isso era bug de reprodu
 - Artefato: `build/place.rbxl`.
 - Cache de `~/.rokit` e `~/.pesde`.
 - Publicação com `rbxcloud` fica para depois (exige API key/segredo e um lugar de destino).
+- **Run #1 (09/11/2026): success** — [actions/runs/42703236515](https://github.com/eudespatricio/jogo-roblox/actions/runs/42703236515).
 
 ### 7.3 Tipos e lint
 
