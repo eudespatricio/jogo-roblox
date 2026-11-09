@@ -5,7 +5,7 @@ Leia nesta ordem, antes de qualquer ação:
 1. `.context/ESTADO.md` — fase, números, o que está congelado.
 2. `.context/MAPA.md` — onde cada responsabilidade mora e as armadilhas.
 3. `.context/REJEITADOS.md` — o que já foi descartado (não reproponha sem "reabre se").
-4. `HANDOVER.md` — **se esta é uma sessão nova**: histórico, decisões e próximos passos.
+4. `CONTINUAR.md` — **se esta é uma sessão nova**: histórico, decisões e próximos passos.
 
 ## Regras duras
 
