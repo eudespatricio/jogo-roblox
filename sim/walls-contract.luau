@@ -181,6 +181,67 @@ check("perfil carregado e validado contra o catalogo", function()
 	assert(service ~= nil, "perfil valido recusado")
 end)
 
+check("toBattleWall valida, ordena e reproduz o hash", function()
+	local profile = ProfileSchema.template()
+	profile.wall.cells = {
+		r3c2 = { trap = "frost", level = 2 },
+		r1c5 = { trap = "oil", level = 1 },
+		r5c1 = { trap = "cannon", level = 3 },
+		r2c4 = { trap = "archer", level = 3 },
+		r1c1 = { trap = "archer", level = 1 },
+	}
+	local wall, err = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, 500)
+	assert(wall ~= nil, tostring(err))
+	assert(wall.hp == 500 and #wall.traps == 5, "hp/traps")
+	local order = {}
+	for index, trap in ipairs(wall.traps) do
+		order[index] = string.format("%s:%s:%d", trap.cell, trap.type, trap.level)
+	end
+	assert(
+		table.concat(order, ",")
+			== "r1c1:archer:1,r1c5:oil:1,r2c4:archer:3,r3c2:frost:2,r5c1:cannon:3",
+		"ordem: " .. table.concat(order, ",")
+	)
+
+	-- a ordem de insercao no perfil nao pode mudar o replay
+	local reversed = ProfileSchema.template()
+	for index = #wall.traps, 1, -1 do
+		local trap = wall.traps[index]
+		reversed.wall.cells[trap.cell] = { trap = trap.type, level = trap.level }
+	end
+	local reversedWall = assert(WallService.toBattleWall(reversed, ProfileSchema, TrapCatalog, 500))
+	local function hashOf(battleWall)
+		return Core.Battle
+			.new({
+				seed = 42,
+				simVersion = Core.SIM_VERSION,
+				wall = battleWall,
+				wave = { count = 70 },
+			})
+			:Run().hash
+	end
+	assert(hashOf(wall) == hashOf(reversedWall), "ordem de insercao mudou o hash")
+
+	-- perfil invalido nao chega ao motor
+	local unknown = ProfileSchema.template()
+	unknown.wall.cells.r1c1 = { trap = "tesla", level = 1 }
+	local invalid, invalidErr = WallService.toBattleWall(unknown, ProfileSchema, TrapCatalog, 500)
+	assert(invalid == nil and invalidErr ~= nil, "aceitou trap desconhecida")
+
+	local over = ProfileSchema.template()
+	for col = 1, 5 do
+		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+	end
+	over.wall.cells.r2c1 = { trap = "archer", level = 1 }
+	local tooMany, tooManyErr = WallService.toBattleWall(over, ProfileSchema, TrapCatalog, 500)
+	assert(tooMany == nil and tooManyErr ~= nil, "aceitou 6 ativas")
+
+	local highLevel = ProfileSchema.template()
+	highLevel.wall.cells.r1c1 = { trap = "archer", level = 4 }
+	local capped, cappedErr = WallService.toBattleWall(highLevel, ProfileSchema, TrapCatalog, 500)
+	assert(capped == nil and cappedErr ~= nil, "aceitou level acima do cap")
+end)
+
 check("place valido persiste celula, debita ouro e emite eventos", function()
 	local service, profile, emitted = newHarness()
 	seedGold(service, 500)

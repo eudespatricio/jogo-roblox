@@ -7,6 +7,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 source scripts/env.sh
 
+echo "== versoes (fonte x docs) =="
+VERSIONS="$(python3 scripts/check-versions.py --values)"
+read -r SCHEMA_VERSION CONTENT_VERSION SIM_VERSION SIM_HASH <<< "$VERSIONS"
+echo "  schema=$SCHEMA_VERSION content=$CONTENT_VERSION sim=$SIM_VERSION hash=$SIM_HASH"
+
 mkdir -p build
 
 echo "== rojo build =="
@@ -21,17 +26,20 @@ luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shar
 echo "== invariantes =="
 luau sim/invariants.luau
 
-echo "== acceptance (motor v2) =="
+echo "== acceptance (motor v$SIM_VERSION) =="
 luau sim/acceptance.luau
 
-echo "== contrato de perfil (schema v1 + sessao) =="
+echo "== contrato de perfil (schema v$SCHEMA_VERSION + sessao) =="
 luau sim/profile-contract.luau
 
 echo "== contrato de analytics =="
 luau sim/analytics-contract.luau
 
-echo "== contrato de muralha (S3) =="
+echo "== contrato de muralha (S3, content v$CONTENT_VERSION) =="
 luau sim/walls-contract.luau
+
+echo "== migracao neutra (kit GAP-010) =="
+luau tools/expansion-test/neutral-migration.luau
 
 echo "== benchmark (poc) =="
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="

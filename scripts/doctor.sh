@@ -69,6 +69,8 @@ file_check .luaurc .luaurc required
 file_check stylua.toml stylua.toml required
 file_check check.sh scripts/check.sh required
 file_check env.sh scripts/env.sh required
+file_check check-versions scripts/check-versions.py required
+file_check versoes docs/versoes.md required
 file_check vscode .vscode/settings.json optional
 if grep -q "filter=lfs" .gitattributes 2>/dev/null; then
 	printf "ok    %-12s %s\n" "lfs attrs" ".gitattributes tem filter=lfs"

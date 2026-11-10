@@ -52,6 +52,8 @@ export type Result = {
 	events: { EventSpec },
 }
 export type Snapshot = { gold: number, cells: { [string]: Cell } }
+export type BattleTrap = { cell: string, type: string, level: number }
+export type BattleWall = { hp: number, traps: { BattleTrap } }
 export type Controller = {
 	place: (trapId: string, cell: string) -> (Result?, string?),
 	remove: (cell: string) -> (Result?, string?),
@@ -175,6 +177,54 @@ function WallService.validateWall(
 		end
 	end
 	return true, nil
+end
+
+local function cellPosition(cell: string): (number, number)
+	local rowText, colText = string.match(cell, "^r(%d+)c(%d+)$")
+	if rowText == nil or colText == nil then
+		error("toBattleWall: celula invalida: " .. cell)
+	end
+	local row = tonumber(rowText)
+	local col = tonumber(colText)
+	if row == nil or col == nil then
+		error("toBattleWall: celula invalida: " .. cell)
+	end
+	return row, col
+end
+
+-- Converte a parede do perfil no `wall` do motor. Roda `validateWall` antes de qualquer
+-- conversao (falha fechado) e ordena por (linha, coluna): a ordem de insercao das cells no
+-- perfil nunca pode mudar o replay. Devolve nil + erro quando o perfil nao e valido.
+function WallService.toBattleWall(
+	profile: Profile,
+	schema: Schema,
+	catalog: Catalog,
+	hp: number
+): (BattleWall?, string?)
+	assert(type(hp) == "number" and hp > 0 and hp % 1 == 0, "toBattleWall: hp invalido")
+	local ok, err = WallService.validateWall(profile, schema, catalog)
+	if not ok then
+		return nil, err
+	end
+
+	local ordered: { { cell: string, row: number, col: number } } = {}
+	for cell in pairs(profile.wall.cells) do
+		local row, col = cellPosition(cell)
+		ordered[#ordered + 1] = { cell = cell, row = row, col = col }
+	end
+	table.sort(ordered, function(a, b)
+		if a.row ~= b.row then
+			return a.row < b.row
+		end
+		return a.col < b.col
+	end)
+
+	local traps: { BattleTrap } = {}
+	for _, item in ipairs(ordered) do
+		local cell = profile.wall.cells[item.cell]
+		traps[#traps + 1] = { cell = item.cell, type = cell.trap, level = cell.level }
+	end
+	return { hp = hp, traps = traps }
 end
 
 -- Cria o controlador de uma muralha. `profile` e o Profile.Data vivo: as operacoes mutam
