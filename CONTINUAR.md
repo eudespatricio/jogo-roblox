@@ -81,8 +81,10 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
   - `BuildGrid` cria as 25 células/muralha; `WallController.server` expõe snapshot/place/remove/upgrade
     via RemoteFunction, sempre validando no `WallService`.
   - `BuildClient` tem câmera isométrica fixa, UI 5×5, painel de armadilhas, **HUD de debug**
-    (`FPS n · T x.xs · UI x.xs · COLOCAR · ARQUEIRO`) e layout responsivo 375×812/720×1280;
-    `ProfileRegistry` compartilha a sessão entre `ProfileBoot` e `WallController`.
+    (`FPS n · T x.xs · UI x.xs · COLOCAR · ARQUEIRO`, com `dt` de parede do RenderStepped) e layout
+    responsivo 375×812/720×1280; `ProfileRegistry` compartilha a sessão com `WallController`.
+  - **Grant de QA** em `ProfileBoot`: `ServerStorage.QaStarterGold`/`QaLeaguePoints` (só Studio/Mock,
+    só perfil zerado) liberam o §5 sem Command Bar; log `[qa] grant gold=... liga=...`.
   - O scaffold logava cena/remotes, mas o `CellSize` em escala distorcia o grid e não havia número
     de FPS/UI; o QA headless corrigiu os dois. Falta o **QA humano** (logs/prints/FPS da §7 de
     `docs/teste-s4-studio.md`); o HUD mede `T`/`UI`, mas FPS/feel dependem do Studio.
@@ -298,6 +300,9 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 23. **HUD de debug transforma "feel" em número.** `UI x.xs` é o Play até a UI interativa e `FPS n`
     é a janela de 0,5 s; sem isso o critério de 30 s/45 FPS do QA vira achismo. O HUD não substitui
     o Studio: só mede.
+24. **`os.clock()` mede CPU time no Roblox.** O primeiro HUD usava `os.clock` para FPS/T/UI e o
+    print de 375×812 mostrou `FPS 15`/`UI 1.6s` distorcidos; o HUD agora usa o `dt` de parede do
+    `RenderStepped`, e o contrato prova 60/30 FPS. FPS real ainda depende do Studio com foco.
 
 ---
 

@@ -14,7 +14,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > `contentVersion`, `oil → tar`, 5º tipo `catapult`, `simVersion 3` e hash `2489780106` preservado;
 > GAP-001/002/003/010 fechados. **S4 em QA** com cena 5×5, UI de build, remotes e QA headless
 > (`GridLayout`/`BuildProtocol`/`BuildClientState`/`BuildHud`/`BuildLayout`); HUD de debug
-> (FPS/tempos), layout 375×812/720×1280 e contrato de build **14/14**; falta o QA humano de
+> (FPS/tempos), layout 375×812/720×1280, grant de QA e contrato de build **14/14**; falta o QA humano de
 > FPS/build/feel no Studio ([roteiro](docs/teste-s4-studio.md)). A S3.4 fechou o GAP-009 no Modo B
 > real (schema v2, 8/8). O teste de produto de 3 semanas
 > roda em paralelo ([plano da P1](docs/p1-plano.md)).

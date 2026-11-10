@@ -1,6 +1,6 @@
 # QA da S4 no Studio — cena 5×5 + build
 
-> **Status:** **QA headless executado em 10/11/2026**; **S4 ainda não validada em runtime**.
+> **Status:** **QA headless + evidência parcial 375×812 (10/11/2026)**; **S4 ainda não validada em runtime**.
 > HUD de debug, layout responsivo (375×812 e 720×1280) e contrato de build **14/14** estão no repo;
 > falta a evidência de Studio (itens **1–3** da §7). Este documento é o contrato de QA humano; o
 > agente não consegue medir FPS/feel sem Studio. Enquanto a §7 não estiver preenchida, a S4
@@ -19,7 +19,12 @@ Critérios do plano: [`p1-plano.md`](p1-plano.md) S4 — build ≤30 s; nenhuma 
 2. `rojo build default.project.json -o build/place.rbxl` (ou `rojo serve` + plugin).
 3. Abrir o lugar no Studio e dar Play. Para QA local, `ProfileStoreMock = true` (default do Studio)
    evita depender de DataStore; o schema v2 já foi provado no Modo B em 10/11/2026.
-4. Se for testar o fluxo real de perfil, `ServerStorage.ProfileSelfTest = true` é opcional e só roda
+4. Para o QA de **ações** (colocar/remover/upgrade e catapulta), defina antes do Play, em
+   `ServerStorage`, os atributos numéricos `QaStarterGold = 2000` e `QaLeaguePoints = 400`
+   (400 pontos = liga 5). O grant é **só Studio + Mock**, só em perfil zerado, e loga
+   `[qa] grant gold=... liga=...`. Sem ele, perfil novo nasce com `gold = 0` e todo `place` volta
+   `insufficient_gold`; a catapulta fica `trap_locked` até a liga 5.
+5. Se for testar o fluxo real de perfil, `ServerStorage.ProfileSelfTest = true` é opcional e só roda
    em Studio.
 
 ## 2. Logs esperados no servidor/cliente
@@ -30,6 +35,7 @@ Critérios do plano: [`p1-plano.md`](p1-plano.md) S4 — build ≤30 s; nenhuma 
 [build] cliente pronto em 1.2s
 [perfil] store=MuralhaProfile_v1 modo=Mock
 [perfil] carregado key=User_... schema=v2 content=v2 migrado=false
+[qa] grant gold=2000 liga=5 (Studio/Mock; QaStarterGold/QaLeaguePoints)
 ```
 
 `[build] cliente pronto em X s` é o mesmo número do HUD (`UI x.xs`): tempo do Play até o primeiro
@@ -62,7 +68,7 @@ erro no Output.
 
 ## 5. Ações (servidor autoritativo)
 
-Com um perfil novo (ou gold suficiente):
+Com o grant de QA da §1.4 (`QaStarterGold`/`QaLeaguePoints`) ou gold suficiente:
 
 - [ ] Colocar 5 armadilhas em células diferentes; a 6ª é recusada (`trap_limit`).
 - [ ] Colocar em célula ocupada é recusado (`cell_occupied`); célula inválida é recusada.
@@ -88,7 +94,7 @@ Com um perfil novo (ou gold suficiente):
 
 Colar no handoff/`CONTINUAR.md`:
 
-1. linhas `[build]`/`[perfil]`/`[selftest]` do Output (inclui `[build] cliente pronto em Xs`);
+1. linhas `[build]`/`[perfil]`/`[selftest]`/`[qa]` do Output (inclui `[build] cliente pronto em Xs`);
 2. print da cena + UI + HUD em **375×812** e **720×1280**;
 3. FPS medido (HUD) e tempo de `rojo build`/Play (HUD `UI x.xs`);
 4. lista de bugs encontrados (com célula/ação) e se foram corrigidos;
@@ -100,7 +106,10 @@ QA humano.
 ## 8. Correções que o agente pode fazer sem Studio (feitas em 10/11/2026)
 
 - **HUD de debug** em `BuildClient` (`src/shared/build/BuildHud.luau`): FPS, `T` desde o Play,
-  `UI` até o primeiro snapshot e modo/armadilha.
+  `UI` até o primeiro snapshot e modo/armadilha. Usa o `dt` do `RenderStepped` (tempo de parede);
+  `os.clock()` no Roblox mede CPU time e distorcia FPS/T/UI.
+- **Grant de QA** em `ProfileBoot` (`QaStarterGold`/`QaLeaguePoints`, só Studio/Mock) para o §5
+  rodar com perfil zerado; log `[qa] grant ...` no Output.
 - **Layout responsivo** em `src/shared/build/BuildLayout.luau`: grid quadrado por pixels (o
   `CellSize` em escala do scaffold distorcia as células), topo/HUD/grid/painel sem sobreposição em
   375×812 e 720×1280, fallback para landscape/tela pequena.
@@ -130,6 +139,20 @@ luau sim/build-contract.luau  # 14 checagens, 0 falhas
   `simVersion`/hash/schema/content.
 - `rojo build`: RC=0 (bem abaixo de 30 s nesta estação; medir de novo no QA).
 - CI: workflow `ci` no push da S4 (README tem o badge).
+- O grant de QA é runtime-only (`ProfileBoot`/Studio); o headless cobre protocolo/estado/HUD/layout.
 
 **O que ainda falta (humano):** itens **1–3** da §7 — logs, prints 375×812/720×1280 e FPS/build
 medidos. Sem isso a S4 fica em **correção**, e a próxima janela não pode iniciar S5.
+
+## 10. Evidência parcial — 375×812 (10/11/2026)
+
+Print do diretor no Studio (lugar `muralha-s4.rbxl`, `modo=Mock`):
+
+- topo `OURO 0` / `content v2 · liga 1`; HUD `FPS 15 · T 37.9s · UI 1.6s`; grid 5×5 quadrado, sem
+  sobreposição com topo/HUD/painel; `CATAPULTA` em `liga 5`; status `Recusado: insufficient_gold`.
+- Output: `[build] cena 5x5 pronta`, `[build] remotes prontos...`, `[perfil] carregado ...
+  schema=v2 content=v1 migrado=false`, `[perfil] conteudo migrado content=v2`,
+  `[perfil] datastore=NoAccess`, `[build] cliente pronto em 1.6s`.
+- Leitura: layout/HUD/estado OK; o perfil zerado bloqueou as ações (o grant da §1.4 cobre isso). Os
+  números `FPS/T/UI` são da versão antiga do HUD (`os.clock` = CPU time); re-medir com a versão de
+  `dt` de parede. **Falta:** 720×1280, FPS com foco e ações com grant. S4 continua **aberta**.

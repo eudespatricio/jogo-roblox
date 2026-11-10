@@ -255,30 +255,35 @@ check("intencao do cliente -> request -> WallService", function()
 	assert(removed.action == "remove" and profile.wall.cells.r3c3 == nil, "remove nao apagou")
 end)
 
-check("hud: fps, tempos e selecao", function()
-	local h = BuildHud.new(100)
-	assert(h.fps == 0 and h.uiSeconds == nil, "hud inicial")
-	assert(BuildHud.tick(h, 100) == 0, "dt 0 contou frame")
-	for i = 1, 60 do
-		BuildHud.tick(h, 100 + i / 60)
+check("hud: fps, tempos e selecao (dt de parede)", function()
+	local h = BuildHud.new()
+	assert(h.fps == 0 and h.uiSeconds == nil and h.elapsed == 0, "hud inicial")
+	assert(BuildHud.tick(h, 0) == 0, "dt 0 contou frame")
+	assert(BuildHud.tick(h, -1) == 0, "dt negativo contou frame")
+	for _ = 1, 60 do
+		BuildHud.tick(h, 1 / 60)
 	end
 	assert(h.fps == 60, "fps 60 medido: " .. tostring(h.fps))
+	assert(math.abs(h.elapsed - 1) < 0.001, "elapsed: " .. tostring(h.elapsed))
 
-	local h30 = BuildHud.new(0)
-	for i = 1, 30 do
-		BuildHud.tick(h30, i / 30)
+	local h30 = BuildHud.new()
+	for _ = 1, 30 do
+		BuildHud.tick(h30, 1 / 30)
 	end
 	assert(h30.fps == 30, "fps 30 medido: " .. tostring(h30.fps))
 
-	local ready = BuildHud.markReady(h30, 2.5)
-	assert(ready == 2.5, "uiSeconds: " .. tostring(ready))
-	assert(BuildHud.markReady(h30, 9) == 2.5, "uiSeconds reescrito")
+	local ready = BuildHud.new()
+	BuildHud.tick(ready, 2.5)
+	local uiSeconds = BuildHud.markReady(ready)
+	assert(uiSeconds == 2.5, "uiSeconds: " .. tostring(uiSeconds))
+	assert(BuildHud.markReady(ready) == 2.5, "uiSeconds reescrito")
 
-	local text = BuildHud.formatMetrics(h30, 2.5)
+	local text = BuildHud.formatMetrics(h30)
 	assert(string.find(text, "FPS 30", 1, true) ~= nil, text)
-	assert(string.find(text, "T 2.5s", 1, true) ~= nil, text)
-	assert(string.find(text, "UI 2.5s", 1, true) ~= nil, text)
-	local pending = BuildHud.formatMetrics(h, 100)
+	assert(string.find(text, "T 1.0s", 1, true) ~= nil, text)
+	local readyText = BuildHud.formatMetrics(ready)
+	assert(string.find(readyText, "UI 2.5s", 1, true) ~= nil, readyText)
+	local pending = BuildHud.formatMetrics(h)
 	assert(string.find(pending, "UI --", 1, true) ~= nil, pending)
 
 	assert(BuildHud.formatSelection("place", "ARQUEIRO") == "COLOCAR · ARQUEIRO", "selecao place")

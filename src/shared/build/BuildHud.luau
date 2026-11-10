@@ -1,56 +1,46 @@
 --!strict
--- HUD de debug da S4: FPS (janela de 0.5 s), tempo desde o Play e tempo ate a UI interativa.
--- Puro Luau: o BuildClient passa os.clock(); sim/build-contract.luau prova a matematica.
--- O HUD e de QA (S4 §6): "UI x.xs" e o numero do criterio "Play ate UI interativa <= 30 s".
+-- HUD de debug da S4: FPS, tempo desde o Play e tempo ate a UI interativa.
+-- Tempo de PAREDE: o RenderStepped entrega dt em segundos. Nao use os.clock() aqui — no Roblox
+-- ele mede CPU time (docs oficiais), entao FPS/T/UI sairiam distorcidos. Puro Luau: o BuildClient
+-- passa dt; sim/build-contract.luau prova a matematica.
 
 local BuildHud = {}
 
 BuildHud.FPS_WINDOW = 0.5
 
 export type Hud = {
-	startedAt: number,
-	lastAt: number,
 	frames: number,
 	window: number,
 	fps: number,
+	elapsed: number,
 	uiSeconds: number?,
 }
 
-local function round(value: number): number
-	return math.floor(value + 0.5)
+function BuildHud.new(): Hud
+	return { frames = 0, window = 0, fps = 0, elapsed = 0, uiSeconds = nil }
 end
 
-function BuildHud.new(now: number): Hud
-	assert(type(now) == "number" and now == now, "BuildHud.new: now invalido")
-	return { startedAt = now, lastAt = now, frames = 0, window = 0, fps = 0, uiSeconds = nil }
-end
-
--- Amostra um frame. `now` e absoluto (os.clock); dt <= 0 e ignorado (primeiro frame/pausa).
-function BuildHud.tick(hud: Hud, now: number): number
-	local dt = now - hud.lastAt
-	hud.lastAt = now
-	if dt <= 0 then
+-- Amostra um frame com o delta de parede (RenderStepped). dt <= 0 / NaN e ignorado.
+function BuildHud.tick(hud: Hud, dt: number): number
+	if type(dt) ~= "number" or dt ~= dt or dt <= 0 then
 		return hud.fps
 	end
+	hud.elapsed += dt
 	hud.frames += 1
 	hud.window += dt
 	if hud.window >= BuildHud.FPS_WINDOW then
-		hud.fps = round(hud.frames / hud.window)
+		hud.fps = math.floor(hud.frames / hud.window + 0.5)
 		hud.frames = 0
 		hud.window = 0
 	end
 	return hud.fps
 end
 
-function BuildHud.elapsed(hud: Hud, now: number): number
-	return math.max(0, now - hud.startedAt)
-end
-
 -- Marca o instante em que a UI ficou interativa (primeiro snapshot). Idempotente: o segundo
 -- snapshot nao reescreve o numero que o QA anota.
-function BuildHud.markReady(hud: Hud, now: number): number
+function BuildHud.markReady(hud: Hud): number
 	if hud.uiSeconds == nil then
-		hud.uiSeconds = BuildHud.elapsed(hud, now)
+		hud.uiSeconds = hud.elapsed
 	end
 	return hud.uiSeconds :: number
 end
@@ -63,7 +53,7 @@ local function formatSeconds(value: number?): string
 end
 
 -- "FPS 60 · T 12.3s · UI 2.1s"; antes do primeiro frame/snapshot vira "FPS --" / "UI --".
-function BuildHud.formatMetrics(hud: Hud, now: number): string
+function BuildHud.formatMetrics(hud: Hud): string
 	local fps = "FPS --"
 	if hud.fps > 0 then
 		fps = string.format("FPS %d", hud.fps)
@@ -71,7 +61,7 @@ function BuildHud.formatMetrics(hud: Hud, now: number): string
 	return string.format(
 		"%s · T %s · UI %s",
 		fps,
-		formatSeconds(BuildHud.elapsed(hud, now)),
+		formatSeconds(hud.elapsed),
 		formatSeconds(hud.uiSeconds)
 	)
 end

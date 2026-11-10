@@ -221,6 +221,36 @@ local function maybeSelfTest(player: Player, key: string)
 	task.spawn(runSelfTest, player, key)
 end
 
+-- Grant de QA da S4 (somente Studio + Mock): ServerStorage.QaStarterGold/QaLeaguePoints
+-- preenchem um perfil zerado para testar colocar/remover/upgrade e a catapulta (liga 5).
+-- Nao roda fora do Studio, nao roda em DataStore real e nunca sobrescreve perfil com progresso.
+local function applyQaGrant(data: any): boolean
+	if not RunService:IsStudio() or not useMock then
+		return false
+	end
+	local changed = false
+	local gold = ServerStorage:GetAttribute("QaStarterGold")
+	if type(gold) == "number" and gold % 1 == 0 and gold > 0 and data.gold == 0 then
+		data.gold = math.min(gold, ProfileSchema.MAX_GOLD)
+		changed = true
+	end
+	local points = ServerStorage:GetAttribute("QaLeaguePoints")
+	if type(points) == "number" and points % 1 == 0 and points > 0 and data.league.points == 0 then
+		data.league.points = math.min(points, ProfileSchema.MAX_COUNTER)
+		changed = true
+	end
+	if changed then
+		print(
+			string.format(
+				"[qa] grant gold=%d liga=%d (Studio/Mock; QaStarterGold/QaLeaguePoints)",
+				data.gold,
+				TrapCatalog.leagueOf(data.league.points)
+			)
+		)
+	end
+	return changed
+end
+
 local function loadPlayer(player: Player)
 	local key = profileKey(player)
 	local session, err = service.startSession(key)
@@ -252,6 +282,7 @@ local function loadPlayer(player: Player)
 	if contentChanged then
 		print(string.format("[perfil] conteudo migrado content=v%d", session.Data.contentVersion))
 	end
+	applyQaGrant(session.Data)
 	ProfileRegistry.set(player, session)
 	player:SetAttribute("ProfileSchemaVersion", session.Data.schemaVersion)
 	player:SetAttribute("ProfileContentVersion", session.Data.contentVersion)

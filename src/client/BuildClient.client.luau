@@ -16,8 +16,6 @@ local BuildClientState = require(sharedBuild:WaitForChild("BuildClientState"))
 local BuildHud = require(sharedBuild:WaitForChild("BuildHud"))
 local BuildLayout = require(sharedBuild:WaitForChild("BuildLayout"))
 
-local startedAt = os.clock()
-
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -54,7 +52,7 @@ player.CharacterAdded:Connect(hideCharacter)
 
 -- ---------------------------------------------------------------- estado e HUD
 local state = BuildClientState.new()
-local hud = BuildHud.new(startedAt)
+local hud = BuildHud.new()
 local currentLayout = nil
 
 local statusMessages = {
@@ -394,7 +392,7 @@ local function refresh(snapshot: any): ()
 	end
 
 	local wasReady = hud.uiSeconds ~= nil
-	local uiSeconds = BuildHud.markReady(hud, os.clock())
+	local uiSeconds = BuildHud.markReady(hud)
 	if not wasReady then
 		print(string.format("[build] cliente pronto em %.1fs", uiSeconds))
 	end
@@ -533,11 +531,10 @@ end)
 
 local hudAccumulator = 0
 RunService.RenderStepped:Connect(function(dt: number)
-	local now = os.clock()
-	BuildHud.tick(hud, now)
+	BuildHud.tick(hud, dt)
 	hudAccumulator += dt
 	if hudAccumulator >= 0.1 then
 		hudAccumulator = 0
-		hudMetrics.Text = BuildHud.formatMetrics(hud, now)
+		hudMetrics.Text = BuildHud.formatMetrics(hud)
 	end
 end)
