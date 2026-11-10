@@ -1,8 +1,7 @@
 # Teste de sessão no Studio (P0)
 
-> **Status:** **Modo A executado e aprovado em 09/11/2026 — 8/8** (evidência na §8).
-> O Modo B (DataStore real, persistência entre servidores) segue opcional, para quando
-> houver lugar publicado com API Services.
+> **Status:** **Modo A (Mock) e Modo B (DataStore real) executados e aprovados em
+> 09/11/2026 — 8/8 nas duas execuções** (evidência na §8).
 > O que o CI cobre: `sim/profile-contract.luau` (schema, migração, `StartSessionAsync` nil,
 > `EndSession`, recarga sem duplicar) e `sim/analytics-contract.luau`.
 > O que o CI **não** cobre: `Players`, DataStore, `ProfileStore.Mock` e o lugar de verdade —
@@ -107,11 +106,11 @@ Para ver duas chaves `User_*` distintas de verdade, entre no lugar **publicado**
 |---|---|
 | Modo A: `[selftest] PASSOU (8/8)` | ☑ (09/11/2026, §8) |
 | Modo A: nenhuma linha `FALHA` | ☑ (09/11/2026, §8) |
-| Modo B: `datastore=Access` e `PASSOU (8/8)` | ☐ |
-| Modo B: `sessions` continuou no novo Play (servidor novo) | ☐ |
-| Modo B: `gold` preservado no novo Play | ☐ |
-| Modo B: `lastSeenAt` avançou (UTC) | ☐ |
-| Nenhum campo fora do schema no perfil | ☐ |
+| Modo B: `datastore=Access` e `PASSOU (8/8)` | ☑ (09/11/2026, §8.1) |
+| Modo B: `sessions` continuou no novo Play (servidor novo) | ☑ `3` no 2º Play (09/11/2026) |
+| Modo B: `gold` preservado no novo Play | ☑ (09/11/2026, §8.1) |
+| Modo B: `lastSeenAt` avançou (UTC) | ☑ (09/11/2026, §8.1) |
+| Nenhum campo fora do schema no perfil | ☑ (validado em A e B) |
 
 Evidência: copie as linhas `[perfil]`/`[selftest]` do Output para o handover.
 
@@ -162,4 +161,36 @@ Ruído esperado, não é P0: o protótipo legado (`Main`/`DataService`) falha se
 
 O que fica em aberto: **Modo B** (lugar publicado + API Services, 2 clientes/rejoin) para provar
 persistência real entre servidores; o `ProfileStore` avisa que os dados não são salvos no Modo A.
+
+### 8.1 Modo B — DataStore real (09/11/2026 22:12 e 22:14)
+
+Lugar publicado, API Services ligado, `ProfileStoreMock = false`. Duas execuções seguidas (servidores
+diferentes), **PASSOU (8/8)** nas duas.
+
+Primeira execução (perfil novo):
+
+```
+[perfil] store=MuralhaProfile_v1 modo=DataStore
+[ProfileStore]: Roblox API services available - data will be saved
+[perfil] datastore=Access
+[selftest] PASSOU (8/8)        -- sessions 1 -> 2, lastSeenAt 01:12:26Z -> 01:12:29Z
+```
+
+Segunda execução (servidor novo, mesmo perfil):
+
+```
+[perfil] carregado key=User_<id> schema=v1 migrado=false dias_desde_ultimo_acesso=0
+[perfil] datastore=Access
+[selftest] OK   carregou e migrou · schema=v1 gold=0 sessions=3
+[selftest] OK   sessions incrementou · 3 -> 4
+[selftest] OK   lastSeenAt avancou · 2026-11-10T01:14:43Z -> 2026-11-10T01:14:45Z
+[selftest] OK   gold persistiu · 0
+[selftest] PASSOU (8/8)
+```
+
+`sessions=3` no segundo servidor é a prova de persistência: a primeira execução terminou em 2. O
+`ContentId: rbxassetid://203785492` que aparece no meio é asset do protótipo legado, sem relação com
+a P0.
+
+Fica para o playtest: duas contas distintas no lugar publicado (duas chaves `User_*`).
 

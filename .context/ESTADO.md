@@ -9,8 +9,9 @@
 
 ## Fase
 
-**P0 fechada (09/11/2026).** Teste de sessão no Studio aprovado no Modo A (8/8); Modo B
-(DataStore real) é opcional. P1 não autorizada. O protótipo de moedas em `src/` segue legado.
+**P0 fechada (09/11/2026).** Teste de sessão no Studio aprovado no Modo A (Mock) e no Modo B
+(DataStore real, persistência entre servidores): 8/8 nas duas execuções. P1 não autorizada.
+O protótipo de moedas em `src/` segue legado.
 
 ## Números atuais (09/11/2026)
 
@@ -26,7 +27,7 @@
 | contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
-| teste de sessão | Modo A no Studio · 8/8 · 09/11/2026 |
+| teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
 | docs / código | 15 .md + xlsx · 18 módulos Luau · 5 oráculos |
 
 ## Pronto
@@ -41,15 +42,15 @@
   (sessão, store injetado) + `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
   taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
-- Teste de sessão no Studio (Modo A, Mock): **8/8** em 09/11/2026 — evidência em
-  `docs/teste-sessao-studio.md` §8.
+- Teste de sessão no Studio: **Modo A (Mock) e Modo B (DataStore real) 8/8** em 09/11/2026
+  — evidência em `docs/teste-sessao-studio.md` §8.
 - Tooling: Rokit + CLI/GUI; CI ativo; estação calibrada (doctor); ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
 
 ## Não pronto
 
-- Modo B do teste de sessão (DataStore real entre servidores) é opcional: `docs/teste-sessao-studio.md` §4.
+- Duas contas distintas no lugar publicado (2 chaves `User_*`) ficam para o playtest.
 - `src/` ainda tem o protótipo de moedas; `src/shared/sim/` já é produção. Q1 = apagar na P1
   (tag `legacy-coins`, stub, CI), preservando `src/shared/sim/`.
 - Revisão de direção: teste de produto de 3 semanas antes da P1 — `docs/revisao-direcao.md`.
@@ -67,7 +68,7 @@
 ## Próximo passo
 
 1. P1 só com autorização do diretor; antes dela, o teste de produto de 3 semanas.
-2. Opcional: Modo B do teste de sessão (lugar publicado + API Services).
+2. Quando a P1 for autorizada: tag `legacy-coins`, stub de 10 linhas e `rojo build` no CI (Q1).
 
 ## Como verificar o estado em 1 minuto
 
