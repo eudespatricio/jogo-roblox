@@ -172,9 +172,10 @@ Print do diretor no Studio (lugar `muralha-s4.rbxl`, `modo=Mock`):
 
 ### 720×1280 e 375×812 com grant (10/11/2026)
 
-- Dois prints do diretor (devices `720x1280` e `375x812`): `OURO 1250`, `content v2 · liga 5`,
-  `COLOCAR · PICHE`; grid 5×5 com `CATAPULTA L1`, `ARQUEIRO L3`, `CANHAO L1` e dois `PICHE L1`;
-  topo/HUD/grid/painel sem sobreposição; painel inferior e status visíveis nos dois prints.
+- Dois prints do diretor (devices `720x1280` e `375x812`): `OURO 1250`, `content v2 · liga 5`;
+  no 375, `COLOCAR · PICHE` e `Recusado: trap_limit`; no 720, `UPGRADE` e `Recusado: max_level`;
+  grid 5×5 com `CATAPULTA L1`, `ARQUEIRO L3`, `CANHAO L1` e dois `PICHE L1`; topo/HUD/grid/painel
+  sem sobreposição, painel inferior e status visíveis nos dois prints.
 - Grant confirmado (`[qa] grant gold=2000 liga=5` no print anterior): todos os tipos com custo, sem
   “liga” bloqueada. `ARQUEIRO L3` confirma upgrade 1→2→3; dois PICHE confirmam colocação livre.
 - Diretor confirmou: a **6ª armadilha foi recusada** (N=5) e **remover não devolveu ouro** — ambos
