@@ -5,10 +5,11 @@
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-> **Status: P0 fechada em código (09/11/2026).** Motor determinístico, schema v1 + wrapper
-> ProfileStore e contrato de analytics com gates no CI; falta o teste de sessão no Studio
-> ([roteiro](docs/teste-sessao-studio.md)). O protótipo de moedas em `src/` segue legado até a
-> P1 (tag `legacy-coins`) — `src/shared/sim/` já é produção.
+> **Status: P0 fechada (09/11/2026).** Motor determinístico, schema v1 + wrapper ProfileStore,
+> contrato de analytics com gates no CI e teste de sessão no Studio aprovado no Modo A (8/8,
+> [roteiro e evidência](docs/teste-sessao-studio.md)). Modo B (DataStore real) é opcional. O
+> protótipo de moedas em `src/` segue legado até a P1 (tag `legacy-coins`) — `src/shared/sim/`
+> já é produção.
 
 ## Comece por aqui
 

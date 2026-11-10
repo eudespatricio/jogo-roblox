@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** P0 fechada em código; falta o teste manual no Studio · base `main`.
+**Data:** 09/11/2026 · **Status:** P0 fechada — teste de sessão no Studio aprovado (8/8) · base `main`.
 Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
@@ -13,7 +13,7 @@ enquanto ele está offline, e um replay determinístico de 8s mostra o que acont
 gravar clipe via `CaptureService`.
 
 Equipe: 1 humano (direção, cena, game feel, QA) + 2 agentes (motor/CI e sistemas/economia).
-A P0 foi autorizada em 09/11/2026 e está **fechada em código**; falta só o teste manual no Studio.
+A P0 foi autorizada em 09/11/2026 e está **fechada**; o teste de sessão no Studio passou no Modo A.
 
 ---
 
@@ -28,9 +28,9 @@ A P0 foi autorizada em 09/11/2026 e está **fechada em código**; falta só o te
 - Contexto residente instalado e dentro do teto.
 - Monetização decidida (base 2% × US$ 2; gate líquido US$ 0,005); ProfileStore vendorizado;
   taxonomia de analytics v1 aprovada e validada no CI.
-- **P0 fechada em código (09/11/2026):** motor, schema v1 + wrapper ProfileStore, contrato de
-  analytics e gates no CI. Falta o **teste de sessão no Studio** (`docs/teste-sessao-studio.md`).
-  **P1 não iniciada.**
+- **P0 fechada (09/11/2026):** motor, schema v1 + wrapper ProfileStore, contrato de analytics,
+  gates no CI e teste de sessão no Studio aprovado (Modo A, 8/8 — evidência em
+  `docs/teste-sessao-studio.md` §8). Modo B (DataStore real) opcional. **P1 não iniciada.**
 
 ---
 
@@ -91,6 +91,7 @@ Decisões e armadilhas novas:
 | Q1 | apagar o legado na P1, preservando `src/shared/sim/` (09/11/2026) |
 | contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
 | schema do perfil | v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
+| teste de sessão | Modo A no Studio · 8/8 · 09/11/2026 |
 
 ---
 
@@ -173,8 +174,8 @@ Q1 e Q2 foram decididas em 09/11/2026; nenhuma pergunta aberta.
 Q1 e Q2 foram fechadas em 09/11/2026. `docs/auditoria/CONTRADICOES.md` foi apagado. A remoção do
 legado é P1 — não foi executada agora.
 
-**Próximo passo:** rodar o teste de sessão no Studio (seção abaixo). O teste de 3 semanas
-continua antes da P1.
+**Próximo passo:** P1 só com autorização do diretor; antes dela, o teste de 3 semanas.
+Opcional: Modo B do teste de sessão.
 
 ## P0 — fechamento (09/11/2026)
 
@@ -182,7 +183,7 @@ continua antes da P1.
 |---|---|---|---|
 | 1 | **Schema v1 + wrapper ProfileStore** | `src/shared/data/ProfileSchema.luau` · `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | **feito** — contrato 19/19 |
 | 2 | **Contrato de analytics** | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | **feito** — 31 eventos, 16/16 |
-| 3 | **Teste de sessão no Studio** | `docs/teste-sessao-studio.md` + self-test no boot | **falta executar** (manual) |
+| 3 | **Teste de sessão no Studio** | `docs/teste-sessao-studio.md` + self-test no boot | **feito** — Modo A 8/8 (09/11/2026); Modo B opcional |
 | 4 | **Fechamento** | spec §14, ESTADO, MAPA, CONTINUAR, `scripts/check.sh` | **feito** |
 
 Provado no CI (headless):
@@ -193,7 +194,8 @@ Provado no CI (headless):
 - `check.sh` passou a analisar `src/shared/data`, `src/shared/analytics` e `src/server/data`, e roda
   os dois contratos.
 
-**Falta só o item 3:** rodar `docs/teste-sessao-studio.md` (Modo A com `ProfileSelfTest = true`).
+**Item 3 aprovado:** Modo A do `docs/teste-sessao-studio.md` passou 8/8 em 09/11/2026 (§8).
+Resta opcionalmente o Modo B (lugar publicado + API Services).
 
 **Não entra na P0:** cena 5×5, UI, loja, drop-in/raid/replay (P1); remoção do legado (Q1, P1);
 sink de analytics (`AnalyticsService`, P1).
@@ -269,6 +271,8 @@ com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemá
    exige espera/retry; senão `StartSessionAsync` lança "already loaded in this session".
 10. **`ProfileStore.Mock` não persiste entre servidores.** Play Solo reinicia o mock: persistência
     real precisa de lugar publicado + API Services (Modo B do roteiro).
+11. **O legado quebra no Studio sem lugar publicado** (`Main`/`DataService`: "You must publish
+    this place…"). É ruído esperado do protótipo de moedas, não da P0; morre na P1 (Q1).
 
 ---
 
@@ -276,11 +280,11 @@ com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemá
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (MURALHA, P0 fechada em código). Leia `AGENTS.md`,
-> `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
-> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). **Primeiro passo desta janela:**
-> rodar `docs/teste-sessao-studio.md` no Studio (Modo A, `ProfileSelfTest = true`) e colar a
-> evidência — é o último item da P0. **Não inicie a P1 sem autorização do diretor**; não apague
-> `src/**` (Q1 é P1, tag `legacy-coins`); não edite `vendor/ProfileStore.luau`. Q1/Q2 fechadas;
-> Q2 = 5×5, N=5, colocação livre. Motor em `src/shared/sim/core.luau`; `simVersion` = 1; contratos
-> em `sim/profile-contract.luau` e `sim/analytics-contract.luau`.
+> Você está no repositório `jogo-roblox` (MURALHA, **P0 fechada** — teste de sessão no Studio
+> aprovado no Modo A, 8/8). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md` e
+> `CONTINUAR.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh`
+> (devem passar). **Não inicie a P1 sem autorização do diretor**; antes dela, o teste de produto de
+> 3 semanas. Não apague `src/**` (Q1 é P1, tag `legacy-coins`); não edite `vendor/ProfileStore.luau`.
+> Q1/Q2 fechadas; Q2 = 5×5, N=5, colocação livre. Motor em `src/shared/sim/core.luau`;
+> `simVersion` = 1; contratos em `sim/profile-contract.luau` e `sim/analytics-contract.luau`.
+> Opcional: Modo B do teste de sessão (lugar publicado + API Services).

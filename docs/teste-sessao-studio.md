@@ -1,6 +1,8 @@
 # Teste de sessão no Studio (P0)
 
-> **Status:** roteiro pronto · 09/11/2026 · é o **último item manual da P0**.
+> **Status:** **Modo A executado e aprovado em 09/11/2026 — 8/8** (evidência na §8).
+> O Modo B (DataStore real, persistência entre servidores) segue opcional, para quando
+> houver lugar publicado com API Services.
 > O que o CI cobre: `sim/profile-contract.luau` (schema, migração, `StartSessionAsync` nil,
 > `EndSession`, recarga sem duplicar) e `sim/analytics-contract.luau`.
 > O que o CI **não** cobre: `Players`, DataStore, `ProfileStore.Mock` e o lugar de verdade —
@@ -85,8 +87,8 @@ nenhum perfil duplicado; `lastSeenAt` no futuro nenhum (carimbo do servidor).
 
 | Item | Resultado |
 |---|---|
-| Modo A: `[selftest] PASSOU (8/8)` | ☐ |
-| Modo A: nenhuma linha `FALHA` | ☐ |
+| Modo A: `[selftest] PASSOU (8/8)` | ☑ (09/11/2026, §8) |
+| Modo A: nenhuma linha `FALHA` | ☑ (09/11/2026, §8) |
 | Modo B: duas chaves `User_*` distintas | ☐ |
 | Modo B: `sessions` continuou no rejoin | ☐ |
 | Modo B: `gold` preservado no rejoin | ☐ |
@@ -105,6 +107,7 @@ Evidência: copie as linhas `[perfil]`/`[selftest]` do Output para o handover.
 | `[selftest] FALHA sessions incrementou` | Mock reiniciado entre as sessões | no Modo A o servidor não pode reiniciar no meio do teste |
 | `NoAccess` no DataStore | API Services desligado ou lugar não publicado | Modo A (Mock) ou publicar o lugar |
 | Nenhuma linha `[selftest]` | atributo ausente ou fora do Studio | `ProfileSelfTest = true` em `ServerStorage`; self-test só roda em Studio |
+| `Main`/`DataService` lançam erro no Play | protótipo legado de moedas sem lugar publicado (`You must publish this place…`) | esperado no Modo A; morre com o legado na P1 |
 
 ## 7. O que **não** entra na P0
 
@@ -112,3 +115,33 @@ Evidência: copie as linhas `[perfil]`/`[selftest]` do Output para o handover.
 - Roubo de sessão entre dois servidores simultâneos (dois dispositivos, mesma conta): coberto pelo
   session lock do ProfileStore; teste manual de dois dispositivos fica para o playtest.
 - UI, cena 5×5, loja: P1.
+
+## 8. Execução registrada — Modo A, 09/11/2026 21:49 (America/Sao_Paulo)
+
+Lugar: `build/place.rbxl` (cópia em `C:\Users\Eudes\Desktop\muralha-p0-place.rbxl`),
+`ProfileSelfTest = true` em `ServerStorage`, Play Solo. Resultado: **PASSOU (8/8)**.
+
+```
+[ProfileStore]: Roblox API services unavailable - data will not be saved   -- esperado no Studio
+[perfil] store=MuralhaProfile_v1 modo=Mock
+[perfil] carregado key=User_<id> schema=v1 migrado=false dias_desde_ultimo_acesso=nil
+[selftest] OK   carregou e migrou · schema=v1 gold=0 sessions=1 json=nil
+[selftest] OK   sem PII e so campos do schema · nil
+[perfil] sessao encerrada key=User_<id>
+[selftest] OK   EndSession no leave · activeCount=0
+[perfil] carregado key=User_<id> schema=v1 migrado=false dias_desde_ultimo_acesso=0
+[selftest] OK   recarregou e nao duplicou · activeCount=1
+[selftest] OK   sessions incrementou · 1 -> 2
+[selftest] OK   lastSeenAt avancou · 2026-11-10T00:49:02Z -> 2026-11-10T00:49:04Z
+[selftest] OK   gold persistiu · 0
+[selftest] OK   perfil salvo valido · nil
+[selftest] PASSOU (8/8)
+```
+
+Ruído esperado, não é P0: o protótipo legado (`Main`/`DataService`) falha sem lugar publicado
+(`You must publish this place to the web to access DataStore`) e um asset do legado não resolve
+(`rbxassetid://203785492`). Os dois saem com o legado na P1 (Q1).
+
+O que fica em aberto: **Modo B** (lugar publicado + API Services, 2 clientes/rejoin) para provar
+persistência real entre servidores; o `ProfileStore` avisa que os dados não são salvos no Modo A.
+
