@@ -15,6 +15,8 @@
 > Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
 > [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).
+> **Pausa (10/11/2026):** trabalho pausado para tratar dois assuntos separados; retomar pelo QA
+> visual mobile do S8 e pelo teste de 3 semanas. P2 continua bloqueada.
 
 ---
 

@@ -7,12 +7,12 @@
 (habilita DevEx 18+ e corta custo de arte). Público 13–34, monetização cosmética.
 
 ## Fase
-**P1 em execução (autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
+**P1 em pausa (10/11/2026; autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
 (FPS 60/60); **S5 fechada** (drop-in/+3 ouro); **S6.1 fechada** (fantasma real + replay 3D); **S7
 fechada** (telemetria com sink persistente); **S8 fechada** (apresentação visual: diorama, traps/
 horda 3D e UI). A saída da P1 (70% de primeira vitória <60 s) está instrumentada por
-`first_win_seconds`; a série persiste e será medida no teste de 3 semanas. P2 bloqueada.
-
+`first_win_seconds`; a série persiste e será medida no teste de 3 semanas. Trabalho pausado para
+dois assuntos separados; P2 bloqueada.
 ## Números atuais (10/11/2026)
 | Métrica | Valor |
 |---|---|
@@ -68,7 +68,7 @@ horda 3D e UI). A saída da P1 (70% de primeira vitória <60 s) está instrument
 
 ## Próximo passo
 
-1. Rodar o teste de 3 semanas com o sink persistente e medir a saída da P1 (70% <60s).
+1. Retomar pelo QA visual mobile e pelo teste de 3 semanas; medir a saída da P1 (70% <60s).
 2. P2 não começa sem autorização.
 
 ## Como verificar o estado em 1 minuto

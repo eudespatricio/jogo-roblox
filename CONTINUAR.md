@@ -1,11 +1,11 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.4 fechadas** (S3.4 com Modo B real);
+**Data:** 10/11/2026 · **Status:** **P1 EM PAUSA** — **S1–S3.4 fechadas** (S3.4 com Modo B real);
 **S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
 **S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 34/34,
 sink persistente e `first_win_seconds`); **S8 fechada** (apresentação visual: diorama, traps/horda
 3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008 abertos · base
-`main` @ `77f808a`, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
+`main` @ `2a50bbd`, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
 > (`contentVersion` no `BattleLog`); **GAP-012 fechado na S7/S8** (`AnalyticsDataStoreSink` com
@@ -16,6 +16,43 @@ GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos 
 > **Transição de janela:** S1–S8 fechadas em 10/11/2026. A próxima sessão mede a saída da P1 no
 > teste de 3 semanas (sink persistente pronto) e faz o QA visual do S8 no Studio. Não reabra
 > S6.1/S6/S7/S8 e não inicie P2.
+
+---
+
+## PAUSA — 10/11/2026
+
+> **Trabalho pausado a pedido do diretor.** Vamos tratar **dois assuntos separados** antes de
+> retomar a P1. Nada de S9/P2, nada de reabrir S6.1/S7/S8 e nenhuma mudança de
+> schema/content/sim/taxonomia até a retomada.
+
+**O que está congelado neste ponto**
+
+- S1–S8 fechadas; P1 **não fechada** porque a saída (70% de primeira vitória <60 s) ainda será
+  medida no teste de 3 semanas.
+- GAP-012 fechado (sink DataStore/Memory); GAP-004/005/008 abertos; P2 bloqueada.
+- Últimos commits: `2a50bbd` (UI mostra 30/60 no upgrade e status pelo nível), `f21c6a1` (raid
+  publica a muralha antes de escolher o alvo, sem ficar uma rodada atrás), `742139e` (S8/Play Solo
+  desktop), `77f808a` (S8 + GAP-012). CI verde no run #67.
+
+**Pendências para a retomada**
+
+1. QA visual do S8 em **375×812** e **720×1280**, com prints e FPS/draw calls
+   (roteiro em [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md)).
+2. Rodar o **teste de 3 semanas** com o sink persistente e medir os 70% <60 s.
+3. Revisar o comportamento de raid após a correção `f21c6a1` no Studio (primeiro ataque deve
+   mostrar o archer recém-colocado).
+4. Só depois discutir P2/GAP-004/005/008; P2 continua bloqueada.
+
+**Ao retomar**
+
+```bash
+source scripts/env.sh
+bash scripts/doctor.sh
+bash scripts/check.sh
+```
+
+Ler `.context/ESTADO.md`, `.context/MAPA.md`, este arquivo e [`docs/p1-plano.md`](docs/p1-plano.md);
+não começar S9/P2 sem autorização.
 
 ---
 
@@ -235,6 +272,8 @@ fechados; GAP-004/005/008 abertos. **Base:** `main` pós-S8; hash `2489780106`; 
   `sim/build-contract.luau` **14/14**; `BuildGrid` cria 25 células/muralha; `WallController` expõe
   snapshot/place/remove/upgrade; `BuildClient` tem câmera fixa, UI 5×5, HUD e layout responsivo.
   Runtime: FPS 60/60, Play→UI 1,9 s, prints com painel e `trap_limit`/`max_level`; §7 preenchida.
+  **Correção pós-S8:** o modo UPGRADE mostra `30/60` e o status pelo nível; o servidor já cobrava
+  `upgrade * nível` (1→2=30, 2→3=60).
 - **S5 fechada:** `DropInState`/`DropInTelemetry` + `sim/dropin-contract.luau` **8/8**;
   `DropInController.server` remotes/estado/batalha fixa/retry; `DropInClient` cena local + DEFENDER;
   `BuildClient` espera `DropInDone`; +3 ouro no clear. Runtime validado; o envelope de analytics

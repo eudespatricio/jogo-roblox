@@ -5,7 +5,7 @@
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-> **Status: P1 em execução (10/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
+> **Status: P1 em pausa (10/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
 > tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
 > determinístico com grade **5×5**, **N=5** ativas e colocação livre; `simVersion 2` e hash de
 > referência `2489780106`. **S3** concluída: muralha/economia server-side, catálogo em
@@ -23,7 +23,8 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > P1 (70% de primeira vitória <60 s) está instrumentada e será medida no teste de 3 semanas; a série
 > agora persiste (GAP-012 fechado).
 > A S3.4 fechou o GAP-009 no Modo B real (schema v2, 8/8). O teste de produto de 3 semanas
-> roda em paralelo ([plano da P1](docs/p1-plano.md)).
+> roda em paralelo ([plano da P1](docs/p1-plano.md)); a retomada está registrada em
+> [`CONTINUAR.md`](CONTINUAR.md).
 
 ## Comece por aqui
 
