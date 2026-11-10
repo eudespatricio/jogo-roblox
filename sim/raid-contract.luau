@@ -60,6 +60,7 @@ local function runBattle(seed, wall)
 	return battle:Run()
 end
 
+local battleWall = phantomWall()
 local fixedResult = Core.Run(42)
 
 check("BattleLog inclui contentVersion e campos do resultado", function()
@@ -69,6 +70,7 @@ check("BattleLog inclui contentVersion e campos do resultado", function()
 		TrapCatalog.CONTENT_VERSION,
 		Core.GRID_WIDTH,
 		5,
+		battleWall,
 		1762800000
 	)
 	assert(record ~= nil, tostring(err))
@@ -76,13 +78,16 @@ check("BattleLog inclui contentVersion e campos do resultado", function()
 	assert(record.battleId == BATTLE_ID, "battleId")
 	assert(record.resultHash == fixedResult.hash, "hash")
 	assert(record.durationMs == fixedResult.ticks * 50, "durationMs")
+	assert(#record.wall.traps == 5, "wall.traps")
+	assert(record.wall.hp == battleWall.hp, "wall.hp")
 	local ok, validateErr = BattleLog.validate(record)
 	assert(ok, tostring(validateErr))
 	assert(BattleLog.keyFor(record.battleId) == BATTLE_ID, "chave != battle_id")
 end)
 
 check("BattleLog recusa replay de conteudo futuro", function()
-	local record = assert(BattleLog.fromBattle(BATTLE_ID, fixedResult, 2, 5, 5, 1762800000))
+	local record =
+		assert(BattleLog.fromBattle(BATTLE_ID, fixedResult, 2, 5, 5, battleWall, 1762800000))
 	local ok = BattleLog.isReplayable(record, 2)
 	assert(ok, "record atual nao replayavel")
 	local futureOk, futureErr = BattleLog.isReplayable(record, 1)
@@ -91,7 +96,8 @@ end)
 
 check("ledger: 1 chave por battle_id e recompensa uma vez", function()
 	local ledger = BattleLogLedger.new()
-	local record = assert(BattleLog.fromBattle(BATTLE_ID, fixedResult, 2, 5, 5, 1762800000))
+	local record =
+		assert(BattleLog.fromBattle(BATTLE_ID, fixedResult, 2, 5, 5, battleWall, 1762800000))
 	local first, created = BattleLogLedger.claim(ledger, record)
 	assert(first ~= nil and created == true, "primeiro claim")
 	local second, createdAgain = BattleLogLedger.claim(ledger, record)

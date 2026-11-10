@@ -1,12 +1,11 @@
 # QA da S6 no Studio — raid + BattleLog + replay
 
-> **Status:** **S6 iniciada em 10/11/2026 (scaffold); núcleo validado, replay visual pendente** —
-> raid, vitória/derrota, hash, reward 5, barra de 8 s, `BattleLog content=v2` e o loop de ouro
-> (archer + upgrade) já vistos em 375×812/720×1280. O `OURO` stale foi corrigido e confirmado
-> (`creditou 5 ouro gold=...`). A S6 **não fecha** como feature completa: replay 3D e fantasma de
-> outro jogador ficam fora do scaffold. S5 fechada; S7/P2 não começaram.
+> **Status:** **S6.1 implementada em 10/11/2026; QA humano do replay 3D + fantasma real pendente.**
+> O núcleo (raid, hash, reward 5, `BattleLog content=v2`, OURO/archer) já foi validado; agora o
+> servidor persiste uma muralha real em `MuralhaPhantom_v1` e o cliente reproduz a batalha em um
+> `ViewportFrame` 3D por 8 s. A S6 **não fecha** sem o QA da §7. S5 fechada; S7/P2 não começaram.
 
-**Base:** `main` pós-scaffold S6 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
+**Base:** `main` pós-S6.1 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
 Critérios do plano: [`p1-plano.md`](p1-plano.md) S6 — `battle_finished.result_hash` igual ao
 replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence`; GAP-011
 (`contentVersion` no `BattleLog`).
@@ -17,8 +16,9 @@ replay; recompensa idempotente por `battle_id`; divergência vira `battle_diverg
 
 1. No WSL: `source scripts/env.sh && bash scripts/doctor.sh && bash scripts/check.sh` (RC=0).
 2. `rojo build default.project.json -o build/place.rbxl` e abrir o lugar no Studio.
-3. `ServerStorage.ProfileStoreMock = true` (default do Studio). O BattleLog tem store próprio:
-   `ServerStorage.BattleLogMock` (default Studio = Mock; `false` tenta DataStore real).
+3. `ServerStorage.ProfileStoreMock = true` (default do Studio). BattleLog e fantasma têm stores
+   próprios: `ServerStorage.BattleLogMock` e `ServerStorage.PhantomStoreMock` (default Studio =
+   Mock; `false` tenta DataStore real).
 4. Para ter ouro/armadilhas no build, o grant da S4 (`QaStarterGold`/`QaLeaguePoints`) é opcional;
    a raid funciona com o perfil zerado (a recompensa é creditada no fim).
 5. `ProfileSelfTest = false`.
@@ -27,7 +27,9 @@ replay; recompensa idempotente por `battle_id`; divergência vira `battle_diverg
 
 ```text
 [raid] battlelog store=Mock name=MuralhaBattleLog_v1
+[raid] phantom store=Mock name=MuralhaPhantom_v1
 [raid] servidor pronto store=Mock reward=5 sim=3
+[raid] phantom owner=Eudesspatricio traps=1 hp=500 content=v2 store=Mock
 [analytics] battle_started battle_id=... grid_width=5 seed=... sim_version=3 traps_count=5
 [analytics] battle_finished battle_id=... duration_ms=... result_hash=... winner=...
 [analytics] raid_end battle_id=... duration_s=... result=...
@@ -37,23 +39,27 @@ replay; recompensa idempotente por `battle_id`; divergência vira `battle_diverg
 ```
 
 `battle_finished` sai **depois** do hash; `battle_divergence` só aparece se o replay não bater.
-O `BattleLog` fica em `MuralhaBattleLog_v1`, separado do perfil.
+O `BattleLog` fica em `MuralhaBattleLog_v1` e a muralha real em `MuralhaPhantom_v1`, separados do
+perfil.
 
 ## 3. Raid no cliente
 
 - [ ] Botão **ATACAR** aparece no canto superior esquerdo, abaixo do HUD, depois do drop-in/build.
 - [ ] Ao clicar, modal **RAID** abre com `ATACANDO...`, depois `VITORIA`/`DERROTA`, `battle_id`,
-      `hash`, muralha/vazados e recompensa.
-- [ ] Barra de replay percorre **8 s** e termina em `REPLAY CONCLUIDO · 8s`.
+      `hash`, **fantasma**, muralha/vazados, recompensa e um **ViewportFrame 3D**.
+- [ ] O replay 3D mostra lanes, traps da muralha fantasma, blocos da horda e a muralha perdendo HP
+      por **8 s**; termina em `REPLAY CONCLUIDO · 8s`.
+- [ ] O hash do replay local bate com o `resultHash` do servidor; se não bater, mostra
+      `DIVERGENCIA` e não finge sucesso.
 - [ ] `FECHAR` volta ao build; o botão ATACAR reaparece.
 - [ ] Layout sem sobreposição em **375×812** e **720×1280**; o botão não cobre o grid.
 
 ## 4. Servidor autoritativo e recompensa
 
-- [ ] A raid usa `WallService.toBattleWall` para a parede fantasma (perfil sintético) e
-      `Core.Battle` com seed/wave registrados.
-- [ ] O replay roda o mesmo seed/muralha/wave; `result_hash` do `battle_finished` é o mesmo que o
-      cliente mostra.
+- [ ] A raid usa um snapshot real de muralha (`MuralhaPhantom_v1`, via `toBattleWall`) e
+      `Core.Battle` com seed/wave registrados. O `BattleLog` guarda `wall` (hp + traps) para replay.
+- [ ] O servidor roda o mesmo seed/muralha/wave e compara o hash; o cliente roda o mesmo
+      `Core.Battle`, compara de novo e só então exibe o 3D.
 - [ ] Se o atacante vence, `gold_earned amount=5 source=raid` e o ouro do perfil sobe **uma vez**
       por `battle_id`; se perde, recompensa 0.
 - [ ] O topo do build atualiza o OURO após a raid (atributo `MuralhaGold` → snapshot). Ex.: 3 +
@@ -70,22 +76,23 @@ O `BattleLog` fica em `MuralhaBattleLog_v1`, separado do perfil.
 - [ ] Divergência: o contrato corrompe o hash e `RaidReplay.verify` devolve `divergence`; no
       servidor isso vira `[analytics] battle_divergence` e **não** credita. Não é fácil forçar no
       Studio; a prova headless fica na §7.
-- [ ] O cliente nunca decide recompensa/hash; só mostra o retorno do servidor.
+- [ ] O cliente nunca decide recompensa; ele recalcula o hash localmente e apenas exibe o
+      resultado do servidor. Divergência local vira `DIVERGENCIA` na tela.
 
 ## 6. Performance / limites do scaffold
 
-- [ ] FPS ≥45 no build/raid (o modal é 2D; medir no Studio focado).
+- [ ] FPS ≥45 no build/raid com o `ViewportFrame` 3D ativo (medir no Studio focado).
 - [ ] Sem erro recorrente no Output; `ContentId` e `ProfileStore API services unavailable` em Mock
       são ruído conhecido.
 - [ ] `rojo build` ≤30 s; sem mudança de `simVersion`/hash/schema/content.
-- [ ] **Scaffold:** a parede fantasma é o loadout padrão do motor (5 tipos) e a recompensa de raid
-      é **5 ouro provisório** para o teste de idempotência; não é economia final. O replay visual
-      é a barra de 8 s (o replay 3D da raid fica para a janela de cena/replay).
+- [ ] **Scaffold:** o fantasma é a **última muralha publicada** (uma por servidor no store `latest`);
+      em produção multi-jogador isso evolui para seleção por liga. A recompensa de raid é **5 ouro
+      provisório** para o teste de idempotência; não é economia final.
 
 ## 7. Evidência para fechar a S6
 
 1. linhas `[raid]` + `[analytics] battle_started/battle_finished/raid_end/gold_earned` do Output;
-2. print do modal com `VITORIA`/`DERROTA`, hash e barra de replay em **375×812** e **720×1280**;
+2. print do modal com `VITORIA`/`DERROTA`, hash e **replay 3D** em **375×812** e **720×1280**;
 3. print/Output do `BattleLog` com `contentVersion=2` e `battle_id` único;
 4. FPS medido e tempo do `rojo build`/Play;
 5. veredito: **S6 fechada** ou **S6 em correção**.
@@ -95,8 +102,8 @@ Sem os itens **1–3**, a S6 não fecha. Contrato headless + CI não substituem 
 ## 8. Fora do scaffold (não inventar)
 
 - S7 (AnalyticsService/envelope) e P2/live ops não começam aqui.
-- A parede fantasma de outro jogador e o replay 3D de 8 s não entram neste scaffold; usamos o
-  loadout padrão do motor e a barra de replay.
+- O fantasma é a última muralha publicada; seleção por liga/amigo e replay com câmera cinematográfica
+  ficam para a janela de cena/replay.
 - A recompensa de raid é provisória (5); o valor final é decisão de economia do teste de 3 semanas.
 
 ## 9. QA headless executado (10/11/2026)
@@ -112,13 +119,14 @@ rojo build default.project.json -o build/place.rbxl
 - BattleLog com `contentVersion` + chave única + `isReplayable`.
 - Replay determinístico: mesmo seed/hash; hash corrompido vira `divergence`.
 - Ledger: claim/markRewarded idempotentes; `gold_earned` da taxonomia validado.
-- **Falta (humano):** re-testar após `MuralhaGold`/log `[raid] battlelog` — topo OURO 8 e
-  `content=v2`; prints finais 375×812/720×1280 e veredito.
+- **Falta (humano):** QA do replay 3D com fantasma real (ViewportFrame, lanes/horda/HP) e
+  prints 375×812/720×1280; o topo OURO 8 e `content=v2` já foram confirmados.
 
 ## 10. Evidência parcial — 10/11/2026
 
-- **375×812:** raid DERROTA (hash 965886648, muralha 178 HP, vazados 27, reward 0) e VITORIA
-  (hash 1193837270, muralha 0 HP, vazados 31, reward 5); barra de replay de 8 s.
+- **S6.0 (pré-3D) — 375×812:** raid DERROTA (hash 965886648, muralha 178 HP, vazados 27,
+  reward 0) e VITORIA (hash 1193837270, muralha 0 HP, vazados 31, reward 5); barra de 8 s
+  (pré-3D).
 - **720×1280:** modal RAID VITORIA com battle_id/hash/reward; build 5×5 atrás.
 - **Output:** `[raid] battlelog store=Mock name=MuralhaBattleLog_v1`; `battle_started`;
   `battle_finished` com hash/winner/wall_hp/ticks; `raid_end`; `gold_earned amount=5 source=raid`
@@ -131,16 +139,26 @@ rojo build default.project.json -o build/place.rbxl
 - **Confirmado no re-teste (10/11/2026):** `[raid] battlelog ... content=v2 reward=5` e
   `[raid] creditou 5 ouro gold=8/13/...`; o topo passou a **OURO 13** e o jogador colocou um
   **archer L2 + upgrade** (o loop de ouro da raid funciona). Derrotas continuam sem crédito.
-- **Ainda falta para fechar a S6 como feature completa:** replay visual 3D e fantasma de outro
-  jogador (o scaffold usa loadout padrão + barra de 8 s); idempotência/divergência no Studio têm
-  prova headless no contrato. S6 continua **aberta**.
+- **S6.1 implementada em 10/11/2026:** `MuralhaPhantom_v1` (snapshot real via `toBattleWall`),
+  `BattleLog.wall`, replay 3D em `ViewportFrame` e comparação de hash no cliente. Falta o QA
+  humano do 3D/fantasma; S6 continua **aberta**.
+
+### S6.1 — replay 3D + fantasma real (implementação, 10/11/2026)
+
+- `PhantomStore` separado (`MuralhaPhantom_v1`; `PhantomStoreMock` no Studio) guarda a última
+  muralha publicada; `RaidController` escolhe essa snapshot e roda `toBattleWall`.
+- `BattleLog` ganhou `wall` (hp + traps) para o replay; o servidor devolve `wall`, `seed`,
+  `simVersion`, `phantomName` e `replaySeconds=8` no retorno.
+- `RaidClient` roda o mesmo `Core.Battle` no cliente, compara o hash e anima um `ViewportFrame` 3D
+  (lanes, traps, horda, HP) por 8 s. Se o hash local divergir, mostra `DIVERGENCIA`.
+- Ainda falta o QA visual em 375×812/720×1280; o `rojo build` e os contratos já passam.
 
 ### Correção do OURO stale (10/11/2026)
 
 O raid creditava o ouro no perfil (`gold_earned` no Output), mas o topo do build continuava em
 `OURO 3`: o `BuildClient` não reabria o snapshot. Agora o servidor publica `MuralhaGold` e o cliente
-refaz `BuildSnapshot`; o log `[raid] creditou 5 ouro gold=8` prova o valor. Re-testar e esperar
-**OURO 8** no topo do build depois da vitória (3 + 5).
+refaz `BuildSnapshot`; o log `[raid] creditou 5 ouro gold=8` prova o valor. Confirmado com
+**OURO 13** e archer L2 após o gasto.
 
 ### Leitura do gold no teste
 

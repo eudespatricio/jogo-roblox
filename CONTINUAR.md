@@ -2,8 +2,9 @@
 
 **Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.4 fechadas** (S3.4 com Modo B real);
 **S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
-**S6 iniciada (scaffold: raid/BattleLog/replay; QA humano pendente)**; GAP-011 fechado na S6;
-GAP-004/005/008 abertos · base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
+**S6 iniciada (S6.1: raid, fantasma real e replay 3D; QA humano pendente)**; GAP-011 fechado
+na S6; GAP-004/005/008 abertos · base `main`. Este arquivo é autossuficiente: a conversa pode ser
+fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
 > (`contentVersion` no `BattleLog` + contrato). Restam GAP-004/005/008 em `docs/gaps.md`.
@@ -101,19 +102,18 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
   - Runtime validado em 375×812/720×1280: timeout 10,1 s (sem pressed/ouro), sucesso com
     `pressed=true`/`onda limpa`/`+3 ouro`/`OURO 3`, DEFENDER ativo com horda/portão e FPS 60 no
     pós-build. A taxa ≥60% fica no teste de 3 semanas; se reprovar, a S5 reabre.
-- **S6 iniciada — raid + BattleLog (10/11/2026, scaffold):**
+- **S6.1 iniciada — raid + fantasma real + replay 3D (10/11/2026; QA pendente):**
   - `BattleLog`/`BattleLogLedger`/`RaidReplay`/`RaidTelemetry` puros + `sim/raid-contract.luau`
     **6/6**: `contentVersion` (GAP-011), 1 chave por `battle_id`, claim/recompensa idempotente,
-    replay/hash e `battle_divergence`.
-  - `BattleLogStore` separado (`MuralhaBattleLog_v1`, DataStore/Mock); `RaidController` com
-    parede fantasma via `toBattleWall`, replay do mesmo seed e reward `raid`; `RaidClient` com
-    ATACAR, resultado e barra de replay de 8 s.
-  - Recompensa de raid **5 ouro provisória** (calibrar no teste); parede fantasma é o loadout
-    padrão; replay 3D fica para a janela de cena. QA parcial: vitória/derrota/hash/reward/8 s
-    em 375×812/720×1280; `creditou 5 ouro gold=...` e **OURO 13** com archer L2 + upgrade
-    confirmam o loop; `BattleLog content=v2`. **Falta o replay 3D/fantasma real para fechar a S6**
-    (docs/teste-s6-studio.md).
-- Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 79/80 ·
+    replay/hash e `battle_divergence`; o log guarda `wall` (hp + traps).
+  - `BattleLogStore` (`MuralhaBattleLog_v1`) e `PhantomStore` (`MuralhaPhantom_v1`) separados,
+    DataStore em produção e Mock no Studio; `RaidController` ataca a última muralha publicada via
+    `toBattleWall`; `RaidClient` roda o mesmo `Core.Battle`, confere o hash e anima 8 s em um
+    `ViewportFrame` 3D (lanes, traps, horda, HP).
+  - Recompensa **5 ouro provisória**; QA do núcleo já validou vitória/derrota/hash/reward,
+    **OURO 13** com archer L2 + upgrade e `BattleLog content=v2`. **Falta o QA visual do 3D/fantasma
+    em 375×812/720×1280 para fechar a S6** (docs/teste-s6-studio.md).
+- Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 
 ---
@@ -135,7 +135,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B schema v1 8/8 (09/11/2026) · Modo B schema v2 8/8 (10/11/2026) |
-| contexto | ESTADO 79/80 · MAPA 59/60 · REJEITADOS 19/40 |
+| contexto | ESTADO 80/80 · MAPA 59/60 · REJEITADOS 19/40 |
 
 ---
 
@@ -164,14 +164,14 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | S3.4 | Conteúdo e versões | schema v2/contentVersion, 5º tipo, alias, migração neutra e Modo B | **feito 10/11/2026** |
 | S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **feito 10/11/2026 (FPS 60/60 · Play→UI 1,9 s)** |
 | S5 | Drop-in de 5 s | cena DEFENDER + derrota roteirizada; `dropin_pressed` ≥ 60% | **feito 10/11/2026 (feature; taxa no teste)** |
-| S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | **scaffold 10/11/2026 · QA humano pendente** |
+| S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | **S6.1 10/11/2026 · QA visual pendente** |
 | S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | pendente |
 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** **QA humano da S6** — ATACAR, resultado/hash, BattleLog Mock com
-`contentVersion=2`, replay de 8 s e recompensa idempotente; evidência na §7 de
+**Próximo passo:** **QA humano da S6.1** — ATACAR, fantasma real, replay 3D de 8 s com
+hash igual, `BattleLog content=v2` e reward; evidência na §7 de
 [`teste-s6-studio.md`](docs/teste-s6-studio.md). S7 depois; P2 não começa sem autorização.
 
 ## Pipeline de expansão e gaps
@@ -186,12 +186,12 @@ Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido c
 
 ---
 
-## Handover — S6 scaffold + QA
+## Handover — S6.1 + QA
 
 **Estado:** S3.4 **fechada** (schema 2, content 2, sim 3, Modo B real 8/8); **S4 fechada** (QA
-runtime); **S5 fechada** (drop-in/funil/+3 ouro); **S6 iniciada (scaffold; QA humano pendente)**.
-GAP-001/002/003/009/010/011 fechados; GAP-004/005/008 abertos.
-**Base:** `main` pós-S5 + scaffold S6; hash `2489780106`; RFC em
+runtime); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 iniciada** (fantasma real + replay 3D; QA
+humano pendente). GAP-001/002/003/009/010/011 fechados; GAP-004/005/008 abertos.
+**Base:** `main` pós-S6.1; hash `2489780106`; RFC em
 [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md).
 
 - **Modo B fechado:** [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md) §9 registra
@@ -212,9 +212,9 @@ GAP-001/002/003/009/010/011 fechados; GAP-004/005/008 abertos.
 - **Critério de pronto (p1-plano S4):** build ≤30 s; nenhuma armadilha fora da célula; 45+ FPS
   mobile; UI ligada ao `WallService`. **Atendido:** 60/60 FPS focado, Play→UI 1,9 s, 5 armadilhas
   em células distintas e 6ª recusada; evidência na §7.
-- **Próxima janela:** QA humano da S6 (scaffold pronto). **Fora:** S7, P2, GAP-004/008
-  (classe/taxonomia v2) e GAP-005 (P2). **Não iniciar P2.** O trial/teste de 3 semanas segue em
-  paralelo; a taxa ≥60% da S5 é medida nele.
+- **Próxima janela:** QA humano da S6.1 (replay 3D + fantasma real prontos). **Fora:** S7, P2,
+  GAP-004/008 (classe/taxonomia v2) e GAP-005 (P2). **Não iniciar P2.** O trial/teste de 3 semanas
+  segue em paralelo; a taxa ≥60% da S5 é medida nele.
 - **Saída:** `doctor.sh` + `check.sh` RC=0; docs atualizados; CI verde; uma linha `GAP:` no handoff.
 
 ---
@@ -276,7 +276,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
    `2489780106`, agora com `simVersion 3` (o hash da parede padrão não mudou na S3.4). Não "ajustar"
    o hash antigo nem os thresholds sem registro. Mudou `schemaVersion`/`CONTENT_VERSION`/`SIM_VERSION`?
    Atualize `docs/versoes.md`; o `check.sh` falha se fonte e docs divergirem.
-3. **Contexto tem teto.** ESTADO está em 79/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
+3. **Contexto tem teto.** ESTADO está em 80/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
    linha antes de acrescentar outra.
 
 ---
@@ -344,32 +344,33 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 
 ---
 
-## Goal da próxima janela — QA humano da S6
+## Goal da próxima janela — QA humano da S6.1
 
-**Objective:** coletar e registrar a evidência de Studio da S6 (Output `[raid]`/`[analytics]`,
-modal com hash/resultado em 375×812/720×1280, `BattleLog` Mock com `contentVersion=2`, replay de
-8 s e recompensa idempotente) em `docs/teste-s6-studio.md` §7; corrigir o que o QA apontar e só
-então fechar a S6.
+**Objective:** coletar e registrar a evidência de Studio da S6.1 (Output `[raid]`/`[analytics]`,
+`phantom store`, modal com hash/fantasma e **replay 3D** em 375×812/720×1280, `BattleLog` Mock com
+`contentVersion=2`, 8 s e recompensa idempotente) em `docs/teste-s6-studio.md` §7; corrigir o que
+o QA apontar e só então fechar a S6.
 
-**Status:** S6 scaffold em 10/11/2026; QA humano pendente; S7/P2 não começaram.
+**Status:** S6.1 implementada em 10/11/2026; QA visual pendente; S7/P2 não começaram.
 
 **Prompt para disparar (depois do QA):**
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S5 fechadas; S6 scaffold com QA humano
-> pendente; S7 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`,
-> `CONTINUAR.md`, `docs/p1-plano.md`, `docs/teste-s6-studio.md`, `docs/versoes.md` e `docs/gaps.md`.
-> No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem
-> passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1
-> congelada.
+> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S5 fechadas; S6.1 com fantasma real e
+> replay 3D, QA visual pendente; S7 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`,
+> `.context/MAPA.md`, `CONTINUAR.md`, `docs/p1-plano.md`, `docs/teste-s6-studio.md`,
+> `docs/versoes.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
+> `bash scripts/check.sh` (devem passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
+> colocação livre; taxonomia v1 congelada.
 >
-> **Objetivo:** registrar a evidência de Studio da S6 (itens 1–3 da §7 do `teste-s6-studio.md`),
-> corrigir os bugs de raid/BattleLog/replay e só então marcar a S6 como fechada; não iniciar
-> S7/P2 sem essa evidência.
+> **Objetivo:** registrar a evidência de Studio da S6.1 (itens 1–3 da §7 do `teste-s6-studio.md`):
+> `phantom store`, modal com hash/fantasma e replay 3D em 375×812/720×1280, `BattleLog` Mock com
+> `contentVersion=2`; corrigir o que o QA apontar e só então marcar a S6 como fechada.
 >
 > **Fora:** S7, P2, classe/taxonomia v2, mudança de schema/content/sim. Se precisar mudar versão,
 > pare e registre em `docs/gaps.md`; não invente produto.
 >
-> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; §7 preenchida com logs/prints/hash; docs e
+> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; §7 preenchida com logs/prints/hash/3D; docs e
 > linha `GAP:` atualizados.
 
-**Checkpoint:** o scaffold da S6 está pronto e o contrato headless passa; falta a raid no Studio.
+**Checkpoint:** a S6.1 está implementada e os contratos passam; falta o QA visual do replay 3D no
+Studio.

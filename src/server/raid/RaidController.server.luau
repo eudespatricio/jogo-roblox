@@ -27,6 +27,7 @@ local WallService = require(script.Parent.Parent:WaitForChild("walls"):WaitForCh
 local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local BattleLogStore = require(script.Parent:WaitForChild("BattleLogStore"))
+local PhantomStore = require(script.Parent:WaitForChild("PhantomStore"))
 
 local REMOTES_NAME = "MuralhaRemotes"
 local RAID_REWARD_GOLD = 5
@@ -81,20 +82,60 @@ print(
 		.. BattleLog.STORE_NAME
 )
 
+local phantomMock = RunService:IsStudio()
+local phantomOverride = ServerStorage:GetAttribute("PhantomStoreMock")
+if phantomOverride ~= nil then
+	phantomMock = phantomOverride == true
+end
+local phantomDataStore = nil
+if not phantomMock then
+	local ok, result = pcall(function()
+		return DataStoreService:GetDataStore(PhantomStore.STORE_NAME)
+	end)
+	if ok then
+		phantomDataStore = result
+	else
+		phantomMock = true
+		warn("[raid] DataStore do fantasma indisponivel; usando Mock: " .. tostring(result))
+	end
+end
+local phantomStore = PhantomStore.new({ store = phantomDataStore, mock = phantomMock })
+print(
+	"[raid] phantom store="
+		.. (phantomMock and "Mock" or "DataStore")
+		.. " name="
+		.. PhantomStore.STORE_NAME
+)
+
 local busy: { [Player]: boolean } = {}
 
--- Perfil sintetico com o loadout padrao do motor; toBattleWall valida e converte.
-local function phantomWall(): any
-	local profile = ProfileSchema.template()
-	local defaults = Core.defaultWall().traps
-	for _, trap in ipairs(defaults) do
-		profile.wall.cells[trap.cell] = { trap = trap.type, level = trap.level }
-	end
-	local contentOk, contentErr = TrapCatalog.ensureProfileContent(profile)
-	assert(contentOk, "phantomWall: " .. tostring(contentErr))
+-- Snapshot real: a muralha do perfil passa por toBattleWall e guarda hp/traps.
+local function snapshotFromProfile(player: Player, profile: any): (any?, string?)
 	local wall, wallErr = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, 500)
-	assert(wall ~= nil, "phantomWall: " .. tostring(wallErr))
-	return wall
+	if wall == nil then
+		return nil, wallErr
+	end
+	local traps = {}
+	for index, trap in ipairs(wall.traps) do
+		traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+	end
+	return {
+		ownerId = player.UserId,
+		ownerName = player.Name,
+		hp = wall.hp,
+		traps = traps,
+		contentVersion = TrapCatalog.CONTENT_VERSION,
+		updatedAt = os.time(),
+	},
+		nil
+end
+
+local function wallFromSnapshot(snapshot: any): any
+	local traps = {}
+	for index, trap in ipairs(snapshot.traps) do
+		traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+	end
+	return { hp = snapshot.hp, traps = traps }
 end
 
 local function runBattle(seed: number, wall: any): any
@@ -157,7 +198,33 @@ local function startRaid(player: Player): any
 			battleId = string.format("raid_%d_%d", player.UserId, os.time())
 		end
 		local seed = math.random(1, 2147483647)
-		local wall = phantomWall()
+		local profileSession = ProfileRegistry.get(player)
+		if profileSession == nil or type(profileSession.Data) ~= "table" then
+			return { ok = false, err = "profile" }
+		end
+		local currentSnapshot, currentErr = snapshotFromProfile(player, profileSession.Data)
+		if currentSnapshot == nil then
+			return { ok = false, err = "phantom: " .. tostring(currentErr) }
+		end
+		local target = phantomStore.get()
+		if target == nil or target.contentVersion > TrapCatalog.CONTENT_VERSION then
+			target = currentSnapshot
+		end
+		local wall = wallFromSnapshot(target)
+		local storedPhantom, phantomStoreErr = phantomStore.put(currentSnapshot)
+		if not storedPhantom then
+			warn("[raid] nao publicou fantasma: " .. tostring(phantomStoreErr))
+		end
+		print(
+			string.format(
+				"[raid] phantom owner=%s traps=%d hp=%d content=v%d store=%s",
+				tostring(target.ownerName),
+				#target.traps,
+				target.hp,
+				target.contentVersion,
+				phantomMock and "Mock" or "DataStore"
+			)
+		)
 		local startedProps = RaidTelemetry.startedProps(
 			battleId,
 			seed,
@@ -169,7 +236,7 @@ local function startRaid(player: Player): any
 		logEvent("raid_start", { battle_id = battleId, mode = "phantom", speed = RAID_SPEED })
 
 		local result = runBattle(seed, wall)
-		local replay = runBattle(seed, phantomWall())
+		local replay = runBattle(seed, wallFromSnapshot(target))
 		local replayOk, replayErr, expectedHash, actualHash = RaidReplay.verify(result, replay)
 		if not replayOk then
 			local divergence = RaidTelemetry.divergenceProps(battleId, expectedHash, actualHash)
@@ -197,6 +264,7 @@ local function startRaid(player: Player): any
 			TrapCatalog.CONTENT_VERSION,
 			Core.GRID_WIDTH,
 			#wall.traps,
+			wall,
 			os.time()
 		)
 		if record == nil then
@@ -274,6 +342,10 @@ local function startRaid(player: Player): any
 			durationMs = result.ticks * BattleLog.TICK_MS,
 			rewardGold = creditedGold,
 			replaySeconds = RaidReplay.SECONDS,
+			wall = wall,
+			phantomName = target.ownerName,
+			waveCount = 70,
+			simVersion = Core.SIM_VERSION,
 			record = finalLog,
 		}
 	end)

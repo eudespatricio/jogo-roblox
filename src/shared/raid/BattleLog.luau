@@ -25,6 +25,12 @@ export type Record = {
 	createdAt: number,
 	rewarded: boolean,
 	rewardGold: number,
+	wall: WallSnapshot,
+}
+
+export type WallSnapshot = {
+	hp: number,
+	traps: { { cell: string, type: string, level: number } },
 }
 
 export type BattleResult = {
@@ -46,6 +52,37 @@ local function isInteger(value: any): boolean
 		and numberValue ~= math.huge
 		and numberValue ~= -math.huge
 		and numberValue % 1 == 0
+end
+
+local function isValidWall(wall: any): (boolean, string?)
+	if type(wall) ~= "table" then
+		return false, "wall invalido"
+	end
+	if not isInteger(wall.hp) or wall.hp <= 0 then
+		return false, "wall.hp invalido"
+	end
+	if type(wall.traps) ~= "table" then
+		return false, "wall.traps invalido"
+	end
+	local count = 0
+	for _ in pairs(wall.traps) do
+		count += 1
+	end
+	if count ~= #wall.traps or count > 5 then
+		return false, "wall.traps invalido"
+	end
+	for index, trap in ipairs(wall.traps) do
+		if type(trap) ~= "table" then
+			return false, "wall.traps[" .. index .. "] invalido"
+		end
+		if type(trap.cell) ~= "string" or type(trap.type) ~= "string" then
+			return false, "wall.traps[" .. index .. "] invalido"
+		end
+		if not isInteger(trap.level) or trap.level < 1 or trap.level > 5 then
+			return false, "wall.traps[" .. index .. "].level invalido"
+		end
+	end
+	return true, nil
 end
 
 local function isId(value: any): boolean
@@ -135,6 +172,13 @@ function BattleLog.validate(record: any): (boolean, string?)
 	if not isInteger(record.rewardGold) or record.rewardGold < 0 then
 		return false, "rewardGold invalido"
 	end
+	local wallOk, wallErr = isValidWall(record.wall)
+	if not wallOk then
+		return false, wallErr
+	end
+	if record.trapsCount ~= #record.wall.traps then
+		return false, "trapsCount != #wall.traps"
+	end
 	return true, nil
 end
 
@@ -146,10 +190,19 @@ function BattleLog.fromBattle(
 	contentVersion: number,
 	gridWidth: number,
 	trapsCount: number,
+	wall: WallSnapshot,
 	createdAt: number
 ): (Record?, string?)
 	if type(result) ~= "table" then
 		return nil, "result invalido"
+	end
+	local wallOk, wallErr = isValidWall(wall)
+	if not wallOk then
+		return nil, wallErr
+	end
+	local wallCopy: WallSnapshot = { hp = wall.hp, traps = {} }
+	for index, trap in ipairs(wall.traps) do
+		wallCopy.traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
 	end
 	local record: Record = {
 		schemaVersion = BattleLog.SCHEMA_VERSION,
@@ -168,6 +221,7 @@ function BattleLog.fromBattle(
 		createdAt = createdAt,
 		rewarded = false,
 		rewardGold = 0,
+		wall = wallCopy,
 	}
 	local ok, err = BattleLog.validate(record)
 	if not ok then
@@ -206,6 +260,16 @@ function BattleLog.markRewarded(record: Record, rewardGold: number): (Record?, s
 		createdAt = record.createdAt,
 		rewarded = true,
 		rewardGold = rewardGold,
+		wall = {
+			hp = record.wall.hp,
+			traps = (function()
+				local traps = {}
+				for index, trap in ipairs(record.wall.traps) do
+					traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+				end
+				return traps
+			end)(),
+		},
 	}
 	local ok, err = BattleLog.validate(copy)
 	if not ok then

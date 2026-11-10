@@ -10,8 +10,8 @@
 ## Fase
 
 **P1 em execução (autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
-(FPS 60/60); **S5 fechada** (drop-in/+3 ouro); **S6 iniciada (scaffold; QA humano pendente)**;
-**S7 pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
+(FPS 60/60); **S5 fechada** (drop-in/+3 ouro); **S6.1 iniciada** (fantasma real + replay 3D; QA humano
+pendente); **S7 pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -53,7 +53,8 @@
 
 - **P1** (2–3 semanas): S6 raid/replay em QA → S7 telemetria. Saída: 70% de primeira vitória
   < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- S6: scaffold pronto (raid/BattleLog/replay); falta QA humano; S7 depois. GAP-011 fechado.
+- S6.1: raid/fantasma/BattleLog/replay 3D prontos; falta QA visual; S7 depois. GAP-011
+  fechado.
 - GAPs abertos: GAP-004/005/008 (001/002/003/009/010/011 fechados); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
