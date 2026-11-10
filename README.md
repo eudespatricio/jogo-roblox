@@ -59,7 +59,7 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   walls-contract.luau    contrato da muralha/economia (S3; 13 checagens, toBattleWall)
   content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
   build-contract.luau    contrato do grid/build da S4 (14 checagens: protocolo/estado/HUD/layout)
-  dropin-contract.luau   contrato do drop-in da S5 (7 checagens: estado/funil/batalha fixa)
+  dropin-contract.luau   contrato do drop-in da S5 (8 checagens: estado/funil/batalha/reward)
   fixtures/              fixtures da migração 0→1→2 do perfil
 src/shared/sim/core.luau motor v3 (RNG, mul32/add32, Battle 5×5/N=5, 5 tipos)
 src/shared/build/        GridLayout, BuildProtocol, BuildClientState, BuildHud e BuildLayout (puros)
@@ -98,7 +98,7 @@ luau sim/analytics-contract.luau       # contrato de analytics v1
 luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
 luau sim/build-contract.luau           # grid/build (S4; 14 checagens)
-luau sim/dropin-contract.luau          # drop-in (S5; 7 checagens)
+luau sim/dropin-contract.luau          # drop-in (S5; 8 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
 python3 scripts/check-versions.py      # gate de versões docs x fonte
 

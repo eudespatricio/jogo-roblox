@@ -6,6 +6,9 @@ local DropInState = require("../src/shared/dropin/DropInState")
 local DropInTelemetry = require("../src/shared/dropin/DropInTelemetry")
 local AnalyticsTypes = require("../src/shared/analytics/AnalyticsTypes")
 local Core = require("../src/shared/sim/core")
+local ProfileSchema = require("../src/shared/data/ProfileSchema")
+local TrapCatalog = require("../src/shared/data/TrapCatalog")
+local WallService = require("../src/server/walls/WallService")
 
 local failures = {}
 local checks = 0
@@ -150,6 +153,24 @@ check("funil: props do dropin validam na taxonomia v1", function()
 	assert(badMs == nil, "aceitou ms negativo")
 	local badPressed = DropInTelemetry.pressedProps(10, "sim")
 	assert(badPressed == nil, "aceitou pressed string")
+end)
+
+check("reward do drop-in: +3 ouro via WallService", function()
+	local profile = ProfileSchema.template()
+	local ok, err = TrapCatalog.ensureProfileContent(profile)
+	assert(ok, tostring(err))
+	local service = WallService.new({
+		profile = profile,
+		schema = ProfileSchema,
+		catalog = TrapCatalog,
+	})
+	local result, creditErr = service.creditGold(3, "defense", nil)
+	assert(result ~= nil, tostring(creditErr))
+	assert(profile.gold == 3, "gold=" .. tostring(profile.gold))
+	assert(result.events ~= nil and #result.events == 1, "eventos")
+	local event = result.events[1]
+	assert(event.name == "gold_earned", tostring(event.name))
+	assert(event.props.amount == 3 and event.props.source == "defense", "props do reward")
 end)
 
 check("funil: ordem do funil inclui os dois eventos", function()

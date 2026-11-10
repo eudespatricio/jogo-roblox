@@ -23,7 +23,7 @@ pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 7/7 |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
@@ -35,7 +35,7 @@ pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
-- Engenharia: `docs/padroes-engenharia.md`; S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s); S5 drop-in scaffold (7/7).
+- Engenharia: `docs/padroes-engenharia.md`; S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s); S5 drop-in scaffold (8/8).
 - Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.

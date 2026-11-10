@@ -14,11 +14,17 @@ local dropinModules = Shared:WaitForChild("dropin")
 local DropInState = require(dropinModules:WaitForChild("DropInState"))
 local DropInTelemetry = require(dropinModules:WaitForChild("DropInTelemetry"))
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
+local ProfileSchema = require(Shared:WaitForChild("data"):WaitForChild("ProfileSchema"))
+local TrapCatalog = require(Shared:WaitForChild("data"):WaitForChild("TrapCatalog"))
+local WallService = require(script.Parent.Parent:WaitForChild("walls"):WaitForChild("WallService"))
+local ProfileRegistry =
+	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 
 local REMOTES_NAME = "MuralhaRemotes"
 local DROPIN_SEED = 4
 local RUN_TICKS = 100
 local WAVE = { count = 12, spawnEveryTicks = 8 }
+local REWARD_GOLD = 3
 
 local function ensureRemotes(): Folder
 	local existing = ReplicatedStorage:FindFirstChild(REMOTES_NAME)
@@ -117,6 +123,43 @@ local function logPressed(session: any, msSinceJoin: number): ()
 	print(DropInTelemetry.format("dropin_pressed", props))
 end
 
+-- Recompensa do GDD §2: +3 ouro ao limpar a onda. Fonte "defense" (taxonomia v1); a
+-- mutacao passa pelo WallService (gold + evento gold_earned) e o ProfileStore autosalva.
+local function grantReward(player: Player): boolean
+	for _ = 1, 100 do
+		if player.Parent ~= Players then
+			return false
+		end
+		local profileSession = ProfileRegistry.get(player)
+		if profileSession ~= nil and type(profileSession.Data) == "table" then
+			local serviceOk, service = pcall(function()
+				return WallService.new({
+					profile = profileSession.Data,
+					schema = ProfileSchema,
+					catalog = TrapCatalog,
+					emit = function(name: string, props: { [string]: any })
+						print(DropInTelemetry.format(name, props))
+					end,
+				})
+			end)
+			if not serviceOk then
+				warn("[dropin] reward: WallService.new falhou: " .. tostring(service))
+				return false
+			end
+			local result, err = service.creditGold(REWARD_GOLD, "defense", nil)
+			if result == nil then
+				warn("[dropin] reward recusado: " .. tostring(err))
+				return false
+			end
+			print(string.format("[dropin] +%d ouro gold=%d", REWARD_GOLD, result.gold))
+			return true
+		end
+		task.wait(0.1)
+	end
+	warn("[dropin] reward: perfil nao carregou em 10 s")
+	return false
+end
+
 local function snapshotFor(player: Player, logShownEvent: boolean?): any
 	local session = sessions[player]
 	if session == nil then
@@ -139,8 +182,19 @@ local function snapshotFor(player: Player, logShownEvent: boolean?): any
 		logShown(session, now - session.joinAtMs)
 	end
 	if changed and phase == DropInState.PHASE_CLEARED then
-		player:SetAttribute("DropInDone", true)
 		print(string.format("[dropin] onda limpa em %.1fs", (now - session.joinAtMs) / 1000))
+		if not session.rewardStarted then
+			session.rewardStarted = true
+			task.spawn(function()
+				local ok, err = pcall(grantReward, player)
+				if not ok then
+					warn("[dropin] reward falhou: " .. tostring(err))
+				end
+				if player.Parent == Players then
+					player:SetAttribute("DropInDone", true)
+				end
+			end)
+		end
 	elseif changed and phase == DropInState.PHASE_DEFEATED then
 		session.defeatedLogged = true
 		print(

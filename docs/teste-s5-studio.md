@@ -16,7 +16,8 @@ roteirizada; `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥60% n
 2. `rojo build default.project.json -o build/place.rbxl` e abrir o lugar no Studio.
 3. `ServerStorage.ProfileStoreMock = true` (default do Studio). Se quiser testar o build depois do
    drop-in, aplique o grant da S4 (`QaStarterGold`/`QaLeaguePoints`, §1.4 de
-   [`teste-s4-studio.md`](teste-s4-studio.md)); sem ele o perfil novo continua com 0 de ouro.
+   [`teste-s4-studio.md`](teste-s4-studio.md)); sem ele o perfil novo fica com o **+3** do
+   drop-in (não paga a primeira armadilha de 40).
 4. `ServerStorage.ProfileSelfTest = false` — o selftest encerra a sessão e atrapalha a cena.
 
 ## 2. Logs esperados
@@ -27,6 +28,8 @@ roteirizada; `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥60% n
 [analytics] dropin_shown ms_since_join=...
 [analytics] dropin_pressed ms_since_join=... pressed=true
 [dropin] onda limpa em X.Xs
+[analytics] gold_earned amount=3 source=defense
+[dropin] +3 ouro gold=3
 [build] cena 5x5 pronta
 [build] remotes prontos em ReplicatedStorage.MuralhaRemotes
 [build] cliente pronto em X.Xs
@@ -49,8 +52,10 @@ e o sink de analytics são a **S7** — na S5 os pontos de funil são logados co
 - [ ] Apertar DEFENDER: botão some, salva de catapulta/slow motion (FOV), horda congela.
 - [ ] Output: `[analytics] dropin_pressed ... pressed=true` e depois `[dropin] onda limpa em ...`.
 - [ ] `ONDA LIMPA` aparece; a cena some e a UI de build entra (câmera isométrica, 5×5).
-- [ ] O perfil/build continua funcionando depois do drop-in (se o grant da S4 estiver ativo,
-      colocar uma armadilha; sem grant, o ouro 0 é esperado).
+- [ ] Output do clear: `[analytics] gold_earned amount=3 source=defense` e
+      `[dropin] +3 ouro gold=3`.
+- [ ] O topo do build mostra **OURO 3** (sem grant da S4) ou **grant + 3**; o build continua
+      funcionando depois do drop-in.
 - [ ] Repetir em **375×812** e **720×1280**: botão/barra sem sobreposição e legíveis.
 
 ## 5. Timeout e retry (derrota roteirizada)
@@ -80,7 +85,7 @@ e o sink de analytics são a **S7** — na S5 os pontos de funil são logados co
 
 Colar no handoff/`CONTINUAR.md`:
 
-1. linhas `[dropin]`/`[analytics]` do Output (shown, pressed, limpa/derrota);
+1. linhas `[dropin]`/`[analytics]` do Output (shown, pressed, limpa/derrota, `+3 ouro`);
 2. prints da cena + DEFENDER em **375×812** e **720×1280**;
 3. print da tela de derrota + retry (timeout) e do build depois da onda limpa;
 4. FPS medido e tempo do `rojo build`/Play;
@@ -90,9 +95,10 @@ Sem os itens **1–3**, a S5 não fecha. O scaffold e o contrato headless não s
 
 ## 9. Fora do scaffold (não inventar)
 
-- **Recompensa do GDD §2** (`+3 ouro · armadilha desbloqueada`) não entra nesta fatia: a economia/
-  taxonomia v1 não define um `source` de starter e o perfil novo nasce com 0. O build pós-drop-in
-  usa o grant de QA da S4 até a decisão de economia.
+- **Recompensa do GDD §2:** o **+3 ouro** entra no clear via `WallService.creditGold(3, "defense")`
+  (fonte válida da taxonomia v1), com `gold_earned` logado; o build só libera depois do crédito.
+  A parte de "armadilha desbloqueada" não entra: o arqueiro já é liga 1 e custa 40; o +3 é o
+  onboarding do GDD, não um starter kit. Decisão de economia além disso fica para outra janela.
 - S6 (raid/replay) e P2 não começam aqui; o `AnalyticsService`/envelope é S7.
 - O visual do drop-in é local (horda/blocos); a batalha do press é real (Core, seed 4, muralha
   pré-montada com catapulta). A arte final fica para a janela de cena.
@@ -102,12 +108,13 @@ Sem os itens **1–3**, a S5 não fecha. O scaffold e o contrato headless não s
 ```bash
 source scripts/env.sh
 bash scripts/doctor.sh        # RC=0
-bash scripts/check.sh         # RC=0; contrato de drop-in 7/7
-luau sim/dropin-contract.luau # 7 checagens, 0 falhas
+bash scripts/check.sh         # RC=0; contrato de drop-in 8/8
+luau sim/dropin-contract.luau # 8 checagens, 0 falhas
 rojo build default.project.json -o build/place.rbxl
 ```
 
 - `DropInState`: press 1,5–10 s, salvo, clear, timeout, retry.
 - Batalha fixa: seed 4, 100 ticks, defensor, catapulta na muralha, hash estável.
 - Funil: `dropin_shown`/`dropin_pressed` validam em `AnalyticsTypes` (taxonomia v1).
+- Reward: `creditGold(3, "defense")` credita 3 e emite `gold_earned`.
 - **Falta (humano):** itens 1–3 da §8 — logs/prints/FPS da cena e do timeout/retry.

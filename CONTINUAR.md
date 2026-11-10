@@ -90,13 +90,14 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     **Play→UI 1,9 s**, prints completos e `trap_limit`/`max_level`; evidência na §7 de
     `docs/teste-s4-studio.md`.
 - **S5 iniciada — drop-in de 5 s (10/11/2026, scaffold):**
-  - `DropInState`/`DropInTelemetry` puros + `sim/dropin-contract.luau` **7/7**: fases, press
-    1,5–10 s, timeout, retry, props do funil.
+  - `DropInState`/`DropInTelemetry` puros + `sim/dropin-contract.luau` **8/8**: fases, press
+    1,5–10 s, timeout, retry, props do funil e +3 ouro via `WallService.creditGold`.
   - `DropInController.server`: remotes `DropInAction`/`DropInSnapshot`, batalha **real** fixa
     (seed 4, 100 ticks, muralha com catapulta), derrota roteirizada em 10 s e novo `shown` no retry.
   - `DropInClient`: cena local (portão/horda/catapulta), DEFENDER em 1,5 s, pulso em 6 s,
     `A HORDA PASSOU` + `TENTAR DE NOVO`; `BuildClient` espera `DropInDone`.
   - Funil: `[analytics] dropin_shown/dropin_pressed` como props validadas; envelope/sink é a S7.
+    O clear credita **+3 ouro** (`WallService.creditGold(3, "defense")`) antes de liberar o build.
     **Falta QA humano** (logs/prints/FPS da §8 de `docs/teste-s5-studio.md`).
 - Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
@@ -114,7 +115,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 7/7 (`sim/*-contract.luau`) |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 (`sim/*-contract.luau`) |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`) |
 | muralha/economia | catálogo 5 tipos · N=5 · sem refund · `toBattleWall` · `docs/economia-muralha.md` |
 | perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
@@ -187,7 +188,7 @@ GAP-001/002/003/009/010 fechados; GAP-004/005/008/011 abertos.
   `sim/build-contract.luau` **14/14**; `BuildGrid` cria 25 células/muralha; `WallController` expõe
   snapshot/place/remove/upgrade; `BuildClient` tem câmera fixa, UI 5×5, HUD e layout responsivo.
   Runtime: FPS 60/60, Play→UI 1,9 s, prints com painel e `trap_limit`/`max_level`; §7 preenchida.
-- **S5 (scaffold):** `DropInState`/`DropInTelemetry` + `sim/dropin-contract.luau` **7/7**;
+- **S5 (scaffold):** `DropInState`/`DropInTelemetry` + `sim/dropin-contract.luau` **8/8**;
   `DropInController.server` remotes/estado/batalha fixa/retry; `DropInClient` cena local + DEFENDER;
   `BuildClient` espera `DropInDone`. Runtime/QA pendente; envelope de analytics é S7.
 - **Fonte da parede:** use só `WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, hp)` para

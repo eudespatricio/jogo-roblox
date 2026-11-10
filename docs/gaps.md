@@ -73,6 +73,7 @@ runtime com FPS 60/60, Play→UI 1,9 s e prints 375×812/720×1280; evidência e
 ## S5 — scaffold (10/11/2026)
 
 Sem gap novo e sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `2489780106`). O
-scaffold entrega cena/DEFENDER, timeout/retry e os pontos `dropin_shown`/`dropin_pressed` como props
-validadas; o envelope/sink é a S7. QA humano pendente em
+scaffold entrega cena/DEFENDER, timeout/retry, os pontos `dropin_shown`/`dropin_pressed` como props
+validadas e o **+3 ouro** no clear (`WallService.creditGold(3, "defense")`); o envelope/sink é a S7.
+QA humano pendente em
 [`teste-s5-studio.md`](teste-s5-studio.md) §8.
