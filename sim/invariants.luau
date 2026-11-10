@@ -191,6 +191,8 @@ check("I11 loadout invalido e recusado", function()
 		},
 	})
 	rejects({ traps = { { cell = "r1c6", type = "archer" } } })
+	rejects({ traps = { { cell = "r01c1", type = "archer" } } })
+	rejects({ traps = { r1c1 = { type = "archer" } } })
 	rejects({ traps = { { cell = "r1c1", type = "wizard" } } })
 	rejects({ traps = { { cell = "r1c1", type = "archer", level = 6 } } })
 	rejects({ traps = {} }, 1)

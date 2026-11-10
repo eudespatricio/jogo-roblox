@@ -117,6 +117,10 @@ local function parseCell(cell)
 	if row < 1 or row > Core.GRID_HEIGHT or col < 1 or col > Core.GRID_WIDTH then
 		return nil, nil
 	end
+	-- forma canonica: "r01c1" nao pode virar um segundo alias da mesma celula
+	if string.format("r%dc%d", row, col) ~= cell then
+		return nil, nil
+	end
 	return row, col
 end
 
@@ -132,6 +136,12 @@ local function normalizeTraps(traps)
 		return {}
 	end
 	assert(type(traps) == "table", "wall.traps invalida")
+	local count = 0
+	for key in pairs(traps) do
+		assert(type(key) == "number", "wall.traps deve ser uma lista (array)")
+		count += 1
+	end
+	assert(count == #traps, "wall.traps deve ser uma lista densa (sem buracos)")
 	local normalized = {}
 	local seen = {}
 	for index, trap in ipairs(traps) do
