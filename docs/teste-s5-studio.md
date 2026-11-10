@@ -118,3 +118,15 @@ rojo build default.project.json -o build/place.rbxl
 - Funil: `dropin_shown`/`dropin_pressed` validam em `AnalyticsTypes` (taxonomia v1).
 - Reward: `creditGold(3, "defense")` credita 3 e emite `gold_earned`.
 - **Falta (humano):** itens 1–3 da §8 — logs/prints/FPS da cena e do timeout/retry.
+
+## 11. Evidência parcial — 720×1280 (10/11/2026)
+
+- **Timeout:** `[analytics] dropin_shown ms_since_join=100`; `[dropin] derrota roteirizada em
+  10.0s`; **sem** `dropin_pressed`; tela `A HORDA PASSOU` + `TENTAR DE NOVO`.
+- **Sucesso:** `dropin_shown ms_since_join=89`; `dropin_pressed ms_since_join=4064 pressed=true`;
+  `[dropin] onda limpa em 5.7s`; `[build] cliente pronto em 4.2s`; `ONDA LIMPA` e build.
+- `OURO 0` no sucesso era o build **antes** do reward; o +3 entrou no commit `5aee505`
+  (`WallService.creditGold(3, "defense")`, contrato 8/8). Re-testar para ver `[dropin] +3 ouro
+  gold=3` e `OURO 3` no topo.
+- **Falta:** print em 375×812 com o OURO 3, FPS focado do drop-in e veredito. S5 continua
+  **aberta**.
