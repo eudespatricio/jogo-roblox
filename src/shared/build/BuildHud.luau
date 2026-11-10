@@ -16,8 +16,18 @@ export type Hud = {
 	uiSeconds: number?,
 }
 
-function BuildHud.new(): Hud
-	return { frames = 0, window = 0, fps = 0, elapsed = 0, uiSeconds = nil }
+-- `initialElapsed` cobre o tempo antes do primeiro frame (o BuildClient passa `time()`), para
+-- `T`/`UI` nao comecarem em 0.0 s quando o primeiro RenderStepped chega tarde.
+function BuildHud.new(initialElapsed: number?): Hud
+	local elapsed = 0
+	if
+		type(initialElapsed) == "number"
+		and initialElapsed == initialElapsed
+		and initialElapsed > 0
+	then
+		elapsed = initialElapsed
+	end
+	return { frames = 0, window = 0, fps = 0, elapsed = elapsed, uiSeconds = nil }
 end
 
 -- Amostra um frame com o delta de parede (RenderStepped). dt <= 0 / NaN e ignorado.

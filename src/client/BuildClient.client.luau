@@ -52,7 +52,7 @@ player.CharacterAdded:Connect(hideCharacter)
 
 -- ---------------------------------------------------------------- estado e HUD
 local state = BuildClientState.new()
-local hud = BuildHud.new()
+local hud = BuildHud.new(time()) -- time() = parede desde o inicio do cliente; dt cobre o resto
 local currentLayout = nil
 
 local statusMessages = {

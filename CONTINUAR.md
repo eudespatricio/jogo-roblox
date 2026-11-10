@@ -301,8 +301,10 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
     é a janela de 0,5 s; sem isso o critério de 30 s/45 FPS do QA vira achismo. O HUD não substitui
     o Studio: só mede.
 24. **`os.clock()` mede CPU time no Roblox.** O primeiro HUD usava `os.clock` para FPS/T/UI e o
-    print de 375×812 mostrou `FPS 15`/`UI 1.6s` distorcidos; o HUD agora usa o `dt` de parede do
-    `RenderStepped`, e o contrato prova 60/30 FPS. FPS real ainda depende do Studio com foco.
+    print de 375×812 mostrou `FPS 15`/`UI 1.6s` distorcidos; o HUD agora soma `time()` (tempo antes
+    do primeiro frame) + `dt` de parede do `RenderStepped`, e o contrato prova 60/30 FPS. `UI`/`T`
+    são desde o início do cliente; para Play→UI exato, use os timestamps do Output. FPS real ainda
+    depende do Studio com foco.
 
 ---
 

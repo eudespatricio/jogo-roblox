@@ -272,6 +272,12 @@ check("hud: fps, tempos e selecao (dt de parede)", function()
 	end
 	assert(h30.fps == 30, "fps 30 medido: " .. tostring(h30.fps))
 
+	local withOffset = BuildHud.new(42)
+	assert(withOffset.elapsed == 42, "offset inicial: " .. tostring(withOffset.elapsed))
+	BuildHud.tick(withOffset, 1)
+	assert(withOffset.elapsed == 43, "offset + dt: " .. tostring(withOffset.elapsed))
+	assert(BuildHud.markReady(withOffset) == 43, "offset + ready")
+
 	local ready = BuildHud.new()
 	BuildHud.tick(ready, 2.5)
 	local uiSeconds = BuildHud.markReady(ready)

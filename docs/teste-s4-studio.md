@@ -57,8 +57,9 @@ erro no Output.
 - [ ] Botões `COLOCAR`, `REMOVER`, `UPGRADE` mudam o modo e ficam visualmente ativos.
 - [ ] HUD de debug logo abaixo do topo, sempre visível:
   - [ ] `FPS n` atualiza (antes da primeira janela de 0,5 s mostra `FPS --`);
-  - [ ] `T x.xs` é o tempo desde o Play;
-  - [ ] `UI x.xs` congela no primeiro snapshot (`UI --` antes dele);
+  - [ ] `T x.xs` é o tempo desde o início do cliente (aprox. Play);
+  - [ ] `UI x.xs` congela no primeiro snapshot (`UI --` antes dele); para o Play→UI exato,
+        use os timestamps do Output (`[muralha] servidor pronto` → `[build] cliente pronto`);
   - [ ] à direita, `COLOCAR · ARQUEIRO` / `REMOVER` / `UPGRADE` acompanha a seleção.
 - [ ] Grid 5×5 **quadrado**, clicável e legível em **375×812** (device emulation do Studio).
 - [ ] O mesmo grid/painel continua sem sobreposição em **720×1280**.
@@ -83,7 +84,8 @@ Com o grant de QA da §1.4 (`QaStarterGold`/`QaLeaguePoints`) ou gold suficiente
 ## 6. Performance e build
 
 - [ ] `rojo build` completo em **≤30 s** (medir no WSL; o gate local já roda o build).
-- [ ] Play até UI interativa em **≤30 s** — anotar o `UI x.xs` do HUD (ou `[build] cliente pronto`).
+- [ ] Play até UI interativa em **≤30 s** — anotar o `UI x.xs` do HUD ou os timestamps do
+      Output (`[muralha] servidor pronto` → `[build] cliente pronto`).
 - [ ] **45+ FPS** em device emulation mobile (Studio → Device/Stats), com 5 armadilhas e UI aberta;
       anotar o `FPS n` do HUD em 375×812 e 720×1280.
 - [ ] Redimensionar o device/janela: grid continua quadrado e sem sobreposição (layout puro
@@ -156,3 +158,20 @@ Print do diretor no Studio (lugar `muralha-s4.rbxl`, `modo=Mock`):
 - Leitura: layout/HUD/estado OK; o perfil zerado bloqueou as ações (o grant da §1.4 cobre isso). Os
   números `FPS/T/UI` são da versão antiga do HUD (`os.clock` = CPU time); re-medir com a versão de
   `dt` de parede. **Falta:** 720×1280, FPS com foco e ações com grant. S4 continua **aberta**.
+
+### 720×1280 e 375×812 com grant (10/11/2026)
+
+- Dois prints do diretor (devices `720x1280` e `375x812`): `OURO 1250`, `content v2 · liga 5`,
+  `COLOCAR · PICHE`; grid 5×5 com `CATAPULTA L1`, `ARQUEIRO L3`, `CANHAO L1` e dois `PICHE L1`;
+  topo/HUD/grid sem sobreposição na parte visível; print corta o painel inferior.
+- Grant confirmado (`[qa] grant gold=2000 liga=5` no print anterior): todos os tipos com custo, sem
+  “liga” bloqueada. `ARQUEIRO L3` confirma upgrade 1→2→3; dois PICHE confirmam colocação livre.
+- Diretor confirmou: a **6ª armadilha foi recusada** (N=5) e **remover não devolveu ouro** — ambos
+  **esperados** (Q2; taxonomia v1). `CATAPULTA L1` confirma o desbloqueio na liga 5.
+- `UI 0.1s` nesses prints é do build antes do offset de `time()`; no Output do primeiro print,
+  `[muralha] servidor pronto 08:55:45.273` → `[build] cliente pronto 08:55:47.197` ≈ **1,9 s**.
+- `FPS 15/21`: prints tirados com a janela provavelmente sem foco (throttle); **re-medir com o
+  viewport focado** e anotar o número antes de printar. Os prints atuais cortam o painel inferior;
+  falta o print inteiro em 720×1280 e 375×812.
+- Ainda faltam: `cell_occupied`/célula inválida, `max_level` e ouro insuficiente no build com grant;
+  FPS focado; print completo do painel inferior. S4 continua **aberta**.
