@@ -130,6 +130,9 @@ check("celula invalida e recusada sem mutar estado", function()
 	assert(profile.gold == goldBefore, "gold mudou")
 	assert(next(profile.wall.cells) == nil, "celula foi criada")
 	assert(#emitted == eventsBefore, "evento emitido")
+
+	local unknown, unknownErr = service.place("wizard", "r1c1")
+	assert(unknown == nil and unknownErr == "unknown_trap", tostring(unknownErr))
 end)
 
 check("celula ocupada e recusada", function()
@@ -206,6 +209,11 @@ check("upgrade debita ouro, sobe nivel e emite eventos", function()
 	assert(result.events[2].props.sink == "upgrade", "sink do upgrade")
 	validateEvents(result.events)
 
+	local badCell, badCellErr = service.upgrade("r6c1")
+	assert(badCell == nil and badCellErr == "invalid_cell", tostring(badCellErr))
+	local emptyCell, emptyCellErr = service.upgrade("r5c5")
+	assert(emptyCell == nil and emptyCellErr == "empty_cell", tostring(emptyCellErr))
+
 	local second = assert(service.upgrade("r1c1"))
 	assert(second.level == 3 and second.cost == 60, "upgrade 2->3")
 	local goldAtMax = profile.gold
@@ -227,6 +235,8 @@ check("remove apaga a celula e nao devolve ouro", function()
 	assert(#result.events == 0, "evento no remove")
 	local again, emptyErr = service.remove("r1c1")
 	assert(again == nil and emptyErr == "empty_cell", tostring(emptyErr))
+	local badCell, badCellErr = service.remove("r6c1")
+	assert(badCell == nil and badCellErr == "invalid_cell", tostring(badCellErr))
 end)
 
 check("creditGold valida fonte, valor e teto", function()
@@ -237,8 +247,10 @@ check("creditGold valida fonte, valor e teto", function()
 	assert(result.events[1].props.battle_id == BATTLE_ID, "battle_id")
 	validateEvents(result.events)
 
-	assert(service.creditGold(80, "defense"))
-	assert(service.creditGold(40, "daily"))
+	local defense = assert(service.creditGold(80, "defense"))
+	validateEvents(defense.events)
+	local daily = assert(service.creditGold(40, "daily"))
+	validateEvents(daily.events)
 	assert(profile.gold == 240, "gold acumulado")
 
 	for _, amount in ipairs({ 0, -1, 1.5 }) do
