@@ -5,7 +5,7 @@
 **S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 34/34,
 sink persistente e `first_win_seconds`); **S8 fechada** (apresentação visual: diorama, traps/horda
 3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008 abertos · base
-`main` @ `6d48d43`, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
+`main` @ `77f808a`, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
 > (`contentVersion` no `BattleLog`); **GAP-012 fechado na S7/S8** (`AnalyticsDataStoreSink` com
