@@ -35,7 +35,7 @@ pendente); **S7 pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em p
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
-- Engenharia: `docs/padroes-engenharia.md`; S4/S5 fechadas; S6 raid/BattleLog/replay em scaffold (6/6).
+- Engenharia: `docs/padroes-engenharia.md`; S4/S5 fechadas; S6.1 fantasma real + replay 3D (6/6).
 - Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
@@ -68,7 +68,7 @@ pendente); **S7 pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em p
 
 ## Próximo passo
 
-1. S6: QA humano da raid/replay (itens 1–3 de docs/teste-s6-studio.md §7).
+1. S6.1: QA humano do replay 3D/fantasma (itens 1–3 de docs/teste-s6-studio.md §7).
 2. Depois S7; P2 não começa sem autorização.
 
 ## Como verificar o estado em 1 minuto

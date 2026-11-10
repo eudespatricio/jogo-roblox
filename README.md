@@ -62,7 +62,7 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
   build-contract.luau    contrato do grid/build da S4 (14 checagens: protocolo/estado/HUD/layout)
   dropin-contract.luau   contrato do drop-in da S5 (8 checagens: estado/funil/batalha/reward)
-  raid-contract.luau     contrato da raid da S6 (6 checagens: BattleLog/replay/idempotência)
+  raid-contract.luau     contrato da raid da S6.1 (6 checagens: BattleLog/wall/replay/idempotência)
   fixtures/              fixtures da migração 0→1→2 do perfil
 src/shared/sim/core.luau motor v3 (RNG, mul32/add32, Battle 5×5/N=5, 5 tipos)
 src/shared/build/        GridLayout, BuildProtocol, BuildClientState, BuildHud e BuildLayout (puros)
@@ -74,7 +74,7 @@ src/server/data/         sessão sobre o ProfileStore vendorizado + ProfileRegis
 src/server/walls/        WallService + WallController (remotes snapshot/place/remove/upgrade)
 src/server/world/        BuildGrid: 25 células e muralha visual no Workspace
 src/server/dropin/       DropInController: remotes, batalha fixa seed 4 e timeout/retry
-src/server/raid/         RaidController + BattleLogStore (MuralhaBattleLog_v1)
+src/server/raid/         RaidController + BattleLogStore + PhantomStore (fantasma real)
 src/server/ProfileBoot.server.luau  ligação com Players + self-test no Studio
 src/server/Main.server.luau  stub de entrada do servidor (S1)
 src/client/              BuildClient, DropInClient (cena/DEFENDER) e RaidClient (ATACAR/replay)
@@ -104,7 +104,7 @@ luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
 luau sim/build-contract.luau           # grid/build (S4; 14 checagens)
 luau sim/dropin-contract.luau          # drop-in (S5; 8 checagens)
-luau sim/raid-contract.luau            # raid/BattleLog/replay (S6; 6 checagens)
+luau sim/raid-contract.luau            # raid/BattleLog/replay (S6.1; 6 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
 python3 scripts/check-versions.py      # gate de versões docs x fonte
 
