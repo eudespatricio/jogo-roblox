@@ -179,3 +179,12 @@ teste local. O reward 5 continua provisório.
 - **Achado/correção:** o board 3D aparecia muito pequeno e a linha de reward era cortada. A câmera
   foi para a frente (`(20,30,50)` olhando `(20,2,0)`), o FOV para 55, traps/horda/gate ficaram
   maiores e o modal/detalhes cresceram. **Re-testar** 375×812/720×1280.
+
+### Re-teste de enquadramento — 10/11/2026 11:26
+
+- O board 3D já aparece com lanes/traps/horda no `ViewportFrame`; `HP 0 · vazados · +5 ouro` e o
+  `fantasma` agora cabem nos detalhes.
+- O fantasma real refletiu `traps=0` (muralha vazia), depois `traps=1` e `traps=2` conforme o
+  archer/piche foram colocados; o hash local continuou batendo.
+- Ainda falta o print final 375×812/720×1280 **depois** de `REPLAY CONCLUIDO · 8s` (com FECHAR) e
+  o veredito. S6.1 aberta.

@@ -344,22 +344,37 @@ local function startReplay(result: any): ()
 		return
 	end
 
-	buildScene(result)
-	updateFrame(frames[1])
+	local sceneOk, sceneErr = pcall(buildScene, result)
+	if not sceneOk then
+		showError("Replay 3D indisponivel: " .. tostring(sceneErr))
+		return
+	end
+	local firstOk, firstErr = pcall(updateFrame, frames[1])
+	if not firstOk then
+		showError("Replay 3D indisponivel: " .. tostring(firstErr))
+		return
+	end
 	local seconds = tonumber(result.replaySeconds) or 8
 	local started = time()
 	task.spawn(function()
-		while true do
-			local progress = math.clamp((time() - started) / seconds, 0, 1)
-			local index = math.clamp(math.floor(progress * (#frames - 1)) + 1, 1, #frames)
-			updateFrame(frames[index])
-			fill.Size = UDim2.fromScale(progress, 1)
-			if progress >= 1 then
-				break
+		local animationOk, animationErr = pcall(function()
+			while true do
+				local progress = math.clamp((time() - started) / seconds, 0, 1)
+				local index = math.clamp(math.floor(progress * (#frames - 1)) + 1, 1, #frames)
+				updateFrame(frames[index])
+				fill.Size = UDim2.fromScale(progress, 1)
+				if progress >= 1 then
+					break
+				end
+				task.wait(0.03)
 			end
-			task.wait(0.03)
+		end)
+		if animationOk then
+			status.Text = "REPLAY CONCLUIDO · " .. tostring(seconds) .. "s"
+		else
+			status.Text = "REPLAY FALHOU"
+			details.Text = "Erro na animacao: " .. tostring(animationErr)
 		end
-		status.Text = "REPLAY CONCLUIDO · " .. tostring(seconds) .. "s"
 		closeButton.Visible = true
 		setBusy(false)
 	end)
