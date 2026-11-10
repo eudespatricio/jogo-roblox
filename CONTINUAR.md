@@ -289,20 +289,38 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 
 ---
 
-## Como retomar
+## Goal da próxima janela — S4 QA/hardening
 
-Cole na nova sessão:
+**Objective (campo do goal):** prepara a S4 para o QA humano e executa o hardening headless da
+cena/build (HUD de FPS/tempo, layout mobile, testes e docs); não fechar a S4 sem evidência de Studio
+nem iniciar S5/P2.
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1–S3.3 fechadas; **S3.4
-> (conteúdo e versões) fechada, incluindo Modo B real 8/8; S4 iniciada com scaffold de cena/UI e
-> QA visual pendente**). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md`,
-> `docs/p1-plano.md`, `docs/pipeline-expansao.md`, `docs/gaps.md`, `docs/versoes.md` e
-> `docs/rfc-s3.4-conteudo.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
-> `bash scripts/check.sh` (devem passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
-> colocação livre; taxonomia v1 congelada. O motor está em `simVersion 3`, hash `2489780106`
-> (seed 42); perfil schema 2 com `contentVersion 2`. **Objetivo desta janela:** QA da S4 no Studio
-> (cena/UI, FPS mobile, build ≤30 s, feel) e correções; usar só `WallService.toBattleWall` para a
-> parede; não iniciar classe/taxonomia v2 nem P2. Fora: GAP-004/008, GAP-005; GAP-011 entra na S6.
-> Rode `doctor.sh`/`check.sh`, atualize docs e feche com a linha `GAP:` atualizada. O trial/kit está
-> em `docs/expansion-test-2026-11-10.md`/`tools/expansion-test/`; o teste de produto de 3 semanas
-> roda em paralelo.
+**Prompt para disparar:**
+
+> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S3.4 fechadas; S4 iniciada com scaffold
+> de cena/UI e QA humano pendente; S5 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`,
+> `.context/MAPA.md`, `CONTINUAR.md`, `docs/p1-plano.md`, `docs/teste-s4-studio.md`,
+> `docs/versoes.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
+> `bash scripts/check.sh` (devem passar). `main` em `44f4cf8`; motor `simVersion 3`, hash
+> `2489780106`; schema 2/content 2; GAP-009 fechado; GAP-011 na S6. Não edite
+> `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1 congelada. Onde há
+> evidência de Studio, use `docs/teste-s4-studio.md`; onde não há, não invente.
+>
+> **Objetivo:** preparar e executar o QA headless da S4 e deixá-la pronta para o QA humano —
+> adicionar HUD de FPS/tempo de build no cliente, ajustar o layout mobile (375×812 e 720×1280),
+> reforçar testes headless do protocolo/estado do build, atualizar `docs/teste-s4-studio.md` e
+> corrigir o que não depender de Studio. Não iniciar S5 nem P2; não iniciar classe/taxonomia v2;
+> não fechar a S4 sem logs/screens de Studio.
+>
+> **Escopo sugerido:** (1) HUD de debug no `BuildClient` (FPS, tempo desde Play/UI, modo/armadilha);
+> (2) revisão do layout do grid/painel inferior/topo para telas estreitas; (3) se necessário extrair
+> estado puro do cliente e testar em `sim/build-contract.luau` (manter 6+/6); (4) rodar
+> `doctor.sh`/`check.sh`, `rojo build` e CI; (5) commit/push na `main` se verde.
+>
+> **Fora:** S5, P2, classe/taxonomia v2, mudança de schema/content/sim. Se precisar mudar versão,
+> pare e registre em `docs/gaps.md`; não invente produto.
+>
+> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; HUD e checklist no repo; `CONTINUAR.md`
+> atualizado; nenhuma alegação de S4 fechada sem os itens 1–3 da §7 do `teste-s4-studio.md`. Se o
+> Studio não estiver disponível, pare no checkpoint humano, reporte o que falta e feche com a linha
+> `GAP:` atualizada.

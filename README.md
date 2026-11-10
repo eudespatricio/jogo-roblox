@@ -35,6 +35,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/gaps.md`](docs/gaps.md) — lacunas conhecidas entre P's/S's, com gatilho para fechar.
 - [`docs/versoes.md`](docs/versoes.md) — bloco canônico de versões e gate do CI.
 - [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md) — RFC da fatia de conteúdo e versões.
+- [`docs/teste-s4-studio.md`](docs/teste-s4-studio.md) — roteiro de QA da cena/build da S4.
 - [`docs/expansion-test-2026-11-10.md`](docs/expansion-test-2026-11-10.md) — trial real de classe/trait/raridade.
 - [`tools/expansion-test/`](tools/expansion-test/README.md) — kit reutilizável de trial de expansão.
 - [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
