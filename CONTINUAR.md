@@ -43,12 +43,13 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     do defensor, ~1,4 ms/batalha; `sim/analytics-contract.luau` verde com hash e `sim_version 2`;
     `sim/profile-contract.luau` segue 19/19.
 - **S3 fechada — muralha/economia:**
-  - `src/server/walls/WallService.luau`: colocar/remover/upgrade com validação server-side de
-    célula, N=5, ouro e desbloqueio por liga; muta `Profile.Data.wall.cells`/`gold`.
-  - catálogo de 4 tipos (espelha o motor v2) em `docs/economia-muralha.md`; upgrade até 3 níveis;
-    remover não devolve ouro (taxonomia v1); eventos devolvidos como `{name, props}`.
-  - `sim/walls-contract.luau` **11/11**: catálogo, célula, N=5, ouro, desbloqueio, upgrade,
-    remove, `creditGold`, snapshot e eventos válidos.
+  - `src/shared/data/TrapCatalog.luau` (fonte única de custo/upgrade/liga) +
+    `src/server/walls/WallService.luau`: colocar/remover/upgrade com validação server-side de
+    célula, N=5, ouro, desbloqueio e perfil compatível; muta `Profile.Data.wall.cells`/`gold`.
+  - upgrade até 3 níveis; remover não devolve ouro (taxonomia v1); eventos devolvidos como
+    `{name, props}`; perfil com trap desconhecida/fora da grade/acima de N falha fechado.
+  - `sim/walls-contract.luau` **12/12**: catálogo x motor, fontes/sinks, perfil, célula, N=5,
+    ouro, desbloqueio, upgrade, remove, `creditGold`, snapshot e eventos válidos.
 - Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 75/80 · MAPA 59/60 ·
   REJEITADOS 19/40**.
 
@@ -65,7 +66,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos | perfil 19/19 · analytics 16/16 · muralha 11/11 (`sim/*-contract.luau`) |
+| contratos | perfil 19/19 · analytics 16/16 · muralha 12/12 (`sim/*-contract.luau`) |
 | muralha/economia | catálogo 4 tipos · N=5 · sem refund · `docs/economia-muralha.md` |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
@@ -151,7 +152,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 6. Contexto residente tem teto (80/60/40); `scan_repo.py --check` falha se estourar.
 7. Invariante não vira markdown: vira teste ou vira pergunta.
 8. Não reabrir `REJEITADOS.md` sem a condição objetiva listada.
-9. Custo/desbloqueio da muralha: fonte em `docs/economia-muralha.md`; mudança exige contrato.
+9. Custo/desbloqueio: fonte em `src/shared/data/TrapCatalog.luau`; mudança exige docs + contrato.
 
 ---
 

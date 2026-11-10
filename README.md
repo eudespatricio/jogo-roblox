@@ -44,7 +44,7 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   walls-contract.luau    contrato da muralha/economia (S3)
   fixtures/              fixture da migração 0→1 do perfil
 src/shared/sim/core.luau motor v2 (RNG, mul32/add32, Battle 5×5/N=5)
-src/shared/data/         schema v1 do perfil (template, migração, validação)
+src/shared/data/         schema v1 do perfil + TrapCatalog (economia)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado
 src/server/walls/        WallService: colocar/remover/upgrade, ouro, desbloqueio

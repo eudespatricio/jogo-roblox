@@ -1,16 +1,16 @@
 --!strict
 -- Muralha e economia (S3): colocar, remover e evoluir armadilhas com validacao server-side.
--- Puro Luau (nenhuma API do Roblox) e com schema injetado: o contrato roda no CLI
+-- Puro Luau (nenhuma API do Roblox) e com schema/catalogo injetados: o contrato roda no CLI
 -- (sim/walls-contract.luau) e o servidor usa o mesmo modulo.
 -- Persiste mutando Profile.Data.wall.cells e Profile.Data.gold; o ProfileStore autosalva.
 -- Eventos saem como { name, props }; o sink (S7) monta o envelope. Nada aqui toca o motor.
 --
 -- Regras da S3:
 --   * grade 5x5, celula rXcY, N=5 ativas, colocacao livre (o schema e a fonte da grade);
---   * desbloqueio por liga: 100 pontos por liga; a tabela CATALOG define o minimo;
+--   * catalogo injetado (src/shared/data/TrapCatalog.luau): custo, upgrade, liga e nivel;
 --   * remover nao devolve ouro (a taxonomia v1 nao tem source de refund);
---   * upgrade vai ate MAX_LEVEL (3 niveis; GDD secao 5) e custa upgrade * nivel atual;
---   * gold_earned so aceita raid/defense/daily (enums da taxonomia v1).
+--   * upgrade vai ate catalog.MAX_LEVEL e custa upgrade * nivel atual;
+--   * gold_earned so aceita as sources do catalogo (hoje raid/defense/daily).
 
 local WallService = {}
 
@@ -29,6 +29,17 @@ export type Schema = {
 	validate: (data: any) -> (boolean, string?),
 }
 export type TrapDef = { cost: number, upgrade: number, unlockLeague: number }
+export type Catalog = {
+	CONTENT_VERSION: number,
+	POINTS_PER_LEAGUE: number,
+	MAX_LEVEL: number,
+	TRAP_IDS: { string },
+	TRAPS: { [string]: TrapDef },
+	GOLD_SOURCES: { [string]: boolean },
+	GOLD_SINKS: { [string]: boolean },
+	leagueOf: (points: number) -> number,
+	validate: () -> (boolean, string?),
+}
 export type EventSpec = { name: string, props: { [string]: any } }
 export type Result = {
 	action: string,
@@ -52,24 +63,9 @@ export type Controller = {
 export type Options = {
 	profile: Profile,
 	schema: Schema,
+	catalog: Catalog,
 	emit: ((name: string, props: { [string]: any }) -> ())?,
 }
-
-WallService.POINTS_PER_LEAGUE = 100
-WallService.MAX_LEVEL = 3
-
-WallService.TRAP_IDS = table.freeze({ "archer", "oil", "frost", "cannon" })
--- Catalogo economico dos 4 tipos que o motor v2 simula. O 5o tipo do GDD so entra
--- quando o motor souber simula-lo; nao inventar tipo aqui.
-
-WallService.CATALOG = table.freeze({
-	archer = table.freeze({ cost = 40, upgrade = 30, unlockLeague = 1 }),
-	oil = table.freeze({ cost = 60, upgrade = 45, unlockLeague = 2 }),
-	frost = table.freeze({ cost = 90, upgrade = 65, unlockLeague = 3 }),
-	cannon = table.freeze({ cost = 140, upgrade = 100, unlockLeague = 4 }),
-}) :: { [string]: TrapDef }
-
-WallService.GOLD_SOURCES = table.freeze({ raid = true, defense = true, daily = true })
 
 WallService.ERRORS = table.freeze({
 	INVALID_CELL = "invalid_cell",
@@ -94,13 +90,6 @@ local function isInteger(value: any): boolean
 		and numberValue ~= math.huge
 		and numberValue ~= -math.huge
 		and numberValue % 1 == 0
-end
-
-function WallService.leagueOf(points: number): number
-	if points < 0 then
-		return 1
-	end
-	return 1 + math.floor(points / WallService.POINTS_PER_LEAGUE)
 end
 
 local function isValidCell(cell: any, gridWidth: number, gridHeight: number): boolean
@@ -144,6 +133,51 @@ local function event(name: string, props: { [string]: any }): EventSpec
 	return { name = name, props = props }
 end
 
+-- Valida a parede que veio do perfil antes de qualquer operacao (e antes de S4/S6
+-- converterem cells em wall.traps). Falha fechado: trap desconhecida, celula fora da
+-- grade, N acima do limite ou nivel acima do cap economico nunca chegam ao motor.
+function WallService.validateWall(
+	profile: Profile,
+	schema: Schema,
+	catalog: Catalog
+): (boolean, string?)
+	local okProfile, profileErr = schema.validate(profile)
+	if not okProfile then
+		return false, "perfil: " .. tostring(profileErr)
+	end
+	local okCatalog, catalogErr = catalog.validate()
+	if not okCatalog then
+		return false, "catalogo: " .. tostring(catalogErr)
+	end
+
+	local gridWidth = math.min(profile.wall.gridWidth, schema.GRID_WIDTH)
+	local gridHeight = schema.GRID_HEIGHT
+	local trapLimit = math.min(profile.wall.activeTrapLimit, schema.ACTIVE_TRAP_LIMIT)
+
+	local total = countCells(profile.wall.cells)
+	if total > trapLimit then
+		return false, string.format("wall.cells com %d ativas (limite %d)", total, trapLimit)
+	end
+	for cell, data in pairs(profile.wall.cells) do
+		if not isValidCell(cell, gridWidth, gridHeight) then
+			return false, "wall.cells com celula invalida: " .. tostring(cell)
+		end
+		if catalog.TRAPS[data.trap] == nil then
+			return false,
+				"wall.cells[" .. tostring(cell) .. "] com trap desconhecida: " .. tostring(
+					data.trap
+				)
+		end
+		if not isInteger(data.level) or data.level < 1 or data.level > catalog.MAX_LEVEL then
+			return false,
+				"wall.cells[" .. tostring(cell) .. "] com level fora de [1," .. tostring(
+					catalog.MAX_LEVEL
+				) .. "]"
+		end
+	end
+	return true, nil
+end
+
 -- Cria o controlador de uma muralha. `profile` e o Profile.Data vivo: as operacoes mutam
 -- `wall.cells` e `gold`; o chamador decide quando salvar (o ProfileStore autosalva).
 -- API no estilo do ProfileService: chame com ponto (`service.place(...)`), nao com dois-pontos.
@@ -151,6 +185,7 @@ function WallService.new(options: Options): Controller
 	assert(type(options) == "table", "WallService.new: options ausente")
 	local profile = options.profile
 	local schema = options.schema
+	local catalog = options.catalog
 	assert(type(profile) == "table", "WallService.new: profile ausente")
 	assert(type(profile.wall) == "table", "WallService.new: profile.wall ausente")
 	assert(type(profile.wall.cells) == "table", "WallService.new: profile.wall.cells ausente")
@@ -170,11 +205,26 @@ function WallService.new(options: Options): Controller
 		"WallService.new: schema incompleto"
 	)
 	assert(
-		schema.MAX_TRAP_LEVEL >= WallService.MAX_LEVEL,
-		"WallService.new: schema.MAX_TRAP_LEVEL abaixo de MAX_LEVEL"
+		type(catalog) == "table"
+			and type(catalog.TRAPS) == "table"
+			and type(catalog.TRAP_IDS) == "table"
+			and type(catalog.GOLD_SOURCES) == "table"
+			and type(catalog.GOLD_SINKS) == "table"
+			and type(catalog.leagueOf) == "function"
+			and type(catalog.validate) == "function"
+			and isInteger(catalog.MAX_LEVEL)
+			and isInteger(catalog.POINTS_PER_LEAGUE),
+		"WallService.new: catalogo incompleto"
 	)
-	local okProfile, profileErr = schema.validate(profile)
-	assert(okProfile, "WallService.new: perfil invalido: " .. tostring(profileErr))
+	local okCatalog, catalogErr = catalog.validate()
+	assert(okCatalog, "WallService.new: catalogo invalido: " .. tostring(catalogErr))
+	assert(
+		schema.MAX_TRAP_LEVEL >= catalog.MAX_LEVEL,
+		"WallService.new: schema.MAX_TRAP_LEVEL abaixo de catalog.MAX_LEVEL"
+	)
+
+	local okWall, wallErr = WallService.validateWall(profile, schema, catalog)
+	assert(okWall, "WallService.new: " .. tostring(wallErr))
 
 	-- A grade da P1 e 5x5 e N=5; o perfil pode carregar um limite maior no futuro,
 	-- mas a S3 nunca passa do que o motor v2 simula.
@@ -195,12 +245,12 @@ function WallService.new(options: Options): Controller
 	end
 
 	local function validateAfter(action: string)
-		local ok, err = schema.validate(profile)
+		local ok, err = WallService.validateWall(profile, schema, catalog)
 		assert(ok, "WallService: perfil invalido apos " .. action .. ": " .. tostring(err))
 	end
 
 	local function place(trapId: string, cell: string): (Result?, string?)
-		local def = WallService.CATALOG[trapId]
+		local def = catalog.TRAPS[trapId]
 		if def == nil then
 			return nil, WallService.ERRORS.UNKNOWN_TRAP
 		end
@@ -213,7 +263,7 @@ function WallService.new(options: Options): Controller
 		if countCells(profile.wall.cells) >= trapLimit then
 			return nil, WallService.ERRORS.TRAP_LIMIT
 		end
-		if WallService.leagueOf(profile.league.points) < def.unlockLeague then
+		if catalog.leagueOf(profile.league.points) < def.unlockLeague then
 			return nil, WallService.ERRORS.TRAP_LOCKED
 		end
 		if profile.gold < def.cost then
@@ -271,10 +321,10 @@ function WallService.new(options: Options): Controller
 		if existing == nil then
 			return nil, WallService.ERRORS.EMPTY_CELL
 		end
-		if existing.level >= WallService.MAX_LEVEL then
+		if existing.level >= catalog.MAX_LEVEL then
 			return nil, WallService.ERRORS.MAX_LEVEL
 		end
-		local def = WallService.CATALOG[existing.trap]
+		local def = catalog.TRAPS[existing.trap]
 		if def == nil then
 			return nil, WallService.ERRORS.UNKNOWN_TRAP
 		end
@@ -309,7 +359,7 @@ function WallService.new(options: Options): Controller
 		if not isInteger(amount) or amount <= 0 then
 			return nil, WallService.ERRORS.INVALID_AMOUNT
 		end
-		if WallService.GOLD_SOURCES[source] ~= true then
+		if catalog.GOLD_SOURCES[source] ~= true then
 			return nil, WallService.ERRORS.INVALID_SOURCE
 		end
 		if profile.gold + amount > schema.MAX_GOLD then
@@ -343,7 +393,7 @@ function WallService.new(options: Options): Controller
 			return { gold = profile.gold, cells = copyCells(profile.wall.cells) }
 		end,
 		league = function(): number
-			return WallService.leagueOf(profile.league.points)
+			return catalog.leagueOf(profile.league.points)
 		end,
 	}
 end

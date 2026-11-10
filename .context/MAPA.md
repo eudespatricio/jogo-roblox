@@ -28,10 +28,10 @@
 | `sim/invariants.luau` | oráculo executável (12 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
-| `src/shared/data/ProfileSchema.luau` · `sim/profile-contract.luau` | schema v1: template, validação, migração 0→1, JSON-safe | mexer em dado de jogador |
+| `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v1 + catálogo econômico; migração 0→1, JSON-safe | mexer em dado/catálogo |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
-| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` | S3: colocar/remover/upgrade, ouro, desbloqueio + contrato | mexer em muralha/economia |
+| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` | S3: colocar/remover/upgrade, ouro, desbloqueio, guarda de perfil + contrato | mexer em muralha/economia |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{sim,data,analytics}`, `server/{data,walls,ProfileBoot,Main stub}`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |

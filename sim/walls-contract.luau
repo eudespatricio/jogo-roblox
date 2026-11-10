@@ -5,6 +5,7 @@
 
 local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local WallService = require("../src/server/walls/WallService")
+local TrapCatalog = require("../src/shared/data/TrapCatalog")
 local Analytics = require("../src/shared/analytics/AnalyticsTypes")
 local Core = require("../src/shared/sim/core")
 
@@ -50,12 +51,22 @@ local function validateEvents(specs)
 	end
 end
 
+local function sortedKeys(value)
+	local keys = {}
+	for key in pairs(value) do
+		keys[#keys + 1] = key
+	end
+	table.sort(keys)
+	return table.concat(keys, ",")
+end
+
 local function newHarness()
 	local profile = ProfileSchema.template()
 	local emitted = {}
 	local service = WallService.new({
 		profile = profile,
 		schema = ProfileSchema,
+		catalog = TrapCatalog,
 		emit = function(name, props)
 			table.insert(emitted, { name = name, props = props })
 		end,
@@ -70,34 +81,96 @@ local function seedGold(service, amount)
 end
 
 check("catalogo espelha o motor e desbloqueia por liga", function()
-	local names = {}
-	for trapId in pairs(WallService.CATALOG) do
-		names[#names + 1] = trapId
-	end
-	table.sort(names)
+	local okCatalog, catalogErr = TrapCatalog.validate()
+	assert(okCatalog, tostring(catalogErr))
+	assert(TrapCatalog.CONTENT_VERSION == 1, "CONTENT_VERSION")
+	assert(TrapCatalog.MAX_LEVEL == 3, "MAX_LEVEL")
+	assert(TrapCatalog.POINTS_PER_LEAGUE == 100, "POINTS_PER_LEAGUE")
+	assert(TrapCatalog.leagueOf(0) == 1, "liga 0")
+	assert(TrapCatalog.leagueOf(99) == 1, "liga 99")
+	assert(TrapCatalog.leagueOf(100) == 2, "liga 100")
+	assert(TrapCatalog.leagueOf(250) == 3, "liga 250")
+
 	local coreNames = {}
 	for _, trapId in ipairs(Core.TRAP_NAMES) do
 		coreNames[#coreNames + 1] = trapId
 	end
 	table.sort(coreNames)
-	assert(table.concat(names, ",") == table.concat(coreNames, ","), "catalogo != motor")
-	assert(WallService.MAX_LEVEL == 3, "MAX_LEVEL")
-	assert(WallService.POINTS_PER_LEAGUE == 100, "POINTS_PER_LEAGUE")
-	assert(WallService.leagueOf(0) == 1, "liga 0")
-	assert(WallService.leagueOf(99) == 1, "liga 99")
-	assert(WallService.leagueOf(100) == 2, "liga 100")
-	assert(WallService.leagueOf(250) == 3, "liga 250")
-	for _, def in pairs(WallService.CATALOG) do
-		assert(def.cost > 0 and def.cost % 1 == 0, "custo invalido")
-		assert(def.upgrade > 0 and def.upgrade % 1 == 0, "upgrade invalido")
-		assert(def.unlockLeague >= 1 and def.unlockLeague <= 4, "unlock invalido")
+	assert(sortedKeys(TrapCatalog.TRAPS) == sortedKeys(Core.TRAP), "TRAPS != Core.TRAP")
+	assert(
+		sortedKeys(TrapCatalog.TRAPS) == table.concat(coreNames, ","),
+		"TRAPS != Core.TRAP_NAMES"
+	)
+	for _, trapId in ipairs(TrapCatalog.TRAP_IDS) do
+		local battle = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { hp = 500, traps = { { cell = "r1c1", type = trapId, level = 1 } } },
+			wave = { count = 1 },
+		})
+		assert(#battle.traps == 1, "motor nao aceitou " .. trapId)
 	end
 
 	-- Primeira calibragem da S3 (docs/economia-muralha.md); mudar exige atualizar os dois.
-	assert(WallService.CATALOG.archer.cost == 40 and WallService.CATALOG.archer.upgrade == 30)
-	assert(WallService.CATALOG.oil.cost == 60 and WallService.CATALOG.oil.unlockLeague == 2)
-	assert(WallService.CATALOG.frost.cost == 90 and WallService.CATALOG.frost.unlockLeague == 3)
-	assert(WallService.CATALOG.cannon.cost == 140 and WallService.CATALOG.cannon.unlockLeague == 4)
+	assert(TrapCatalog.TRAPS.archer.cost == 40 and TrapCatalog.TRAPS.archer.upgrade == 30)
+	assert(TrapCatalog.TRAPS.oil.cost == 60 and TrapCatalog.TRAPS.oil.unlockLeague == 2)
+	assert(TrapCatalog.TRAPS.frost.cost == 90 and TrapCatalog.TRAPS.frost.unlockLeague == 3)
+	assert(TrapCatalog.TRAPS.cannon.cost == 140 and TrapCatalog.TRAPS.cannon.unlockLeague == 4)
+
+	-- As fontes/sinks do catalogo precisam existir na taxonomia v1 (sem drift silencioso).
+	for source in pairs(TrapCatalog.GOLD_SOURCES) do
+		local event =
+			assert(Analytics.newEvent(nextCtx(), "gold_earned", { amount = 1, source = source }))
+		assert(Analytics.validate(event), "gold_earned." .. source)
+	end
+	for sink in pairs(TrapCatalog.GOLD_SINKS) do
+		local event =
+			assert(Analytics.newEvent(nextCtx(), "gold_spent", { amount = 1, sink = sink }))
+		assert(Analytics.validate(event), "gold_spent." .. sink)
+	end
+end)
+
+check("perfil carregado e validado contra o catalogo", function()
+	local function rejects(profile, label)
+		local ok = pcall(function()
+			WallService.new({ profile = profile, schema = ProfileSchema, catalog = TrapCatalog })
+		end)
+		assert(not ok, "aceitou " .. label)
+	end
+
+	local unknown = ProfileSchema.template()
+	unknown.wall.cells["r1c1"] = { trap = "tesla", level = 1 }
+	rejects(unknown, "trap desconhecida")
+
+	local over = ProfileSchema.template()
+	for col = 1, 5 do
+		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+	end
+	over.wall.cells["r2c1"] = { trap = "archer", level = 1 }
+	rejects(over, "6 celulas")
+
+	local highLevel = ProfileSchema.template()
+	highLevel.wall.cells["r1c1"] = { trap = "archer", level = 4 }
+	rejects(highLevel, "level acima do cap")
+
+	local alias = ProfileSchema.template()
+	alias.wall.cells["r01c1"] = { trap = "archer", level = 1 }
+	rejects(alias, "celula alias")
+
+	local lowLimit = ProfileSchema.template()
+	lowLimit.wall.activeTrapLimit = 3
+	for col = 1, 5 do
+		lowLimit.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+	end
+	rejects(lowLimit, "5 celulas com limite 3")
+
+	local valid = ProfileSchema.template()
+	for col = 1, 5 do
+		valid.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+	end
+	local service =
+		WallService.new({ profile = valid, schema = ProfileSchema, catalog = TrapCatalog })
+	assert(service ~= nil, "perfil valido recusado")
 end)
 
 check("place valido persiste celula, debita ouro e emite eventos", function()

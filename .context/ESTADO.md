@@ -23,7 +23,7 @@ fatia: S4 (cena 5×5 + build). Plano em `docs/p1-plano.md`; teste de 3 semanas e
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 2` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 19/19 · analytics 16/16 · muralha 11/11 (`sim/*-contract.luau`) |
+| contratos | perfil 19/19 · analytics 16/16 · muralha 12/12 (`sim/*-contract.luau`) |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
@@ -36,8 +36,8 @@ fatia: S4 (cena 5×5 + build). Plano em `docs/p1-plano.md`; teste de 3 semanas e
   `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `src/shared/sim/core.luau` (v2, loadout 5×5/N=5) + harnesses em `sim/`.
-- Muralha: `src/server/walls/WallService.luau` + `sim/walls-contract.luau` (S3);
-  custos/desbloqueio em `docs/economia-muralha.md`.
+- Muralha: `src/shared/data/TrapCatalog.luau` + `src/server/walls/WallService.luau` +
+  `sim/walls-contract.luau` (S3); custos/desbloqueio em `docs/economia-muralha.md`.
 - Dados: `src/shared/data/ProfileSchema.luau` + `src/server/data/ProfileService.luau` +
   `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;

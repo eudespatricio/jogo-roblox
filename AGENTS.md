@@ -16,7 +16,7 @@ Leia nesta ordem, antes de qualquer ação:
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
   Se quebrar, conserte antes de seguir.
 - Mudou a matemática da simulação? Suba `simVersion` e registre em `docs/spec-motor-deterministico.md`.
-- Mudou custo/desbloqueio da muralha? Atualize `docs/economia-muralha.md` e `sim/walls-contract.luau`.
+- Mudou custo/desbloqueio da muralha? Atualize `src/shared/data/TrapCatalog.luau`, `docs/economia-muralha.md` e `sim/walls-contract.luau`.
 - `bit32` só recebe `[0, 2^32)`: use `add32`/`mul32`, nunca `band` em double grande.
 - Contexto residente tem teto: ESTADO 80, MAPA 60, REJEITADOS 40 linhas. Rode `--check`.
 

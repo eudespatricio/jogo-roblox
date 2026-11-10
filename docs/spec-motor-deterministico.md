@@ -389,9 +389,9 @@ enum, limites, UUID/hash de 32 hex, anti-PII). Mudar o catálogo exige atualizar
 na mesma mudança. Na P0 `simVersion` era **1**; a S2 subiu para **2** com o loadout 5×5/N=5 (§15).
 A S3 não altera esta matemática: `simVersion 2` e hash `2489780106` continuam.
 
-**Muralha (S3)** — `src/server/walls/WallService.luau` valida célula, N=5, ouro e desbloqueio,
-muta `Profile.Data.wall.cells`/`gold` e devolve eventos; catálogo em
-[`economia-muralha.md`](economia-muralha.md).
+**Muralha (S3)** — `src/shared/data/TrapCatalog.luau` (economia) + `src/server/walls/WallService.luau`
+validam célula, N=5, ouro, desbloqueio e perfil compatível; mutam `Profile.Data.wall.cells`/`gold`
+e devolvem eventos. Regras: [`economia-muralha.md`](economia-muralha.md).
 
 ---
 
