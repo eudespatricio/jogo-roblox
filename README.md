@@ -54,10 +54,10 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   analytics-contract.luau contrato de analytics v1
   walls-contract.luau    contrato da muralha/economia (S3; 13 checagens, toBattleWall)
   content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
-  build-contract.luau    contrato do grid/build da S4 (3 checagens)
+  build-contract.luau    contrato do grid/build da S4 (6 checagens)
   fixtures/              fixtures da migração 0→1→2 do perfil
 src/shared/sim/core.luau motor v3 (RNG, mul32/add32, Battle 5×5/N=5, 5 tipos)
-src/shared/build/        GridLayout puro do grid 5×5 (células, posições, cores)
+src/shared/build/        GridLayout puro + BuildProtocol (request/snapshot do build)
 src/shared/data/         schema v2 do perfil + TrapCatalog (economia/conteúdo)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado + ProfileRegistry
@@ -90,7 +90,7 @@ luau sim/profile-contract.luau         # schema v1 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1
 luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
-luau sim/build-contract.luau           # grid/build (S4; 3 checagens)
+luau sim/build-contract.luau           # grid/build (S4; 6 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
 python3 scripts/check-versions.py      # gate de versões docs x fonte
 

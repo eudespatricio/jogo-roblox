@@ -11,6 +11,12 @@ local ProfileSchema = require(
 local TrapCatalog = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("data"):WaitForChild("TrapCatalog")
 )
+local GridLayout = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("build"):WaitForChild("GridLayout")
+)
+local BuildProtocol = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("build"):WaitForChild("BuildProtocol")
+)
 local WallService = require(script.Parent:WaitForChild("WallService"))
 local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
@@ -45,28 +51,6 @@ end
 local buildAction = ensureRemote("RemoteFunction", "BuildAction") :: RemoteFunction
 local buildSnapshot = ensureRemote("RemoteFunction", "BuildSnapshot") :: RemoteFunction
 
-local function catalogForClient(): { { [string]: any } }
-	local catalog: { { [string]: any } } = {}
-	for _, trapId in ipairs(TrapCatalog.TRAP_IDS) do
-		local def = TrapCatalog.TRAPS[trapId]
-		catalog[#catalog + 1] = {
-			id = trapId,
-			cost = def.cost,
-			upgrade = def.upgrade,
-			unlockLeague = def.unlockLeague,
-		}
-	end
-	return catalog
-end
-
-local function copyCells(cells: { [string]: any }): { [string]: any }
-	local copy: { [string]: any } = {}
-	for cell, data in pairs(cells) do
-		copy[cell] = { trap = data.trap, level = data.level }
-	end
-	return copy
-end
-
 local function snapshotFor(player: Player): { [string]: any }?
 	local session = ProfileRegistry.get(player)
 	if session == nil then
@@ -76,14 +60,11 @@ local function snapshotFor(player: Player): { [string]: any }?
 	if type(data) ~= "table" or type(data.wall) ~= "table" then
 		return nil
 	end
-	pcall(BuildGrid.refresh, data.wall.cells)
-	return {
-		gold = data.gold,
-		cells = copyCells(data.wall.cells),
-		league = TrapCatalog.leagueOf(data.league.points),
-		contentVersion = data.contentVersion,
-		catalog = catalogForClient(),
-	}
+	local snapshot = BuildProtocol.snapshot(data, TrapCatalog, GridLayout)
+	if snapshot ~= nil then
+		pcall(BuildGrid.refresh, data.wall.cells)
+	end
+	return snapshot
 end
 
 local function serviceFor(player: Player): (any?, string?)
@@ -105,28 +86,21 @@ local function serviceFor(player: Player): (any?, string?)
 end
 
 local function handleAction(player: Player, action: any, trapId: any, cell: any): { [string]: any }
-	if type(action) ~= "string" or type(cell) ~= "string" then
-		return { ok = false, err = "bad_request" }
+	local valid, validationErr = BuildProtocol.validateRequest(GridLayout, action, trapId, cell)
+	if not valid then
+		return { ok = false, err = validationErr }
 	end
 	local service, serviceErr = serviceFor(player)
 	if service == nil then
 		return { ok = false, err = serviceErr }
 	end
 
-	local result: any = nil
-	local err: string? = nil
-	if action == "place" then
-		if type(trapId) ~= "string" or trapId == "" then
-			return { ok = false, err = "bad_request" }
-		end
-		result, err = service.place(trapId, cell)
-	elseif action == "remove" then
-		result, err = service.remove(cell)
-	elseif action == "upgrade" then
-		result, err = service.upgrade(cell)
-	else
-		return { ok = false, err = "bad_action" }
-	end
+	local request: BuildProtocol.Request = {
+		action = action :: string,
+		trapId = trapId :: string,
+		cell = cell :: string,
+	}
+	local result, err = BuildProtocol.apply(service, request)
 	if result == nil then
 		return { ok = false, err = err }
 	end

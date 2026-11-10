@@ -69,11 +69,11 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     repara `oil → tar` e recusa `content_future`; o `WallService` exige a versão do catálogo.
   - conteúdo v2: `oil` virou `tar` (alias) e entrou `catapult` (5º tipo, splash); `simVersion 3` e
     hash `2489780106` preservado na parede padrão.
-  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16**, build **3/3**;
+  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16**, build **6/6**;
     GAP-001/002/003/010 fechados; GAP-009 (Modo B) e GAP-011 (`BattleLog`) abertos.
 - **S4 iniciada — cena 5×5 + build (10/11/2026, scaffold):**
   - `src/shared/build/GridLayout.luau` (25 células, posições, cores/rótulos) + `sim/build-contract.luau`
-    **3/3**.
+    **6/6**.
   - `BuildGrid`/`BuildGrid.server` cria as 25 células e a muralha no Workspace; `WallController.server`
     expõe snapshot/place/remove/upgrade via RemoteFunction, sempre validando no `WallService`.
   - `BuildClient` (StarterPlayerScripts) tem câmera isométrica fixa e UI 5×5 + painel de armadilhas;
@@ -95,7 +95,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 3/3 (`sim/*-contract.luau`) |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 6/6 (`sim/*-contract.luau`) |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`) |
 | muralha/economia | catálogo 5 tipos · N=5 · sem refund · `toBattleWall` · `docs/economia-muralha.md` |
 | perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
@@ -163,7 +163,7 @@ GAP-001/002/003/010 fechados; GAP-004/005/008/009/011 abertos.
 - **Antes da S4:** rodar o **Modo B** de [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md)
   com schema v2/contentVersion; se `Reconcile`/DataStore real falhar, corrigir antes de fechar o
   GAP-009. O Modo A/fake não prova persistência entre servidores.
-- **S4 scaffold:** `GridLayout` + `sim/build-contract.luau` 3/3; `BuildGrid` cria 25 células/muralha;
+- **S4 scaffold:** `GridLayout` + `sim/build-contract.luau` 6/6; `BuildGrid` cria 25 células/muralha;
   `WallController` expõe snapshot/place/remove/upgrade; `BuildClient` tem câmera fixa e UI 5×5.
   Antes de considerar a S4 pronta, validar no Studio (FPS mobile, build ≤30 s, feel/colisão) e
   corrigir o que o QA apontar.
