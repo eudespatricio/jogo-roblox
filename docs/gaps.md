@@ -29,3 +29,24 @@ GAP: GAP-001..GAP-010 · conteúdo em produção ainda exige versão/migração;
 2. Ao fechar, atualizar a linha para `fechado em <data> · <commit/PR>` e registrar o teste que prova.
 3. Se o gap mudar de forma, criar novo ID e apontar o antigo como `substituído por GAP-xxx`.
 4. O `CONTINUAR.md` da janela seguinte carrega a linha `GAP:` atualizada.
+
+## Fechamento antes da S4 (09/11/2026)
+
+**Recomendação:** uma janela curta **S3.3** fecha GAP-006 + GAP-007 e prepara GAP-010; depois S4.
+Os demais gaps são de conteúdo/feature/P2 e não devem bloquear a cena/build.
+
+| GAP | Fechável antes da S4? | Trabalho | Critério de pronto |
+|---|---|---|---|
+| GAP-006 | **sim** | `WallService.toBattleWall(profile, schema, catalog, hp)` que valida e converte `cells` em `wall.traps` ordenado por célula; S4 usa só esse helper | helper testado com perfil válido/inválido; ordem determinística; mesma parede = mesmo hash |
+| GAP-007 | **sim** | `scripts/check-versions.py` (ou equivalente) no `check.sh`: compara `SCHEMA_VERSION`, `CONTENT_VERSION`, `SIM_VERSION` e hash com um bloco de versões nos docs; corrigir labels “schema v1/motor v2” | CI falha se fonte e docs divergirem; labels atuais passam |
+| GAP-010 | **preparar** | template/teste de migração neutra no kit; hash de parede antiga x migrada | fecha de fato no primeiro schema v2 (depende de feature) |
+| GAP-009 | não | exige schema v2 + ProfileStore/Studio real | depois do primeiro schema v2 |
+| GAP-001 | não | `contentVersion` no perfil + `BattleLog` | fatia de conteúdo; parte final depende da S6 |
+| GAP-002 | não | migração/repair de `trap_id` renomeado/removido | fatia de conteúdo |
+| GAP-003 | não | stats do motor fora do código ou política explícita de `simVersion` por tipo | fatia de conteúdo/engine |
+| GAP-004 | não | classe/trait/raridade no schema real (o trial provou o mecanismo) | feature de classe |
+| GAP-008 | não | campos de variante na taxonomia v2 | feature de classe/variantes |
+| GAP-005 | não | eventos/flags/calendário | P2/live ops |
+
+**S3.3 — escopo sugerido:** GAP-006 e GAP-007. **Não** iniciar S4 antes do helper de parede e do
+gate de versões; **não** tentar fechar GAP-001/002/003/009 nesta janela sem uma feature de conteúdo.

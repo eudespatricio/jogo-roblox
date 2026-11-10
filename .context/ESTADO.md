@@ -11,7 +11,7 @@
 
 **P1 em execução (autorizada em 09/11/2026).** S1 fechada (legado apagado, tag `legacy-coins`),
 S2 fechada (motor 5×5/N=5, `simVersion 2`) e S3 fechada (muralha/economia server-side). Próxima
-fatia: S4 (cena 5×5 + build). Plano em `docs/p1-plano.md`; teste de 3 semanas em paralelo.
+janela: S3.3 (GAP-006/007); S4 depois. Plano em `docs/p1-plano.md`; teste de 3 semanas em paralelo.
 
 ## Números atuais (09/11/2026)
 
@@ -65,8 +65,8 @@ fatia: S4 (cena 5×5 + build). Plano em `docs/p1-plano.md`; teste de 3 semanas e
 
 ## Próximo passo
 
-1. S4: cena 5×5 no Workspace, câmera fixa e UI de build (colocar 5 em 25) — `docs/p1-plano.md`.
-2. S5–S7: drop-in, raid/replay e telemetria.
+1. S3.3: fechar GAP-006 (`toBattleWall`) e GAP-007 (gate de versões) antes da S4.
+2. S4: cena 5×5/build; depois S5–S7 (`docs/p1-plano.md`).
 
 ## Como verificar o estado em 1 minuto
 

@@ -9,8 +9,8 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
 > determinístico com grade **5×5**, **N=5** ativas e colocação livre; `simVersion 2` e hash de
 > referência `2489780106`. **S3** concluída: muralha/economia server-side, catálogo em
-> [`docs/economia-muralha.md`](docs/economia-muralha.md). Próxima fatia: S4 (cena + build). O teste
-> de produto de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
+> [`docs/economia-muralha.md`](docs/economia-muralha.md). Próxima janela: S3.3 (GAP-006/007);
+> S4 (cena + build) depois. O teste de produto de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
 

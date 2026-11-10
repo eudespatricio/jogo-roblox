@@ -1,10 +1,10 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** P1 em execução — **S1, S2 e S3 fechadas**; próxima fatia é a S4 ·
-base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
+**Data:** 09/11/2026 · **Status:** P1 em execução — **S1, S2 e S3 fechadas**; próxima janela é a
+**S3.3 (GAP-006/007)**; S4 depois · base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
-> **GAP (09/11/2026):** GAP-001..GAP-010 — conteúdo em produção ainda exige versão/migração;
-> stats do motor são código; classes e eventos não modelados. Ver `docs/gaps.md`.
+> **GAP (09/11/2026):** GAP-001..GAP-010; GAP-006/007 são fecháveis antes da S4; ver `docs/gaps.md`.
+> A linha completa e o plano por gap estão em `docs/gaps.md`.
 
 ---
 
@@ -99,7 +99,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | S1 | Q1 — apagar o legado | tag antes; `check.sh`/CI verdes; produção intacta; docs atualizados | **feito 09/11/2026** |
 | S2 | Motor 5×5/N=5 | `simVersion 2` + hash novo + invariants/acceptance re-ancorados | **feito 09/11/2026** |
 | S3 | Muralha e economia | célula/6ª armadilha/ouro insuficiente recusados; perfil persistido; eventos válidos | **feito 09/11/2026** |
-| S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **próximo** |
+| S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **depois da S3.3** |
 | S5 | Drop-in de 5 s | `dropin_pressed` ≥ 60% | pendente |
 | S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | pendente |
 | S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | pendente |
@@ -107,8 +107,8 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** S4 — cena 5×5 no Workspace, câmera fixa e UI de build (colocar 5 em 25), com
-build ≤ 30 s e 45+ FPS mobile. Depois S5–S7 na ordem do plano.
+**Próximo passo:** S3.3 — fechar GAP-006 (`WallService.toBattleWall` + testes) e GAP-007 (gate de
+versões nos docs); preparar GAP-010. Depois S4 (cena/build) e S5–S7 na ordem do plano.
 
 ## Pipeline de expansão e gaps
 
@@ -118,6 +118,29 @@ build ≤ 30 s e 45+ FPS mobile. Depois S5–S7 na ordem do plano.
 - Fechamento: toda P/S termina com uma linha `GAP:`; sem linha, a fatia não fecha.
 - Trial 09/11/2026: classe/trait/raridade na branch `7d53327` (apagada); relatório em
   `docs/expansion-test-2026-11-10.md`; patch/kit em `tools/expansion-test/`.
+
+---
+
+## Handover — janela S3.3 (gaps antes da S4)
+
+**Objetivo:** fechar **GAP-006** e **GAP-007**; preparar **GAP-010**. **Não iniciar a S4.**
+**Base de código:** `75b9ebc` (este handover é só docs); S1–S3 fechadas; `simVersion 2`, hash `2489780106`; trial S3.2
+revertido e documentado.
+
+- **GAP-006 — fechar:** `WallService.toBattleWall(profile, schema, catalog, hp)` chama `validateWall`,
+  converte `cells` em `wall.traps` **ordenado por célula** e devolve `{ hp, traps }`; S4 usa só esse
+  helper. Critério: perfil válido/inválido testados; ordem determinística; mesma parede = mesmo hash.
+- **GAP-007 — fechar:** `scripts/check-versions.py` no `check.sh` compara `SCHEMA_VERSION`,
+  `CONTENT_VERSION`, `SIM_VERSION` e hash com um bloco de versões nos docs; corrigir labels
+  “schema v1/motor v2”. Critério: CI falha se fonte e docs divergirem; labels atuais passam.
+- **GAP-010 — preparar:** teste de migração neutra no kit (hash de parede antiga x migrada); fecha de
+  fato no primeiro schema v2 e o kit documenta o critério.
+
+**Fora da janela:** GAP-001/002/003/009 (fatia de conteúdo; 001 depende da S6 para o `BattleLog`),
+GAP-004/008 (feature de classe/taxonomia v2), GAP-005 (P2/live ops). Detalhes em `docs/gaps.md`.
+
+**Critério de saída da janela:** `doctor.sh` + `check.sh` RC=0; GAP-006/007 fechados e GAP-010
+preparado; `docs/gaps.md`, `CONTINUAR.md` e `ESTADO.md` atualizados; CI verde.
 
 ---
 
@@ -215,13 +238,14 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1, S2 e S3 fechadas; S4 é a
-> próxima). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md` e
-> `docs/p1-plano.md`, `docs/pipeline-expansao.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`,
-> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não edite
-> `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
-> colocação livre; taxonomia v1 congelada. O motor está em `simVersion 2`, hash de referência
-> `2489780106` (seed 42) — o `668061367` da v1 está aposentado. A muralha/economia está em
-> `src/server/walls/WallService.luau` + `docs/economia-muralha.md` (sem refund). O trial de
-> expansão e o kit estão em `docs/expansion-test-2026-11-10.md`/`tools/expansion-test/`. O teste de produto
-> de 3 semanas roda em paralelo. Comece pela S4 (cena/build) e mantenha o contexto dentro do teto.
+> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1, S2 e S3 fechadas; **S3.3 é a
+> próxima janela; S4 não começou**). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`,
+> `CONTINUAR.md`, `docs/p1-plano.md`, `docs/pipeline-expansao.md` e `docs/gaps.md`. No WSL:
+> `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não edite
+> `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1 congelada. O motor está em
+> `simVersion 2`, hash `2489780106` (seed 42). **Objetivo desta janela:** fechar GAP-006
+> (`WallService.toBattleWall` + testes) e GAP-007 (gate de versões nos docs), preparar GAP-010; **não
+> iniciar a S4**. Fora da janela: GAP-001/002/003/009 (fatia de conteúdo), GAP-004/008 (feature de
+> classe/taxonomia v2), GAP-005 (P2). Rode `doctor.sh`/`check.sh`, atualize `docs/gaps.md`,
+> `CONTINUAR.md`/`ESTADO.md` e feche com a linha `GAP:` atualizada. O trial/kit está em
+> `docs/expansion-test-2026-11-10.md`/`tools/expansion-test/`; o teste de produto de 3 semanas roda em paralelo.

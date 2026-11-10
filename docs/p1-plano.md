@@ -5,7 +5,7 @@
 > sessão nos Modos A (Mock) e B (DataStore real), 8/8 nas duas execuções.
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
 > **Execução (09/11/2026):** S1, S2 e S3 fechadas; `simVersion = 2`, hash de referência
-> `2489780106` (seed 42). S4 é a próxima fatia; S5–S7 pendentes.
+> `2489780106` (seed 42). S3.3 (GAP-006/007) é a próxima janela; S4 depois; S5–S7 pendentes.
 > **GAP:** GAP-001..GAP-010 — expansão de conteúdo ainda exige versão/migração; ver
 > [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
