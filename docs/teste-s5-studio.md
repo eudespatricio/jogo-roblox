@@ -122,10 +122,10 @@ rojo build default.project.json -o build/place.rbxl
 - Batalha fixa: seed 4, 100 ticks, defensor, catapulta na muralha, hash estável.
 - Funil: `dropin_shown`/`dropin_pressed` validam em `AnalyticsTypes` (taxonomia v1).
 - Reward: `creditGold(3, "defense")` credita 3 e emite `gold_earned`.
-- **Falta (humano):** print em 375×812 com OURO 3, FPS focado e a taxa do teste de
-  produto; timeout/sucesso/reward já validados em 720×1280.
+- **QA concluído:** 375×812 ativo (DEFENDER/horda/portão), 375×812 pós-clear com OURO 3 e
+  FPS 60, 720×1280 timeout/sucesso e +3 ouro; a taxa ≥60% fica no teste de 3 semanas.
 
-## 11. Evidência parcial — 720×1280 (10/11/2026)
+## 11. Evidência — 375×812 e 720×1280 (10/11/2026)
 
 - **Timeout:** `[analytics] dropin_shown ms_since_join=96`; `[dropin] derrota roteirizada em
   10.1s`; **sem** `dropin_pressed` e **sem** ouro; tela `A HORDA PASSOU` + `TENTAR DE NOVO`.
