@@ -5,11 +5,10 @@
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-> **Status: P0 fechada (09/11/2026).** Motor determinístico, schema v1 + wrapper ProfileStore,
-> contrato de analytics com gates no CI e teste de sessão no Studio aprovado nos Modos A (Mock)
-> e B (DataStore real), 8/8 nas duas ([roteiro e evidência](docs/teste-sessao-studio.md)). O
-> protótipo de moedas em `src/` segue legado até a P1 (tag `legacy-coins`) — `src/shared/sim/`
-> já é produção.
+> **Status: P0 fechada; P1 autorizada (09/11/2026).** Motor determinístico, schema v1 + wrapper
+> ProfileStore, contrato de analytics com gates no CI e teste de sessão aprovado nos Modos A
+> (Mock) e B (DataStore real), 8/8 ([roteiro](docs/teste-sessao-studio.md)). A P1 começa
+> apagando o protótipo de moedas (tag `legacy-coins`) e segue o [plano da P1](docs/p1-plano.md).
 
 ## Comece por aqui
 
@@ -24,6 +23,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 
 - [`docs/gdd-muralha.md`](docs/gdd-muralha.md) — loop, drop-in de 5s, modos, economia, fases.
 - [`docs/spec-motor-deterministico.md`](docs/spec-motor-deterministico.md) — motor, replay, clipe, anti-cheat.
+- [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S7, critérios de pronto e riscos.
 - [`docs/padroes-engenharia.md`](docs/padroes-engenharia.md) — regras com fonte oficial.
 - [`docs/pesquisa-jogadores.md`](docs/pesquisa-jogadores.md) — reclamações, pedidos, 10 regras.
 - [`docs/pesquisa-tendencias-2026.md`](docs/pesquisa-tendencias-2026.md) — mercado e gêneros.

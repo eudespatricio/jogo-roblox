@@ -9,10 +9,11 @@ Leia nesta ordem, antes de qualquer ação:
 
 ## Regras duras
 
-- **P1 não começa sem autorização explícita do diretor.** A P0 está em andamento (autorizada em
-  09/11/2026); o port do motor e a aceitação de 1.000 batalhas já passaram.
-- **`src/**` é legado** (protótipo de moedas), exceto **`src/shared/sim/`**, que é o motor de
-  produção. Não use o legado como base do jogo novo.
+- **P2+ não começa sem autorização explícita do diretor.** A P0 fechou e a P1 foi autorizada em
+  09/11/2026; o plano da P1 está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
+- **`src/**` é legado** (protótipo de moedas), exceto o que é **produção**: `src/shared/sim/`
+  (motor), `src/shared/{data,analytics}/`, `src/server/data/` e `src/server/ProfileBoot.server.luau`.
+  Não use o legado como base do jogo novo; a Q1 (S1 da P1) apaga o legado com a tag `legacy-coins`.
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
   Se quebrar, conserte antes de seguir.
 - Mudou a matemática da simulação? Suba `simVersion` e registre em `docs/spec-motor-deterministico.md`.
@@ -21,13 +22,18 @@ Leia nesta ordem, antes de qualquer ação:
 
 ## Comandos
 
-```powershell
-.\.tools\luau\luau.exe sim\invariants.luau          # oráculo (10 checagens)
-.\.tools\luau\luau.exe sim\acceptance.luau        # P0: 1.000 seeds × 3
-.\.tools\luau\luau.exe sim\poc.luau                 # benchmark do motor
-python skills\context-recovery\scan_repo.py --root . --ast .tools\luau\luau-ast.exe
-python skills\context-recovery\scan_repo.py --root . --check
-bash scripts/check.sh                               # gate completo no WSL (build, StyLua, tipos, invariantes)
+```bash
+source scripts/env.sh
+bash scripts/doctor.sh                  # estação completa
+bash scripts/check.sh                   # gate: build, StyLua, luau-lsp, invariantes, contratos, contexto
+
+luau sim/invariants.luau                # oráculo (10 checagens)
+luau sim/acceptance.luau                # P0: 1.000 seeds × 3
+luau sim/profile-contract.luau          # schema v1 + sessão do perfil
+luau sim/analytics-contract.luau        # contrato de analytics v1
+luau sim/poc.luau                       # benchmark do motor
+
+python3 skills/context-recovery/scan_repo.py --root . --check   # tetos do contexto
 ```
 
 ## Fonte de verdade

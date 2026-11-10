@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P0 fechada (09/11/2026).** Teste de sessão no Studio aprovado no Modo A (Mock) e no Modo B
-(DataStore real, persistência entre servidores): 8/8 nas duas execuções. P1 não autorizada.
-O protótipo de moedas em `src/` segue legado.
+**P1 autorizada (09/11/2026) para a próxima janela.** P0 fechada: motor, schema v1 + ProfileStore,
+contrato de analytics e teste de sessão no Studio (Modos A e B, 8/8). O primeiro item é a **Q1**
+(apagar o legado de moedas, tag `legacy-coins`); plano em `docs/p1-plano.md`.
 
 ## Números atuais (09/11/2026)
 
@@ -20,15 +20,13 @@ O protótipo de moedas em `src/` segue legado.
 | tick / cap | 0,05s · 1.200 ticks (60s) |
 | estado | 100% inteiro (MILLI = 1000) |
 | custo por batalha | ~1,5 ms (~650 batalhas/s) |
-| determinismo | hash `668061367` (seed 42, 3 execuções) |
-| 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
+| determinismo | hash `668061367` (seed 42, 3 execuções) — muda na S2 (`simVersion 2`) |
 | P0 acceptance | 1.000 seeds × 3 · 1.000 hashes · 64,9% defensor · 1,5s/1.000 |
 | invariantes | 10/10 passando (`sim/invariants.luau`) |
 | contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
-| docs / código | 15 .md + xlsx · 18 módulos Luau · 5 oráculos |
 
 ## Pronto
 
@@ -38,37 +36,37 @@ O protótipo de moedas em `src/` segue legado.
   `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `src/shared/sim/core.luau` + `sim/poc.luau` + `sim/invariants.luau` + `sim/acceptance.luau`.
-- Dados: `src/shared/data/ProfileSchema.luau` (schema v1) + `src/server/data/ProfileService.luau`
-  (sessão, store injetado) + `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
+- Dados: `src/shared/data/ProfileSchema.luau` + `src/server/data/ProfileService.luau` +
+  `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
   taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
-- Teste de sessão no Studio: **Modo A (Mock) e Modo B (DataStore real) 8/8** em 09/11/2026
-  — evidência em `docs/teste-sessao-studio.md` §8.
-- Tooling: Rokit + CLI/GUI; CI ativo; estação calibrada (doctor); ProfileStore vendorizado.
+- Tooling: Rokit + CLI/GUI; CI ativo (run #14 verde); doctor; ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
 
 ## Não pronto
 
-- Duas contas distintas no lugar publicado (2 chaves `User_*`) ficam para o playtest.
-- `src/` ainda tem o protótipo de moedas; `src/shared/sim/` já é produção. Q1 = apagar na P1
-  (tag `legacy-coins`, stub, CI), preservando `src/shared/sim/`.
-- Revisão de direção: teste de produto de 3 semanas antes da P1 — `docs/revisao-direcao.md`.
-- Analytics: falta o sink (`AnalyticsService`) e a instrumentação de gameplay — P1.
-- Sem cena, sem UI, sem loja; DataStore real só no teste manual do Studio.
+- **P1** (2–3 semanas): Q1 → cena 5×5, build, drop-in, raid, replay. Saída: 70% de primeira vitória
+  < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- O motor atual é o recorte do PoC (1 armadilha por lane, tipo sorteado): loadout 5×5/N=5 é mudança
+  de matemática → `simVersion 2` + hash novo (fatia S2 do plano).
+- `src/` ainda tem o protótipo de moedas (Q1 apaga); sink `AnalyticsService` é P1.
+- Sem cena, sem UI, sem loja. Teste de produto de 3 semanas: recomendado, roda em paralelo (decisão
+  do diretor em 09/11/2026).
 
 ## Congelado
 
 - Decisões do GDD: 5×5 → 7×5 por nível; cercos livres + 3 Grandes Saques; derrota só perde liga;
   `A MURALHA` / `WALLBREAKER`; co-op na P3.
-- Servidor autoritativo + replay por seed + `simVersion` (segue 1; sem mudança de matemática).
+- Servidor autoritativo + replay por seed + `simVersion`; hash só muda com `simVersion` novo.
 - Regras dos jogadores: nenhuma unidade obrigatória; poder só por gameplay; sem loot box.
 - Schema v1 + taxonomia v1: mudança só aditiva, com migração/`schema_version`.
 
 ## Próximo passo
 
-1. P1 só com autorização do diretor; antes dela, o teste de produto de 3 semanas.
-2. Quando a P1 for autorizada: tag `legacy-coins`, stub de 10 linhas e `rojo build` no CI (Q1).
+1. S1/Q1: tag `legacy-coins`, apagar `CoinService`/`DataService`/`Main`/`Config`/`Hud`, stub e CI.
+2. S2: motor com loadout 5×5/N=5 → `simVersion 2`, re-ancorar invariants/acceptance/spec.
+3. S3–S7: muralha/economia, cena+build, drop-in, raid/replay, telemetria (`docs/p1-plano.md`).
 
 ## Como verificar o estado em 1 minuto
 

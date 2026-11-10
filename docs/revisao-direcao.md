@@ -215,3 +215,12 @@ O [RoWatcher estima o TDS](https://rowatcher.com/games/1176784616/tower-defense-
 [Steal a Brainrot](https://rowatcher.com/games/7709344486/steal-a-brainrot) em US$ 1,4 mi/mês com
 205 mil CCU). Estimativas de terceiros não servem para calibrar receita; só o Creator Analytics do
 próprio jogo serve.
+
+---
+
+## 12. Decisão do diretor (09/11/2026)
+
+O veredito da §7 recomendava o teste de produto **antes** da P1. Em 09/11/2026 o diretor decidiu
+seguir com a **P1 autorizada** em paralelo ao teste; o plano está em [`p1-plano.md`](p1-plano.md) §6.
+Esta nota registra a decisão humana sobre a recomendação — não a apaga.
+

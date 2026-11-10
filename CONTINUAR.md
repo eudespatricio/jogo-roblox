@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** P0 fechada — teste de sessão no Studio aprovado (Modo A e B, 8/8) · base `main`.
+**Data:** 09/11/2026 · **Status:** P0 fechada; **P1 autorizada** para a próxima janela · base `main`.
 Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
@@ -14,7 +14,8 @@ gravar clipe via `CaptureService`.
 
 Equipe: 1 humano (direção, cena, game feel, QA) + 2 agentes (motor/CI e sistemas/economia).
 A P0 foi autorizada em 09/11/2026 e está **fechada**; o teste de sessão passou no Modo A (Mock)
-e no Modo B (DataStore real, entre servidores).
+e no Modo B (DataStore real, entre servidores). A **P1 foi autorizada** na mesma data —
+plano em `docs/p1-plano.md`.
 
 ---
 
@@ -31,7 +32,9 @@ e no Modo B (DataStore real, entre servidores).
   taxonomia de analytics v1 aprovada e validada no CI.
 - **P0 fechada (09/11/2026):** motor, schema v1 + wrapper ProfileStore, contrato de analytics,
   gates no CI e teste de sessão aprovado nos Modos A (Mock) e B (DataStore real), 8/8 nas
-  duas — evidência em `docs/teste-sessao-studio.md` §8. **P1 não iniciada.**
+  duas — evidência em `docs/teste-sessao-studio.md` §8.
+- **P1 autorizada em 09/11/2026** (plano em `docs/p1-plano.md`); nenhuma fatia da P1 foi
+  executada ainda.
 
 ---
 
@@ -175,7 +178,9 @@ Q1 e Q2 foram decididas em 09/11/2026; nenhuma pergunta aberta.
 Q1 e Q2 foram fechadas em 09/11/2026. `docs/auditoria/CONTRADICOES.md` foi apagado. A remoção do
 legado é P1 — não foi executada agora.
 
-**Próximo passo:** P1 só com autorização do diretor; antes dela, o teste de 3 semanas.
+**Próximo passo:** P1 autorizada em 09/11/2026; S1 = Q1 (tag `legacy-coins`, deleção do
+legado, stub). O teste de 3 semanas segue recomendado e roda em paralelo
+(`docs/p1-plano.md` §6).
 
 ## P0 — fechamento (09/11/2026)
 
@@ -207,8 +212,28 @@ sink de analytics (`AnalyticsService`, P1).
 **Armadilhas:** não editar `vendor/ProfileStore.luau`; ProfileStore é server-only
 (`ServerStorage.Vendor.ProfileStore`); `StartSessionAsync` pode retornar nil; `OnLastSave` pode não
 disparar; o CI headless não cobre DataStore — o teste de sessão é manual no Studio; `BattleResult`
-com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemática); `bit32` só
+com campo novo não altera o hash; `simVersion` segue 1 até a S2 (loadout muda a matemática); `bit32` só
 `[0, 2^32)`; `EndSession` libera o lock apenas depois do save.
+
+---
+
+## P1 — autorização e plano (09/11/2026)
+
+**Autorizada pelo diretor em 09/11/2026.** Ordem, critério de pronto por fatia, riscos e fora de
+escopo estão em [`docs/p1-plano.md`](docs/p1-plano.md) — leia antes de codar.
+
+| # | Fatia | Critério de pronto (resumo) |
+|---|---|---|
+| S1 | **Q1 — apagar o legado** | tag `legacy-coins` **antes** da deleção; `check.sh`/CI verdes; `src/shared/{sim,data,analytics}` + `src/server/{data,ProfileBoot}` intactos |
+| S2 | **Motor com loadout 5×5/N=5** | `simVersion 2` + hash novo + invariants/acceptance re-ancorados |
+| S3 | **Muralha e economia** | célula/6ª armadilha/ouro insuficiente recusados; perfil persistido; eventos válidos |
+| S4 | **Cena 5×5 + build** | build ≤ 30s; 45+ FPS mobile |
+| S5 | **Drop-in de 5s** | `dropin_pressed` ≥ 60% |
+| S6 | **Raid + replay 8s** | `result_hash` do replay igual ao servidor; recompensa idempotente por `battle_id` |
+| S7 | **Telemetria** | contrato v1 valida 100%; nenhum evento altera `BattleResult` |
+
+Critério de saída da P1 (GDD §10): **70% de primeira vitória em menos de 60s**, medido com
+`first_win_seconds` da S7.
 
 ---
 
@@ -225,9 +250,10 @@ com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemá
 | `docs/referencias-tower-defense.md` | jogos/vídeos para estudar |
 | `docs/pesquisa-grade-e-prototipo.md` | evidência e decisão de Q1/Q2 (fechadas) |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
-| `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P1 |
+| `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas (recomendado; roda em paralelo à P1) |
 | `docs/decisao-monetizacao.md` | premissas base/topo e gate ARPDAU |
 | `docs/taxonomia-analytics.md` | eventos, funil, métricas e sink (v1 aprovada) |
+| `docs/p1-plano.md` | P1: fatias S1–S7, critérios de pronto, riscos e fora de escopo |
 | `docs/teste-sessao-studio.md` | roteiro do teste de sessão no Studio (P0) |
 | `src/shared/data/ProfileSchema.luau` · `src/server/data/ProfileService.luau` | schema v1 e sessão do perfil |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1 |
@@ -242,8 +268,9 @@ com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemá
 
 ## Regras invioláveis
 
-1. **Não iniciar a P1 sem autorização explícita do diretor.** A P0 foi autorizada em 09/11/2026.
-2. `src/**` é legado; não é base do jogo novo.
+1. **P1 autorizada em 09/11/2026; P2+ só com autorização explícita do diretor.**
+2. `src/**` é legado, exceto a produção (`src/shared/{sim,data,analytics}`, `src/server/data`
+   e `src/server/ProfileBoot.server.luau`); não é base do jogo novo.
 3. Depois de editar `src/shared/sim/core.luau`, rodar `sim/invariants.luau` e `sim/acceptance.luau`.
 4. Mudou a matemática → subir `simVersion` e registrar na spec.
 5. `bit32` só recebe `[0, 2^32)`: usar `add32`/`mul32`.
@@ -273,6 +300,8 @@ com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemá
     real precisa de lugar publicado + API Services (Modo B do roteiro).
 11. **O legado quebra no Studio sem lugar publicado** (`Main`/`DataService`: "You must publish
     this place…"). É ruído esperado do protótipo de moedas, não da P0; morre na P1 (Q1).
+12. **O motor da P0 é o recorte do PoC:** `Battle.new` sorteia 1 armadilha por lane e ignora
+    loadout. Loadout 5×5/N=5 é mudança de matemática (`simVersion 2`), não ajuste de parâmetro.
 
 ---
 
@@ -280,10 +309,12 @@ com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemá
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (MURALHA, **P0 fechada** — teste de sessão no Studio
-> aprovado nos Modos A e B, 8/8). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md` e
-> `CONTINUAR.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh`
-> (devem passar). **Não inicie a P1 sem autorização do diretor**; antes dela, o teste de produto de
-> 3 semanas. Não apague `src/**` (Q1 é P1, tag `legacy-coins`); não edite `vendor/ProfileStore.luau`.
-> Q1/Q2 fechadas; Q2 = 5×5, N=5, colocação livre. Motor em `src/shared/sim/core.luau`;
-> `simVersion` = 1; contratos em `sim/profile-contract.luau` e `sim/analytics-contract.luau`.
+> Você está no repositório `jogo-roblox` (MURALHA — P0 fechada; **P1 autorizada** para esta
+> janela). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md` e **`docs/p1-plano.md`**.
+> No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar).
+> Comece pela **S1 (Q1)**: tag anotada `legacy-coins` no HEAD atual, apagar o legado de moedas
+> (`CoinService`, `DataService`, `Main`, `Config`, `Hud`), stub de 10 linhas e `.styluaignore` —
+> preservando `src/shared/{sim,data,analytics}` e `src/server/{data,ProfileBoot.server}`. Depois **S2**
+> (motor com loadout 5×5/N=5): `simVersion 2`, hash de referência novo, invariants/acceptance
+> re-ancorados. Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1
+> congelada. O teste de produto de 3 semanas roda em paralelo.
