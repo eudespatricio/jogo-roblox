@@ -1,9 +1,10 @@
 # QA da S6 no Studio — raid + BattleLog + replay
 
-> **Status:** **S6 iniciada em 10/11/2026 (scaffold); QA parcial** — raid, vitória/derrota, hash,
-> reward 5 e barra de 8 s já vistos em 375×812/720×1280. Falta re-testar o topo do build após o
-> crédito (bug de OURO stale corrigido com `MuralhaGold`) e o log `[raid] battlelog` com
-> `contentVersion=2`. A S6 **não fecha** sem a §7. S5 fechada; S7/P2 não começaram.
+> **Status:** **S6 iniciada em 10/11/2026 (scaffold); núcleo validado, replay visual pendente** —
+> raid, vitória/derrota, hash, reward 5, barra de 8 s, `BattleLog content=v2` e o loop de ouro
+> (archer + upgrade) já vistos em 375×812/720×1280. O `OURO` stale foi corrigido e confirmado
+> (`creditou 5 ouro gold=...`). A S6 **não fecha** como feature completa: replay 3D e fantasma de
+> outro jogador ficam fora do scaffold. S5 fechada; S7/P2 não começaram.
 
 **Base:** `main` pós-scaffold S6 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
 Critérios do plano: [`p1-plano.md`](p1-plano.md) S6 — `battle_finished.result_hash` igual ao
@@ -125,9 +126,14 @@ rojo build default.project.json -o build/place.rbxl
 - **Bug encontrado/corrigido:** o topo do build continuava `OURO 3` após o reward 5; o servidor
   agora publica `MuralhaGold` e o `BuildClient` reabre o snapshot. Re-testar para ver `OURO 8`.
 - **Bug encontrado/corrigido:** faltava logar o `BattleLog`; agora sai
-  `[raid] battlelog battle_id=... content=v2 reward=5 hash=...`.
-- **Ainda falta:** re-testar o topo/log acima, idempotência/divergência no Studio (prova headless
-  já no contrato) e veredito. S6 continua **aberta**.
+  `[raid] battlelog battle_id=... content=v2 reward=5 hash=...`; `[raid] creditou 5 ouro
+  gold=8`; topo do build **OURO 8**.
+- **Confirmado no re-teste (10/11/2026):** `[raid] battlelog ... content=v2 reward=5` e
+  `[raid] creditou 5 ouro gold=8/13/...`; o topo passou a **OURO 13** e o jogador colocou um
+  **archer L2 + upgrade** (o loop de ouro da raid funciona). Derrotas continuam sem crédito.
+- **Ainda falta para fechar a S6 como feature completa:** replay visual 3D e fantasma de outro
+  jogador (o scaffold usa loadout padrão + barra de 8 s); idempotência/divergência no Studio têm
+  prova headless no contrato. S6 continua **aberta**.
 
 ### Correção do OURO stale (10/11/2026)
 
@@ -135,3 +141,10 @@ O raid creditava o ouro no perfil (`gold_earned` no Output), mas o topo do build
 `OURO 3`: o `BuildClient` não reabria o snapshot. Agora o servidor publica `MuralhaGold` e o cliente
 refaz `BuildSnapshot`; o log `[raid] creditou 5 ouro gold=8` prova o valor. Re-testar e esperar
 **OURO 8** no topo do build depois da vitória (3 + 5).
+
+### Leitura do gold no teste
+
+O salto `gold=8 → 13 → ...` é o reward de 5 por vitória; quando o jogador gasta 40 (archer) + 5
+(upgrade), o topo cai para **OURO 13** e o archer L2 aparece. Em Mock o perfil não persiste entre
+sessões (`ProfileStore API services unavailable`); persistência real é o Modo B/DataStore, não o
+teste local. O reward 5 continua provisório.
