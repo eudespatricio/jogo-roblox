@@ -45,7 +45,7 @@ if camera == nil then
 	camera = Workspace:WaitForChild("Camera") :: Camera
 end
 camera.CameraType = Enum.CameraType.Scriptable
-local BASE_CAMERA = CFrame.lookAt(ORIGIN + Vector3.new(54, 30, 50), ORIGIN + Vector3.new(-2, 3, 0))
+local BASE_CAMERA = CFrame.lookAt(ORIGIN + Vector3.new(46, 26, 44), ORIGIN + Vector3.new(2, 3, 0))
 camera.CFrame = BASE_CAMERA
 camera.FieldOfView = 40
 
@@ -87,7 +87,7 @@ for lane = 1, 5 do
 	local z = (lane - 3) * 8
 	for unit = 1, 2 do
 		local kind = kinds[(lane + unit) % #kinds + 1]
-		local spawn = ORIGIN + Vector3.new(16 + unit * 4, 0.9, z)
+		local spawn = ORIGIN + Vector3.new(10 + unit * 2, 0.9, z)
 		local model = HordeKit.create(kind, scene, CFrame.new(spawn))
 		if model ~= nil then
 			horde[#horde + 1] = {
@@ -302,7 +302,7 @@ local function press(): ()
 
 	-- Salva de catapulta: projeteis cosmeticos do portao ate a horda.
 	for index = 1, math.min(6, #horde) do
-		local target = ORIGIN + Vector3.new(16 - 30 * (index / 6), 1.2, ((index % 5) - 2) * 8)
+		local target = ORIGIN + Vector3.new(12 - 30 * (index / 6), 1.2, ((index % 5) - 2) * 8)
 		Vfx.projectile(
 			scene,
 			ORIGIN + Vector3.new(-4, 5, 0),
@@ -378,7 +378,7 @@ RunService.RenderStepped:Connect(function()
 		progress = math.clamp((now - scenarioStart) / 5, 0, 1)
 	end
 	for _, item in ipairs(horde) do
-		local x = 16 - 38 * progress + item.offset * 0.25
+		local x = 11 - 33 * progress + item.offset * 0.25
 		local base = CFrame.new(ORIGIN + Vector3.new(x, 0.9, item.z))
 		HordeKit.setBase(item.unit, base)
 		HordeKit.step(item.unit, now, not pressed or phase == "shown")

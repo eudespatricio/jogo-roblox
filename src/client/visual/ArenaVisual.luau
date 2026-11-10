@@ -176,15 +176,15 @@ function ArenaVisual.build(parent: Instance, origin: Vector3, options: any?): Fo
 		"Base",
 		Vector3.new(68, 2, 52),
 		CFrame.new(origin + Vector3.new(0, -1, 0)),
-		rgb(VisualTheme.PALETTE.stoneDark),
-		Enum.Material.Slate
+		rgb(VisualTheme.PALETTE.stone),
+		Enum.Material.Concrete
 	)
 	part(
 		folder,
 		"BaseTop",
 		Vector3.new(66, 0.35, 50),
 		CFrame.new(origin + Vector3.new(0, 0.05, 0)),
-		rgb(VisualTheme.PALETTE.stone),
+		rgb({ 122, 118, 108 }),
 		Enum.Material.Cobblestone
 	)
 	part(
@@ -204,8 +204,8 @@ function ArenaVisual.build(parent: Instance, origin: Vector3, options: any?): Fo
 			"Lane_" .. tostring(lane),
 			Vector3.new(48, 0.16, 6.6),
 			CFrame.new(origin + Vector3.new(1, 0.25, z)),
-			rgb(VisualTheme.PALETTE.ironDark),
-			Enum.Material.Slate
+			rgb({ 58, 62, 70 }),
+			Enum.Material.SmoothPlastic
 		)
 		part(
 			folder,

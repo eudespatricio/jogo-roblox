@@ -37,28 +37,28 @@ function VisualSetup.apply(): ()
 	end
 	applied = true
 
-	Lighting.Brightness = 2.15
-	Lighting.ClockTime = 17.1
+	Lighting.Brightness = 2.8
+	Lighting.ClockTime = 16.4
 	Lighting.GeographicLatitude = 24
-	Lighting.Ambient = rgb(VisualTheme.PALETTE.ironDark)
-	Lighting.OutdoorAmbient = rgb(VisualTheme.PALETTE.stoneDark)
-	Lighting.EnvironmentDiffuseScale = 0.35
-	Lighting.EnvironmentSpecularScale = 0.2
+	Lighting.Ambient = rgb({ 70, 74, 82 })
+	Lighting.OutdoorAmbient = rgb({ 120, 124, 132 })
+	Lighting.EnvironmentDiffuseScale = 0.5
+	Lighting.EnvironmentSpecularScale = 0.25
 	Lighting.ShadowSoftness = 0.35
 	Lighting.GlobalShadows = true
 
 	local atmosphere = ensure("Atmosphere", "MuralhaAtmosphere")
-	atmosphere.Density = 0.32
+	atmosphere.Density = 0.2
 	atmosphere.Offset = 0.08
 	atmosphere.Color = rgb(VisualTheme.PALETTE.teal)
 	atmosphere.Decay = rgb(VisualTheme.PALETTE.iron)
 	atmosphere.Glare = 0.15
-	atmosphere.Haze = 1.6
+	atmosphere.Haze = 1.2
 
 	local colorCorrection = ensure("ColorCorrectionEffect", "MuralhaColor")
-	colorCorrection.Brightness = 0.02
-	colorCorrection.Contrast = 0.08
-	colorCorrection.Saturation = 0.12
+	colorCorrection.Brightness = 0.06
+	colorCorrection.Contrast = 0.1
+	colorCorrection.Saturation = 0.18
 	colorCorrection.TintColor = Color3.fromRGB(255, 244, 224)
 
 	local bloom = ensure("BloomEffect", "MuralhaBloom")

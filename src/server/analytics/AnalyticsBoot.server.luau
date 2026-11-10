@@ -200,8 +200,9 @@ local function startSession(player: Player): ()
 	end
 	print(
 		string.format(
-			"[analytics] sessao iniciada returning=%s sink=Null (player_id hash32)",
-			tostring(returning)
+			"[analytics] sessao iniciada returning=%s sink=%s (player_id hash32)",
+			tostring(returning),
+			sinkName
 		)
 	)
 end
