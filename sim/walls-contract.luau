@@ -86,6 +86,14 @@ check("catalogo espelha o motor e desbloqueia por liga", function()
 	assert(TrapCatalog.CONTENT_VERSION == 1, "CONTENT_VERSION")
 	assert(TrapCatalog.MAX_LEVEL == 3, "MAX_LEVEL")
 	assert(TrapCatalog.POINTS_PER_LEAGUE == 100, "POINTS_PER_LEAGUE")
+	-- Lista pinada: adicionar/renomear trap exige atualizar este teste, o doc, CONTENT_VERSION
+	-- e decidir simVersion (ver docs/economia-muralha.md secao 7).
+	assert(
+		table.concat(TrapCatalog.TRAP_IDS, ",") == "archer,oil,frost,cannon",
+		"nova trap: atualize contrato/CONTENT_VERSION/simVersion"
+	)
+	assert(sortedKeys(TrapCatalog.GOLD_SOURCES) == "daily,defense,raid", "GOLD_SOURCES mudou")
+	assert(sortedKeys(TrapCatalog.GOLD_SINKS) == "trap,upgrade", "GOLD_SINKS mudou")
 	assert(TrapCatalog.leagueOf(0) == 1, "liga 0")
 	assert(TrapCatalog.leagueOf(99) == 1, "liga 99")
 	assert(TrapCatalog.leagueOf(100) == 2, "liga 100")

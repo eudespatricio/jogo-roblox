@@ -96,7 +96,8 @@ perfil carregado, célula, N=5, ouro, desbloqueio, upgrade, remove, creditGold, 
 ## 7. Como expandir sem quebrar
 
 **Novo custo/desbloqueio de um tipo existente:** editar `TrapCatalog`, este documento e o contrato
-na mesma mudança. O teste ancora custos e desbloqueios; CI falha se divergir.
+na mesma mudança. O teste ancora custos, desbloqueios, `TRAP_IDS`, `GOLD_SOURCES` e `GOLD_SINKS`;
+CI falha se divergir.
 
 **Novo tipo de armadilha:**
 
