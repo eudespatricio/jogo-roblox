@@ -416,6 +416,19 @@ local function refresh(snapshot: any): ()
 	end
 end
 
+-- S6: a raid credita ouro no servidor; o atributo avisa a UI de build para reabrir o snapshot.
+player:GetAttributeChangedSignal("MuralhaGold"):Connect(function()
+	if state.snapshot == nil then
+		return
+	end
+	local ok, snapshot = pcall(function()
+		return buildSnapshot:InvokeServer()
+	end)
+	if ok and type(snapshot) == "table" then
+		refresh(snapshot)
+	end
+end)
+
 local function send(action: string, trapId: string, cell: string): ()
 	local ok, result = pcall(function()
 		return buildAction:InvokeServer(action, trapId, cell)

@@ -109,7 +109,9 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     parede fantasma via `toBattleWall`, replay do mesmo seed e reward `raid`; `RaidClient` com
     ATACAR, resultado e barra de replay de 8 s.
   - Recompensa de raid **5 ouro provisória** (calibrar no teste); parede fantasma é o loadout
-    padrão; replay 3D fica para a janela de cena. **Falta QA humano** (docs/teste-s6-studio.md).
+    padrão; replay 3D fica para a janela de cena. QA parcial: vitória/derrota/hash/reward/8 s
+    em 375×812/720×1280; corrigido o OURO stale (`MuralhaGold`) e logado o `BattleLog`
+    (`content=v2`). **Falta re-testar topo/log e fechar a evidência** (docs/teste-s6-studio.md).
 - Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 79/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 

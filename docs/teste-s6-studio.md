@@ -1,9 +1,9 @@
 # QA da S6 no Studio — raid + BattleLog + replay
 
-> **Status:** **S6 iniciada em 10/11/2026 (scaffold)**; QA humano pendente. O servidor já roda a
-> raid fantasma, grava o `BattleLog` separado (1 chave por `battle_id`, com `contentVersion`) e
-> valida o replay antes de creditar; falta a evidência de Studio. A S6 **não fecha** sem a §7.
-> S5 fechada; S7/P2 não começaram.
+> **Status:** **S6 iniciada em 10/11/2026 (scaffold); QA parcial** — raid, vitória/derrota, hash,
+> reward 5 e barra de 8 s já vistos em 375×812/720×1280. Falta re-testar o topo do build após o
+> crédito (bug de OURO stale corrigido com `MuralhaGold`) e o log `[raid] battlelog` com
+> `contentVersion=2`. A S6 **não fecha** sem a §7. S5 fechada; S7/P2 não começaram.
 
 **Base:** `main` pós-scaffold S6 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
 Critérios do plano: [`p1-plano.md`](p1-plano.md) S6 — `battle_finished.result_hash` igual ao
@@ -31,6 +31,8 @@ replay; recompensa idempotente por `battle_id`; divergência vira `battle_diverg
 [analytics] battle_finished battle_id=... duration_ms=... result_hash=... winner=...
 [analytics] raid_end battle_id=... duration_s=... result=...
 [analytics] gold_earned amount=5 source=raid battle_id=...
+[raid] battlelog battle_id=... content=v2 reward=5 hash=...
+[raid] creditou 5 ouro gold=8
 ```
 
 `battle_finished` sai **depois** do hash; `battle_divergence` só aparece se o replay não bater.
@@ -53,6 +55,8 @@ O `BattleLog` fica em `MuralhaBattleLog_v1`, separado do perfil.
       cliente mostra.
 - [ ] Se o atacante vence, `gold_earned amount=5 source=raid` e o ouro do perfil sobe **uma vez**
       por `battle_id`; se perde, recompensa 0.
+- [ ] O topo do build atualiza o OURO após a raid (atributo `MuralhaGold` → snapshot). Ex.: 3 +
+      5 = **OURO 8**; antes da correção o topo ficava em 3.
 - [ ] Repetir ATACAR cria outro `battle_id`/log (não reaproveita chave).
 - [ ] `BattleLog` tem `contentVersion = 2` (GAP-011) e os campos do resultado; o store é
       `MuralhaBattleLog_v1`, não o `MuralhaProfile_v1`.
@@ -107,4 +111,27 @@ rojo build default.project.json -o build/place.rbxl
 - BattleLog com `contentVersion` + chave única + `isReplayable`.
 - Replay determinístico: mesmo seed/hash; hash corrompido vira `divergence`.
 - Ledger: claim/markRewarded idempotentes; `gold_earned` da taxonomia validado.
-- **Falta (humano):** itens 1–3 da §7 — Output/prints/BattleLog da raid no Studio.
+- **Falta (humano):** re-testar após `MuralhaGold`/log `[raid] battlelog` — topo OURO 8 e
+  `content=v2`; prints finais 375×812/720×1280 e veredito.
+
+## 10. Evidência parcial — 10/11/2026
+
+- **375×812:** raid DERROTA (hash 965886648, muralha 178 HP, vazados 27, reward 0) e VITORIA
+  (hash 1193837270, muralha 0 HP, vazados 31, reward 5); barra de replay de 8 s.
+- **720×1280:** modal RAID VITORIA com battle_id/hash/reward; build 5×5 atrás.
+- **Output:** `[raid] battlelog store=Mock name=MuralhaBattleLog_v1`; `battle_started`;
+  `battle_finished` com hash/winner/wall_hp/ticks; `raid_end`; `gold_earned amount=5 source=raid`
+  nas vitórias. Derrotas não creditam. Battle_ids distintos por raid.
+- **Bug encontrado/corrigido:** o topo do build continuava `OURO 3` após o reward 5; o servidor
+  agora publica `MuralhaGold` e o `BuildClient` reabre o snapshot. Re-testar para ver `OURO 8`.
+- **Bug encontrado/corrigido:** faltava logar o `BattleLog`; agora sai
+  `[raid] battlelog battle_id=... content=v2 reward=5 hash=...`.
+- **Ainda falta:** re-testar o topo/log acima, idempotência/divergência no Studio (prova headless
+  já no contrato) e veredito. S6 continua **aberta**.
+
+### Correção do OURO stale (10/11/2026)
+
+O raid creditava o ouro no perfil (`gold_earned` no Output), mas o topo do build continuava em
+`OURO 3`: o `BuildClient` não reabria o snapshot. Agora o servidor publica `MuralhaGold` e o cliente
+refaz `BuildSnapshot`; o log `[raid] creditou 5 ouro gold=8` prova o valor. Re-testar e esperar
+**OURO 8** no topo do build depois da vitória (3 + 5).

@@ -228,8 +228,9 @@ local function startRaid(player: Player): any
 		end
 		local rewarded = true
 		local creditedGold = 0
+		local goldAfter = nil
 		if rewardGold > 0 then
-			rewarded = creditRaid(player, battleId, rewardGold)
+			rewarded, goldAfter = creditRaid(player, battleId, rewardGold)
 			if rewarded then
 				creditedGold = rewardGold
 			end
@@ -242,6 +243,23 @@ local function startRaid(player: Player): any
 			else
 				finalLog = marked
 			end
+		end
+		if finalLog ~= nil then
+			print(
+				string.format(
+					"[raid] battlelog battle_id=%s content=v%d reward=%d hash=%d",
+					finalLog.battleId,
+					finalLog.contentVersion,
+					finalLog.rewardGold,
+					finalLog.resultHash
+				)
+			)
+		end
+		-- S6: espelha o ouro no atributo para a UI de build reabrir o snapshot (o modal de raid
+		-- nao e dono do topo do build).
+		if goldAfter ~= nil then
+			print(string.format("[raid] creditou %d ouro gold=%d", creditedGold, goldAfter))
+			player:SetAttribute("MuralhaGold", goldAfter)
 		end
 
 		return {
