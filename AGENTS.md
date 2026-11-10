@@ -10,8 +10,8 @@ Leia nesta ordem, antes de qualquer ação:
 ## Regras duras
 
 - **P2+ não começa sem autorização explícita do diretor.** A P1 foi autorizada em 09/11/2026 e está
-  em execução (S1–S6.1 fechadas; S7 pendente); o plano está em
-  `docs/p1-plano.md` (S1–S7, critérios de pronto).
+  em execução (S1–S7 fechadas; a saída — 70% de primeira vitória <60 s — depende do teste de 3
+  semanas, GAP-012); o plano está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
 - **`src/` é produção.** O legado de moedas foi apagado na S1 (09/11/2026) e está preservado na
   tag anotada `legacy-coins` (commit `b07b4c5`). Não ressuscite `CoinService`/`DataService`/`Config`.
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.

@@ -21,7 +21,7 @@ echo "== stylua =="
 stylua --check sim src
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/shared/build src/shared/dropin src/shared/raid src/server/data src/server/walls/WallService.luau src/server/Main.server.luau
+luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/shared/build src/shared/dropin src/shared/raid src/server/analytics/AnalyticsService.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau
 
 echo "== invariantes =="
 luau sim/invariants.luau

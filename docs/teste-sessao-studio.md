@@ -135,7 +135,8 @@ Evidência: copie as linhas `[perfil]`/`[selftest]` do Output para o handover.
 
 ## 7. O que **não** entra na P0
 
-- Sink de analytics (`AnalyticsService`) e instrumentação de gameplay: P1.
+- Sink de analytics (`AnalyticsService`) e instrumentação de gameplay: entregues na S7 (sink
+  `Null`; persistência da série é GAP-012).
 - Roubo de sessão entre dois servidores simultâneos (dois dispositivos, mesma conta): coberto pelo
   session lock do ProfileStore; teste manual de dois dispositivos fica para o playtest.
 - UI, cena 5×5, loja: P1.

@@ -6,10 +6,11 @@
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
 > **Execução (10/11/2026):** S1–S3.3 fechadas; **S3.4 (conteúdo e versões) fechada** — schema 2,
 > content 2, `simVersion 3`, hash `2489780106` (seed 42), Modo B real 8/8; GAP-001/002/003/009/010
-> fechados. **S4 fechada** em 10/11/2026 (QA headless + runtime: FPS 60/60, Play→UI 1,9 s,
-> prints 375×812/720×1280); S5 fechada; S6 iniciada (raid/BattleLog/replay; QA pendente);
-> S7 pendente.
-> **GAP:** GAP-004/005/008 — classe/taxonomia v2 e P2; GAP-011 fechado no `BattleLog` da S6.
+> fechados. **S4 fechada** (QA headless + runtime: FPS 60/60, Play→UI 1,9 s, prints
+> 375×812/720×1280); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid, fantasma real
+> e replay 3D); **S7 fechada** (telemetria: serviço, contrato 30/30 e `first_win_seconds`).
+> **GAP:** GAP-004/005/008 — classe/taxonomia v2 e P2; GAP-011 fechado no `BattleLog` da S6;
+> GAP-012 aberto no sink Null (persistência da saída da P1).
 > Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
 > [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).
@@ -21,8 +22,10 @@
 Do GDD §10: a P1 entrega **drop-in, build, raid e replay** em 2–3 semanas, com critério de saída
 **70% de primeira vitória em menos de 60 s** ([`gdd-muralha.md`](gdd-muralha.md) §9–§10).
 
-Como medir: `first_win_seconds = first_win.ts − session_start.ts` por jogador novo, com a telemetria
-da S7 (contrato v1 já validado no CI). Sem número, a fase não fecha.
+Como medir: `first_win_seconds = first_win.ts − session_start.ts` por jogador novo, com a
+telemetria da S7 (implementada; contrato v1 30/30 no CI). O instrumento está pronto, mas o sink
+`Null` não persiste a série (GAP-012): o número de 70% é medido no teste de 3 semanas. Sem número,
+a fase não fecha.
 
 ## 2. Ordem de trabalho (fatias)
 
@@ -36,7 +39,7 @@ da S7 (contrato v1 já validado no CI). Sem número, a fase não fecha.
 | S4 | **Cena 5×5 + build** — **feito 10/11/2026** | grid 5×5 no Workspace, câmera fixa, UI de build (colocar 5 em 25), HUD de FPS/tempos, layout 375×812/720×1280; `GridLayout`/`BuildProtocol`/`BuildClientState`/`BuildHud`/`BuildLayout`/`BuildGrid`/`WallController`/`BuildClient`; QA em [`teste-s4-studio.md`](teste-s4-studio.md) | build ≤30 s; nenhuma armadilha fora da célula; 45+ FPS; evidência §7 (FPS 60/60, Play→UI 1,9 s) |
 | S5 | **Drop-in de 5 s** — **feito 10/11/2026** | cena de abertura com DEFENDER, derrota roteirizada e retry; `DropInState`/`DropInController`/`DropInClient`/`sim/dropin-contract.luau`; +3 ouro no clear; QA em [`teste-s5-studio.md`](teste-s5-studio.md) | `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥ 60% no teste de produto |
 | S6 | **Raid assíncrona + replay** — **S6.1 fechada em 10/11/2026 (fantasma real + replay 3D)** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`, `contentVersion`), replay por seed de 8 s; `BattleLog`/`RaidReplay`/`RaidController`/`RaidClient`; QA em [`teste-s6-studio.md`](teste-s6-studio.md) | `battle_finished.result_hash` igual ao replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence`; GAP-011 fechado |
-| S7 | **Telemetria** | `src/server/analytics/AnalyticsService.luau`: `emit`, lote (30 s/100), rate limit de cliente (10/min), idempotência, sink `Null` | contrato v1 valida 100% dos eventos; nenhum evento altera `BattleResult`; sem PII |
+| S7 | **Telemetria** — **feito 10/11/2026** | `AnalyticsService.luau`: `emit`, lote (30 s/100), rate limit de cliente (10/min), idempotência, sink `Null`; `AnalyticsBoot` liga a sessão/perfil e `first_win_seconds`; `traps_count=0` aditivo (muralha vazia); QA em [`teste-s7-studio.md`](teste-s7-studio.md) | contrato v1 **30/30**; nenhum evento altera `BattleResult`; sem PII; GAP-012 aberto (sink não persiste a taxa de 70%) |
 
 Regras de sequência:
 

@@ -1,6 +1,6 @@
 --!strict
--- Propriedades de funil do drop-in (taxonomia v1). O envelope/sink e a S7; a S5 produz e valida
--- as props no contrato headless e loga o ponto de funil no servidor.
+-- Propriedades de funil do drop-in (taxonomia v1). O envelope/sink roda no AnalyticsService
+-- (S7); aqui ficam as props que o contrato headless e o servidor validam.
 
 local DropInTelemetry = {}
 

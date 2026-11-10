@@ -232,6 +232,12 @@ Contrato executável (P0, 09/11/2026): `src/shared/analytics/AnalyticsTypes.luau
 `sim/analytics-contract.luau` no CI. Eventos de batalha carregam `seed`, `sim_version` e
 `result_hash` lidos do `BattleResult` **depois** do hash; nenhum sink vive em `sim/core.luau`.
 
+**S7 (10/11/2026):** `src/server/analytics/AnalyticsService.luau` monta o envelope, valida, faz
+lote (30 s/100), rate limit de cliente (10/min), idempotência por `event_id` e entrega ao sink
+`Null`; `AnalyticsBoot.server.luau` liga sessão/perfil e `first_win_seconds`. O evento continua
+depois do hash e o `BattleResult` não é tocado. Limite: sink `Null` não persiste (GAP-012), então a
+taxa de 70% é medida no teste de 3 semanas.
+
 ---
 
 ## 9. Orçamento de performance
@@ -260,8 +266,10 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 7. **Contrato de perfil:** `sim/profile-contract.luau` — schema v2, migração 0→2 e 1→2 com
    fixtures, `contentVersion`, `StartSessionAsync` nil, `EndSession` no leave e recarga sem
    duplicar (store injetado).
-8. **Contrato de analytics:** `sim/analytics-contract.luau` — envelope/catálogo/limites/PII e
-   prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`; usa `sim_version 3`.
+8. **Contrato de analytics:** `sim/analytics-contract.luau` — **30 checagens**: envelope/catálogo/
+   limites/PII, serviço (lote 30 s/100, rate limit 10/min, idempotência, teto de sessão, sink Null),
+   `first_win_seconds` com coorte sintética e prova de que montar o evento não altera
+   `hash`/`seed`/`ticks`; usa `sim_version 3`.
 9. **Gate de versões:** `scripts/check-versions.py` compara `SCHEMA_VERSION`, `CONTENT_VERSION`,
    `SIM_VERSION` e o hash de referência com o bloco de [`versoes.md`](versoes.md); divergência falha
    o `check.sh` (GAP-007 fechado na S3.3).

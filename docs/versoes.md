@@ -34,3 +34,5 @@ hash=2489780106
    (`content_future`); o `WallService` não aceita perfil fora da versão do catálogo.
 5. **Taxonomia é separada.** `AnalyticsTypes.SCHEMA_VERSION = 1` é a taxonomia congelada; mudar
    evento/enum exige taxonomia v2 e não entra neste bloco.
+6. **A S7 não mudou este bloco.** `AnalyticsService`/sink `Null`/`first_win_seconds` usam a
+   taxonomia v1; schema 2, content 2, sim 3 e hash `2489780106` continuam os mesmos.

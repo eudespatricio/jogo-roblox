@@ -1,6 +1,6 @@
 --!strict
--- Props de telemetria da raid (taxonomia v1). O envelope/sink e a S7; a S6 valida as props
--- no contrato e loga os pontos no servidor.
+-- Props de telemetria da raid (taxonomia v1). O envelope/sink roda no AnalyticsService (S7);
+-- aqui ficam as props validadas no contrato e no servidor.
 
 local RaidTelemetry = {}
 

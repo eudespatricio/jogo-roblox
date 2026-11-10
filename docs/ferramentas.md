@@ -49,7 +49,7 @@ O 4.5.15 LTS já está instalado no WSL como `blender4.5`; o `blender` antigo co
 | 3 | **`pesde.toml` + ProfileStore** | ProfileStore vendorizado (Apache-2.0, commit fixado); wrapper + schema v1 entregues na P0; `pesde.toml` fica para a 2ª dependência | vendor | 0 |
 | 4 | **Style guide 2D/UI + HUD** | Krita/Inkscape instalados; falta paleta/tipografia/9-slice | Figma + Krita | 0 |
 | 5 | **Primeiro SFX/trilha + mixagem** | Audacity/FFmpeg instalados; falta o som existir | Audacity + Freesound (licença) | 0 |
-| 6 | **Observabilidade** | contrato v1 feito; falta o sink e a instrumentação de gameplay | `AnalyticsService` (P1) + schema (`docs/taxonomia-analytics.md`) | 0 |
+| 6 | **Observabilidade** | contrato v1 + serviço/sink Null + `first_win_seconds` (S7); falta persistência da série (GAP-012) | `AnalyticsService` + `docs/teste-s7-studio.md` | 0 |
 | 7 | **Publicação Open Cloud** | build → place sem clicar no Studio | rbxcloud + API key | 0 |
 | 8 | **Performance/QA em device fraco** | 60 fps não se adivinha | MicroProfiler + ScriptProfiler + device | 0 |
 

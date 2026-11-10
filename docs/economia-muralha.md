@@ -74,8 +74,8 @@ não monta `wall.traps` à mão; perfil inválido devolve `nil + erro` e não ch
 | remover | nenhum (a taxonomia não tem `trap_removed`) |
 
 O serviço devolve `events = { { name, props } }` e, se receber `emit`, publica `emit(name, props)`.
-O envelope/`event_id`/sink é responsabilidade do `AnalyticsService` (S7). O contrato monta o
-envelope e valida cada evento com `AnalyticsTypes.validate`.
+O envelope/`event_id`/sink é responsabilidade do `AnalyticsService` (S7, implementado em
+10/11/2026); o contrato monta o envelope e valida cada evento com `AnalyticsTypes.validate`.
 
 ## 5. Erros estáveis
 

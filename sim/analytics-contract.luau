@@ -4,6 +4,7 @@
 -- Regra dura: nenhum evento altera o BattleResult nem o hash (o servidor emite depois do hash).
 local Core = require("../src/shared/sim/core")
 local Analytics = require("../src/shared/analytics/AnalyticsTypes")
+local AnalyticsService = require("../src/server/analytics/AnalyticsService")
 
 local failures = {}
 local checks = 0
@@ -352,6 +353,21 @@ check("analytics nao altera o resultado da batalha", function()
 	)
 end)
 
+check("battle_started aceita muralha vazia (0 traps)", function()
+	local event, err = Analytics.battleStarted(CTX, BATTLE_ID, 42, 3, 5, 0)
+	assert(event ~= nil, "muralha vazia recusada: " .. tostring(err))
+	assert(event.traps_count == 0, "traps_count")
+	local empty = Core.Battle
+		.new({
+			seed = 42,
+			simVersion = Core.SIM_VERSION,
+			wall = { hp = 500, traps = {} },
+			wave = { count = 70 },
+		})
+		:Run()
+	assert(empty.ticks > 0 and empty.hash > 0, "batalha vazia invalida")
+end)
+
 check("eventos de batalha: started e divergence", function()
 	local started, startErr = Analytics.battleStarted(CTX, BATTLE_ID, 42, Core.SIM_VERSION, 5, 5)
 	assert(started ~= nil, "battle_started invalido: " .. tostring(startErr))
@@ -375,6 +391,382 @@ check("newEvent recusa evento fora do catalogo", function()
 	local event, err = Analytics.newEvent(CTX, "evento_inventado", {})
 	assert(event == nil, "criou evento fora do catalogo")
 	assert(err ~= nil and string.find(tostring(err), "desconhecido", 1, true) ~= nil, tostring(err))
+end)
+
+-- ---------------------------------------------------------------- servico da S7
+local SERVICE_SALT = "test-salt-s7"
+local PLAYER_ID = HASH32
+local SERVER_ID = CODE_HASH
+
+local function deepEqual(a, b)
+	if type(a) ~= type(b) then
+		return false
+	end
+	if type(a) ~= "table" then
+		return a == b
+	end
+	for key, value in pairs(a) do
+		if not deepEqual(value, b[key]) then
+			return false
+		end
+	end
+	for key in pairs(b) do
+		if a[key] == nil then
+			return false
+		end
+	end
+	return true
+end
+
+local function newClock(start)
+	local value = start or 1762800000000
+	return {
+		now = function()
+			return value
+		end,
+		advance = function(ms)
+			value += ms
+		end,
+	}
+end
+
+local function newUuidFactory()
+	local counter = 0
+	return function()
+		counter += 1
+		return string.format("00000000-0000-4000-8000-%012d", counter)
+	end
+end
+
+local function sessionFields(overrides)
+	local fields = {
+		player_id = PLAYER_ID,
+		session_id = SESSION_ID,
+		place_version = "0.1.0-s7",
+		platform = "mobile",
+		device_tier = "mid",
+		locale = "pt-BR",
+		is_age_checked = false,
+		server_id = SERVER_ID,
+		experiment = "s7=test",
+		is_returning = false,
+		days_since_last_seen = -1,
+	}
+	for key, value in pairs(overrides or {}) do
+		fields[key] = value
+	end
+	return fields
+end
+
+local function newRecorder()
+	local record = { batches = {}, events = {}, errors = {} }
+	local sink = {
+		name = "Recorder",
+		write = function(events)
+			for _, event in ipairs(events) do
+				local ok, err = Analytics.validate(event)
+				assert(ok, "sink recebeu evento invalido: " .. tostring(err))
+				record.events[#record.events + 1] = event
+			end
+			record.batches[#record.batches + 1] = #events
+			return true, nil
+		end,
+	}
+	return sink, record
+end
+
+local function newService(options)
+	options = options or {}
+	local clock = options.clock or newClock()
+	local sink, record = newRecorder()
+	local service = AnalyticsService.new({
+		types = Analytics,
+		sink = options.sink or sink,
+		now = clock.now,
+		generateId = options.generateId or newUuidFactory(),
+		flushIntervalMs = options.flushIntervalMs or 30000,
+		maxBatch = options.maxBatch or 100,
+		maxBuffer = options.maxBuffer or 500,
+		maxClientEventsPerMinute = options.maxClientEventsPerMinute or 10,
+		maxEventsPerSession = options.maxEventsPerSession or 200,
+		onError = function(message)
+			record.errors[#record.errors + 1] = message
+		end,
+	})
+	return service, record, clock
+end
+
+check("servico: os 31 eventos do catalogo validam e chegam ao sink", function()
+	local service, record = newService()
+	local session, beginErr = service.beginSession(1, sessionFields())
+	assert(session ~= nil, tostring(beginErr))
+	local accepted = 0
+	for _, name in ipairs(Analytics.eventNames()) do
+		local event, err = service.emit(1, name, PROPS[name])
+		assert(event ~= nil, name .. ": " .. tostring(err))
+		accepted += 1
+	end
+	local flushed = service.flush("test")
+	assert(flushed == accepted + 1, "flush deveria levar session_start + 31 eventos")
+	assert(#record.events == accepted + 1, "sink recebeu " .. tostring(#record.events))
+	for _, event in ipairs(record.events) do
+		local ok, err = Analytics.validate(event)
+		assert(ok, "evento invalido no sink: " .. tostring(err))
+	end
+	local stats = service.getStats()
+	assert(stats.accepted == accepted + 1, "accepted=" .. tostring(stats.accepted))
+	assert(stats.flushed == accepted + 1, "flushed=" .. tostring(stats.flushed))
+	assert(stats.rejected == 0, "rejected=" .. tostring(stats.rejected))
+	assert(stats.invalid == 0, "invalid=" .. tostring(stats.invalid))
+	assert(#record.errors == 0, table.concat(record.errors, " | "))
+end)
+
+check("sink Null valida e descarta sem quebrar o fluxo", function()
+	local service, record = newService({ sink = AnalyticsService.NullSink(Analytics) })
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	assert(service.emit(1, "dropin_shown", { ms_since_join = 10 }) ~= nil, "emit")
+	assert(service.flush("test") == 2, "flush")
+	local stats = service.getStats()
+	assert(stats.flushed == 2 and stats.failed_batches == 0, "stats do sink Null")
+	assert(#record.events == 0, "recorder nao deveria ser usado")
+	local null = AnalyticsService.NullSink(Analytics)
+	local ok, err = null.write({ { event_name = "evento_inventado" } })
+	assert(not ok and err ~= nil, "Null aceitou evento invalido")
+end)
+
+check("lote: 100 eventos e 30 s disparam flush", function()
+	local service, record, clock = newService()
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	for index = 1, 98 do
+		assert(service.emit(1, "dropin_shown", { ms_since_join = index }) ~= nil, "emit 98")
+	end
+	assert(#record.events == 0, "flush antes de 100")
+	assert(service.emit(1, "dropin_shown", { ms_since_join = 99 }) ~= nil, "emit 99")
+	assert(#record.events == 100, "lote de 100")
+	assert(record.batches[1] == 100, "batch=" .. tostring(record.batches[1]))
+	clock.advance(30000)
+	assert(service.emit(1, "dropin_shown", { ms_since_join = 100 }) ~= nil, "emit pos-lote")
+	assert(#record.events == 100, "flush por tempo antes do tick")
+	assert(service.tick() == 1, "tick deveria levar 1")
+	assert(#record.events == 101, "evento do tick")
+	assert(record.batches[2] == 1, "segundo batch")
+end)
+
+check("rate limit de cliente: 10/min e client_error uma vez", function()
+	local service, record, clock = newService()
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	for index = 1, 10 do
+		local event, err = service.emitClient(1, "client_error", {
+			code = "ui_error",
+			context_hash = CODE_HASH,
+		})
+		assert(event ~= nil, "client_error " .. tostring(index) .. ": " .. tostring(err))
+	end
+	local dropped, droppedErr = service.emitClient(1, "client_error", {
+		code = "ui_error",
+		context_hash = CODE_HASH,
+	})
+	assert(dropped == nil and droppedErr == "rate_limited", tostring(droppedErr))
+	assert(service.getStats().rate_limited == 1, "rate_limited")
+	local serverOnly, serverOnlyErr =
+		service.emitClient(1, "battle_finished", PROPS.battle_finished)
+	assert(serverOnly == nil and serverOnlyErr == "server_only", tostring(serverOnlyErr))
+	assert(service.flush("test") > 0, "flush")
+	local reports = 0
+	for _, event in ipairs(record.events) do
+		if event.event_name == "client_error" and event.code == "rate_limited" then
+			reports += 1
+		end
+	end
+	assert(reports == 1, "client_error(rate_limited)=" .. tostring(reports))
+	clock.advance(60001)
+	local again, againErr = service.emitClient(1, "client_error", {
+		code = "ui_error",
+		context_hash = CODE_HASH,
+	})
+	assert(again ~= nil, "janela nao reabriu: " .. tostring(againErr))
+end)
+
+check("idempotencia: event_id repetido nao duplica no sink", function()
+	local service, record = newService()
+	local event = assert(Analytics.newEvent(CTX, "session_start", PROPS.session_start))
+	assert(service.emitEvent(event) ~= nil, "primeiro event_id")
+	local duplicate, err = service.emitEvent(event)
+	assert(duplicate == nil and err == "duplicate", tostring(err))
+	service.flush("test")
+	assert(#record.events == 1, "sink recebeu " .. tostring(#record.events))
+	assert(service.getStats().duplicates == 1, "duplicates")
+end)
+
+check("teto de 200: funil/monetizacao passam, economia nao", function()
+	local service = newService()
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	for _ = 1, 199 do
+		assert(service.emit(1, "trap_placed", { trap_id = "archer", cell = "r1c3", cost = 40 }))
+	end
+	assert(service.getStats().accepted == 200, "accepted=" .. tostring(service.getStats().accepted))
+	local blocked, blockedErr =
+		service.emit(1, "trap_placed", { trap_id = "archer", cell = "r1c3", cost = 40 })
+	assert(blocked == nil and blockedErr == "session_cap", tostring(blockedErr))
+	local priority = service.emit(1, "purchase_complete", PROPS.purchase_complete)
+	assert(priority ~= nil, "monetizacao deveria passar acima do teto")
+	assert(service.getStats().session_capped == 1, "session_capped")
+	local closing = service.endSession(1, "leave")
+	assert(closing ~= nil, "session_end deveria passar acima do teto")
+end)
+
+check("session_end no leave: duration_s e flush", function()
+	local service, record, clock = newService()
+	assert(
+		service.beginSession(1, sessionFields({ is_returning = true, days_since_last_seen = 1 }))
+			~= nil,
+		"beginSession"
+	)
+	clock.advance(12500)
+	local event = assert(service.endSession(1, "leave"))
+	assert(event.duration_s == 12.5, "duration_s=" .. tostring(event.duration_s))
+	assert(service.getSession(1) == nil, "sessao deveria sumir")
+	assert(#record.events == 2, "sink deveria ter start+end, tem " .. tostring(#record.events))
+	assert(record.events[1].event_name == "session_start", "ordem start/end")
+	assert(record.events[2].event_name == "session_end", "ordem start/end")
+	local startEvent = record.events[1]
+	assert(
+		startEvent.is_returning == true and startEvent.days_since_last_seen == 1,
+		"props do start"
+	)
+end)
+
+check("first_win: uma vez por sessao e first_win_seconds medido", function()
+	local service, record, clock = newService()
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	clock.advance(42500)
+	local event = assert(service.emitFirstWin(1, BATTLE_ID))
+	assert(event.seconds_since_join == 42.5, "seconds=" .. tostring(event.seconds_since_join))
+	local duplicate, err = service.emitFirstWin(1, BATTLE_ID)
+	assert(duplicate == nil and err == "already_won", tostring(err))
+	service.flush("test")
+	local firstWin, sessionStart = nil, nil
+	for _, item in ipairs(record.events) do
+		if item.event_name == "first_win" then
+			firstWin = item
+		elseif item.event_name == "session_start" then
+			sessionStart = item
+		end
+	end
+	assert(firstWin ~= nil and sessionStart ~= nil, "eventos start/first_win")
+	assert(firstWin.ts - sessionStart.ts == 42500, "first_win_seconds != delta de ts")
+	local report = service.getFirstWinReport()
+	assert(report.new_players == 1, "new_players")
+	assert(report.new_player_first_wins == 1, "new_player_first_wins")
+	assert(report.new_player_under_60 == 1, "new_player_under_60")
+	assert(report.rate_under_60 == 1, "rate")
+	assert(report.passes_gate == true and report.gate == 0.70, "gate")
+end)
+
+check("P1: coorte sintetica de 10 novos mede 7/10 = 70%", function()
+	local service, _record, clock = newService()
+	for index = 1, 10 do
+		local sessionId = string.format("10000000-0000-4000-8000-%012d", index)
+		local session, beginErr = service.beginSession(
+			index,
+			sessionFields({
+				session_id = sessionId,
+				player_id = AnalyticsService.hashId("user-" .. tostring(index), SERVICE_SALT),
+			})
+		)
+		assert(session ~= nil, tostring(beginErr))
+		if index <= 7 then
+			clock.advance(index * 7000)
+			local win, winErr = service.emitFirstWin(index, string.format("battle-%d", index))
+			assert(win ~= nil, tostring(winErr))
+			assert(win.seconds_since_join == index * 7, "segundos inesperados")
+		else
+			clock.advance(70000)
+		end
+	end
+	local report = service.getFirstWinReport()
+	assert(report.new_players == 10, "new_players=" .. tostring(report.new_players))
+	assert(report.new_player_first_wins == 7, "ganhos=" .. tostring(report.new_player_first_wins))
+	assert(report.new_player_under_60 == 7, "under60=" .. tostring(report.new_player_under_60))
+	assert(math.abs(report.rate_under_60 - 0.70) < 1e-9, "taxa=" .. tostring(report.rate_under_60))
+	assert(report.passes_gate == true, "gate deveria passar com 70%")
+	assert(report.p50_seconds ~= nil and report.p95_seconds ~= nil, "percentis")
+	print(
+		string.format(
+			"[analytics] P1 coorte sintetica: %d/%d = %.0f%% <60s (gate %.0f%%); nao e medicao de produto",
+			report.new_player_under_60,
+			report.new_players,
+			report.rate_under_60 * 100,
+			report.gate * 100
+		)
+	)
+end)
+
+check("props nao podem sobrescrever o envelope", function()
+	local service = newService()
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	local event, err = service.emit(1, "purchase_complete", {
+		offer_id = "starter_pack",
+		price_robux = 399,
+		product_type = "gamepass",
+		ts = 1,
+	})
+	assert(event == nil and string.find(tostring(err), "envelope", 1, true) ~= nil, tostring(err))
+	assert(service.getStats().rejected == 1, "rejected")
+end)
+
+check("sem PII: player_id e hash32 e campo PII e recusado", function()
+	local hash = AnalyticsService.hashId("123456", SERVICE_SALT)
+	assert(#hash == 32, "hash deveria ter 32 hex: " .. tostring(#hash))
+	assert(string.match(hash, "^[0-9a-f]+$") ~= nil, "hash fora do alfabeto hex")
+	assert(hash ~= "123456", "UserId cru vazou")
+	assert(AnalyticsService.hashId("123456", "outro-sal") ~= hash, "salt nao muda o hash")
+	local service, record = newService()
+	assert(service.beginSession(1, sessionFields({ player_id = hash })) ~= nil, "beginSession")
+	local event, err = service.emit(1, "purchase_complete", {
+		offer_id = "starter_pack",
+		price_robux = 399,
+		product_type = "gamepass",
+		user_id = 123456,
+	})
+	assert(event == nil and string.find(tostring(err), "PII", 1, true) ~= nil, tostring(err))
+	service.flush("test")
+	assert(#record.events == 1, "sink deveria ter so session_start")
+	assert(record.events[1].player_id == hash, "player_id do envelope")
+	for key in pairs(Analytics.PII_KEYS) do
+		assert(record.events[1][key] == nil, "PII no envelope: " .. tostring(key))
+	end
+end)
+
+check("analytics nao altera BattleResult nem o hash", function()
+	local before = Core.Run(42)
+	local snapshot = clone(before)
+	local service = newService()
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	assert(service.emit(1, "battle_started", PROPS.battle_started) ~= nil, "battle_started")
+	assert(service.emit(1, "battle_finished", {
+		battle_id = BATTLE_ID,
+		seed = before.seed,
+		sim_version = before.simVersion,
+		result_hash = before.hash,
+		winner = before.winner,
+		wall_hp = before.wallHp,
+		leaked = before.leaked,
+		ticks = before.ticks,
+		duration_ms = before.ticks * 50,
+	}) ~= nil, "battle_finished")
+	service.flush("test")
+	assert(deepEqual(before, snapshot), "o servico mutou o BattleResult")
+	local after = Core.Run(42)
+	assert(deepEqual(before, after), "hash/resultado mudou depois do evento")
+	assert(after.hash == 2489780106, "hash de referencia mudou")
+end)
+
+check("servico sem boot recusa sem quebrar", function()
+	local event, err = AnalyticsService.emit("jogador", "session_start", PROPS.session_start)
+	assert(event == nil and err == "not_started", tostring(err))
+	assert(AnalyticsService.flush("test") == 0, "flush sem servico")
+	assert(AnalyticsService.getStats() == nil, "stats sem servico")
 end)
 
 print(string.format("contrato de analytics: %d checagens, %d falhas", checks, #failures))

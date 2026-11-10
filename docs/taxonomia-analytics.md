@@ -2,7 +2,8 @@
 
 > **Status:** **v1 aprovada e implementada em 09/11/2026** (fechamento da P0). O contrato
 > executável é `src/shared/analytics/AnalyticsTypes.luau`, validado no CI por
-> `sim/analytics-contract.luau`; o sink é P1.
+> `sim/analytics-contract.luau`; o serviço da S7 (`AnalyticsService`) valida 100% dos eventos e o
+> sink do MVP é `Null` (GAP-012: sem persistência da série; DataStore/externo fica para o teste/P2).
 > Não escolhe fornecedor: define nomes, envelope, funil, métricas e regras de emissão.
 > Fontes: [spec do motor](spec-motor-deterministico.md) §8, [GDD](gdd-muralha.md) §8,
 > [revisão de direção](revisao-direcao.md) §7, [padrões](padroes-engenharia.md) §3 e §8.3.
@@ -17,7 +18,8 @@
 3. **Servidor é a fonte** dos eventos de jogo. Cliente só emite eventos de UI, com rate limit.
 4. **`schema_version = 1`**; mudanças só aditivas. Renomear = evento novo + depreciação.
 5. **Sink do MVP/teste:** `AnalyticsService` para os funis da plataforma + DataStore em lote para o
-   detalhe. Sink externo só na P2, quando o volume justificar.
+   detalhe. A S7 entrega o sink `Null` (valida e descarta); a persistência da série é GAP-012 e o
+   sink externo/DataStore só entra no teste/P2, quando o volume justificar.
 6. **Sem PII:** nada de nome, chat, idade exata, IP ou device ID. `player_id` é hash com salt do lugar.
 7. **Batalha:** eventos carregam `battle_id`, `seed`, `sim_version` e `result_hash`; analytics **nunca**
    entra no hash nem no estado da simulação.
@@ -128,7 +130,7 @@ raid_start → raid_end → replay_watched`.
 
 | Métrica | Fórmula | Uso |
 |---|---|---|
-| `first_win_seconds` | `first_win.ts − session_start.ts` | gate 70% < 60s |
+| `first_win_seconds` | `first_win.ts − session_start.ts`; o `AnalyticsService` expõe `getFirstWinReport()` com denominador = jogadores novos (`is_returning=false`) | gate 70% < 60s |
 | `bounce_180s` | sessões com `duration_s < 180` ÷ sessões | gate ≤ 40% |
 | `D1` / `D7` | coorte do dia 0 que volta no dia +1/+7 (UTC, via `lastSeenAt`) | gates 15% / 3% |
 | `session_length` | `session_end.ts − session_start.ts`, cap 2h | gate ≥ 8 min |
@@ -186,12 +188,16 @@ nada de texto livre; `PolicyService`/idade só como booleano.
 | `src/shared/analytics/AnalyticsTypes.luau` | envelope, catálogo tipado, enums, limites, anti-PII, `newEvent`/batalha | **feito** |
 | `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII, integração com o motor | **feito** |
 | `sim/walls-contract.luau` | valida `trap_placed`/`gold_spent`/`gold_earned` da S3 | **feito (S3)** |
-| `src/server/analytics/AnalyticsService.luau` | `emit`, sinks, lote, rate limit, idempotência | **P1** (não entra na P0) |
+| `src/server/analytics/AnalyticsService.luau` | `emit`, sink `Null`, lote 30 s/100, rate limit 10/min, idempotência, teto de 200/sessão e `first_win_seconds` | **feito na S7 (10/11/2026)** |
+| `src/server/analytics/AnalyticsBoot.server.luau` | liga sessão/perfil, `player_id` hash32 com salt, `session_start`/`session_end`, ticker de flush e relatório de `first_win_seconds` | **feito na S7** |
+| `docs/teste-s7-studio.md` | roteiro de QA da telemetria (logs, contrato, limites do sink Null) | **feito na S7** |
 | `src/shared/sim/core.luau` | motor v3 (5×5/N=5, 5 tipos); `BattleResult` carrega `seed`, `simVersion` e `hash` | **feito** |
 | CI | `check.sh` roda o contrato junto dos invariantes; hash `2489780106` e `sim_version 3` obrigatórios | **feito** |
 
 Teste de aceitação: 1.000 batalhas com hash estável **e** todos os eventos de batalha validados;
-nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo.
+nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo. Na S7 o contrato está em
+**30/30** e inclui lote, rate limit, idempotência, teto de sessão, PII e a coorte sintética de
+`first_win_seconds` (7/10 = 70%, prova da aritmética; não é medição de produto).
 
 ---
 
@@ -207,3 +213,17 @@ nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo.
 4. **Feature flags/experimentos** continuam abertos em [padrões](padroes-engenharia.md) §8.3.
 5. **Nomes congelados na v1** (09/11/2026): renomear evento quebra série histórica; mudança só
    aditiva, com novo `schema_version` e evento antigo depreciado.
+
+## 8. Fechamento da S7 (10/11/2026)
+
+O `AnalyticsService` entrega o envelope v1 completo, valida cada evento antes do buffer e de novo
+no sink, e descarta inválidos; o lote sai a cada 30 s ou 100 eventos, com flush no leave. O rate
+limit de cliente é 10/min (`client_error(code=rate_limited)` no excedente) e o teto de sessão é
+200 eventos (acima disso só funil/monetização). `first_win_seconds` usa o `ts` do `first_win` menos
+o `ts` do `session_start` e o relatório separa jogadores novos (`is_returning=false`).
+
+**Limite conhecido — GAP-012:** o sink é `Null`; nada persiste. O relatório de 70% é deste servidor
+e se perde no leave. O teste de 3 semanas precisa de sink persistente/export antes de fechar a P1.
+Nenhuma mudança de schema, conteúdo ou simulação foi feita na S7. A única mudança de contrato foi
+**aditiva**: `battle_started.traps_count` aceita `0` (muralha vazia), estado que o motor já produz;
+nomes, enums e `schema_version = 1` continuam iguais.

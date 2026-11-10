@@ -176,7 +176,8 @@ local CATALOG: { [string]: CatalogEntry } = {
 		prop("seed", int(0, AnalyticsTypes.UINT32_MAX)),
 		prop("sim_version", int(1, nil)),
 		prop("grid_width", int(5, 7)),
-		prop("traps_count", int(1, 25)),
+		-- 0 e valido: raid contra muralha vazia (o motor aceita wall.traps = {}).
+		prop("traps_count", int(0, 25)),
 	}),
 	battle_finished = catalogEvent({
 		prop("battle_id", str(64, "id")),

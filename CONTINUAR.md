@@ -2,17 +2,19 @@
 
 **Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.4 fechadas** (S3.4 com Modo B real);
 **S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
-**S6.1 fechada** (raid, fantasma real e replay 3D); **S7 pendente**; GAP-011 fechado na S6;
-GAP-004/005/008 abertos · base `main` @ `99008fb`, CI verde. Este arquivo é autossuficiente: a
-conversa pode ser fechada.
+**S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 30/30 e
+`first_win_seconds`); GAP-011 fechado na S6; GAP-004/005/008/012 abertos · base `main` @ `f7dcf49`,
+CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
-> (`contentVersion` no `BattleLog` + contrato). Restam GAP-004/005/008 em `docs/gaps.md`.
+> (`contentVersion` no `BattleLog` + contrato); **GAP-012 aberto na S7** (sink Null não persiste a
+> série de `first_win_seconds`). Restam GAP-004/005/008/012 em `docs/gaps.md`.
 
-GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-012 · classes/taxonomia v2, live ops e persistência do sink ainda abertos · risco alto para a 1ª expansão real/P2 e para medir a saída da P1 · fechar antes de classe/P2 e antes do teste de 3 semanas · ver docs/gaps.md
 
-> **Transição de janela:** S1–S6.1 fechadas em 10/11/2026. A próxima sessão começa na **S7**
-> (telemetria); use o prompt do fim deste arquivo. Não reabra S6.1/S6 e não inicie P2.
+> **Transição de janela:** S1–S7 fechadas em 10/11/2026. A próxima sessão fecha o **GAP-012**
+> (sink persistente/export) e mede a saída da P1 no teste de 3 semanas. Não reabra S6.1/S6/S7 e não
+> inicie P2.
 
 ---
 
@@ -74,7 +76,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     repara `oil → tar` e recusa `content_future`; o `WallService` exige a versão do catálogo.
   - conteúdo v2: `oil` virou `tar` (alias) e entrou `catapult` (5º tipo, splash); `simVersion 3` e
     hash `2489780106` preservado na parede padrão.
-  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16**, build **6/6** (hoje 14/14 após o QA da S4);
+  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16 na S3.4** (hoje 30/30), build **6/6** (hoje 14/14 após o QA da S4);
     GAP-001/002/003/009/010 fechados; GAP-011 (`BattleLog`) fechado na S6.
   - **Modo B real (10/11/2026):** `modo=DataStore`, `datastore=Access`, `schema=v2 content=v2`,
     `sessions 11 → 12`, `[selftest] PASSOU (8/8)`; `STORE_NAME=MuralhaProfile_v1` com schema v2.
@@ -118,7 +120,22 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     `REPLAY CONCLUIDO · 8s` com `FECHAR` em 375×812; hash local = servidor, sem `DIVERGENCIA`.
     Limites do MVP: fantasma = última muralha publicada, replay local em `ViewportFrame`, reward
     provisório. Evidência em docs/teste-s6-studio.md.
-- Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 79/80 ·
+- **S7 fechada — telemetria (10/11/2026):**
+  - `src/server/analytics/AnalyticsService.luau` puro (tipos injetados): `emit`, lote **30 s/100**,
+    rate limit de cliente **10/min**, idempotência por `event_id`, teto de 200/sessão e sink **Null**;
+    `AnalyticsBoot.server.luau` liga ao perfil (`days_since_last_seen` capturado no `onStart` do
+    `ProfileBoot`), gera `player_id` hash32 com salt e mantém `session_start`/`session_end`.
+  - Contrato `sim/analytics-contract.luau` **30/30**: 31 eventos validados, Null, lote, rate limit,
+    idempotência, teto, PII, `first_win_seconds` e prova de que o `BattleResult`/hash não mudam. A
+    única mudança de contrato foi aditiva: `battle_started.traps_count` aceita `0` (muralha vazia).
+  - `first_win_seconds = first_win.ts − session_start.ts`, relatório com denominador de jogadores
+    novos (`is_returning=false`); `first_win` sai no clear do drop-in e em vitória de raid, uma vez
+    por sessão. Coorte sintética 7/10 = 70% (aritmética; não é medição de produto).
+  - Integração: `DropInController`/`RaidController` passam `battle_*`, `raid_*`, `gold_earned` e
+    `first_win` pelo serviço; o log `[analytics]` continua no Studio via `onEvent` (envelope não
+    aparece no Output). **GAP-012:** sink Null não persiste a série; a taxa de 70% fica para o teste
+    de 3 semanas. QA em [`docs/teste-s7-studio.md`](docs/teste-s7-studio.md).
+- Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 
 ---
@@ -134,13 +151,13 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 (`sim/*-contract.luau`) |
+| contratos | perfil 20/20 · analytics 30/30 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 · raid 6/6 (`sim/*-contract.luau`) |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`) |
 | muralha/economia | catálogo 5 tipos · N=5 · sem refund · `toBattleWall` · `docs/economia-muralha.md` |
 | perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
-| analytics | contrato v1 · 31 eventos · envelope + anti-PII |
+| analytics | contrato v1 · 31 eventos · envelope + anti-PII · serviço S7 (lote 30 s/100, 10/min, Null) · `first_win_seconds` |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B schema v1 8/8 (09/11/2026) · Modo B schema v2 8/8 (10/11/2026) |
-| contexto | ESTADO 79/80 · MAPA 59/60 · REJEITADOS 19/40 |
+| contexto | ESTADO 80/80 · MAPA 59/60 · REJEITADOS 19/40 |
 
 ---
 
@@ -170,13 +187,13 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **feito 10/11/2026 (FPS 60/60 · Play→UI 1,9 s)** |
 | S5 | Drop-in de 5 s | cena DEFENDER + derrota roteirizada; `dropin_pressed` ≥ 60% | **feito 10/11/2026 (feature; taxa no teste)** |
 | S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | **feito 10/11/2026 (S6.1: fantasma real + replay 3D)** |
-| S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | pendente |
+| S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | **feito 10/11/2026 (30/30; sink Null; GAP-012)** |
 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** **S7 — telemetria** (AnalyticsService/envelope, sink e `first_win_seconds`),
-ainda **não iniciada**. S6.1 e S5 fechadas; P2 não começa sem autorização.
+**Próximo passo:** **GAP-012** — sink persistente/export para medir a saída da P1 no teste de 3
+semanas. S7/S6.1/S5 fechadas; P2 não começa sem autorização.
 
 ## Pipeline de expansão e gaps
 
@@ -190,12 +207,12 @@ ainda **não iniciada**. S6.1 e S5 fechadas; P2 não começa sem autorização.
 
 ---
 
-## Handover — S6.1 fechada + S7 (próxima)
+## Handover — S7 fechada + saída da P1 (próxima)
 
 **Estado:** S3.4 **fechada** (schema 2, content 2, sim 3, Modo B real 8/8); **S4 fechada** (QA
 runtime); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid/fantasma real/replay 3D);
-**S7 não iniciada**. GAP-001/002/003/009/010/011 fechados; GAP-004/005/008 abertos.
-**Base:** `main` pós-S6.1; hash `2489780106`; RFC em
+**S7 fechada** (telemetria/contrato 30/30/`first_win_seconds`). GAP-001/002/003/009/010/011
+fechados; GAP-004/005/008/012 abertos. **Base:** `main` pós-S7; hash `2489780106`; RFC em
 [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md).
 
 - **Modo B fechado:** [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md) §9 registra
@@ -207,11 +224,18 @@ runtime); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid/fantasm
   Runtime: FPS 60/60, Play→UI 1,9 s, prints com painel e `trap_limit`/`max_level`; §7 preenchida.
 - **S5 fechada:** `DropInState`/`DropInTelemetry` + `sim/dropin-contract.luau` **8/8**;
   `DropInController.server` remotes/estado/batalha fixa/retry; `DropInClient` cena local + DEFENDER;
-  `BuildClient` espera `DropInDone`; +3 ouro no clear. Runtime validado; envelope de analytics é S7.
+  `BuildClient` espera `DropInDone`; +3 ouro no clear. Runtime validado; o envelope de analytics
+  entrou na S7.
 - **S6.1 fechada:** `PhantomStore` (`MuralhaPhantom_v1`) + `BattleLog.wall` + replay 3D
   (`ViewportFrame`, 8 s) + `MuralhaGold`; contrato de raid **6/6**; QA em 375×812 com
   `REPLAY CONCLUIDO`/`FECHAR`. Limites: fantasma é a última muralha publicada; replay local sem
   câmera cinematográfica; reward 5 provisório.
+- **S7 fechada:** `AnalyticsService` puro + `AnalyticsBoot`; contrato **30/30**. `session_start`
+  usa `days_since_last_seen` capturado no `onStart` do `ProfileBoot`; `player_id` é hash32 com salt
+  (sem PII). Drop-in/raid passam o funil, batalha, ouro e `first_win` pelo serviço. O sink é `Null`
+  (lote 30 s/100, rate limit 10/min, idempotência); `first_win_seconds` deriva de
+  `first_win.ts − session_start.ts` e o relatório usa jogadores novos. **GAP-012:** sem persistência,
+  a taxa de 70% não vira série; QA em [`docs/teste-s7-studio.md`](docs/teste-s7-studio.md).
 - **Fonte da parede:** use só `WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, hp)` para
   qualquer batalha; nunca monte `wall.traps` à mão. Perfil inválido devolve `nil + erro` e não entra no
   `Battle.new`; o boot já rodou `TrapCatalog.ensureProfileContent`.
@@ -220,9 +244,10 @@ runtime); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid/fantasm
 - **Critério de pronto (p1-plano S4):** build ≤30 s; nenhuma armadilha fora da célula; 45+ FPS
   mobile; UI ligada ao `WallService`. **Atendido:** 60/60 FPS focado, Play→UI 1,9 s, 5 armadilhas
   em células distintas e 6ª recusada; evidência na §7.
-- **Próxima janela:** S7 — telemetria (não iniciada). **Fora:** P2, GAP-004/008 (classe/taxonomia
-  v2) e GAP-005 (P2). **Não iniciar P2.** O trial/teste de 3 semanas segue em paralelo; a taxa ≥60%
-  da S5 é medida nele.
+- **Próxima janela:** fechar **GAP-012** (sink persistente/export) e medir a saída da P1 no teste
+  de 3 semanas (70% de primeira vitória <60 s). **Fora:** P2, GAP-004/008 (classe/taxonomia v2) e
+  GAP-005 (P2). **Não iniciar P2.** O trial/teste de 3 semanas segue em paralelo; a taxa ≥60% da S5
+  é medida nele.
 - **Saída:** `doctor.sh` + `check.sh` RC=0; docs atualizados; CI verde; uma linha `GAP:` no handoff.
 
 ---
@@ -352,29 +377,31 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 
 ---
 
-## Goal da próxima janela — S7 telemetria (não iniciada)
+## Goal da próxima janela — fechar GAP-012 e medir a saída da P1
 
-**Objective:** implementar a S7 — `AnalyticsService`/envelope e sink da taxonomia v1, preservando
-`BattleResult` e cobrindo `first_win_seconds` — e medir a saída da P1 (70% de primeira vitória em
-<60 s). S6.1/S5 fechadas; não iniciar P2.
+**Objective:** fechar o GAP-012 (sink persistente/export da telemetria) e medir a saída da P1 —
+**70% de primeira vitória em <60 s** — no teste de 3 semanas, sem mudar schema/content/sim nem a
+taxonomia v1. S7 fechada; P2 bloqueada.
 
-**Status:** S6.1 fechada em 10/11/2026; S7 **não iniciada** nesta janela.
+**Status:** S7 fechada em 10/11/2026; GAP-012 **aberto** (sink Null não persiste a série).
 
 **Prompt para disparar:**
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S6.1 fechadas; S7 não começou; P2
-> bloqueada). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md`,
-> `docs/p1-plano.md`, `docs/teste-s6-studio.md`, `docs/versoes.md` e `docs/gaps.md`. No WSL:
+> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S7 fechadas; P2 bloqueada; GAP-012
+> aberto). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md`,
+> `docs/p1-plano.md`, `docs/teste-s7-studio.md`, `docs/versoes.md` e `docs/gaps.md`. No WSL:
 > `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não
 > edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1 congelada.
 >
-> **Objetivo:** entregar a S7 — envelope/sink de analytics, contrato v1 100% e `first_win_seconds` —
-> sem alterar `BattleResult`; medir a saída da P1 e registrar no handoff.
+> **Objetivo:** fechar o GAP-012 com sink persistente/export do `AnalyticsService` (sem mudar
+> schema/content/sim/taxonomia) e medir a saída da P1 (70% de primeira vitória <60 s) no teste de
+> 3 semanas; registrar a série e o veredito no handoff.
 >
 > **Fora:** P2, classe/taxonomia v2, mudança de schema/content/sim. Se precisar mudar versão, pare
-> e registre em `docs/gaps.md`; não invente produto.
+> e registre em `docs/gaps.md`; não invente produto. **Não iniciar P2.**
 >
-> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; contrato de analytics; docs e linha `GAP:`
+> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; GAP-012 fechado com teste; docs e linha `GAP:`
 > atualizados.
 
-**Checkpoint:** S6.1 fechada com replay 3D/fantasma real; a próxima janela começa a S7.
+**Checkpoint:** S7 fechada com contrato 30/30 e `first_win_seconds`; a próxima janela começa no
+GAP-012 e na medição da saída da P1.

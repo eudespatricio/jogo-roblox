@@ -6,7 +6,8 @@
 --
 -- BattleLog: uma chave por battle_id, store separado (DataStore em producao; memoria no Studio).
 -- Recompensa: creditGold(..., "raid", battle_id) uma vez; claim idempotente no store.
--- Envelope/sink de analytics continua S7: aqui os pontos saem como [analytics] props validadas.
+-- Telemetria: os pontos passam pelo AnalyticsService (S7), que monta o envelope e valida o
+-- contrato v1; [analytics] e o log de debug do servico.
 
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
@@ -28,6 +29,8 @@ local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local BattleLogStore = require(script.Parent:WaitForChild("BattleLogStore"))
 local PhantomStore = require(script.Parent:WaitForChild("PhantomStore"))
+local AnalyticsService =
+	require(script.Parent.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
 
 local REMOTES_NAME = "MuralhaRemotes"
 local RAID_REWARD_GOLD = 5
@@ -148,11 +151,19 @@ local function runBattle(seed: number, wall: any): any
 	return battle:Run()
 end
 
-local function logEvent(name: string, props: any): ()
+local function logEvent(player: Player, name: string, props: any): ()
 	if props == nil then
 		return
 	end
-	print(RaidTelemetry.format(name, props))
+	local event, err = AnalyticsService.emit(player, name, props)
+	if event == nil then
+		if err == "not_started" then
+			-- Fallback de QA se o AnalyticsBoot ainda nao subiu; nao substitui o envelope.
+			print(RaidTelemetry.format(name, props))
+		else
+			warn("[raid] analytics " .. name .. " recusado: " .. tostring(err))
+		end
+	end
 end
 
 local function creditRaid(player: Player, battleId: string, amount: number): (boolean, number?)
@@ -170,7 +181,7 @@ local function creditRaid(player: Player, battleId: string, amount: number): (bo
 			schema = ProfileSchema,
 			catalog = TrapCatalog,
 			emit = function(name: string, props: { [string]: any })
-				logEvent(name, props)
+				logEvent(player, name, props)
 			end,
 		})
 	end)
@@ -232,15 +243,19 @@ local function startRaid(player: Player): any
 			Core.GRID_WIDTH,
 			#wall.traps
 		)
-		logEvent("battle_started", startedProps)
-		logEvent("raid_start", { battle_id = battleId, mode = "phantom", speed = RAID_SPEED })
+		logEvent(player, "battle_started", startedProps)
+		logEvent(
+			player,
+			"raid_start",
+			{ battle_id = battleId, mode = "phantom", speed = RAID_SPEED }
+		)
 
 		local result = runBattle(seed, wall)
 		local replay = runBattle(seed, wallFromSnapshot(target))
 		local replayOk, replayErr, expectedHash, actualHash = RaidReplay.verify(result, replay)
 		if not replayOk then
 			local divergence = RaidTelemetry.divergenceProps(battleId, expectedHash, actualHash)
-			logEvent("battle_divergence", divergence)
+			logEvent(player, "battle_divergence", divergence)
 			return {
 				ok = false,
 				err = replayErr or "divergence",
@@ -251,12 +266,22 @@ local function startRaid(player: Player): any
 		end
 
 		local finishedProps = RaidTelemetry.finishedProps(battleId, result)
-		logEvent("battle_finished", finishedProps)
-		logEvent("raid_end", {
-			battle_id = battleId,
-			result = result.winner,
-			duration_s = result.ticks * 0.05,
-		})
+		logEvent(player, "battle_finished", finishedProps)
+		logEvent(
+			player,
+			"raid_end",
+			{ battle_id = battleId, result = result.winner, duration_s = result.ticks * 0.05 }
+		)
+		if result.winner == "attacker" then
+			local firstWin, firstWinErr = AnalyticsService.emitFirstWin(player, battleId)
+			if
+				firstWin == nil
+				and firstWinErr ~= "already_won"
+				and firstWinErr ~= "not_started"
+			then
+				warn("[raid] first_win recusado: " .. tostring(firstWinErr))
+			end
+		end
 
 		local record, recordErr = BattleLog.fromBattle(
 			battleId,

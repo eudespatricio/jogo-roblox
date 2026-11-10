@@ -15,6 +15,8 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local ProfileService = require(script.Parent:WaitForChild("data"):WaitForChild("ProfileService"))
 local ProfileRegistry = require(script.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
+local AnalyticsService =
+	require(script.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
 local ProfileSchema = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("data"):WaitForChild("ProfileSchema")
 )
@@ -63,6 +65,11 @@ local service = ProfileService.new({
 	attempts = 3,
 	retryDelay = 0.5,
 	onStart = function(session, info)
+		-- A S7 precisa do `days_since_last_seen` calculado ANTES de noteSeen sobrescrever
+		-- lastSeenAt; guarda o info e o AnalyticsBoot consome no beginSession.
+		if type(session.Key) == "string" then
+			AnalyticsService.noteProfileStart(session.Key, info)
+		end
 		print(
 			string.format(
 				"[perfil] carregado key=%s schema=v%d content=v%d migrado=%s dias_desde_ultimo_acesso=%s",

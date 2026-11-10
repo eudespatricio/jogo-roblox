@@ -3,7 +3,6 @@
 > Regra: este arquivo é **sobrescrito**, nunca append-only. Teto: 80 linhas. Atualizado: 10/11/2026.
 
 ## O que é
-
 **MURALHA**: tower defense invertido + autobattler assíncrono, mobile-first, sem avatar visível
 (habilita DevEx 18+ e corta custo de arte). Público 13–34, monetização cosmética.
 
@@ -11,7 +10,9 @@
 
 **P1 em execução (autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
 (FPS 60/60); **S5 fechada** (drop-in/+3 ouro); **S6.1 fechada** (fantasma real + replay 3D); **S7
-pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
+fechada** (AnalyticsService/envelope, lote, rate limit, idempotência e sink Null). A saída da P1
+(70% de primeira vitória <60 s) está instrumentada por `first_win_seconds` e será medida no teste
+de 3 semanas; P2 bloqueada. Plano em `docs/p1-plano.md`.
 
 ## Números atuais (10/11/2026)
 
@@ -23,10 +24,10 @@ pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 · raid 6/6 |
+| contratos | perfil 20/20 · analytics 30/30 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 · raid 6/6 |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
-| analytics | contrato v1 · 31 eventos · envelope + anti-PII |
+| analytics | contrato v1 · 31 eventos · envelope + anti-PII · serviço S7 (lote 30s/100, 10/min, Null) |
 | teste de sessão | Modo A 8/8 + Modo B schema v1 8/8 (09/11) · Modo B schema v2 8/8 (10/11) |
 
 ## Pronto
@@ -42,8 +43,9 @@ pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 - Dados: `ProfileSchema.luau` (v2/contentVersion) + `ProfileService.luau` +
   `ProfileBoot.server.luau` (migração de conteúdo) + `sim/profile-contract.luau` (20/20); Modo B
   schema v2 8/8 em 10/11/2026 (`docs/teste-sessao-studio.md` §9).
-- Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
-  taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
+- Analytics: `AnalyticsTypes.luau` + `AnalyticsService.luau`/`AnalyticsBoot.server.luau`
+  (emit/lote/rate limit/idempotência/sink Null) + `sim/analytics-contract.luau` (30/30);
+  taxonomia v1 congelada; `first_win_seconds` em `docs/teste-s7-studio.md`.
 - Tooling: Rokit + CLI/GUI; CI ativo; doctor; gate de versões (`docs/versoes.md`); ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
@@ -51,10 +53,9 @@ pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S7 telemetria → saída 70% de primeira vitória < 60s. Fora:
-  liga/meta/loja (P2), co-op (P3), 7×5.
-- S7: envelope/sink de analytics e `first_win_seconds` ainda não iniciados. GAP-011 fechado.
-- GAPs abertos: GAP-004/005/008 (001/002/003/009/010/011 fechados); ver `docs/gaps.md`.
+- **P1**: falta medir a saída (70% de primeira vitória <60s); instrumento pronto, mas o sink Null
+  não persiste a série (GAP-012). Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- P2 bloqueada; GAP-004/005/008/012 abertos; ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
@@ -67,7 +68,7 @@ pendente**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Próximo passo
 
-1. S7: telemetria (envelope/sink e `first_win_seconds`); docs/p1-plano.md.
+1. Fechar GAP-012 (sink persistente/export) antes do teste de 3 semanas e medir a saída da P1.
 2. P2 não começa sem autorização.
 
 ## Como verificar o estado em 1 minuto

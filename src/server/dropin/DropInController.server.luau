@@ -3,9 +3,10 @@
 -- O estado/tempos sao puros (DropInState); a batalha do press e real (Core, seed 4, muralha
 -- pre-montada com catapulta). O visual da cena e local no cliente; o servidor e a verdade.
 --
--- Funil: dropin_shown/dropin_pressed saem como props validadas da taxonomia v1 e sao logados
--- com "[analytics] ...". O envelope/sink e a S7 (AnalyticsService); a S5 nao cria um sink falso.
+-- Funil: dropin_shown/dropin_pressed passam pelo AnalyticsService (S7), que monta o envelope,
+-- valida o contrato v1 e entrega ao sink Null; "[analytics] ..." e o log de debug do servico.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,12 +20,22 @@ local TrapCatalog = require(Shared:WaitForChild("data"):WaitForChild("TrapCatalo
 local WallService = require(script.Parent.Parent:WaitForChild("walls"):WaitForChild("WallService"))
 local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
+local AnalyticsService =
+	require(script.Parent.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
 
 local REMOTES_NAME = "MuralhaRemotes"
 local DROPIN_SEED = 4
 local RUN_TICKS = 100
 local WAVE = { count = 12, spawnEveryTicks = 8 }
 local REWARD_GOLD = 3
+
+local function newUuid(): string
+	local raw = string.lower(HttpService:GenerateGUID(false))
+	if #raw ~= 36 then
+		return raw
+	end
+	return string.sub(raw, 1, 14) .. "4" .. string.sub(raw, 16, 19) .. "8" .. string.sub(raw, 21)
+end
 
 local function ensureRemotes(): Folder
 	local existing = ReplicatedStorage:FindFirstChild(REMOTES_NAME)
@@ -101,26 +112,39 @@ local function runDropInBattle(): any
 		ticks = result.ticks,
 		seed = result.seed,
 		hash = result.hash,
+		simVersion = Core.SIM_VERSION,
 	}
 end
 
-local function logShown(session: any, msSinceJoin: number): ()
+local function logAnalytics(player: Player, name: string, props: any): ()
+	local event, err = AnalyticsService.emit(player, name, props)
+	if event == nil then
+		if err == "not_started" then
+			-- Fallback de QA se o AnalyticsBoot ainda nao subiu; nao substitui o envelope.
+			print(DropInTelemetry.format(name, props))
+		else
+			warn("[dropin] analytics " .. name .. " recusado: " .. tostring(err))
+		end
+	end
+end
+
+local function logShown(session: any, player: Player, msSinceJoin: number): ()
 	local props, err = DropInTelemetry.shownProps(msSinceJoin)
 	if props == nil then
 		warn("[dropin] shown props invalidas: " .. tostring(err))
 		return
 	end
 	session.shownLogged = true
-	print(DropInTelemetry.format("dropin_shown", props))
+	logAnalytics(player, "dropin_shown", props)
 end
 
-local function logPressed(session: any, msSinceJoin: number): ()
+local function logPressed(player: Player, msSinceJoin: number): ()
 	local props, err = DropInTelemetry.pressedProps(msSinceJoin, true)
 	if props == nil then
 		warn("[dropin] pressed props invalidas: " .. tostring(err))
 		return
 	end
-	print(DropInTelemetry.format("dropin_pressed", props))
+	logAnalytics(player, "dropin_pressed", props)
 end
 
 -- Recompensa do GDD §2: +3 ouro ao limpar a onda. Fonte "defense" (taxonomia v1); a
@@ -138,7 +162,7 @@ local function grantReward(player: Player): boolean
 					schema = ProfileSchema,
 					catalog = TrapCatalog,
 					emit = function(name: string, props: { [string]: any })
-						print(DropInTelemetry.format(name, props))
+						logAnalytics(player, name, props)
 					end,
 				})
 			end)
@@ -169,6 +193,8 @@ local function snapshotFor(player: Player, logShownEvent: boolean?): any
 			joinAtMs = joinAt,
 			shownLogged = false,
 			defeatedLogged = false,
+			battleId = nil,
+			battleResult = nil,
 		}
 		sessions[player] = session
 		player:SetAttribute("DropInDone", false)
@@ -179,10 +205,24 @@ local function snapshotFor(player: Player, logShownEvent: boolean?): any
 	local phase = session.state.phase
 
 	if logShownEvent == true and not session.shownLogged and phase == DropInState.PHASE_SHOWN then
-		logShown(session, now - session.joinAtMs)
+		logShown(session, player, now - session.joinAtMs)
 	end
 	if changed and phase == DropInState.PHASE_CLEARED then
 		print(string.format("[dropin] onda limpa em %.1fs", (now - session.joinAtMs) / 1000))
+		if
+			session.battleId ~= nil
+			and session.battleResult ~= nil
+			and session.battleResult.winner == "defender"
+		then
+			local firstWin, firstWinErr = AnalyticsService.emitFirstWin(player, session.battleId)
+			if
+				firstWin == nil
+				and firstWinErr ~= "already_won"
+				and firstWinErr ~= "not_started"
+			then
+				warn("[dropin] first_win recusado: " .. tostring(firstWinErr))
+			end
+		end
 		if not session.rewardStarted then
 			session.rewardStarted = true
 			task.spawn(function()
@@ -227,12 +267,39 @@ local function handleAction(player: Player, action: any): any
 		if not ok then
 			return { ok = false, err = err, snapshot = snapshotFor(player, true) }
 		end
+		local battleId = newUuid()
+		local started, startedErr = AnalyticsService.emit(player, "battle_started", {
+			battle_id = battleId,
+			seed = DROPIN_SEED,
+			sim_version = Core.SIM_VERSION,
+			grid_width = Core.GRID_WIDTH,
+			traps_count = #prebuiltWall().traps,
+		})
+		if started == nil and startedErr ~= "not_started" then
+			warn("[dropin] battle_started recusado: " .. tostring(startedErr))
+		end
 		local result = runDropInBattle()
+		local finished, finishedErr = AnalyticsService.emit(player, "battle_finished", {
+			battle_id = battleId,
+			seed = result.seed,
+			sim_version = result.simVersion,
+			result_hash = result.hash,
+			winner = result.winner,
+			wall_hp = result.wallHp,
+			leaked = result.leaked,
+			ticks = result.ticks,
+			duration_ms = result.ticks * 50,
+		})
+		if finished == nil and finishedErr ~= "not_started" then
+			warn("[dropin] battle_finished recusado: " .. tostring(finishedErr))
+		end
+		session.battleId = battleId
+		session.battleResult = result
 		local resultOk, resultErr = DropInState.setResult(session.state, result)
 		if not resultOk then
 			warn("[dropin] resultado invalido: " .. tostring(resultErr))
 		end
-		logPressed(session, now - session.joinAtMs)
+		logPressed(player, now - session.joinAtMs)
 		return { ok = true, snapshot = snapshotFor(player, true) }
 	elseif action == "retry" then
 		local ok, err = DropInState.retry(session.state, now)

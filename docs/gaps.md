@@ -7,7 +7,7 @@
 **Linha atual:**
 
 ```text
-GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-012 · classes/taxonomia v2, live ops e persistência do sink ainda abertos · risco alto para a 1ª expansão real/P2 e para medir a saída da P1 · fechar antes de classe/P2 e antes do teste de 3 semanas · ver docs/gaps.md
 ```
 
 | ID | Fase | Gap | Risco | Gatilho para fechar | Status |
@@ -23,6 +23,7 @@ GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos 
 | GAP-009 | S3.2 (trial) | schema v2 não foi testado em ProfileStore/Studio real; `STORE_NAME` continua `MuralhaProfile_v1` com `schemaVersion=2` | alto — Reconcile/DataStore real pode se comportar diferente do store fake | antes do deploy de schema v2 | fechado em 10/11/2026 · Modo B DataStore real: `schema=v2 content=v2`, sessions 11→12, selftest 8/8 |
 | GAP-010 | S3.2 (trial) | default de migração neutro não é garantido por teste; um default com bônus mudaria o hash sem ninguém ver | alto — migração silenciosa buffa/nerfa muralhas antigas | em toda migração de conteúdo; teste de hash antigo x migrado | fechado em 10/11/2026 · schema v2 + `sim/content-contract.luau`/`neutral-migration.luau` |
 | GAP-011 | S6 | `BattleLog` não existia/persistia `contentVersion`; replay de conteúdo futuro não tinha gate no log | médio — replay podia simular conteúdo que o servidor não conhece | na S6, junto do `BattleLog`, antes de conteúdo em produção | fechado em 10/11/2026 · `BattleLog`/`RaidController` + `contentVersion` e `isReplayable` (`sim/raid-contract.luau`) |
+| GAP-012 | S7 | `AnalyticsService` usa sink `Null`: valida e descarta; a taxa de 70% de `first_win_seconds` só existe no relatório em memória do servidor e se perde no leave, sem série para o teste de 3 semanas | alto — sem persistência o gate de saída da P1 não é mensurável de verdade | antes do teste de 3 semanas / do fechamento da P1 | aberto |
 
 ## Como fechar um gap
 
@@ -50,8 +51,8 @@ conteúdo/feature/P2 e não bloqueiam a cena/build.
 | GAP-008 | não | campos de variante na taxonomia v2 | feature de classe/variantes |
 | GAP-005 | não | eventos/flags/calendário | P2/live ops |
 
-**Próximo:** S7 — telemetria (não iniciada). A expansão de classe/taxonomia v2 continua
-bloqueada por GAP-004/008; GAP-011 fechou no `BattleLog`.
+**Próximo:** S7 **fechada** em 10/11/2026 (serviço/contrato 30/30). A expansão de classe/taxonomia
+v2 continua bloqueada por GAP-004/008; GAP-011 fechou no `BattleLog`; GAP-012 abriu no sink Null.
 
 ## S3.4 — conteúdo e versões (10/11/2026)
 
@@ -84,3 +85,13 @@ persiste `contentVersion` e `isReplayable` recusa conteúdo futuro; `sim/raid-co
 hash de replay, 1 chave por `battle_id`, `wall` no log, `MuralhaPhantom_v1` e recompensa
 idempotente. GAP-011 **fechado**; QA visual do replay 3D/fantasma fechado em
 [`teste-s6-studio.md`](teste-s6-studio.md) §7. Próxima: S7.
+
+## S7 — fechada: telemetria (10/11/2026)
+
+Sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `2489780106`). O
+`AnalyticsService` monta o envelope v1, valida 100% dos eventos, faz lote (30 s/100), rate limit de
+cliente (10/min), idempotência por `event_id` e entrega ao sink `Null`; `AnalyticsBoot` liga o
+serviço a `Players`/perfil e `first_win_seconds` mede `first_win.ts − session_start.ts`. O contrato
+`sim/analytics-contract.luau` está em **30/30** e prova que evento nenhum altera o `BattleResult`.
+GAP-012 **aberto**: o sink Null não persiste a série, então a taxa de 70% fica para o teste de 3
+semanas (com sink persistente/export). QA em [`teste-s7-studio.md`](teste-s7-studio.md).
