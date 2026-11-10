@@ -57,6 +57,10 @@ Na criação, `WallService.new` roda `WallService.validateWall` e **falha fechad
 carregar trap desconhecida, célula fora da grade/alias, mais ativos que o limite ou nível acima do
 cap econômico. Esses dados nunca chegam ao motor (`Battle.new`).
 
+A ponte perfil → motor é `WallService.toBattleWall(profile, schema, catalog, hp)`: ele roda
+`validateWall`, converte `wall.cells` em `wall.traps` e ordena por célula (linha, coluna). A S4/S6
+não monta `wall.traps` à mão; perfil inválido devolve `nil + erro` e não chega ao `Battle.new`.
+
 ## 4. Eventos (taxonomia v1)
 
 | Ação | Eventos |
@@ -89,10 +93,13 @@ local result, err = service.place("archer", "r1c3")
 local result, err = service.upgrade("r1c3")
 local result, err = service.remove("r1c3")
 local result, err = service.creditGold(120, "raid", battleId)
+
+local wall, wallErr = WallService.toBattleWall(profile.Data, ProfileSchema, TrapCatalog, 500)
 ```
 
-Contrato headless: `luau sim/walls-contract.luau` — **12 checagens** (catálogo x motor, fontes/sinks,
-perfil carregado, célula, N=5, ouro, desbloqueio, upgrade, remove, creditGold, snapshot e eventos).
+Contrato headless: `luau sim/walls-contract.luau` — **13 checagens** (catálogo x motor, fontes/sinks,
+perfil carregado, `toBattleWall`, célula, N=5, ouro, desbloqueio, upgrade, remove, creditGold,
+snapshot e eventos).
 
 ## 7. Como expandir sem quebrar
 
@@ -129,7 +136,7 @@ uma entrada no `TrapCatalog`. Não simule classe só no serviço: o replay preci
 adicionar em `TrapCatalog.GOLD_SOURCES`/`GOLD_SINKS`. O teste de contrato valida cada chave contra
 `AnalyticsTypes` e falha se o enum não existir.
 
-**Pendência para conteúdo em produção:** GAP-001..GAP-006 em [`gaps.md`](gaps.md). Persistir
+**Pendência para conteúdo em produção:** GAP-001..GAP-005 e GAP-008..GAP-010 em [`gaps.md`](gaps.md). Persistir
 `CONTENT_VERSION` no perfil/battle log e definir migração/rolling deploy; hoje o catálogo é
 versionado no código e a guarda falha fechado. A S6 deve carregar a versão no `BattleLog` antes
 de adicionar conteúdo em massa.

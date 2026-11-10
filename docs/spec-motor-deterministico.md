@@ -261,6 +261,9 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
    `StartSessionAsync` nil, `EndSession` no leave e recarga sem duplicar (store injetado).
 8. **Contrato de analytics:** `sim/analytics-contract.luau` — envelope/catálogo/limites/PII e
    prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`; usa `sim_version 2`.
+9. **Gate de versões:** `scripts/check-versions.py` compara `SCHEMA_VERSION`, `CONTENT_VERSION`,
+   `SIM_VERSION` e o hash de referência com o bloco de [`versoes.md`](versoes.md); divergência falha
+   o `check.sh` (GAP-007 fechado na S3.3).
 
 ---
 
@@ -387,11 +390,13 @@ no `BindToClose` (o lock só é liberado depois do save — reabrir sessão exig
 envelope e 31 eventos da [taxonomia](taxonomia-analytics.md) validados no CI (obrigatoriedade,
 enum, limites, UUID/hash de 32 hex, anti-PII). Mudar o catálogo exige atualizar fixture e contrato
 na mesma mudança. Na P0 `simVersion` era **1**; a S2 subiu para **2** com o loadout 5×5/N=5 (§15).
-A S3 não altera esta matemática: `simVersion 2` e hash `2489780106` continuam.
+A S3 e a S3.3 não alteram esta matemática: `simVersion 2` e hash `2489780106` continuam.
 
-**Muralha (S3)** — `src/shared/data/TrapCatalog.luau` (economia) + `src/server/walls/WallService.luau`
+**Muralha (S3/S3.3)** — `src/shared/data/TrapCatalog.luau` (economia) + `src/server/walls/WallService.luau`
 validam célula, N=5, ouro, desbloqueio e perfil compatível; mutam `Profile.Data.wall.cells`/`gold`
-e devolvem eventos. Regras: [`economia-muralha.md`](economia-muralha.md). Processo de expansão:
+e devolvem eventos. A ponte para o motor é `WallService.toBattleWall`, que roda `validateWall` e
+ordena as células por (linha, coluna); S4/S6 não montam `wall.traps` à mão. Regras:
+[`economia-muralha.md`](economia-muralha.md). Processo de expansão:
 [`pipeline-expansao.md`](pipeline-expansao.md); lacunas: [`gaps.md`](gaps.md).
 
 ---
@@ -415,6 +420,7 @@ referência (5 ativas na coluna 3) para os harnesses.
 | acceptance | 1.000 seeds × 3 · 1.000 hashes distintos · **68,7%** defensor · ~1,4 ms/batalha |
 | invariantes | **12/12** (inclui loadout livre e recusa de loadout inválido) |
 | contrato de analytics | hash novo + `sim_version 2`; 16/16 |
+| contrato de muralha | 13/13; `toBattleWall` valida, ordena e reproduz o hash |
 
 O hash `668061367` da v1 está **aposentado** e não deve ser reutilizado. `sim/poc.luau` imprime a
 curva da v2; `sim/acceptance.luau` ancora o hash e a faixa de balanceamento.

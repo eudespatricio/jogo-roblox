@@ -12,7 +12,7 @@
 cd ~/jogo-roblox
 source scripts/env.sh          # PATH de ~/.rokit/bin e ~/.local/bin
 bash scripts/doctor.sh         # a estação está completa? (não altera nada)
-bash scripts/check.sh          # gate: build + StyLua + luau-lsp + invariantes + contexto
+bash scripts/check.sh          # gate: versões + build + StyLua + luau-lsp + testes + contexto
 ```
 
 Depois:

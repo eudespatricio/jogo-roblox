@@ -10,12 +10,13 @@ Leia nesta ordem, antes de qualquer ação:
 ## Regras duras
 
 - **P2+ não começa sem autorização explícita do diretor.** A P1 foi autorizada em 09/11/2026 e está
-  em execução (S1–S3 fechadas); o plano está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
+  em execução (S1–S3.3 fechadas); o plano está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
 - **`src/` é produção.** O legado de moedas foi apagado na S1 (09/11/2026) e está preservado na
   tag anotada `legacy-coins` (commit `b07b4c5`). Não ressuscite `CoinService`/`DataService`/`Config`.
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
   Se quebrar, conserte antes de seguir.
-- Mudou a matemática da simulação? Suba `simVersion` e registre em `docs/spec-motor-deterministico.md`.
+- Mudou a matemática da simulação? Suba `simVersion` e registre em `docs/spec-motor-deterministico.md`
+  e em `docs/versoes.md` (o `check.sh` falha se fonte e docs divergirem).
 - Mudou custo/desbloqueio da muralha? Atualize `src/shared/data/TrapCatalog.luau`, `docs/economia-muralha.md` e `sim/walls-contract.luau`.
 - Expansão de conteúdo/feature segue `docs/pipeline-expansao.md`; toda P/S fecha com uma linha
   `GAP:` e o gap aberto entra em `docs/gaps.md`. Antes de mergear conteúdo, rode o trial kit
@@ -28,7 +29,7 @@ Leia nesta ordem, antes de qualquer ação:
 ```bash
 source scripts/env.sh
 bash scripts/doctor.sh                  # estação completa
-bash scripts/check.sh                   # gate: build, StyLua, luau-lsp, invariantes, contratos, contexto
+bash scripts/check.sh                   # gate: build, StyLua, luau-lsp, versões, invariantes, contratos, contexto
 
 luau sim/invariants.luau                # oráculo (12 checagens)
 luau sim/acceptance.luau                # P1: 1.000 seeds × 3
@@ -37,6 +38,7 @@ luau sim/analytics-contract.luau        # contrato de analytics v1
 luau sim/walls-contract.luau            # muralha/economia (S3)
 luau sim/poc.luau                       # benchmark do motor
 
+python3 scripts/check-versions.py       # versões docs x fonte
 python3 skills/context-recovery/scan_repo.py --root . --check   # tetos do contexto
 ```
 

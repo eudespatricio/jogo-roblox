@@ -1,6 +1,6 @@
 # ESTADO — jogo-roblox
 
-> Regra: este arquivo é **sobrescrito**, nunca append-only. Teto: 80 linhas. Atualizado: 09/11/2026.
+> Regra: este arquivo é **sobrescrito**, nunca append-only. Teto: 80 linhas. Atualizado: 10/11/2026.
 
 ## O que é
 
@@ -9,11 +9,11 @@
 
 ## Fase
 
-**P1 em execução (autorizada em 09/11/2026).** S1 fechada (legado apagado, tag `legacy-coins`),
-S2 fechada (motor 5×5/N=5, `simVersion 2`) e S3 fechada (muralha/economia server-side). Próxima
-janela: S3.3 (GAP-006/007); S4 depois. Plano em `docs/p1-plano.md`; teste de 3 semanas em paralelo.
+**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas — S3.3 fechou GAP-006/007 e
+preparou GAP-010. Próxima janela: S4 (cena 5×5/build); plano em `docs/p1-plano.md`, teste de 3
+semanas em paralelo.
 
-## Números atuais (09/11/2026)
+## Números atuais (10/11/2026)
 
 | Métrica | Valor |
 |---|---|
@@ -23,7 +23,8 @@ janela: S3.3 (GAP-006/007); S4 depois. Plano em `docs/p1-plano.md`; teste de 3 s
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 2` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 19/19 · analytics 16/16 · muralha 12/12 (`sim/*-contract.luau`) |
+| contratos | perfil 19/19 · analytics 16/16 · muralha 13/13 (`sim/*-contract.luau`) |
+| versões | schema 1 · content 1 · sim 2 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
@@ -36,23 +37,23 @@ janela: S3.3 (GAP-006/007); S4 depois. Plano em `docs/p1-plano.md`; teste de 3 s
   `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `src/shared/sim/core.luau` (v2, loadout 5×5/N=5) + harnesses em `sim/`.
-- Muralha: `src/shared/data/TrapCatalog.luau` + `src/server/walls/WallService.luau` +
-  `sim/walls-contract.luau` (S3); custos/desbloqueio em `docs/economia-muralha.md`.
+- Muralha: `TrapCatalog.luau` + `WallService.luau` (`toBattleWall`) + `sim/walls-contract.luau`
+  (S3/S3.3, 13/13); custos/desbloqueio em `docs/economia-muralha.md`.
 - Dados: `src/shared/data/ProfileSchema.luau` + `src/server/data/ProfileService.luau` +
   `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
   taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
-- Tooling: Rokit + CLI/GUI; CI ativo; doctor; ProfileStore vendorizado.
+- Tooling: Rokit + CLI/GUI; CI ativo; doctor; gate de versões (`docs/versoes.md`); ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
-- Trial S3.2: classe/trait/raridade executado e revertido; relatório/kit em `docs/`/`tools/`.
+- Trial S3.2: classe/trait/raridade executado e revertido; kit inclui `neutral-migration.luau` (GAP-010).
 
 ## Não pronto
 
 - **P1** (2–3 semanas): S4 cena 5×5/build → S5 drop-in → S6 raid/replay → S7 telemetria. Saída:
   70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
 - Cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
-- GAPs abertos: GAP-001..GAP-010 (conteúdo/migração, motor, classes, eventos); ver `docs/gaps.md`.
+- GAPs abertos: GAP-001..005 e GAP-008..010 (GAP-006/007 fechados; GAP-010 preparado); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
@@ -65,13 +66,13 @@ janela: S3.3 (GAP-006/007); S4 depois. Plano em `docs/p1-plano.md`; teste de 3 s
 
 ## Próximo passo
 
-1. S3.3: fechar GAP-006 (`toBattleWall`) e GAP-007 (gate de versões) antes da S4.
-2. S4: cena 5×5/build; depois S5–S7 (`docs/p1-plano.md`).
+1. S4: cena 5×5/build; depois S5–S7 (`docs/p1-plano.md`).
+2. GAP-010 fecha no 1º schema v2; GAP-001/002/003/009 antes de conteúdo em produção.
 
 ## Como verificar o estado em 1 minuto
 
 ```bash
 source scripts/env.sh
 bash scripts/doctor.sh     # estação completa
-bash scripts/check.sh      # build, StyLua, luau-lsp, invariantes, acceptance, contratos, contexto
+bash scripts/check.sh      # build, StyLua, luau-lsp, versões, invariantes, contratos, contexto
 ```

@@ -201,12 +201,19 @@ Sem orçamento, "qualidade" vira gosto. Com orçamento, vira critério de aceite
 ### 7.1 O que entra no `scripts/check.sh`
 
 ```bash
+python3 scripts/check-versions.py                  # fonte x docs/versoes.md
 mkdir -p build
 rojo build default.project.json -o build/place.rbxl
-stylua --check sim
-luau-lsp analyze --platform=standard sim
+stylua --check sim src
+luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data \
+  src/shared/analytics src/server/data src/server/walls src/server/Main.server.luau
 luau sim/invariants.luau
-luau sim/poc.luau
+luau sim/acceptance.luau
+luau sim/profile-contract.luau
+luau sim/analytics-contract.luau
+luau sim/walls-contract.luau
+luau tools/expansion-test/neutral-migration.luau  # GAP-010 (hash antigo x migrado)
+luau sim/poc.luau | grep -E "hash=|por batalha|seeds="
 rojo sourcemap default.project.json -o sourcemap.json
 python3 skills/context-recovery/scan_repo.py --root . --check
 ```

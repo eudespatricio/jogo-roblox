@@ -27,6 +27,7 @@ git switch -c trial/<nome>
 # 2. rode o gate e colete as evidências (ver §4)
 bash scripts/doctor.sh
 bash scripts/check.sh
+luau tools/expansion-test/neutral-migration.luau   # hash antigo x migrado (GAP-010)
 
 # 3. salve o patch ANTES de limpar
 git add -A
@@ -56,7 +57,7 @@ Depois, na `main`:
 | serviço | `WallService` valida e persiste o campo; dado inválido falha fechado |
 | motor | se o campo muda a batalha: `simVersion++`, hash/acceptance re-ancorados; se não muda, provar que o hash fica igual (default neutro) |
 | analytics | evento continua válido; se o campo precisa aparecer no evento, taxonomia v2 |
-| docs | spec/economia/ESTADO/MAPA/CONTINUAR atualizados; `check.sh` verde (ele **não** detecta doc velho) |
+| docs | spec/economia/ESTADO/MAPA/CONTINUAR e `docs/versoes.md` atualizados; `check.sh` verde (o gate de versões detecta só o bloco) |
 | replay | `BattleLog`/replay armazenam versão ou valor resolvido; servidor antigo recusa/migra |
 
 ## 4. Evidências obrigatórias no relatório
@@ -65,12 +66,21 @@ Depois, na `main`:
 - versões: `schema`, `CONTENT_VERSION`, `simVersion`;
 - hash base (seed 42) e hash de uma variante (se houver);
 - migração de perfil antigo: campos preenchidos e comportamento preservado;
+- migração neutra: hash da parede antiga x migrada (`neutral-migration.luau`);
 - contagens: invariantes, acceptance, profile, analytics, walls;
 - `doctor.sh`/`check.sh` RC e `scan_repo.py --check`;
 - gaps descobertos com ID/risco/gatilho;
 - veredito: pipeline aguentou? o que precisa fechar antes do merge real?
 
-## 5. Exemplo real
+## 5. Migração neutra (GAP-010)
+
+`neutral-migration.luau` compara o hash da parede antiga (congelada em `OLD_WALL`, antes do schema
+novo) com o da parede migrada (`ProfileSchema.migrate` + `WallService.toBattleWall`) na seed 42.
+Hoje ele prova a migração 0→1 e roda no `check.sh`; no primeiro schema v2, congele o perfil v1 em
+`sim/fixtures/profile-v1.luau` e troque `OLD_PROFILE`/`OLD_WALL` **antes** do merge. Qualquer default
+de migração com bônus muda o hash e o teste falha.
+
+## 6. Exemplo real
 
 [`examples/class-trait-rarity.patch`](examples/class-trait-rarity.patch) é o patch do primeiro
 trial (09/11/2026): schema v2, `class/trait/rarity`, catálogo de variantes, `dmgPct` no motor,
@@ -80,12 +90,12 @@ trial (09/11/2026): schema v2, `class/trait/rarity`, catálogo de variantes, `dm
 **Atenção:** o patch é referência, não garantia de apply futuro. Use-o para lembrar dos arquivos e
 do escopo, não como `git apply` cego.
 
-## 6. Critério de saída do trial
+## 7. Critério de saída do trial
 
 O trial só “passa” se:
 
 - `check.sh` e `doctor.sh` verdes;
-- perfil antigo migra e mantém o comportamento (default neutro);
+- perfil antigo migra e mantém o comportamento (default neutro, GAP-010);
 - dado inválido falha fechado;
 - variante muda o resultado de forma determinística (quando aplicável);
 - eventos continuam válidos;

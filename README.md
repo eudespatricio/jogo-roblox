@@ -5,12 +5,13 @@
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-> **Status: P1 em execução (09/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
+> **Status: P1 em execução (10/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
 > tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
 > determinístico com grade **5×5**, **N=5** ativas e colocação livre; `simVersion 2` e hash de
 > referência `2489780106`. **S3** concluída: muralha/economia server-side, catálogo em
-> [`docs/economia-muralha.md`](docs/economia-muralha.md). Próxima janela: S3.3 (GAP-006/007);
-> S4 (cena + build) depois. O teste de produto de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
+> [`docs/economia-muralha.md`](docs/economia-muralha.md). **S3.3** concluída: GAP-006 (`toBattleWall`)
+> e GAP-007 (gate de versões) fechados; GAP-010 preparado. Próxima janela: **S4** (cena + build).
+> O teste de produto de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
 
@@ -28,6 +29,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S7, critérios de pronto e riscos.
 - [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — como expandir conteúdo/features sem quebrar.
 - [`docs/gaps.md`](docs/gaps.md) — lacunas conhecidas entre P's/S's, com gatilho para fechar.
+- [`docs/versoes.md`](docs/versoes.md) — bloco canônico de versões e gate do CI.
 - [`docs/expansion-test-2026-11-10.md`](docs/expansion-test-2026-11-10.md) — trial real de classe/trait/raridade.
 - [`tools/expansion-test/`](tools/expansion-test/README.md) — kit reutilizável de trial de expansão.
 - [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
@@ -45,13 +47,13 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   acceptance.luau        P1: 1.000 seeds × 3 (hash 2489780106)
   profile-contract.luau  contrato do schema v1 e da sessão do perfil
   analytics-contract.luau contrato de analytics v1
-  walls-contract.luau    contrato da muralha/economia (S3)
+  walls-contract.luau    contrato da muralha/economia (S3; 13 checagens, toBattleWall)
   fixtures/              fixture da migração 0→1 do perfil
 src/shared/sim/core.luau motor v2 (RNG, mul32/add32, Battle 5×5/N=5)
 src/shared/data/         schema v1 do perfil + TrapCatalog (economia)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado
-src/server/walls/        WallService: colocar/remover/upgrade, ouro, desbloqueio
+src/server/walls/        WallService: colocar/remover/upgrade, ouro, desbloqueio, toBattleWall
 src/server/ProfileBoot.server.luau  ligação com Players + self-test no Studio
 src/server/Main.server.luau  stub de entrada do servidor (S1)
 src/world/               Baseplate/SpawnLocation da cena
@@ -70,14 +72,15 @@ preservado na tag anotada `legacy-coins` (commit `b07b4c5`).
 ```bash
 source scripts/env.sh
 bash scripts/doctor.sh                 # estação completa
-bash scripts/check.sh                  # gate: build, StyLua, luau-lsp, invariantes, contratos
+bash scripts/check.sh                  # gate: versões, build, StyLua, luau-lsp, testes, contexto
 
 luau sim/invariants.luau               # oráculo do motor (12 checagens)
 luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v2)
 luau sim/profile-contract.luau         # schema v1 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1
-luau sim/walls-contract.luau           # muralha/economia (S3)
+luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
+python3 scripts/check-versions.py      # gate de versões docs x fonte
 
 rojo serve                             # Studio: localhost:34872 (WSL)
 ```

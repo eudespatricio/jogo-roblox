@@ -10,7 +10,7 @@
 | `docs/gdd-muralha.md` · `docs/economia-muralha.md` | design, catálogo, custos e desbloqueio | decisão de produto/economia |
 | `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
 | `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
-| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/expansion-test-2026-11-10.md` | P1 + pipeline + gaps + trial real | **início da P1/expansão** |
+| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/versoes.md` · `docs/expansion-test-2026-11-10.md` | P1 + pipeline + gaps + gate de versões + trial real | **início da P1/expansão** |
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
@@ -31,13 +31,13 @@
 | `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v1 + catálogo econômico; migração 0→1, JSON-safe | mexer em dado/catálogo |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
-| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` | S3: colocar/remover/upgrade, ouro, desbloqueio, guarda de perfil + contrato | mexer em muralha/economia |
+| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` | S3: colocar/remover/upgrade, ouro, desbloqueio, `toBattleWall` + contrato | mexer em muralha/economia |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{sim,data,analytics}`, `server/{data,walls,ProfileBoot,Main stub}`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (produção + vendor + world) | build do lugar |
-| `scripts/` · `tools/expansion-test/` | env/check/doctor + kit de trial de expansão | rodar/validar/expandir |
+| `scripts/` · `tools/expansion-test/` | env/check/doctor/check-versions + kit de trial (migração neutra) | rodar/validar/expandir |
 | `.github/workflows/ci.yml` | CI: check + artefato do place | após push/PR |
 | `art/` | calibração Blender + pipeline 3D | produzir asset |
 | `.luaurc` · `.vscode/settings.json` | strict + LSP/sourcemap | editar código |
@@ -46,13 +46,13 @@
 ## Armadilhas conhecidas
 
 1. **Não edite `src/shared/sim/core.luau` sem rodar `sim/invariants.luau` e `sim/acceptance.luau`.**
-2. **Mudou a matemática? Suba `simVersion`.** Atual = **2**; replay v1 não roda no motor v2.
+2. **Mudou a matemática? Suba `simVersion` e atualize `docs/versoes.md`.** Atual = **2**; replay v1 não roda no motor v2.
 3. **`src/` é produção**; o legado de moedas foi apagado na S1 e vive na tag anotada `legacy-coins`.
 4. **Doc mais velho que código mente.** Rode a radiografia antes de confiar em README/tese.
 5. **`.tools/` não é versionado.** Reinstale com `rokit install` se sumir.
 6. **`bit32` só aceita `[0, 2^32)`.** Use `add32`/`mul32`, nunca `band` em double grande.
 7. **Célula é `rXcY`: linha = lane; coluna = profundidade (c1 muralha, c5 spawn).** N=5 ativas no
-   total; colocação livre permite várias armadilhas na mesma lane.
+   total; colocação livre permite várias armadilhas na mesma lane. S4/S6 usam `toBattleWall`.
 8. **Binários de arte são LFS.** `git add` sem `source scripts/env.sh` falha (git-lfs not found).
 9. **Selene 0.32 não entende `+=`.** Use `luau-lsp analyze`; Selene fora do CI.
 10. **ProfileStore é server-only e `StartSessionAsync` pode devolver nil.** O wrapper trata; não

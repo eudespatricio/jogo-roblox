@@ -35,7 +35,7 @@ O que foi implementado de propósito, e o que ficou de fora.
 | hash base (seed 42) | |
 | hash da variante | |
 | migração v<n>→v<atual> | |
-| default neutro preserva hash? | |
+| migração neutra (hash antigo x migrado) | |
 | perfil inválido recusado? | |
 | invariantes | |
 | acceptance | |
