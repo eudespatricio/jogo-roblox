@@ -1,6 +1,6 @@
 # MAPA — onde cada responsabilidade mora
 
-> Teto: 60 linhas. Atualizado: 09/11/2026. Se um caminho não estiver aqui, procure antes de editar.
+> Teto: 60 linhas. Atualizado: 10/11/2026. Se um caminho não estiver aqui, procure antes de editar.
 
 | Caminho | O que tem | Quando carregar |
 |---|---|---|
@@ -31,7 +31,7 @@
 | `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v2 + `contentVersion` + catálogo (5 tipos/aliases); migração 0→2/1→2, JSON-safe | mexer em dado/catálogo |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
-| `src/server/walls/WallService.luau` · `WallController.server.luau` · `sim/walls-contract.luau` · `sim/content-contract.luau` | S3/S3.4: regras, `toBattleWall`, `contentVersion`; S4: remotes snapshot/place/remove/upgrade + contratos | mexer em muralha/economia/conteúdo/build |
+| `src/server/walls/WallService.luau` · `WallController.server.luau` · `sim/walls-contract.luau` · `sim/content-contract.luau` · `sim/build-contract.luau` | S3/S3.4: regras, `toBattleWall`, `contentVersion`; S4: UI pura (estado/HUD/layout), remotes + contratos | mexer em muralha/economia/conteúdo/build |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{sim,data,analytics,build}`, `server/{data,walls,world,ProfileBoot,Main stub}`, `client/`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |

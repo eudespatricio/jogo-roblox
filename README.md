@@ -12,9 +12,11 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > [`docs/economia-muralha.md`](docs/economia-muralha.md). **S3.3** concluída: GAP-006
 > (`toBattleWall`) e GAP-007 (gate de versões) fechados. **S3.4** com código verde: schema v2 +
 > `contentVersion`, `oil → tar`, 5º tipo `catapult`, `simVersion 3` e hash `2489780106` preservado;
-> GAP-001/002/003/010 fechados. **S4 iniciada** com cena 5×5, UI de build e remotes
-> (`GridLayout`/`BuildGrid`/`WallController`/`BuildClient`); falta validar FPS/build/feel no
-> Studio. A S3.4 fechou o GAP-009 no Modo B real (schema v2, 8/8). O teste de produto de 3 semanas
+> GAP-001/002/003/010 fechados. **S4 em QA** com cena 5×5, UI de build, remotes e QA headless
+> (`GridLayout`/`BuildProtocol`/`BuildClientState`/`BuildHud`/`BuildLayout`); HUD de debug
+> (FPS/tempos), layout 375×812/720×1280 e contrato de build **14/14**; falta o QA humano de
+> FPS/build/feel no Studio ([roteiro](docs/teste-s4-studio.md)). A S3.4 fechou o GAP-009 no Modo B
+> real (schema v2, 8/8). O teste de produto de 3 semanas
 > roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
@@ -55,10 +57,10 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   analytics-contract.luau contrato de analytics v1
   walls-contract.luau    contrato da muralha/economia (S3; 13 checagens, toBattleWall)
   content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
-  build-contract.luau    contrato do grid/build da S4 (6 checagens)
+  build-contract.luau    contrato do grid/build da S4 (14 checagens: protocolo/estado/HUD/layout)
   fixtures/              fixtures da migração 0→1→2 do perfil
 src/shared/sim/core.luau motor v3 (RNG, mul32/add32, Battle 5×5/N=5, 5 tipos)
-src/shared/build/        GridLayout puro + BuildProtocol (request/snapshot do build)
+src/shared/build/        GridLayout, BuildProtocol, BuildClientState, BuildHud e BuildLayout (puros)
 src/shared/data/         schema v2 do perfil + TrapCatalog (economia/conteúdo)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado + ProfileRegistry
@@ -91,7 +93,7 @@ luau sim/profile-contract.luau         # schema v1 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1
 luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
-luau sim/build-contract.luau           # grid/build (S4; 6 checagens)
+luau sim/build-contract.luau           # grid/build (S4; 14 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
 python3 scripts/check-versions.py      # gate de versões docs x fonte
 

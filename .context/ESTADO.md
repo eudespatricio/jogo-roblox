@@ -10,7 +10,7 @@
 ## Fase
 
 **P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 fechada** (código + Modo B
-real 8/8); **S4 iniciada** (cena 5×5/UI de build, scaffold com QA visual pendente). Plano em
+real 8/8); **S4 em QA headless pronto** (cena/UI/remotes + HUD/layout; falta Studio). Plano em
 `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
@@ -23,7 +23,7 @@ real 8/8); **S4 iniciada** (cena 5×5/UI de build, scaffold com QA visual penden
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 6/6 |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
@@ -51,10 +51,10 @@ real 8/8); **S4 iniciada** (cena 5×5/UI de build, scaffold com QA visual penden
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S4 cena 5×5/build em andamento → S5 drop-in → S6 raid/replay → S7 telemetria.
+- **P1** (2–3 semanas): S4 cena 5×5/build em QA → S5 drop-in → S6 raid/replay → S7 telemetria.
   Saída: 70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- S4: cena/UI/remote scaffold prontos; falta validar no Studio (FPS mobile, build ≤30s, feel).
-  O sink `AnalyticsService` é S7.
+- S4: cena/UI/remotes + HUD/layout headless prontos; falta o QA humano no Studio (logs/prints/FPS
+  da §7). O sink `AnalyticsService` é S7.
 - GAPs abertos: GAP-004/005/008/011 (001/002/003/009/010 fechados); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
@@ -68,7 +68,7 @@ real 8/8); **S4 iniciada** (cena 5×5/UI de build, scaffold com QA visual penden
 
 ## Próximo passo
 
-1. S4: validar cena/UI/FPS/build no Studio e corrigir o que o QA apontar.
+1. S4: QA humano no Studio (itens 1–3 de `docs/teste-s4-studio.md` §7) e corrigir o que apontar.
 2. Depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
 
 ## Como verificar o estado em 1 minuto

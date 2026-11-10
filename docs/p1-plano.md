@@ -6,7 +6,8 @@
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
 > **Execução (10/11/2026):** S1–S3.3 fechadas; **S3.4 (conteúdo e versões) fechada** — schema 2,
 > content 2, `simVersion 3`, hash `2489780106` (seed 42), Modo B real 8/8; GAP-001/002/003/009/010
-> fechados. **S4 iniciada**; S5–S7 pendentes.
+> fechados. **S4 com QA headless pronto** (HUD/layout/contrato 14/14); QA humano pendente; S5–S7
+> pendentes.
 > **GAP:** GAP-004/005/008/011 — classe/taxonomia v2, P2 e `BattleLog`.
 > Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
@@ -31,7 +32,7 @@ da S7 (contrato v1 já validado no CI). Sem número, a fase não fecha.
 | S3 | **Muralha e economia** — **feito 09/11/2026** | `src/shared/data/TrapCatalog.luau` + `src/server/walls/WallService.luau` (colocar/remover/upgrade com validação server-side: célula, N=5, ouro, desbloqueio; perfil incompatível é recusado); custos em [`economia-muralha.md`](economia-muralha.md), persistindo em `Profile.Data.wall.cells` / `gold` | célula inválida, 6ª armadilha e ouro insuficiente recusados; eventos `trap_placed`/`gold_spent`/`gold_earned` válidos — **12/12 na S3** (13/13 após a S3.3) |
 | S3.3 | **Gaps antes da S4** — **feito 10/11/2026** | `WallService.toBattleWall` (valida/ordena) + `scripts/check-versions.py`/`docs/versoes.md` | helper 13/13; gate falha na divergência; GAP-010 preparado |
 | S3.4 | **Conteúdo e versões** — **feito 10/11/2026** | `contentVersion` no schema v2, `oil → tar`, `catapult` (5º tipo), `SIM_VERSION 3`, migração neutra e Modo B | contratos 20/13/7/6; GAP-001/002/003/009/010 fechados; Modo B schema v2 8/8 |
-| S4 | **Cena 5×5 + build** — **iniciada 10/11/2026 (scaffold)** | grid 5×5 no Workspace, câmera fixa, UI de build (colocar 5 em 25), `GridLayout`/`BuildProtocol`/`BuildGrid`/`WallController`/`BuildClient`; QA em [`teste-s4-studio.md`](teste-s4-studio.md) | build completo em ≤ 30 s; nenhuma armadilha fora da célula; 45+ FPS em mobile |
+| S4 | **Cena 5×5 + build** — **QA headless 10/11/2026; QA humano pendente** | grid 5×5 no Workspace, câmera fixa, UI de build (colocar 5 em 25), HUD de FPS/tempos, layout 375×812/720×1280; `GridLayout`/`BuildProtocol`/`BuildClientState`/`BuildHud`/`BuildLayout`/`BuildGrid`/`WallController`/`BuildClient`; QA em [`teste-s4-studio.md`](teste-s4-studio.md) | build completo em ≤ 30 s; nenhuma armadilha fora da célula; 45+ FPS em mobile; evidência §7 |
 | S5 | **Drop-in de 5 s** | cena de abertura com botão DEFENDER e derrota roteirizada se demorar | `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥ 60% |
 | S6 | **Raid assíncrona + replay** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`), replay por seed de 8 s | `battle_finished.result_hash` igual ao replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence` |
 | S7 | **Telemetria** | `src/server/analytics/AnalyticsService.luau`: `emit`, lote (30 s/100), rate limit de cliente (10/min), idempotência, sink `Null` | contrato v1 valida 100% dos eventos; nenhum evento altera `BattleResult`; sem PII |

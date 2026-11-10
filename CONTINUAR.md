@@ -1,13 +1,14 @@
 # CONTINUAR — handoff de sessão
 
 **Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.3 fechadas**; **S3.4 (conteúdo e versões)
-fechada** (código + Modo B real); **S4 iniciada** (cena/UI scaffold, QA visual pendente); GAP-011
-aberto para a S6 · base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
+fechada** (código + Modo B real); **S4 com QA headless pronto e QA humano pendente** (HUD, layout
+mobile e contrato 14/14; falta Studio); GAP-011 aberto para a S6 · base `main`. Este arquivo é
+autossuficiente: a conversa pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; GAP-011 (`contentVersion` no
 > `BattleLog`) aberto para a S6. A linha canônica e o plano por gap estão em `docs/gaps.md`.
 
-GAP: GAP-004, GAP-005, GAP-008, GAP-011 · classes/taxonomia v2, live ops e contentVersion no BattleLog ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 (GAP-011 na S6) · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-011 · classes/taxonomia v2, live ops e contentVersion no BattleLog ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 (GAP-011 na S6); S4 só fecha com os itens 1–3 de docs/teste-s4-studio.md §7 · ver docs/gaps.md
 
 ---
 
@@ -69,21 +70,23 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     repara `oil → tar` e recusa `content_future`; o `WallService` exige a versão do catálogo.
   - conteúdo v2: `oil` virou `tar` (alias) e entrou `catapult` (5º tipo, splash); `simVersion 3` e
     hash `2489780106` preservado na parede padrão.
-  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16**, build **6/6**;
+  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16**, build **6/6** (hoje 14/14 após o QA da S4);
     GAP-001/002/003/009/010 fechados; GAP-011 (`BattleLog`) aberto para a S6.
   - **Modo B real (10/11/2026):** `modo=DataStore`, `datastore=Access`, `schema=v2 content=v2`,
     `sessions 11 → 12`, `[selftest] PASSOU (8/8)`; `STORE_NAME=MuralhaProfile_v1` com schema v2.
     Evidência em [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md) §9.
-- **S4 iniciada — cena 5×5 + build (10/11/2026, scaffold):**
-  - `src/shared/build/GridLayout.luau` (25 células, posições, cores/rótulos) + `sim/build-contract.luau`
-    **6/6**.
-  - `BuildGrid`/`BuildGrid.server` cria as 25 células e a muralha no Workspace; `WallController.server`
-    expõe snapshot/place/remove/upgrade via RemoteFunction, sempre validando no `WallService`.
-  - `BuildClient` (StarterPlayerScripts) tem câmera isométrica fixa e UI 5×5 + painel de armadilhas;
+- **S4 em QA — cena 5×5 + build (10/11/2026, QA headless pronto):**
+  - `GridLayout`/`BuildProtocol` + `BuildClientState`/`BuildHud`/`BuildLayout` (estado, HUD e layout
+    puros) + `sim/build-contract.luau` **14/14** (protocolo, intenção→`WallService`, HUD e layout).
+  - `BuildGrid` cria as 25 células/muralha; `WallController.server` expõe snapshot/place/remove/upgrade
+    via RemoteFunction, sempre validando no `WallService`.
+  - `BuildClient` tem câmera isométrica fixa, UI 5×5, painel de armadilhas, **HUD de debug**
+    (`FPS n · T x.xs · UI x.xs · COLOCAR · ARQUEIRO`) e layout responsivo 375×812/720×1280;
     `ProfileRegistry` compartilha a sessão entre `ProfileBoot` e `WallController`.
-  - Logs do Studio confirmam `[build] cena 5x5 pronta` e `[build] remotes prontos`; falta validar
-    FPS mobile, build ≤30 s, feel/colisão visual e o fluxo de UI no cliente.
-- Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 79/80 · MAPA 59/60 ·
+  - O scaffold logava cena/remotes, mas o `CellSize` em escala distorcia o grid e não havia número
+    de FPS/UI; o QA headless corrigiu os dois. Falta o **QA humano** (logs/prints/FPS da §7 de
+    `docs/teste-s4-studio.md`); o HUD mede `T`/`UI`, mas FPS/feel dependem do Studio.
+- Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 80/80 · MAPA 59/60 ·
   REJEITADOS 19/40**.
 
 ---
@@ -99,13 +102,13 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 6/6 (`sim/*-contract.luau`) |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 (`sim/*-contract.luau`) |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`) |
 | muralha/economia | catálogo 5 tipos · N=5 · sem refund · `toBattleWall` · `docs/economia-muralha.md` |
 | perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B schema v1 8/8 (09/11/2026) · Modo B schema v2 8/8 (10/11/2026) |
-| contexto | ESTADO 79/80 · MAPA 59/60 · REJEITADOS 19/40 |
+| contexto | ESTADO 80/80 · MAPA 59/60 · REJEITADOS 19/40 |
 
 ---
 
@@ -132,7 +135,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | S3 | Muralha e economia | célula/6ª armadilha/ouro insuficiente recusados; perfil persistido; eventos válidos | **feito 09/11/2026** |
 | S3.3 | Gaps antes da S4 | GAP-006/007 fechados; GAP-010 preparado | **feito 10/11/2026** |
 | S3.4 | Conteúdo e versões | schema v2/contentVersion, 5º tipo, alias, migração neutra e Modo B | **feito 10/11/2026** |
-| S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **iniciada 10/11/2026 (scaffold)** |
+| S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **headless pronto 10/11/2026 · QA humano pendente** |
 | S5 | Drop-in de 5 s | `dropin_pressed` ≥ 60% | pendente |
 | S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | pendente |
 | S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | pendente |
@@ -140,8 +143,9 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** QA da S4 no Studio — cena 5×5, câmera/UI, place/remove/upgrade, FPS mobile e
-build ≤30 s. S5–S7 depois, na ordem do plano; GAP-011 entra na S6.
+**Próximo passo:** **QA humano da S4** no Studio — cena 5×5, câmera/UI/HUD, place/remove/upgrade,
+FPS mobile e build ≤30 s; evidência = itens 1–3 da §7 de [`teste-s4-studio.md`](docs/teste-s4-studio.md).
+Só depois S5–S7, na ordem do plano; GAP-011 entra na S6.
 
 ## Pipeline de expansão e gaps
 
@@ -157,24 +161,26 @@ build ≤30 s. S5–S7 depois, na ordem do plano; GAP-011 entra na S6.
 
 ## Handover — S3.4 (conteúdo) + S4 (cena/build)
 
-**Estado:** S3.4 **fechada** — schema 2, content 2, sim 3, Modo B real 8/8; **S4 iniciada** com
-cena/UI/remote scaffold. GAP-001/002/003/009/010 fechados; GAP-004/005/008/011 abertos.
-**Base:** `main` pós-S3.4 + scaffold S4; hash `2489780106`; RFC em
+**Estado:** S3.4 **fechada** — schema 2, content 2, sim 3, Modo B real 8/8; **S4 em QA** com
+cena/UI/remote + HUD/layout headless. GAP-001/002/003/009/010 fechados; GAP-004/005/008/011 abertos.
+**Base:** `main` pós-S3.4 + QA headless S4; hash `2489780106`; RFC em
 [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md).
 
 - **Modo B fechado:** [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md) §9 registra
   `modo=DataStore`, `datastore=Access`, `schema=v2 content=v2`, `sessions 11→12` e `PASSOU (8/8)`.
   Não repetir sem mudar schema; perfil futuro (`schema_future`/`content_future`) continua recusado.
-- **S4 scaffold:** `GridLayout`/`BuildProtocol` + `sim/build-contract.luau` 6/6; `BuildGrid` cria 25
-  células/muralha; `WallController` expõe snapshot/place/remove/upgrade; `BuildClient` tem câmera
-  fixa e UI 5×5. Logs confirmam `[build] cena 5x5 pronta` e remotes prontos; falta QA visual/FPS/build.
+- **S4 headless:** `GridLayout`/`BuildProtocol` + `BuildClientState`/`BuildHud`/`BuildLayout` +
+  `sim/build-contract.luau` **14/14**; `BuildGrid` cria 25 células/muralha; `WallController` expõe
+  snapshot/place/remove/upgrade; `BuildClient` tem câmera fixa, UI 5×5, HUD e layout responsivo.
+  Logs confirmam cena/remotes; falta o **QA humano** (logs/prints/FPS/build da §7).
 - **Fonte da parede:** use só `WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, hp)` para
   qualquer batalha; nunca monte `wall.traps` à mão. Perfil inválido devolve `nil + erro` e não entra no
   `Battle.new`; o boot já rodou `TrapCatalog.ensureProfileContent`.
 - **Versões:** S4 não deve mudar `simVersion`/hash; se mudar, siga `docs/pipeline-expansao.md`,
   atualize `docs/versoes.md` e re-ancore acceptance. `contentVersion` novo é schema v3 + RFC.
 - **Critério de pronto (p1-plano S4):** build completo em ≤30 s; nenhuma armadilha fora da célula;
-  45+ FPS em mobile; UI ligada ao `WallService` (place/remove/upgrade) e à cena 5×5.
+  45+ FPS em mobile; UI ligada ao `WallService` (place/remove/upgrade) e à cena 5×5. O HUD mede
+  `T`/`UI`; FPS/feel e as evidências 1–3 da §7 dependem do QA humano.
 - **Fora da janela:** GAP-004/008 (classe/taxonomia v2), GAP-005 (P2) e GAP-011 (`BattleLog`, S6).
   **Não iniciar P2.** O trial/teste de 3 semanas segue em paralelo.
 - **Saída:** `doctor.sh` + `check.sh` RC=0; docs atualizados; CI verde; uma linha `GAP:` no handoff.
@@ -238,7 +244,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
    `2489780106`, agora com `simVersion 3` (o hash da parede padrão não mudou na S3.4). Não "ajustar"
    o hash antigo nem os thresholds sem registro. Mudou `schemaVersion`/`CONTENT_VERSION`/`SIM_VERSION`?
    Atualize `docs/versoes.md`; o `check.sh` falha se fonte e docs divergirem.
-3. **Contexto tem teto.** ESTADO está em 78/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
+3. **Contexto tem teto.** ESTADO está em 80/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
    linha antes de acrescentar outra.
 
 ---
@@ -286,41 +292,39 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 21. **GAP-009 fechou com ProfileStore real.** Modo B em 10/11/2026: `datastore=Access`,
     `schema=v2 content=v2`, sessions 11→12, selftest 8/8; `STORE_NAME=MuralhaProfile_v1` com schema
     v2. O `ContentId` do asset legado é ruído histórico.
+22. **`CellSize` em escala distorce o grid.** O scaffold da S4 usava `UDim2.fromScale` no
+    `UIGridLayout`; em 375×812 as células viravam retângulos e o grid invadia o painel. O layout
+    agora calcula pixels puros e é provado em 375×812/720×1280 (`BuildLayout`).
+23. **HUD de debug transforma "feel" em número.** `UI x.xs` é o Play até a UI interativa e `FPS n`
+    é a janela de 0,5 s; sem isso o critério de 30 s/45 FPS do QA vira achismo. O HUD não substitui
+    o Studio: só mede.
 
 ---
 
-## Goal da próxima janela — S4 QA/hardening
+## Goal da próxima janela — QA humano da S4
 
-**Objective (campo do goal):** prepara a S4 para o QA humano e executa o hardening headless da
-cena/build (HUD de FPS/tempo, layout mobile, testes e docs); não fechar a S4 sem evidência de Studio
-nem iniciar S5/P2.
+**Objective (campo do goal):** coletar e registrar a evidência de Studio da S4 (logs, prints
+375×812/720×1280, FPS e tempos do HUD) em `docs/teste-s4-studio.md` §7; corrigir só o que o QA
+apontar e, com os itens 1–3 preenchidos, fechar a S4 e liberar a S5.
 
-**Prompt para disparar:**
+**Prompt para disparar (depois do QA humano):**
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S3.4 fechadas; S4 iniciada com scaffold
-> de cena/UI e QA humano pendente; S5 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`,
+> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S3.4 fechadas; S4 com QA headless
+> pronto e QA humano em andamento; S5 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`,
 > `.context/MAPA.md`, `CONTINUAR.md`, `docs/p1-plano.md`, `docs/teste-s4-studio.md`,
 > `docs/versoes.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
-> `bash scripts/check.sh` (devem passar). `main` em `f6230b3`; motor `simVersion 3`, hash
-> `2489780106`; schema 2/content 2; GAP-009 fechado; GAP-011 na S6. Não edite
-> `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1 congelada. Onde há
-> evidência de Studio, use `docs/teste-s4-studio.md`; onde não há, não invente.
+> `bash scripts/check.sh` (devem passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
+> colocação livre; taxonomia v1 congelada.
 >
-> **Objetivo:** preparar e executar o QA headless da S4 e deixá-la pronta para o QA humano —
-> adicionar HUD de FPS/tempo de build no cliente, ajustar o layout mobile (375×812 e 720×1280),
-> reforçar testes headless do protocolo/estado do build, atualizar `docs/teste-s4-studio.md` e
-> corrigir o que não depender de Studio. Não iniciar S5 nem P2; não iniciar classe/taxonomia v2;
-> não fechar a S4 sem logs/screens de Studio.
->
-> **Escopo sugerido:** (1) HUD de debug no `BuildClient` (FPS, tempo desde Play/UI, modo/armadilha);
-> (2) revisão do layout do grid/painel inferior/topo para telas estreitas; (3) se necessário extrair
-> estado puro do cliente e testar em `sim/build-contract.luau` (manter 6+/6); (4) rodar
-> `doctor.sh`/`check.sh`, `rojo build` e CI; (5) commit/push na `main` se verde.
+> **Objetivo:** registrar a evidência de Studio da S4 (itens 1–3 da §7 do `teste-s4-studio.md`),
+> corrigir os bugs que o QA apontar e só então marcar a S4 como fechada; não iniciar S5/P2 sem
+> essa evidência.
 >
 > **Fora:** S5, P2, classe/taxonomia v2, mudança de schema/content/sim. Se precisar mudar versão,
 > pare e registre em `docs/gaps.md`; não invente produto.
 >
-> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; HUD e checklist no repo; `CONTINUAR.md`
-> atualizado; nenhuma alegação de S4 fechada sem os itens 1–3 da §7 do `teste-s4-studio.md`. Se o
-> Studio não estiver disponível, pare no checkpoint humano, reporte o que falta e feche com a linha
-> `GAP:` atualizada.
+> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; §7 preenchida com logs/prints/FPS/tempos;
+> `CONTINUAR.md` e `docs/gaps.md` atualizados; linha `GAP:` refletindo o estado real.
+
+**Checkpoint atual:** o QA headless está feito (HUD, layout, contrato 14/14, gate verde); o que
+falta é a evidência de runtime — sem ela a S4 continua **em correção**.
