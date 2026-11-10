@@ -39,7 +39,9 @@ while not battle:Finished() do
 end
 
 local result = battle:Result()
--- { winner = "defender"|"attacker", wallHp, ticks, killed, leaked, hash }
+-- { winner = "defender"|"attacker", wallHp, ticks, killed, leaked, spawned,
+--   seed, simVersion, hash }
+-- `seed` e `simVersion` sao metadados: nao entram no hash nem no estado (P0, 09/11/2026).
 ```
 
 Regras:
@@ -218,6 +220,10 @@ Nenhum valor vindo do cliente é usado em cálculo. Ponto.
 O funil é a bússola: `join → dropin_shown → dropin_pressed → first_win → build_complete → raid_start`.
 Se `dropin_pressed` < 60%, o problema é o botão. Se `first_win` < 70%, é a dificuldade.
 
+Contrato executável (P0, 09/11/2026): `src/shared/analytics/AnalyticsTypes.luau`, validado por
+`sim/analytics-contract.luau` no CI. Eventos de batalha carregam `seed`, `sim_version` e
+`result_hash` lidos do `BattleResult` **depois** do hash; nenhum sink vive em `sim/core.luau`.
+
 ---
 
 ## 9. Orçamento de performance
@@ -243,6 +249,10 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 5. **Regressão de versão:** `simVersion` antiga não é aceita em reward.
 6. **Aceitação P0:** `sim/acceptance.luau` roda 1.000 seeds × 3, exige hash/resultado idênticos e
    1.000 hashes distintos; está no `check.sh` e no CI.
+7. **Contrato de perfil:** `sim/profile-contract.luau` — schema v1, migração 0→1 com fixture,
+   `StartSessionAsync` nil, `EndSession` no leave e recarga sem duplicar (store injetado).
+8. **Contrato de analytics:** `sim/analytics-contract.luau` — envelope/catálogo/limites/PII e
+   prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`.
 
 ---
 
@@ -342,4 +352,29 @@ Ou seja: o ajuste **não corrigiu um resultado errado** — corrigiu uma violaç
 faixa, que poderia divergir em outra arquitetura. É endurecimento, não bugfix. Registrado assim para
 não inflar o histórico com um "bug" que não existiu.
 
+---
 
+## 14. Camada de dados e analytics (P0, 09/11/2026)
+
+**Perfil** — `src/shared/data/ProfileSchema.luau` (puro, sem API do Roblox):
+
+| Item | Regra |
+|---|---|
+| store | `MuralhaProfile_v1` — separado do `PlayerData_v1` do protótipo de moedas (morre na P1) |
+| chave | `User_{UserId}`: 1 chave por jogador, nunca display name |
+| schema | `schemaVersion = 1`; `wall` (`gridWidth` 5–7, `activeTrapLimit` 1–25, `cells` `rXcY`), `gold`, `league`, `cosmetics`, `stats` |
+| whitelist | todo load passa por `sanitizeV1`: campo desconhecido, PII e valor fora de faixa **não** são persistidos |
+| migração | `migrate(data, version)` com passo 0→1 provado por fixture; versão futura é recusada (`schema_future`) |
+| JSON | `isJsonSafe` recusa NaN/infinito, chave mista, array com buraco, ciclo e tipo não serializável |
+
+**Sessão** — `src/server/data/ProfileService.luau` (puro, store injetado; ligação em
+`src/server/ProfileBoot.server.luau`): `StartSessionAsync` nil → 3 tentativas com backoff 0,5/1s e
+recusa do jogador; migra antes de expor `Data` e salva a migração na hora; `EndSession` no leave e
+no `BindToClose` (o lock só é liberado depois do save — reabrir sessão exige espera/retry);
+`lastSeenAt` e `playSeconds` no leave. Studio usa `ProfileStore.Mock`; atributos
+`ProfileStoreMock`/`ProfileSelfTest` controlam o teste. Roteiro: [`teste-sessao-studio.md`](teste-sessao-studio.md).
+
+**Analytics** — `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`:
+envelope e 31 eventos da [taxonomia](taxonomia-analytics.md) validados no CI (obrigatoriedade,
+enum, limites, UUID/hash de 32 hex, anti-PII). Mudar o catálogo exige atualizar fixture e contrato
+na mesma mudança. `simVersion` segue **1**: esta janela não mudou matemática.

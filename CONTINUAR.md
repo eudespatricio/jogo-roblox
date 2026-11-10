@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** pré-P0, nenhum código de produção · base `main` (sem hash fixo; veja `git log -1`).
+**Data:** 09/11/2026 · **Status:** P0 fechada em código; falta o teste manual no Studio · base `main`.
 Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
@@ -13,7 +13,7 @@ enquanto ele está offline, e um replay determinístico de 8s mostra o que acont
 gravar clipe via `CaptureService`.
 
 Equipe: 1 humano (direção, cena, game feel, QA) + 2 agentes (motor/CI e sistemas/economia).
-A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
+A P0 foi autorizada em 09/11/2026 e está **fechada em código**; falta só o teste manual no Studio.
 
 ---
 
@@ -23,13 +23,38 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 - Motor determinístico v2 portado para `src/shared/sim/` e provado em `sim/` (inteiro, 1.200 ticks,
   `mul32`/`add32`).
 - Tooling: Rokit + CLI/GUI, CI ativo (runs #1–#5 verdes), estação calibrada; ProfileStore
-  vendorizado; wrapper/schema na P0.
+  vendorizado; wrapper e schema v1 entregues na P0.
 - Auditoria `context-recovery` concluída: 7 contradições resolvidas; **Q1 e Q2 fechadas**.
 - Contexto residente instalado e dentro do teto.
 - Monetização decidida (base 2% × US$ 2; gate líquido US$ 0,005); ProfileStore vendorizado;
-  taxonomia de analytics v1 escrita.
-- **P0 em andamento:** port + `sim/acceptance.luau` verdes (1.000 seeds × 3, hash `668061367`).
+  taxonomia de analytics v1 aprovada e validada no CI.
+- **P0 fechada em código (09/11/2026):** motor, schema v1 + wrapper ProfileStore, contrato de
+  analytics e gates no CI. Falta o **teste de sessão no Studio** (`docs/teste-sessao-studio.md`).
   **P1 não iniciada.**
+
+---
+
+## Entrega desta janela (P0, 09/11/2026)
+
+| # | Entrega | Arquivos |
+|---|---|---|
+| 1 | Schema v1 + wrapper ProfileStore | `src/shared/data/ProfileSchema.luau`, `src/server/data/ProfileService.luau`, `src/server/ProfileBoot.server.luau` |
+| 2 | Contrato de analytics | `src/shared/analytics/AnalyticsTypes.luau`, `sim/analytics-contract.luau` |
+| 3 | Teste de sessão no Studio | `docs/teste-sessao-studio.md` + self-test em `ProfileBoot` (atributos `ProfileStoreMock`/`ProfileSelfTest`) |
+| 4 | Fechamento | `sim/profile-contract.luau`, `sim/fixtures/profile-v0.luau`, `scripts/check.sh`, spec §14, ESTADO/MAPA |
+
+Decisões e armadilhas novas:
+
+- Store do perfil = **`MuralhaProfile_v1`**, separado do `PlayerData_v1` do protótipo de moedas
+  (que morre na P1 com a tag `legacy-coins`).
+- `ProfileService` é puro e recebe o store por injeção: o contrato roda no CLI com store fake,
+  sem DataStore. A ligação com `Players` ficou em `ProfileBoot.server.luau`.
+- `BattleResult` ganhou `seed` e `simVersion` (metadados); hash `668061367` intacto e
+  `simVersion` segue **1** — nenhuma mudança de matemática nesta janela.
+- `EndSession` do ProfileStore só libera o lock **depois do save**: reabrir sessão exige espera;
+  o controller tenta 3× com backoff 0,5/1s.
+- `ProfileStore.Mock` não persiste entre servidores: persistência real é o Modo B do roteiro
+  (lugar publicado + API Services).
 
 ---
 
@@ -60,10 +85,12 @@ A divisão de tarefas **não foi executada**; a P0 **não foi autorizada**.
 | 500 seeds | 500 hashes distintos · 64,8% vitória do defensor |
 | P0 acceptance | 1.000 seeds × 3 · 1.000 hashes · 64,9% defensor · 1,5s/1.000 |
 | invariantes | **10/10** (`sim/invariants.luau`) |
-| contexto residente | ESTADO 70/80 · MAPA 51/60 · REJEITADOS 17/40 |
+| contexto residente | ESTADO 75/80 · MAPA 57/60 · REJEITADOS 17/40 |
 | monetização | base 2% × US$ 2 · topo 4,5% × US$ 5 · gate ARPDAU líquido US$ 0,005 |
 | Q2 | 5×5, N=5 ativas, colocação livre (09/11/2026) |
 | Q1 | apagar o legado na P1, preservando `src/shared/sim/` (09/11/2026) |
+| contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
+| schema do perfil | v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 
 ---
 
@@ -126,8 +153,9 @@ Q1 e Q2 foram decididas em 09/11/2026; nenhuma pergunta aberta.
 - **Calibração:** importada no Studio; o importador glTF do Studio perde a cor base (cinza) e
   espelha o rótulo de face única — cosmético, documentado em `art/README.md`; reimportar no Blender
   mostra tudo correto.
-- **Falta:** wrapper/schema v1 do ProfileStore (P0), primeiro asset real; Selene segue bloqueado
-  (parser não aceita `+=`), lint é `luau-lsp`. ProfileStore vendorizado em `vendor/`.
+- **Falta:** primeiro asset real; sink de analytics (`AnalyticsService`, P1); Selene segue
+  bloqueado (parser não aceita `+=`), lint é `luau-lsp`. ProfileStore vendorizado em `vendor/`;
+  wrapper/schema v1 feitos na P0.
 - **Pipeline 3D:** Blender (WSL) → glTF/FBX → Studio 3D Importer → `.rbxm` versionado (LFS) → Rojo.
 - **Atenção:** `.gitignore` ignora `*.rbxm`, com exceção em `assets/models`; shell não-login não acha
   `rojo`/`blender`/`git-lfs` — use `source scripts/env.sh`.
@@ -145,34 +173,40 @@ Q1 e Q2 foram decididas em 09/11/2026; nenhuma pergunta aberta.
 Q1 e Q2 foram fechadas em 09/11/2026. `docs/auditoria/CONTRADICOES.md` foi apagado. A remoção do
 legado é P1 — não foi executada agora.
 
-**Próximo passo:** fechar a P0 (seção abaixo). O teste de 3 semanas continua antes da P1.
+**Próximo passo:** rodar o teste de sessão no Studio (seção abaixo). O teste de 3 semanas
+continua antes da P1.
 
-## P0 — como fechar (handover para outra janela)
+## P0 — fechamento (09/11/2026)
 
-**Feito:** motor em `src/shared/sim/core.luau`; `sim/acceptance.luau` verde (1.000 seeds × 3,
-hash `668061367`, 1.000 hashes, 64,9% defensor, ~1,5s/1.000); `check.sh` e CI verdes.
-
-| # | Entrega | Onde | Critério de pronto |
+| # | Entrega | Onde | Status |
 |---|---|---|---|
-| 1 | **Schema v1 + wrapper ProfileStore** | `src/server/data/ProfileService.luau` + `src/shared/data/ProfileSchema.luau` | `StartSessionAsync` nil tratado; `EndSession` no leave; migração 0→1 com fixture; `Mock` testado; teste de sessão no Studio |
-| 2 | **Contrato de analytics** | `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau` | envelope/eventos da taxonomia validados no CI; `check.sh` passa a analisar `src/shared/analytics` e rodar o contrato; `BattleResult` expõe `seed` (sem mudar hash) |
-| 3 | **Teste de sessão no Studio** | place + 2 clientes/rejoin | carrega, salva, não duplica; sem PII; `lastSeenAt` atualizado |
-| 4 | **Fechamento** | spec, ESTADO, CONTINUAR | `check.sh` + acceptance verdes; `simVersion` inalterado (sem mudança de matemática) |
+| 1 | **Schema v1 + wrapper ProfileStore** | `src/shared/data/ProfileSchema.luau` · `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | **feito** — contrato 19/19 |
+| 2 | **Contrato de analytics** | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | **feito** — 31 eventos, 16/16 |
+| 3 | **Teste de sessão no Studio** | `docs/teste-sessao-studio.md` + self-test no boot | **falta executar** (manual) |
+| 4 | **Fechamento** | spec §14, ESTADO, MAPA, CONTINUAR, `scripts/check.sh` | **feito** |
 
-**Antes do item 2:** aprovar [`docs/taxonomia-analytics.md`](docs/taxonomia-analytics.md), que ainda
-é proposta.
+Provado no CI (headless):
+- `sim/profile-contract.luau`: template, validação, migração 0→1 com fixture, `StartSessionAsync`
+  nil com backoff, `EndSession` no leave, recarga sem duplicar, versão futura recusada.
+- `sim/analytics-contract.luau`: envelope/catálogo/limites/PII e `battle_finished` montado do
+  `BattleResult` sem alterar o hash `668061367`.
+- `check.sh` passou a analisar `src/shared/data`, `src/shared/analytics` e `src/server/data`, e roda
+  os dois contratos.
 
-**Não entra na P0:** cena 5×5, UI, loja, drop-in/raid/replay (P1); remoção do legado (Q1, P1).
+**Falta só o item 3:** rodar `docs/teste-sessao-studio.md` (Modo A com `ProfileSelfTest = true`).
+
+**Não entra na P0:** cena 5×5, UI, loja, drop-in/raid/replay (P1); remoção do legado (Q1, P1);
+sink de analytics (`AnalyticsService`, P1).
 
 **Decisões que o handover herda:** Q2 = 5×5, N=5, colocação livre; Q1 = apagar o legado na P1, tag
 `legacy-coins`; monetização = base 2% × US$ 2, gate líquido US$ 0,005; ProfileStore vendorizado
-(Apache-2.0).
+(Apache-2.0); store do perfil = `MuralhaProfile_v1`; taxonomia v1 congelada.
 
 **Armadilhas:** não editar `vendor/ProfileStore.luau`; ProfileStore é server-only
 (`ServerStorage.Vendor.ProfileStore`); `StartSessionAsync` pode retornar nil; `OnLastSave` pode não
 disparar; o CI headless não cobre DataStore — o teste de sessão é manual no Studio; `BattleResult`
-com campo novo não altera o hash; mudou matemática? Suba `simVersion`; `bit32` só `[0, 2^32)`.
-O legado em `src/server` ainda está montado; não reutilize `CoinService`/`DataService`.
+com campo novo não altera o hash; `simVersion` segue 1 (sem mudança de matemática); `bit32` só
+`[0, 2^32)`; `EndSession` libera o lock apenas depois do save.
 
 ---
 
@@ -191,7 +225,10 @@ O legado em `src/server` ainda está montado; não reutilize `CoinService`/`Data
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita |
 | `docs/revisao-direcao.md` | veredito de rota e teste de 3 semanas pré-P1 |
 | `docs/decisao-monetizacao.md` | premissas base/topo e gate ARPDAU |
-| `docs/taxonomia-analytics.md` | eventos, funil, métricas e sink |
+| `docs/taxonomia-analytics.md` | eventos, funil, métricas e sink (v1 aprovada) |
+| `docs/teste-sessao-studio.md` | roteiro do teste de sessão no Studio (P0) |
+| `src/shared/data/ProfileSchema.luau` · `src/server/data/ProfileService.luau` | schema v1 e sessão do perfil |
+| `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1 |
 | `vendor/ProfileStore.luau` + `SOURCE.md` | ProfileStore oficial vendorizado (Apache-2.0) |
 | `docs/ferramentas.md` | toolchain auditado + pipeline Blender→Studio |
 | `docs/estacao-de-trabalho.md` | manual operacional da estação + doctor |
@@ -203,7 +240,7 @@ O legado em `src/server` ainda está montado; não reutilize `CoinService`/`Data
 
 ## Regras invioláveis
 
-1. **Não iniciar P0/P1 sem autorização explícita do diretor.**
+1. **Não iniciar a P1 sem autorização explícita do diretor.** A P0 foi autorizada em 09/11/2026.
 2. `src/**` é legado; não é base do jogo novo.
 3. Depois de editar `src/shared/sim/core.luau`, rodar `sim/invariants.luau` e `sim/acceptance.luau`.
 4. Mudou a matemática → subir `simVersion` e registrar na spec.
@@ -226,6 +263,12 @@ O legado em `src/server` ainda está montado; não reutilize `CoinService`/`Data
 6. **O invariante I6 falhou primeiro porque o teste estava errado** (muralha morria antes do cap),
    não o código. Consertamos o teste.
 7. **O README descrevia o jogo de moedas** — doc mais velho que código mente; a radiografia pegou.
+8. **`#` em tabela de chave string não conta itens.** O teto de `cells`/`cosmetics` da migração
+   nunca disparava; quem pegou foi o `luau-lsp` (`Using '#' on a table with string keys`).
+9. **`EndSession` só solta o lock depois do save.** Reabrir sessão no mesmo servidor logo depois
+   exige espera/retry; senão `StartSessionAsync` lança "already loaded in this session".
+10. **`ProfileStore.Mock` não persiste entre servidores.** Play Solo reinicia o mock: persistência
+    real precisa de lugar publicado + API Services (Modo B do roteiro).
 
 ---
 
@@ -233,11 +276,11 @@ O legado em `src/server` ainda está montado; não reutilize `CoinService`/`Data
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (MURALHA, P0 em andamento). Leia `AGENTS.md`,
+> Você está no repositório `jogo-roblox` (MURALHA, P0 fechada em código). Leia `AGENTS.md`,
 > `.context/ESTADO.md`, `.context/MAPA.md` e `CONTINUAR.md`. No WSL: `source scripts/env.sh`,
-> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). **Objetivo desta janela:
-> fechar a P0** — schema v1 + wrapper ProfileStore, contrato de analytics e teste de sessão no
-> Studio. Não inicie P1; não apague `src/**` (Q1 é P1, tag `legacy-coins`); não edite
-> `vendor/ProfileStore.luau`. Q1/Q2 fechadas; Q2 = 5×5, N=5, colocação livre. Motor em
-> `src/shared/sim/core.luau`; `sim/acceptance.luau` valida 1.000 seeds × 3. Base: HEAD da `main`
-> (CI verde).
+> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). **Primeiro passo desta janela:**
+> rodar `docs/teste-sessao-studio.md` no Studio (Modo A, `ProfileSelfTest = true`) e colar a
+> evidência — é o último item da P0. **Não inicie a P1 sem autorização do diretor**; não apague
+> `src/**` (Q1 é P1, tag `legacy-coins`); não edite `vendor/ProfileStore.luau`. Q1/Q2 fechadas;
+> Q2 = 5×5, N=5, colocação livre. Motor em `src/shared/sim/core.luau`; `simVersion` = 1; contratos
+> em `sim/profile-contract.luau` e `sim/analytics-contract.luau`.

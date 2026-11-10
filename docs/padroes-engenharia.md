@@ -253,6 +253,8 @@ conferidas nas releases oficiais em 09/11/2026).
 
 ### 8.3 Ainda abertas
 
-1. **Analytics:** taxonomia v1 em `docs/taxonomia-analytics.md`; implementação do sink e do validador na P0.
+1. **Analytics:** taxonomia v1 aprovada (`docs/taxonomia-analytics.md`); contrato e validador
+   entregues na P0 (`src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`);
+   sink (`AnalyticsService`) na P1.
 2. **Feature flags:** necessárias para testar variantes de drop-in sem republicar — provavelmente
    um `Config` remoto via `DataStore` + cache local.

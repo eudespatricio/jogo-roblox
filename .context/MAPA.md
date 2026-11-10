@@ -27,7 +27,11 @@
 | `sim/invariants.luau` | oráculo executável (10 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
-| `src/**` | protótipo legado de moedas (Rojo) + `src/shared/sim/` (motor de produção) | legado: apagar na P1 (Q1); sim: produção |
+| `src/shared/data/ProfileSchema.luau` · `sim/profile-contract.luau` | schema v1: template, validação, migração 0→1, JSON-safe | mexer em dado de jogador |
+| `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
+| `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
+| `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
+| `src/**` | protótipo legado de moedas + `src/shared/sim/` (motor) + `src/shared/data\|analytics` (P0) | legado: apagar na P1 (Q1); resto: produção |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (legado + vendor + sim) | build do protótipo |
@@ -49,3 +53,5 @@
 7. **O PoC não é a arquitetura.** Ele usa 1 armadilha por lane; produção é 5×5 com N=5 ativas e colocação livre.
 8. **Binários de arte são LFS.** `git add` sem `source scripts/env.sh` falha (git-lfs not found).
 9. **Selene 0.32 não entende `+=`.** Use `luau-lsp analyze`; Selene fora do CI.
+10. **ProfileStore é server-only e `StartSessionAsync` pode devolver nil.** O wrapper trata; não
+    mova `ProfileService`/`ProfileBoot` para `shared` nem edite `vendor/ProfileStore.luau`.

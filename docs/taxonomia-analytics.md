@@ -1,6 +1,8 @@
 # Taxonomia de analytics v1
 
-> **Status:** proposta para aprovação · 09/11/2026 · fecha a lacuna "schema de eventos" antes da P0.
+> **Status:** **v1 aprovada e implementada em 09/11/2026** (fechamento da P0). O contrato
+> executável é `src/shared/analytics/AnalyticsTypes.luau`, validado no CI por
+> `sim/analytics-contract.luau`; o sink é P1.
 > Não escolhe fornecedor: define nomes, envelope, funil, métricas e regras de emissão.
 > Fontes: [spec do motor](spec-motor-deterministico.md) §8, [GDD](gdd-muralha.md) §8,
 > [revisão de direção](revisao-direcao.md) §7, [padrões](padroes-engenharia.md) §3 e §8.3.
@@ -179,13 +181,13 @@ nada de texto livre; `PolicyService`/idade só como booleano.
 
 ## 6. Implementação (P0)
 
-| Artefato | Papel |
-|---|---|
-| `src/shared/analytics/AnalyticsTypes.luau` | enums, payloads tipados, `schema_version` |
-| `src/server/analytics/AnalyticsService.luau` | `emit`, sinks, lote, rate limit, idempotência |
-| `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII |
-| `src/shared/sim/core.luau` | **não muda**; expõe `BattleResult` (seed, hash, winner, ticks, leaked, wall_hp) |
-| CI | roda o contrato junto dos invariantes; hash 668061367 continua obrigatório |
+| Artefato | Papel | Status (09/11/2026) |
+|---|---|---|
+| `src/shared/analytics/AnalyticsTypes.luau` | envelope, catálogo tipado, enums, limites, anti-PII, `newEvent`/batalha | **feito** |
+| `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII, integração com o motor | **feito** |
+| `src/server/analytics/AnalyticsService.luau` | `emit`, sinks, lote, rate limit, idempotência | **P1** (não entra na P0) |
+| `src/shared/sim/core.luau` | matemática intacta; `BattleResult` ganhou `seed` e `simVersion` (metadados, hash igual) | **feito** |
+| CI | `check.sh` roda o contrato junto dos invariantes; hash 668061367 continua obrigatório | **feito** |
 
 Teste de aceitação: 1.000 batalhas com hash estável **e** todos os eventos de batalha validados;
 nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo.
@@ -198,7 +200,9 @@ nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo.
    3 lugares/experiências separados, campanhas sequenciais, ou `launchData` em links de compartilhar.
    Decidir **antes da semana 2** do teste.
 2. **Limites do `AnalyticsService`** (nomes, campos, volume) precisam ser conferidos na doc oficial
-   antes da P0; o schema não pode depender de campo que a API não aceita.
+   antes do sink (P1). O contrato v1 não depende da API: ele valida no servidor e entrega o
+   evento pronto — o sink só decide para onde mandar.
 3. **DataStore como sink** só vale para o teste; a decisão do sink externo é da P2.
 4. **Feature flags/experimentos** continuam abertos em [padrões](padroes-engenharia.md) §8.3.
-5. **Congelar nomes** depois da P0; renomear evento quebra série histórica.
+5. **Nomes congelados na v1** (09/11/2026): renomear evento quebra série histórica; mudança só
+   aditiva, com novo `schema_version` e evento antigo depreciado.

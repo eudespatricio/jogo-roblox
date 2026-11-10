@@ -46,10 +46,10 @@ O 4.5.15 LTS já está instalado no WSL como `blender4.5`; o `blender` antigo co
 |---|---|---|---|---|
 | 1 | **Testes de integração no Studio** | o CI é headless Linux; nada valida DataStore/UI/Studio | teste manual + telemetria | 0 |
 | 2 | **Primeiro asset real** (além da calibração) | a calibração prova escala/eixo; falta uma armadilha de verdade no pipeline | Blender → glb → Studio → `.rbxm` | 0 |
-| 3 | **`pesde.toml` + ProfileStore** | ProfileStore vendorizado (Apache-2.0, commit fixado); `pesde.toml` fica para a 2ª dependência | vendor + wrapper na P0 | 0 |
+| 3 | **`pesde.toml` + ProfileStore** | ProfileStore vendorizado (Apache-2.0, commit fixado); wrapper + schema v1 entregues na P0; `pesde.toml` fica para a 2ª dependência | vendor | 0 |
 | 4 | **Style guide 2D/UI + HUD** | Krita/Inkscape instalados; falta paleta/tipografia/9-slice | Figma + Krita | 0 |
 | 5 | **Primeiro SFX/trilha + mixagem** | Audacity/FFmpeg instalados; falta o som existir | Audacity + Freesound (licença) | 0 |
-| 6 | **Observabilidade** | D1/ARPDAU/erros sem schema de eventos não existem | `AnalyticsService` + schema v1 (`docs/taxonomia-analytics.md`) | 0 |
+| 6 | **Observabilidade** | contrato v1 feito; falta o sink e a instrumentação de gameplay | `AnalyticsService` (P1) + schema (`docs/taxonomia-analytics.md`) | 0 |
 | 7 | **Publicação Open Cloud** | build → place sem clicar no Studio | rbxcloud + API key | 0 |
 | 8 | **Performance/QA em device fraco** | 60 fps não se adivinha | MicroProfiler + ScriptProfiler + device | 0 |
 
@@ -232,7 +232,7 @@ legado fica fora por `.styluaignore` até a P1.
 parseia atribuição composta do Luau: `total += 1` e `s -= ...` viram 82 parse errors em `sim/`.
 Não há flag de Luau no CLI. Por isso o gate usa `luau-lsp analyze`, que entende a sintaxe.
 
-- `luau-lsp` 1.70.1 + `rojo sourcemap` + `.luaurc` com `strict` (o `.luaurc` ainda falta).
+- `luau-lsp` 1.70.1 + `rojo sourcemap` + `.luaurc` com `strict` (feito).
 - `stylua.toml` (coluna 100, tabs) — feito.
 - `.vscode/settings.json`: format on save com StyLua, Luau LSP, sourcemap.
 
@@ -252,8 +252,8 @@ Decisão: reavaliar quando o Selene suportar compound assignment; até lá, o li
 
 - **Pesde 0.7.4** (set/2026) está instalado; **Wally 0.3.2** é de 2023.
 - **ProfileStore vendorizado** em `vendor/ProfileStore.luau` (Apache-2.0, commit `45c9847`), com
-  `vendor/SOURCE.md`; `pesde.toml` fica para quando houver uma segunda dependência. O wrapper e o
-  schema v1 entram na P0.
+  `vendor/SOURCE.md`; `pesde.toml` fica para quando houver uma segunda dependência. Wrapper e schema
+  v1 entregues na P0 (`src/server/data/`, `src/shared/data/`).
 - Evitar framework grande no MVP (Flamework/Knit/Replica). Escolher **uma** lib de UI e **uma** de
   networking só quando a P1 começar; trocar depois custa caro.
 

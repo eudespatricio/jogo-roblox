@@ -5,8 +5,10 @@
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-> **Status: pré-P0.** Conceito e motor provados; **nenhum código de produção do jogo ainda**.
-> O `src/` atual é o protótipo legado de coleta de moedas, usado só para validar o pipeline Rojo.
+> **Status: P0 fechada em código (09/11/2026).** Motor determinístico, schema v1 + wrapper
+> ProfileStore e contrato de analytics com gates no CI; falta o teste de sessão no Studio
+> ([roteiro](docs/teste-sessao-studio.md)). O protótipo de moedas em `src/` segue legado até a
+> P1 (tag `legacy-coins`) — `src/shared/sim/` já é produção.
 
 ## Comece por aqui
 
@@ -29,34 +31,38 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 ## Estrutura
 
 ```
-sim/                 motor determinístico (Luau puro, roda sem Roblox)
-  core.luau          RNG, mul32/add32, Battle
-  poc.luau           benchmark e demo
-  invariants.luau    oráculo executável (10 checagens)
-  audit-*.luau       evidência das auditorias de aritmética
-src/                 protótipo legado de moedas (Rojo) — não é o jogo
-docs/                GDD, spec, pesquisas, economia
-.context/            contexto residente (teto de linhas)
-skills/context-recovery/  protocolo de auditoria + scanner + templates
+sim/                     harnesses do motor (Luau puro, roda sem Roblox)
+  poc.luau               benchmark e demo
+  invariants.luau        oráculo executável (10 checagens)
+  acceptance.luau        P0: 1.000 seeds × 3
+  profile-contract.luau  contrato do schema v1 e da sessão do perfil
+  analytics-contract.luau contrato de analytics v1
+  fixtures/              fixture da migração 0→1 do perfil
+src/shared/sim/core.luau motor de produção (RNG, mul32/add32, Battle)
+src/shared/data/         schema v1 do perfil (template, migração, validação)
+src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
+src/server/data/         sessão sobre o ProfileStore vendorizado
+src/server/ProfileBoot.server.luau  ligação com Players + self-test no Studio
+src/{client,server,shared}/  protótipo legado de moedas — NÃO é o jogo
+vendor/ProfileStore.luau ProfileStore oficial (Apache-2.0, não editar)
+docs/                    GDD, spec, pesquisas, economia, roteiro do Studio
+.context/                contexto residente (teto de linhas)
+skills/context-recovery/ protocolo de auditoria + scanner + templates
 ```
 
 ## Comandos
 
-```powershell
-# oráculo do motor (falha o processo se uma regra quebrar)
-.\.tools\luau\luau.exe sim\invariants.luau
+```bash
+source scripts/env.sh
+bash scripts/doctor.sh                 # estação completa
+bash scripts/check.sh                  # gate: build, StyLua, luau-lsp, invariantes, contratos
 
-# benchmark (determinismo, performance, balanço)
-.\.tools\luau\luau.exe sim\poc.luau
+luau sim/invariants.luau               # oráculo do motor (10 checagens)
+luau sim/acceptance.luau               # P0: 1.000 seeds × 3
+luau sim/profile-contract.luau         # schema v1 + sessão
+luau sim/analytics-contract.luau       # contrato de analytics v1
 
-# radiografia determinística do repositório
-python skills\context-recovery\scan_repo.py --root . --ast .tools\luau\luau-ast.exe
-
-# tetos do contexto residente
-python skills\context-recovery\scan_repo.py --root . --check
-
-# protótipo legado no Studio
-.\.tools\rojo.exe serve
+rojo serve                             # Studio: localhost:34872 (WSL)
 ```
 
 ## Tooling
