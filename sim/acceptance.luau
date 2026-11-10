@@ -1,5 +1,5 @@
 --!nonstrict
--- P0 acceptance: 1.000 seeds x 3, hash estavel, performance e balanco.
+-- P1 acceptance (motor v2): 1.000 seeds x 3, hash estavel, performance e balanco.
 -- Roda no Luau CLI: luau sim/acceptance.luau
 local Core = require("../src/shared/sim/core")
 
@@ -15,9 +15,10 @@ local function check(name, fn)
 	end
 end
 
-check("hash de referencia (seed 42)", function()
+check("hash de referencia (seed 42, simVersion 2)", function()
 	local r = Core.Run(42)
-	assert(r.hash == 668061367, "hash mudou: " .. tostring(r.hash))
+	assert(r.simVersion == 2, "simVersion != 2: " .. tostring(r.simVersion))
+	assert(r.hash == 2489780106, "hash mudou: " .. tostring(r.hash))
 	print(string.format("  seed 42: hash=%d winner=%s ticks=%d", r.hash, r.winner, r.ticks))
 end)
 
@@ -29,6 +30,7 @@ check("1.000 seeds x 3 (hash e resultado identicos)", function()
 		local b = Core.Run(seed)
 		local c = Core.Run(seed)
 		assert(a.hash == b.hash and b.hash == c.hash, "hash divergiu na seed " .. seed)
+		assert(a.simVersion == 2, "simVersion divergente na seed " .. seed)
 		assert(
 			a.winner == b.winner
 				and b.winner == c.winner
@@ -67,7 +69,12 @@ end)
 
 check("estado inteiro (100 seeds)", function()
 	for seed = 1, 100 do
-		local battle = Core.Battle.new({ seed = seed, waveCount = 80 })
+		local battle = Core.Battle.new({
+			seed = seed,
+			simVersion = Core.SIM_VERSION,
+			wall = Core.defaultWall(),
+			wave = { count = 80 },
+		})
 		while not battle:Finished() do
 			battle:Step()
 			local ok = battle:CheckIntegers()
@@ -76,11 +83,27 @@ check("estado inteiro (100 seeds)", function()
 	end
 end)
 
-print(string.format("P0 acceptance: %d checagens, %d falhas", checks, #failures))
+check("loadout padrao 5x5/N=5", function()
+	local wall = Core.defaultWall()
+	assert(#wall.traps == 5, "loadout padrao != 5: " .. tostring(#wall.traps))
+	local seen = {}
+	for _, trap in ipairs(wall.traps) do
+		assert(
+			string.match(trap.cell, "^r[1-5]c[1-5]$") ~= nil,
+			"celula fora da grade: " .. trap.cell
+		)
+		assert(not seen[trap.cell], "celula repetida: " .. trap.cell)
+		seen[trap.cell] = true
+	end
+	local r = Core.Run(42)
+	assert(r.traps == 5, "resultado nao expos 5 ativas")
+end)
+
+print(string.format("P1 acceptance: %d checagens, %d falhas", checks, #failures))
 if #failures > 0 then
 	for _, f in ipairs(failures) do
 		print("  FALHOU: " .. f)
 	end
-	error("P0 acceptance quebrada")
+	error("P1 acceptance quebrada")
 end
-print("OK: P0 acceptance passou")
+print("OK: P1 acceptance passou")

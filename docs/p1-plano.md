@@ -4,6 +4,8 @@
 > dia: motor determinístico, schema v1 + wrapper ProfileStore, contrato de analytics e teste de
 > sessão nos Modos A (Mock) e B (DataStore real), 8/8 nas duas execuções.
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
+> **Execução (09/11/2026):** S1 e S2 fechadas; `simVersion = 2`, hash de referência
+> `2489780106` (seed 42). S3 é a próxima fatia; S4–S7 pendentes.
 
 ---
 
@@ -29,7 +31,7 @@ da S7 (contrato v1 já validado no CI). Sem número, a fase não fecha.
 
 Regras de sequência:
 
-- **S1 antes de tudo** — o legado ocupa `src/` e confunde a árvore; a tag preserva a referência.
+- **S1 antes de tudo** — o legado ocupava `src/` e confundia a árvore; a tag preserva a referência.
 - **S2 antes de S3–S6** — sem loadout não há o que colocar nem raid que use a muralha do jogador.
 - S7 pode nascer junto de S5 (o funil é o instrumento do critério de saída), mas não substitui S6.
 
@@ -42,9 +44,9 @@ US$ 0,005 · servidor autoritativo + replay por seed.
 
 ## 4. Riscos e armadilhas
 
-1. **O motor da P0 é o recorte do PoC** — `Battle.new` sorteia 1 armadilha por lane e ignora loadout.
-   Loadout por célula **muda a matemática**: `simVersion 2`, hash novo e spec na mesma mudança. Não
-   "ajustar" o hash antigo (`668061367`) nem os thresholds sem registro.
+1. **O motor da P0 era o recorte do PoC** — a S2 trocou por loadout por célula (5×5/N=5), com
+   `simVersion 2` e hash `2489780106`. Não "ajustar" o hash antigo (`668061367`) nem thresholds
+   sem registro; replay v1 é recusado.
 2. **Analytics fora do hash**: `battle_finished` é montado do `BattleResult` **depois** do hash;
    `sim_version` do evento acompanha o motor.
 3. **Idempotência de recompensa** por `battle_id` (chave do `BattleLog`); cliente nunca decide

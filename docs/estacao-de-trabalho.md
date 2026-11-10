@@ -63,7 +63,7 @@ Hardware: RTX 3060 Laptop 6 GB (Cycles CUDA), WSL 3.0.3, Ubuntu 26.04, ~868 GB l
 |---|---|
 | `.luaurc` | `languageMode = strict` para todo Luau |
 | `stylua.toml` | coluna 100, tabs, LF |
-| `.styluaignore` | mantém `src/` legado fora do formato |
+| `.styluaignore` | sem exceções; `vendor/` fica fora do gate (código de terceiro) |
 | `.vscode/settings.json` | Luau LSP + sourcemap + StyLua on save |
 | `scripts/env.sh` | PATH determinístico |
 | `scripts/doctor.sh` | auditoria da estação |
@@ -193,7 +193,7 @@ Se o push falhar com `refusing to allow a Personal Access Token to create or upd
 | Sintoma | Causa | Correção |
 |---|---|---|
 | `rojo: command not found` / `blender: command not found` | shell não-login não lê `.bashrc` | `source scripts/env.sh` |
-| `stylua --check` falha | arquivo recém-editado | `stylua sim` (ou `stylua .` se não for legado) |
+| `stylua --check` falha | arquivo recém-editado | `stylua sim src` (sem tocar em `vendor/`) |
 | Selene com dezenas de `parse_error` | Selene 0.32 não entende `+=`/`-=` do Luau | usar `luau-lsp analyze`; Selene fora do CI |
 | Blender 4.5: `libSM.so.6: cannot open shared object` | faltam libSM/libICE | repetir §3.4 (extrair debs + wrapper) |
 | EEVEE lento no WSL | WSLg renderiza por software | usar Cycles/Workbench headless, ou Blender no Windows |

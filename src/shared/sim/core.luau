@@ -1,5 +1,5 @@
 --!nonstrict
--- Nucleo deterministico da Muralha (v2).
+-- Nucleo deterministico da Muralha (matematica v2: grade 5x5, loadout por celula).
 -- Regras: zero float no estado, mul32/add32 em toda operacao 32-bit, 1200 ticks = 60s.
 -- Sem dependencia de API do Roblox: roda no Luau CLI e no servidor.
 
@@ -11,9 +11,14 @@ Core.MILLI = 1000
 Core.TICK_HZ = 20
 Core.MAX_TICKS = 1200
 Core.DEFAULT_POWER_PCT = 460
+-- Grade do MVP (Q2, 09/11/2026): 5x5, N=5 ativas, colocacao livre nas 25 celulas.
+Core.GRID_WIDTH = 5
+Core.GRID_HEIGHT = 5
+Core.ACTIVE_TRAP_LIMIT = 5
 -- Versao da matematica do motor. Muda SO quando o resultado muda; replay antigo
 -- nao paga recompensa. Metadado: nao entra no hash nem no estado.
-Core.SIM_VERSION = 1
+-- v2 (09/11/2026): loadout por celula e 5 lanes; o hash 668061367 foi aposentado.
+Core.SIM_VERSION = 2
 
 -- ---------------------------------------------------------------- aritmetica segura
 local function add32(a, b)
@@ -89,24 +94,130 @@ local TRAP_NAMES = { "archer", "cannon", "frost", "oil" }
 
 Core.UNIT = UNIT
 Core.TRAP = TRAP
+Core.TRAP_NAMES = TRAP_NAMES
 
 local TUNING = { powerPct = Core.DEFAULT_POWER_PCT, leakScalePct = 100 }
 Core.TUNING = TUNING
+
+-- Geometria da grade: a linha e a lane de caminhada; a coluna e a profundidade.
+-- c1 fica junto da muralha (x=2000) e c5 junto do spawn (x=8000).
+local COLUMN_X = { 2000, 3500, 5000, 6500, 8000 }
+local DEFAULT_WALL_TYPES = { "archer", "archer", "frost", "oil", "frost" }
+
+local function parseCell(cell)
+	if type(cell) ~= "string" then
+		return nil, nil
+	end
+	local rowText, colText = string.match(cell, "^r(%d+)c(%d+)$")
+	if rowText == nil or colText == nil then
+		return nil, nil
+	end
+	local row = tonumber(rowText)
+	local col = tonumber(colText)
+	if row < 1 or row > Core.GRID_HEIGHT or col < 1 or col > Core.GRID_WIDTH then
+		return nil, nil
+	end
+	return row, col
+end
+
+-- nivel 1 = dano base; cada nivel adicional soma 20% (teto 5).
+local function trapDamage(trap)
+	local def = TRAP[trap.type]
+	local levelPct = 100 + 20 * (trap.level - 1)
+	return math.floor(def.dmg * TUNING.powerPct * levelPct / 10000)
+end
+
+local function normalizeTraps(traps)
+	if traps == nil then
+		return {}
+	end
+	assert(type(traps) == "table", "wall.traps invalida")
+	local normalized = {}
+	local seen = {}
+	for index, trap in ipairs(traps) do
+		assert(type(trap) == "table", "wall.traps[" .. index .. "] invalida")
+		assert(
+			#normalized < Core.ACTIVE_TRAP_LIMIT,
+			"wall.traps acima de " .. tostring(Core.ACTIVE_TRAP_LIMIT) .. " ativas"
+		)
+		local row, col = parseCell(trap.cell)
+		assert(
+			row ~= nil,
+			"wall.traps[" .. index .. "].cell invalida (" .. tostring(trap.cell) .. ")"
+		)
+		assert(not seen[trap.cell], "wall.traps: celula repetida (" .. tostring(trap.cell) .. ")")
+		seen[trap.cell] = true
+		assert(
+			TRAP[trap.type] ~= nil,
+			"wall.traps[" .. index .. "].type invalido (" .. tostring(trap.type) .. ")"
+		)
+		local level = trap.level or 1
+		assert(
+			type(level) == "number" and level % 1 == 0 and level >= 1 and level <= 5,
+			"wall.traps[" .. index .. "].level fora de [1,5]"
+		)
+		normalized[#normalized + 1] = {
+			type = trap.type,
+			level = level,
+			cell = trap.cell,
+			row = row,
+			col = col,
+			x = COLUMN_X[col],
+			cd = 0,
+		}
+	end
+	return normalized
+end
 
 -- ---------------------------------------------------------------- batalha
 local Battle = {}
 Battle.__index = Battle
 
 function Battle.new(spec)
+	assert(type(spec) == "table", "Battle.new: spec ausente")
+	assert(type(spec.seed) == "number", "Battle.new: seed ausente")
+	assert(spec.simVersion ~= nil, "Battle.new: simVersion ausente")
+	local simVersion = spec.simVersion
+	if simVersion ~= Core.SIM_VERSION then
+		error(
+			string.format(
+				"Battle.new: simVersion %s != %d (replay antigo nao roda no motor novo)",
+				tostring(simVersion),
+				Core.SIM_VERSION
+			),
+			2
+		)
+	end
+	assert(spec.wall ~= nil, "Battle.new: wall ausente")
+	local wall = spec.wall
+	assert(type(wall) == "table", "Battle.new: wall invalida")
+	assert(spec.wave ~= nil, "Battle.new: wave ausente")
+	local wave = spec.wave
+	assert(type(wave) == "table", "Battle.new: wave invalida")
+
 	local self = setmetatable({}, Battle)
+	self.simVersion = simVersion
 	self.rng = RNG.new(spec.seed)
 	self.seed = spec.seed
-	self.wallHp = (spec.wallHp or 500) * MILLI
+	local hp = wall.hp or 500
+	assert(type(hp) == "number" and hp > 0 and hp % 1 == 0, "Battle.new: wall.hp invalido")
+	local spawnEvery = wave.spawnEveryTicks or 14
+	assert(
+		type(spawnEvery) == "number" and spawnEvery % 1 == 0 and spawnEvery >= 1,
+		"Battle.new: wave.spawnEveryTicks invalido"
+	)
+	local count = wave.count or 70
+	assert(
+		type(count) == "number" and count % 1 == 0 and count >= 0,
+		"Battle.new: wave.count invalido"
+	)
+
+	self.wallHp = hp * MILLI
 	self.wallMax = self.wallHp
 	self.tick = 0
-	self.spawnEvery = spec.spawnEveryTicks or 14
+	self.spawnEvery = spawnEvery
 	self.spawnTimer = 0
-	self.toSpawn = spec.waveCount or 70
+	self.toSpawn = count
 	self.spawned = 0
 	self.killed = 0
 	self.leaked = 0
@@ -120,16 +231,13 @@ function Battle.new(spec)
 	self.uSlowUntil = {}
 	self.uLeak = {}
 
-	self.traps = {}
-	for lane = 1, 5 do
-		self.traps[lane] = { type = TRAP_NAMES[self.rng:int(#TRAP_NAMES)], cd = 0, x = 4000 }
-	end
+	self.traps = normalizeTraps(wall.traps)
 
 	return self
 end
 
 function Battle:spawnUnit()
-	local lane = self.rng:int(5)
+	local lane = self.rng:int(Core.GRID_HEIGHT)
 	local tname = UNIT_NAMES[self.rng:int(#UNIT_NAMES)]
 	local variancePct = 90 + self.rng:int(21)
 	local def = UNIT[tname]
@@ -143,12 +251,11 @@ function Battle:spawnUnit()
 	self.uLeak[i] = def.leak
 end
 
-function Battle:applyTrap(lane)
-	local trap = self.traps[lane]
+function Battle:applyTrap(trap)
 	local def = TRAP[trap.type]
 	local best, bestX = nil, math.huge
 	for i = 1, self.uCount do
-		if self.uHp[i] > 0 and self.uLane[i] == lane then
+		if self.uHp[i] > 0 and self.uLane[i] == trap.row then
 			local dx = self.uX[i] - trap.x
 			if dx > 0 and dx <= def.range and self.uX[i] < bestX then
 				best, bestX = i, self.uX[i]
@@ -158,7 +265,7 @@ function Battle:applyTrap(lane)
 	if not best then
 		return
 	end
-	self.uHp[best] -= math.floor(def.dmg * TUNING.powerPct / 100)
+	self.uHp[best] -= trapDamage(trap)
 	if def.slowPct then
 		self.uSlowUntil[best] = self.tick + def.slowTicks
 	end
@@ -180,12 +287,11 @@ function Battle:Step()
 		end
 	end
 
-	for lane = 1, 5 do
-		local trap = self.traps[lane]
+	for _, trap in ipairs(self.traps) do
 		trap.cd -= 1
 		if trap.cd <= 0 then
 			trap.cd = TRAP[trap.type].cd
-			self:applyTrap(lane)
+			self:applyTrap(trap)
 		end
 	end
 
@@ -224,8 +330,9 @@ function Battle:Result()
 		killed = self.killed,
 		leaked = self.leaked,
 		spawned = self.spawned,
+		traps = #self.traps,
 		seed = self.seed,
-		simVersion = Core.SIM_VERSION,
+		simVersion = self.simVersion,
 		hash = self.hash,
 	}
 end
@@ -245,9 +352,9 @@ function Battle:CheckIntegers()
 			end
 		end
 	end
-	for lane = 1, 5 do
-		if self.traps[lane].cd ~= math.floor(self.traps[lane].cd) then
-			return false, -lane
+	for index = 1, #self.traps do
+		if self.traps[index].cd ~= math.floor(self.traps[index].cd) then
+			return false, -index
 		end
 	end
 	return true, 0
@@ -255,9 +362,33 @@ end
 
 Core.Battle = Battle
 
+-- Loadout padrao dos harnesses: uma armadilha por lane na coluna central (5 ativas).
+function Core.defaultWall()
+	local traps = {}
+	for row = 1, Core.GRID_HEIGHT do
+		traps[#traps + 1] = {
+			cell = string.format("r%dc3", row),
+			type = DEFAULT_WALL_TYPES[row],
+			level = 1,
+		}
+	end
+	return { hp = 500, traps = traps }
+end
+
+-- Atalho de loadout padrao para os harnesses/testes. O jogo usa Battle.new com a parede
+-- do jogador (a S3 liga o perfil a este contrato).
 function Core.Run(seed, waveCount, wallHp)
-	local b = Battle.new({ seed = seed, waveCount = waveCount or 70, wallHp = wallHp or 500 })
-	return b:Run()
+	local wall = Core.defaultWall()
+	if wallHp ~= nil then
+		wall.hp = wallHp
+	end
+	local battle = Battle.new({
+		seed = seed,
+		simVersion = Core.SIM_VERSION,
+		wall = wall,
+		wave = { count = waveCount or 70 },
+	})
+	return battle:Run()
 end
 
 return Core

@@ -5,6 +5,7 @@
 > registro no [GDD](gdd-muralha.md) (decisão 1).
 > **Q1 fechada em 09/11/2026:** apagar o legado de moedas na P1, preservando `src/shared/sim/`;
 > tag `legacy-coins` + stub de 10 linhas + `rojo build` no CI; registro em `.context/REJEITADOS.md`.
+> **Executada na S1 (09/11/2026):** tag anotada em `b07b4c5`, `src/` sem o protótipo, `check.sh` verde.
 > O experimento da §5 vira o fallback de playtest, não um pré-requisito.
 >
 > Níveis: **A** = oficial/primário (Roblox, dados de plataforma) · **B** = comunidade estruturada

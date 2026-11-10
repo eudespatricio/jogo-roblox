@@ -1,5 +1,5 @@
 --!nonstrict
--- Invariantes executaveis da Muralha (fase 3 do context-recovery).
+-- Invariantes executaveis da Muralha (matematica v2: grade 5x5, N=5, colocacao livre).
 -- Roda no Luau CLI e falha o processo se qualquer regra de negocio for violada:
 --   luau sim/invariants.luau
 local Core = require("../src/shared/sim/core")
@@ -72,7 +72,12 @@ end)
 -- I4: estado 100% inteiro durante a batalha
 check("I4 estado inteiro", function()
 	for seed = 1, 20 do
-		local battle = Core.Battle.new({ seed = seed, waveCount = 80 })
+		local battle = Core.Battle.new({
+			seed = seed,
+			simVersion = Core.SIM_VERSION,
+			wall = Core.defaultWall(),
+			wave = { count = 80 },
+		})
 		while not battle:Finished() do
 			battle:Step()
 			local ok = battle:CheckIntegers()
@@ -89,6 +94,8 @@ check("I5 resultado consistente", function()
 		assert(r.wallHp >= 0, "wallHp negativo")
 		assert(r.ticks > 0 and r.ticks <= Core.MAX_TICKS, "ticks fora do cap")
 		assert(r.spawned <= 70, "spawnou mais que a onda")
+		assert(r.traps == 5, "loadout padrao deveria ter 5 ativas")
+		assert(r.simVersion == 2, "simVersion deveria ser 2")
 		assert(r.hash == math.floor(r.hash), "hash fracionario")
 	end
 end)
@@ -134,6 +141,74 @@ check("I9 sem NaN", function()
 		assert(r.wallHp == r.wallHp, "NaN em wallHp")
 		assert(r.ticks > 0, "ticks invalido")
 	end
+end)
+
+-- I10: grade 5x5, N=5 e colocacao livre (5 armadilhas na mesma lane)
+check("I10 loadout 5x5 livre", function()
+	assert(Core.GRID_WIDTH == 5 and Core.GRID_HEIGHT == 5, "grade != 5x5")
+	assert(Core.ACTIVE_TRAP_LIMIT == 5, "N != 5")
+	local traps = {}
+	for col = 1, Core.GRID_WIDTH do
+		traps[#traps + 1] = { cell = "r3c" .. col, type = "archer", level = 1 }
+	end
+	local wall = { hp = 500, traps = traps }
+	local function runBattle()
+		return Core.Battle
+			.new({
+				seed = 42,
+				simVersion = Core.SIM_VERSION,
+				wall = wall,
+				wave = { count = 70 },
+			})
+			:Run()
+	end
+	local a = runBattle()
+	local b = runBattle()
+	assert(a.hash == b.hash, "loadout livre nao reproduziu o hash")
+	assert(a.traps == 5, "loadout livre perdeu armadilhas: " .. tostring(a.traps))
+	assert(a.ticks > 0 and a.ticks <= Core.MAX_TICKS, "ticks fora do cap")
+end)
+
+-- I11: loadout invalido e recusado (celula, N, tipo, nivel e replay antigo)
+check("I11 loadout invalido e recusado", function()
+	local function rejects(wall, simVersion)
+		local ok = pcall(function()
+			Core.Battle.new({
+				seed = 1,
+				simVersion = simVersion or Core.SIM_VERSION,
+				wall = wall,
+				wave = { count = 70 },
+			})
+		end)
+		assert(not ok, "aceitou loadout invalido")
+	end
+
+	rejects({ traps = { { cell = "r6c1", type = "archer" } } })
+	rejects({
+		traps = {
+			{ cell = "r1c1", type = "archer" },
+			{ cell = "r1c1", type = "archer" },
+		},
+	})
+	rejects({ traps = { { cell = "r1c6", type = "archer" } } })
+	rejects({ traps = { { cell = "r1c1", type = "wizard" } } })
+	rejects({ traps = { { cell = "r1c1", type = "archer", level = 6 } } })
+	rejects({ traps = {} }, 1)
+
+	local six = { traps = {} }
+	for col = 1, 5 do
+		six.traps[#six.traps + 1] = { cell = "r1c" .. col, type = "archer" }
+	end
+	six.traps[#six.traps + 1] = { cell = "r2c1", type = "archer" }
+	rejects(six)
+
+	local empty = Core.Battle.new({
+		seed = 1,
+		simVersion = Core.SIM_VERSION,
+		wall = { traps = {} },
+		wave = { count = 70 },
+	})
+	assert(empty:Run().traps == 0, "parede sem armadilhas deveria rodar")
 end)
 
 print(string.format("invariantes: %d checagens, %d falhas", checks, #failures))

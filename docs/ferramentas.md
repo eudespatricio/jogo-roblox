@@ -97,7 +97,7 @@ O `sudo` do WSL pede senha: sem ele, `git-lfs` e `ffmpeg` entram como binários 
 | Passo | Entrega | Tempo |
 |---|---|---|
 | 1 | `scripts/env.sh` (PATH determinístico: `~/.rokit/bin`, `~/.local/bin`) e `scripts/check.sh` | 1 h |
-| 2 | `stylua.toml` + `selene.toml`; `stylua sim` uma vez (commit só de estilo; `src/` legado fica fora) | 2 h |
+| 2 | `stylua.toml` + `selene.toml`; `stylua sim src` (commit só de estilo; `vendor/` fica fora) | 2 h |
 | 3 | `.github/workflows/ci.yml`: build + StyLua + Selene + invariantes + tetos | 2 h |
 | 4 | `luau-lsp` no `rokit.toml`, `sourcemap.json` no check, `.luaurc` strict, `.vscode/settings.json` | 1 h |
 | 5 | `git-lfs` no WSL + `.gitattributes` para binários + revisar `.gitignore` (hoje ignora `*.rbxm`) | 1 h |
@@ -224,9 +224,8 @@ PATH. Shell não-login não encontrava `rojo`/`blender`; isso era bug de reprodu
 
 ### 7.3 Tipos e lint
 
-**StyLua está resolvido.** `stylua.toml` fixa coluna 100 e tabs; `stylua sim` formatou os três
-arquivos com drift (`sim/audit-*.luau`, `sim/poc.luau`) e `stylua --check sim` passa. O `src/`
-legado fica fora por `.styluaignore` até a P1.
+**StyLua está resolvido.** `stylua.toml` fixa coluna 100 e tabs; o gate formata `sim` e `src`
+(`stylua --check sim src`) e o `vendor/` fica fora por não ser código nosso.
 
 **Selene está bloqueado, não é falta de config.** O `selene 0.32.0` (release de 01/10/2026) não
 parseia atribuição composta do Luau: `total += 1` e `s -= ...` viram 82 parse errors em `sim/`.

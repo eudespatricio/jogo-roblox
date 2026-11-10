@@ -186,8 +186,8 @@ nada de texto livre; `PolicyService`/idade só como booleano.
 | `src/shared/analytics/AnalyticsTypes.luau` | envelope, catálogo tipado, enums, limites, anti-PII, `newEvent`/batalha | **feito** |
 | `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII, integração com o motor | **feito** |
 | `src/server/analytics/AnalyticsService.luau` | `emit`, sinks, lote, rate limit, idempotência | **P1** (não entra na P0) |
-| `src/shared/sim/core.luau` | matemática intacta; `BattleResult` ganhou `seed` e `simVersion` (metadados, hash igual) | **feito** |
-| CI | `check.sh` roda o contrato junto dos invariantes; hash 668061367 continua obrigatório | **feito** |
+| `src/shared/sim/core.luau` | motor v2 (5×5/N=5); `BattleResult` carrega `seed`, `simVersion` e `hash` | **feito** |
+| CI | `check.sh` roda o contrato junto dos invariantes; hash `2489780106` e `sim_version 2` obrigatórios | **feito** |
 
 Teste de aceitação: 1.000 batalhas com hash estável **e** todos os eventos de batalha validados;
 nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo.

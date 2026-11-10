@@ -5,10 +5,11 @@
 Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
 outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
 
-> **Status: P0 fechada; P1 autorizada (09/11/2026).** Motor determinístico, schema v1 + wrapper
-> ProfileStore, contrato de analytics com gates no CI e teste de sessão aprovado nos Modos A
-> (Mock) e B (DataStore real), 8/8 ([roteiro](docs/teste-sessao-studio.md)). A P1 começa
-> apagando o protótipo de moedas (tag `legacy-coins`) e segue o [plano da P1](docs/p1-plano.md).
+> **Status: P1 em execução (09/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
+> tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
+> determinístico com grade **5×5**, **N=5** ativas e colocação livre; `simVersion 2` e hash de
+> referência `2489780106`. Próxima fatia: S3 (muralha/economia). O teste de produto de 3 semanas
+> roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
 
@@ -33,23 +34,27 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 
 ```
 sim/                     harnesses do motor (Luau puro, roda sem Roblox)
-  poc.luau               benchmark e demo
-  invariants.luau        oráculo executável (10 checagens)
-  acceptance.luau        P0: 1.000 seeds × 3
+  poc.luau               benchmark e demo do motor v2
+  invariants.luau        oráculo executável (12 checagens)
+  acceptance.luau        P1: 1.000 seeds × 3 (hash 2489780106)
   profile-contract.luau  contrato do schema v1 e da sessão do perfil
   analytics-contract.luau contrato de analytics v1
   fixtures/              fixture da migração 0→1 do perfil
-src/shared/sim/core.luau motor de produção (RNG, mul32/add32, Battle)
+src/shared/sim/core.luau motor v2 (RNG, mul32/add32, Battle 5×5/N=5)
 src/shared/data/         schema v1 do perfil (template, migração, validação)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado
 src/server/ProfileBoot.server.luau  ligação com Players + self-test no Studio
-src/{client,server,shared}/  protótipo legado de moedas — NÃO é o jogo
+src/server/Main.server.luau  stub de entrada do servidor (S1)
+src/world/               Baseplate/SpawnLocation da cena
 vendor/ProfileStore.luau ProfileStore oficial (Apache-2.0, não editar)
 docs/                    GDD, spec, pesquisas, economia, roteiro do Studio
 .context/                contexto residente (teto de linhas)
 skills/context-recovery/ protocolo de auditoria + scanner + templates
 ```
+
+O legado de moedas (`CoinService`, `DataService`, `Config`, `Hud`) **não existe mais**; está
+preservado na tag anotada `legacy-coins` (commit `b07b4c5`).
 
 ## Comandos
 
@@ -58,10 +63,11 @@ source scripts/env.sh
 bash scripts/doctor.sh                 # estação completa
 bash scripts/check.sh                  # gate: build, StyLua, luau-lsp, invariantes, contratos
 
-luau sim/invariants.luau               # oráculo do motor (10 checagens)
-luau sim/acceptance.luau               # P0: 1.000 seeds × 3
+luau sim/invariants.luau               # oráculo do motor (12 checagens)
+luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v2)
 luau sim/profile-contract.luau         # schema v1 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1
+luau sim/poc.luau                      # benchmark e curva de balanço
 
 rojo serve                             # Studio: localhost:34872 (WSL)
 ```
@@ -84,8 +90,8 @@ git remote add origin git@github.com:<usuario>/jogo-roblox.git
 git push -u origin main
 ```
 
-Antes do push: `git status` limpo, sem `.tools/` (já ignorado) e sem segredos (varredura feita em
-09/11/2026). O workflow de CI existe em `.github/workflows/ci.yml` e roda `scripts/check.sh`.
+Antes do push: `git status` limpo, sem `.tools/` (já ignorado) e sem segredos. O workflow de CI
+existe em `.github/workflows/ci.yml` e roda `scripts/check.sh`.
 
 ## Rodar no WSL
 
@@ -96,14 +102,16 @@ cd ~/jogo-roblox
 bash scripts/setup-wsl.sh
 ```
 
-O script instala Rokit + ferramentas, valida os 10 invariantes, checa os tetos do contexto e imprime
-o IP do WSL. O gate completo (build, StyLua, luau-lsp, invariantes, benchmark e contexto) é:
+O script instala Rokit + ferramentas, valida os invariantes, checa os tetos do contexto e imprime o
+IP do WSL. O gate completo (build, StyLua, luau-lsp, invariantes, acceptance, contratos e contexto) é:
 
 ```bash
 bash scripts/check.sh
-``` Para o Studio falar com o Rojo: no WSL rode `rojo serve` (escuta `127.0.0.1:34872`) e
-no plugin conecte em `localhost:34872`. **Não use `--address 0.0.0.0`** — o encaminhamento de
-localhost do WSL só vale para loopback; firewall não é necessário nesse caminho.
+```
+
+Para o Studio falar com o Rojo: no WSL rode `rojo serve` (escuta `127.0.0.1:34872`) e no plugin
+conecte em `localhost:34872`. **Não use `--address 0.0.0.0`** — o encaminhamento de localhost do WSL
+só vale para loopback; firewall não é necessário nesse caminho.
 
 ## Regras que não se negociam
 

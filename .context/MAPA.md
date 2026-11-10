@@ -16,26 +16,26 @@
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
 | `docs/pesquisa-grade-e-prototipo.md` | evidência e decisão de Q1/Q2 (fechadas) | histórico |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita | **antes de decidir preço/loja** |
-| `docs/decisao-monetizacao.md` | premissas base × topo, gate bruto vs líquido, correção do modelo | **antes de decidir preço/gate** |
-| `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas antes da P1 | histórico da decisão |
-| `docs/ferramentas.md` | auditoria do toolchain, pipeline Blender→Studio e orçamentos | **antes de produzir asset/código** |
-| `docs/estacao-de-trabalho.md` | manual operacional: inventário, doctor, reconstrução e troubleshooting | **ao montar/trocar de máquina** |
+| `docs/decisao-monetizacao.md` | premissas base × topo, gate bruto vs líquido | **antes de decidir preço/gate** |
+| `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas | histórico da decisão |
+| `docs/ferramentas.md` | auditoria do toolchain, pipeline Blender→Studio | **antes de produzir asset/código** |
+| `docs/estacao-de-trabalho.md` | manual operacional: inventário, doctor, reconstrução | **ao montar/trocar de máquina** |
 | `docs/referencias-tower-defense.md` | jogos e vídeos de referência | antes de decidir game feel |
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |
-| `src/shared/sim/core.luau` | motor de produção: RNG, mul32, Battle | qualquer mudança de simulação |
-| `sim/poc.luau` · `sim/acceptance.luau` | benchmark/demo e aceitação P0 (1.000 seeds × 3) | medir performance/validar hash |
-| `sim/invariants.luau` | oráculo executável (10 checagens) | **sempre após editar core** |
+| `src/shared/sim/core.luau` | motor v2: grade 5×5, N=5, armadilha por célula, RNG/hash | qualquer mudança de simulação |
+| `sim/poc.luau` · `sim/acceptance.luau` | benchmark/demo e acceptance P1 (1.000 seeds × 3) | medir performance/validar hash |
+| `sim/invariants.luau` | oráculo executável (12 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
 | `src/shared/data/ProfileSchema.luau` · `sim/profile-contract.luau` | schema v1: template, validação, migração 0→1, JSON-safe | mexer em dado de jogador |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
-| `src/**` | protótipo legado de moedas + `src/shared/sim/` (motor) + `src/shared/data\|analytics` (P0) | legado: apagar na P1 (Q1); resto: produção |
+| `src/` | produção: `shared/{sim,data,analytics}`, `server/{data,ProfileBoot,Main stub}`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
-| `default.project.json` | mapeamento Rojo (legado + vendor + sim) | build do protótipo |
+| `default.project.json` | mapeamento Rojo (produção + vendor + world) | build do lugar |
 | `scripts/` | env.sh, check.sh, doctor.sh, install-tools.sh | rodar/validar ambiente |
 | `.github/workflows/ci.yml` | CI: check + artefato do place | após push/PR |
 | `art/` | calibração Blender + pipeline 3D | produzir asset |
@@ -45,13 +45,13 @@
 ## Armadilhas conhecidas
 
 1. **Não edite `src/shared/sim/core.luau` sem rodar `sim/invariants.luau` e `sim/acceptance.luau`.**
-   Hash e balanço quebram silencioso.
-2. **Mudou a matemática? Suba `simVersion`.** Replay antigo não pode pagar recompensa.
-3. **`src/**` é legado, exceto `src/shared/sim/`.** Não use `CoinService` como base do jogo novo.
+2. **Mudou a matemática? Suba `simVersion`.** Atual = **2**; replay v1 não roda no motor v2.
+3. **`src/` é produção**; o legado de moedas foi apagado na S1 e vive na tag anotada `legacy-coins`.
 4. **Doc mais velho que código mente.** Rode a radiografia antes de confiar em README/tese.
 5. **`.tools/` não é versionado.** Reinstale com `rokit install` se sumir.
 6. **`bit32` só aceita `[0, 2^32)`.** Use `add32`/`mul32`, nunca `band` em double grande.
-7. **O PoC não é a arquitetura.** Ele usa 1 armadilha por lane; produção é 5×5 com N=5 ativas e colocação livre.
+7. **Célula é `rXcY`: linha = lane; coluna = profundidade (c1 muralha, c5 spawn).** N=5 ativas no
+   total; colocação livre permite várias armadilhas na mesma lane.
 8. **Binários de arte são LFS.** `git add` sem `source scripts/env.sh` falha (git-lfs not found).
 9. **Selene 0.32 não entende `+=`.** Use `luau-lsp analyze`; Selene fora do CI.
 10. **ProfileStore é server-only e `StartSessionAsync` pode devolver nil.** O wrapper trata; não

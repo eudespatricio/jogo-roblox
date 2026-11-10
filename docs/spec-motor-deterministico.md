@@ -24,14 +24,20 @@ Consequências:
 Módulo puro em `src/shared/sim/`, **sem nenhuma API do Roblox** (roda no Luau CLI nos testes).
 
 ```lua
-local Battle = require(Shared.sim.Battle)
+local Core = require(Shared.sim.core)
 
-local battle = Battle.new({
+local battle = Core.Battle.new({
     seed = 123456789,          -- uint32 derivado do battleId
-    simVersion = 1,            -- muda quando a matemática muda
-    wall = wallSpec,           -- { hp, traps = { {cell, type, level}, ... } }
-    wave = waveSpec,           -- { units = { {type, level}, ... }, spawnEvery = 0.7 }
-    modifiers = { ... },       -- comandantes, clima, evento
+    simVersion = 2,            -- v2: 5×5/N=5; replay v1 é recusado
+    wall = {
+        hp = 500,
+        traps = {
+            { cell = "r1c3", type = "archer", level = 1 },
+            { cell = "r2c3", type = "cannon", level = 1 },
+            -- até 5 ativas (N=5); qualquer célula r1c1..r5c5
+        },
+    },
+    wave = { count = 70, spawnEveryTicks = 14 }, -- 5 lanes
 })
 
 while not battle:Finished() do
@@ -39,9 +45,9 @@ while not battle:Finished() do
 end
 
 local result = battle:Result()
--- { winner = "defender"|"attacker", wallHp, ticks, killed, leaked, spawned,
+-- { winner = "defender"|"attacker", wallHp, ticks, killed, leaked, spawned, traps,
 --   seed, simVersion, hash }
--- `seed` e `simVersion` sao metadados: nao entram no hash nem no estado (P0, 09/11/2026).
+-- `seed`, `simVersion` e `traps` sao metadados: nao entram no hash.
 ```
 
 Regras:
@@ -107,13 +113,15 @@ Uma única stream, consumida em ordem fixa. Qualquer novo `nextU32()` muda o res
 
 ```
 unitType[i]   unitX[i]   unitY[i]   unitHp[i]   unitLane[i]   unitTarget[i]
-trapType[t]   trapCell[t] trapCd[t]  trapHp[t]
-wallHp        gold         t           tick
+trapType[t]   trapCell[t] trapX[t]  trapCd[t]   trapLevel[t]
+wallHp        gold         tick
 ```
 
 - unidades: até **300** por batalha;
-- lanes: **5 colunas × 5 linhas** no MVP (expansível para 7×5 no nível 5; `gridWidth` no save);
-- alvo: busca no mesmo corredor, primeiro à frente dentro do alcance (O(1) por trap);
+- grade **5×5** (expansível para 7×5 no nível 5; `gridWidth` no save); **linha = lane** de
+  caminhada e **coluna = profundidade** (c1 junto da muralha, c5 junto do spawn);
+- **N=5 ativas** e colocação livre nas 25 células; várias armadilhas na mesma lane;
+- alvo: busca na mesma lane, primeiro à frente dentro do alcance (O(1) por trap);
 - colisão: não existe — unidades andam em linha reta por lane (é o que torna barato).
 
 ---
@@ -243,16 +251,16 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 ## 10. Testes (headless, no CI)
 
 1. **Determinismo:** 1.000 seeds, 3 execuções cada → hash idêntico.
-2. **Balanceamento:** distribuição de vitória entre 30–70% para loadouts equivalentes.
+2. **Balanceamento:** aceitação do loadout de referência entre 30–70%; o invariante guarda 25–90%.
 3. **Performance:** 1.000 batalhas em < 5s no Luau CLI.
 4. **Fuzz:** placements aleatórios não quebram (sem NaN, sem loop infinito).
 5. **Regressão de versão:** `simVersion` antiga não é aceita em reward.
-6. **Aceitação P0:** `sim/acceptance.luau` roda 1.000 seeds × 3, exige hash/resultado idênticos e
-   1.000 hashes distintos; está no `check.sh` e no CI.
+6. **Aceitação P1:** `sim/acceptance.luau` roda 1.000 seeds × 3, exige hash/resultado idênticos
+   (referência `2489780106`, `simVersion 2`) e 1.000 hashes distintos; está no `check.sh` e no CI.
 7. **Contrato de perfil:** `sim/profile-contract.luau` — schema v1, migração 0→1 com fixture,
    `StartSessionAsync` nil, `EndSession` no leave e recarga sem duplicar (store injetado).
 8. **Contrato de analytics:** `sim/analytics-contract.luau` — envelope/catálogo/limites/PII e
-   prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`.
+   prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`; usa `sim_version 2`.
 
 ---
 
@@ -285,11 +293,11 @@ tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 >
 > **Port P0 (09/11/2026):** o motor de produção mora em [`../src/shared/sim/core.luau`](../src/shared/sim/core.luau);
 > `sim/poc.luau`, `sim/invariants.luau` e `sim/acceptance.luau` são harnesses. O hash `668061367`
-> foi preservado.
+> foi preservado na P0 e **aposentado na S2**; a matemática atual está na §15.
 
-| Teste | Resultado (motor v2, inteiro) |
+| Teste | Resultado (motor da P0, aritmética inteira) |
 |---|---|
-| Determinismo (seed 42, 3 execuções) | hash `668061367` idêntico nas três |
+| Determinismo v1 (seed 42, 3 execuções) | hash `668061367` idêntico nas três (histórico) |
 | 500 seeds | 500 hashes distintos, 64,8% de vitória do defensor |
 | Performance | **1,28 ms por batalha** → 782 batalhas/s |
 | Invariantes inteiros | **todo o estado é inteiro** (nenhum fracionário em 100 batalhas) |
@@ -327,7 +335,7 @@ diferente", é (a) perda de bits baixos acima de 2^53, tornando o hash falso, e 
 real é **contração FMA** em expressões `x -= speed * dt`, que pode diferir entre o binário do
 servidor e o do celular. Todos os três desaparecem com aritmética inteira.
 
-### Correções aplicadas (v2)
+### Correções aplicadas (v2 aritmética, motor v1)
 
 1. `mul32` e `add32` em toda operação 32-bit (hash, seed, soma do xorshift).
 2. Estado 100% inteiro: HP, dano e posição em milésimos; cooldown e tempo em ticks.
@@ -346,7 +354,7 @@ servidor e o do celular. Todos os três desaparecem com aritmética inteira.
 |---|---|
 | 4 vetores conhecidos (0xFFFFFFFF², 2^31×2, 1×16777619, seed×42) | idênticos à referência exata |
 | 200.000 pares aleatórios vs. referência de limbs de 8 bits | **0 divergências** nas duas versões |
-| Hash da seed 42 antes/depois do ajuste | **668061367 em ambos** |
+| Hash da seed 42 antes/depois do ajuste (motor v1) | **668061367 em ambos** |
 
 Ou seja: o ajuste **não corrigiu um resultado errado** — corrigiu uma violação da própria regra de
 faixa, que poderia divergir em outra arquitetura. É endurecimento, não bugfix. Registrado assim para
@@ -360,7 +368,7 @@ não inflar o histórico com um "bug" que não existiu.
 
 | Item | Regra |
 |---|---|
-| store | `MuralhaProfile_v1` — separado do `PlayerData_v1` do protótipo de moedas (morre na P1) |
+| store | `MuralhaProfile_v1` — separado do `PlayerData_v1` do legado, apagado na S1 |
 | chave | `User_{UserId}`: 1 chave por jogador, nunca display name |
 | schema | `schemaVersion = 1`; `wall` (`gridWidth` 5–7, `activeTrapLimit` 1–25, `cells` `rXcY`), `gold`, `league`, `cosmetics`, `stats` |
 | whitelist | todo load passa por `sanitizeV1`: campo desconhecido, PII e valor fora de faixa **não** são persistidos |
@@ -377,4 +385,29 @@ no `BindToClose` (o lock só é liberado depois do save — reabrir sessão exig
 **Analytics** — `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`:
 envelope e 31 eventos da [taxonomia](taxonomia-analytics.md) validados no CI (obrigatoriedade,
 enum, limites, UUID/hash de 32 hex, anti-PII). Mudar o catálogo exige atualizar fixture e contrato
-na mesma mudança. `simVersion` segue **1**: esta janela não mudou matemática.
+na mesma mudança. Na P0 `simVersion` era **1**; a S2 subiu para **2** com o loadout 5×5/N=5 (§15).
+
+---
+
+## 15. Matemática v2 — loadout 5×5/N=5 (S2, 09/11/2026)
+
+**Contrato novo:** `Battle.new({ seed, simVersion, wall, wave })`; `simVersion` é obrigatório e
+qualquer valor diferente de **2** é recusado (replay v1 não paga recompensa). `wall.traps` é uma lista
+de até **5** entradas `{ cell, type, level }`, com `cell = "rXcY"` e `X, Y` em `1..5`; a **linha é a
+lane** e a **coluna é a profundidade** (c1 junto da muralha, c5 junto do spawn). A colocação é livre:
+várias armadilhas podem ficar na mesma lane. O `level` fica em 1..5; o nível 1 usa o dano base e cada
+nível adicional soma 20%. `Core.defaultWall()` e `Core.Run(seed)` são o atalho de loadout de
+referência (5 ativas na coluna 3) para os harnesses.
+
+**Números re-ancorados:**
+
+| Métrica | Valor |
+|---|---|
+| `simVersion` | **2** |
+| hash de referência (seed 42) | **2489780106** |
+| acceptance | 1.000 seeds × 3 · 1.000 hashes distintos · **68,7%** defensor · ~1,4 ms/batalha |
+| invariantes | **12/12** (inclui loadout livre e recusa de loadout inválido) |
+| contrato de analytics | hash novo + `sim_version 2`; 16/16 |
+
+O hash `668061367` da v1 está **aposentado** e não deve ser reutilizado. `sim/poc.luau` imprime a
+curva da v2; `sim/acceptance.luau` ancora o hash e a faixa de balanceamento.

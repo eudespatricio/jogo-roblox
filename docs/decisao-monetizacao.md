@@ -90,7 +90,7 @@ US$ 0,02 bruto e torna explícito o que a revisão já dizia: o plano exige mone
   passa a “topo”.
 - [Pesquisa de monetização](pesquisa-monetizacao.md): nota de decisão e §7 atualizada.
 - `ProfileStore`: vendorizado em `vendor/ProfileStore.luau` (Apache-2.0, commit `45c9847`), fora do
-  `src/**` legado; wrapper e schema v1 entregues na P0 (`src/server/data/`, `src/shared/data/`).
+  `src/`; wrapper e schema v1 entregues na P0 (`src/server/data/`, `src/shared/data/`).
 
 **O que não mudou:** preços do GDD, proibições de loot box/venda de poder, orçamento do teste de
 3 semanas e a decisão de não iniciar P0/P1 sem autorização.

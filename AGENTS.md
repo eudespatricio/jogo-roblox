@@ -11,9 +11,8 @@ Leia nesta ordem, antes de qualquer ação:
 
 - **P2+ não começa sem autorização explícita do diretor.** A P0 fechou e a P1 foi autorizada em
   09/11/2026; o plano da P1 está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
-- **`src/**` é legado** (protótipo de moedas), exceto o que é **produção**: `src/shared/sim/`
-  (motor), `src/shared/{data,analytics}/`, `src/server/data/` e `src/server/ProfileBoot.server.luau`.
-  Não use o legado como base do jogo novo; a Q1 (S1 da P1) apaga o legado com a tag `legacy-coins`.
+- **`src/` é produção.** O legado de moedas foi apagado na S1 (09/11/2026) e está preservado na
+  tag anotada `legacy-coins` (commit `b07b4c5`). Não ressuscite `CoinService`/`DataService`/`Config`.
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
   Se quebrar, conserte antes de seguir.
 - Mudou a matemática da simulação? Suba `simVersion` e registre em `docs/spec-motor-deterministico.md`.
@@ -27,8 +26,8 @@ source scripts/env.sh
 bash scripts/doctor.sh                  # estação completa
 bash scripts/check.sh                   # gate: build, StyLua, luau-lsp, invariantes, contratos, contexto
 
-luau sim/invariants.luau                # oráculo (10 checagens)
-luau sim/acceptance.luau                # P0: 1.000 seeds × 3
+luau sim/invariants.luau                # oráculo (12 checagens)
+luau sim/acceptance.luau                # P1: 1.000 seeds × 3
 luau sim/profile-contract.luau          # schema v1 + sessão do perfil
 luau sim/analytics-contract.luau        # contrato de analytics v1
 luau sim/poc.luau                       # benchmark do motor

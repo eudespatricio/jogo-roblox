@@ -25,14 +25,6 @@
       }
     },
 
-    "StarterPlayer": {
-      "$className": "StarterPlayer",
-      "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
-        "$path": "src/client"
-      }
-    },
-
     "Workspace": {
       "$className": "Workspace",
       "$path": "src/world",

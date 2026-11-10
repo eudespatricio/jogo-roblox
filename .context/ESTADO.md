@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P1 autorizada (09/11/2026) para a próxima janela.** P0 fechada: motor, schema v1 + ProfileStore,
-contrato de analytics e teste de sessão no Studio (Modos A e B, 8/8). O primeiro item é a **Q1**
-(apagar o legado de moedas, tag `legacy-coins`); plano em `docs/p1-plano.md`.
+**P1 em execução (autorizada em 09/11/2026).** S1 fechada (legado de moedas apagado, tag anotada
+`legacy-coins`) e S2 fechada (motor 5×5/N=5, `simVersion 2`). Próxima fatia: S3 (muralha/economia,
+servidor). Plano e critérios em `docs/p1-plano.md`; o teste de produto de 3 semanas roda em paralelo.
 
 ## Números atuais (09/11/2026)
 
@@ -19,10 +19,10 @@ contrato de analytics e teste de sessão no Studio (Modos A e B, 8/8). O primeir
 |---|---|
 | tick / cap | 0,05s · 1.200 ticks (60s) |
 | estado | 100% inteiro (MILLI = 1000) |
-| custo por batalha | ~1,5 ms (~650 batalhas/s) |
-| determinismo | hash `668061367` (seed 42, 3 execuções) — muda na S2 (`simVersion 2`) |
-| P0 acceptance | 1.000 seeds × 3 · 1.000 hashes · 64,9% defensor · 1,5s/1.000 |
-| invariantes | 10/10 passando (`sim/invariants.luau`) |
+| custo por batalha | ~1,4 ms (~710 batalhas/s) |
+| determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 2` |
+| acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
+| invariantes | 12/12 (`sim/invariants.luau`) |
 | contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
@@ -35,24 +35,21 @@ contrato de analytics e teste de sessão no Studio (Modos A e B, 8/8). O primeir
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
-- Motor: `src/shared/sim/core.luau` + `sim/poc.luau` + `sim/invariants.luau` + `sim/acceptance.luau`.
+- Motor: `src/shared/sim/core.luau` (v2, loadout 5×5/N=5) + harnesses em `sim/`.
 - Dados: `src/shared/data/ProfileSchema.luau` + `src/server/data/ProfileService.luau` +
   `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
   taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
-- Tooling: Rokit + CLI/GUI; CI ativo (run #14 verde); doctor; ProfileStore vendorizado.
+- Tooling: Rokit + CLI/GUI; CI ativo; doctor; ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
 
 ## Não pronto
 
-- **P1** (2–3 semanas): Q1 → cena 5×5, build, drop-in, raid, replay. Saída: 70% de primeira vitória
-  < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- O motor atual é o recorte do PoC (1 armadilha por lane, tipo sorteado): loadout 5×5/N=5 é mudança
-  de matemática → `simVersion 2` + hash novo (fatia S2 do plano).
-- `src/` ainda tem o protótipo de moedas (Q1 apaga); sink `AnalyticsService` é P1.
-- Sem cena, sem UI, sem loja. Teste de produto de 3 semanas: recomendado, roda em paralelo (decisão
-  do diretor em 09/11/2026).
+- **P1** (2–3 semanas): S3 muralha/economia → S4 cena 5×5/build → S5 drop-in → S6 raid/replay →
+  S7 telemetria. Saída: 70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- `src/server/walls/`, cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
+- Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
 
@@ -64,9 +61,8 @@ contrato de analytics e teste de sessão no Studio (Modos A e B, 8/8). O primeir
 
 ## Próximo passo
 
-1. S1/Q1: tag `legacy-coins`, apagar `CoinService`/`DataService`/`Main`/`Config`/`Hud`, stub e CI.
-2. S2: motor com loadout 5×5/N=5 → `simVersion 2`, re-ancorar invariants/acceptance/spec.
-3. S3–S7: muralha/economia, cena+build, drop-in, raid/replay, telemetria (`docs/p1-plano.md`).
+1. S3: `src/server/walls/` (colocar/remover/upgrade) com validação de célula, N=5, ouro e persistência.
+2. S4–S7: cena/build, drop-in, raid/replay e telemetria (`docs/p1-plano.md`).
 
 ## Como verificar o estado em 1 minuto
 

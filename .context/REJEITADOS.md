@@ -14,4 +14,5 @@
 | Avatar visível no MVP | 09/11/2026 | custo de arte + perde DevEx 18+ | identidade social virar o núcleo do jogo |
 | Simulação no cliente | 09/11/2026 | exploit trivial; servidor é a verdade | nunca |
 | "Gravar 30s para frente" como clipe | 09/11/2026 | a dor do jogador é o passado; replay por seed resolve | CaptureService passar a gravar buffer retroativo |
-| Protótipo de moedas em `src/**` (legado) | 09/11/2026 | 442 linhas, 0% de sobreposição com a Muralha; DataStore caseiro já rejeitado; build de 8,6 KB vs stub de 440 B. Apagar na P1, preservando `src/shared/sim/` | for usado como harness de Studio/pipeline em 30 dias, ou se o stub de 10 linhas não construir no CI |
+| 1 armadilha por lane (recorte do PoC) na produção | 09/11/2026 | Q2 exige 5×5 com N=5 e colocação livre; a S2 trocou a matemática (`simVersion 2`) | nunca (S2 fechada; hash `668061367` aposentado) |
+| Protótipo de moedas em `src/**` (legado) | 09/11/2026 | 442 linhas, 0% de sobreposição com a Muralha; DataStore caseiro já rejeitado; build de 8,6 KB vs stub de 10 linhas. **Executado na S1:** tag anotada `legacy-coins` em `b07b4c5`, deleção e stub; preservou `src/shared/{sim,data,analytics}` e `src/server/{data,ProfileBoot}` | for usado como harness de Studio/pipeline em 30 dias, ou se o stub de 10 linhas não construir no CI |

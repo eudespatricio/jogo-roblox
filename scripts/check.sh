@@ -13,15 +13,15 @@ echo "== rojo build =="
 rojo build default.project.json -o build/place.rbxl
 
 echo "== stylua =="
-stylua --check sim src/shared/sim src/shared/data src/shared/analytics src/server/data src/server/ProfileBoot.server.luau
+stylua --check sim src
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics
+luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/server/data src/server/Main.server.luau
 
 echo "== invariantes =="
 luau sim/invariants.luau
 
-echo "== P0 acceptance =="
+echo "== acceptance (motor v2) =="
 luau sim/acceptance.luau
 
 echo "== contrato de perfil (schema v1 + sessao) =="

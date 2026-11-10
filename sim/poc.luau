@@ -1,5 +1,5 @@
 --!nonstrict
--- Demo/benchmark do nucleo deterministico (src/shared/sim/core.luau).
+-- Demo/benchmark do nucleo deterministico v2 (src/shared/sim/core.luau).
 -- Roda no Luau CLI:  luau sim/poc.luau
 local Core = require("../src/shared/sim/core")
 local Battle = Core.Battle
@@ -89,7 +89,12 @@ end
 print("\n=== 5. INVARIANTES INTEIROS (sem float no estado) ===")
 local okInt = true
 for seed = 1, 100 do
-	local b = Battle.new({ seed = seed, waveCount = 80 })
+	local b = Battle.new({
+		seed = seed,
+		simVersion = Core.SIM_VERSION,
+		wall = Core.defaultWall(),
+		wave = { count = 80 },
+	})
 	for _ = 1, 400 do
 		b:Step()
 		if not b:CheckIntegers() then

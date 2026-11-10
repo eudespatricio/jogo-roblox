@@ -1,3 +1,2 @@
-# Legado: protótipo de moedas, sera apagado na P1.
-# Nao formate o legado; o codigo novo nasce em src/shared e entra no check.
-src/
+# Sem legado de moedas: todo o src/ entra no StyLua.
+# vendor/ fica fora do gate (codigo de terceiro, nao editar).

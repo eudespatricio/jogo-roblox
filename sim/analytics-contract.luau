@@ -46,7 +46,7 @@ end
 
 -- ---------------------------------------------------------------- contexto e fixtures
 local BATTLE_ID = "b7e2c9d4-1a3f-4c58-9e6b-0d2f4a6c8e10"
-local BATTLE_HASH = 668061367
+local BATTLE_HASH = 2489780106
 local HASH32 = "3f7a9c1e5b2d4f608a1c3e5b7d9f0a2c"
 local CODE_HASH = "9d1e2f3a4b5c6d7e8f9012345678abcd"
 local EVENT_ID = "5f0c1e6a-9b2d-4c3f-8a71-2d4e6f8a0b1c"
@@ -84,20 +84,20 @@ local PROPS = {
 	battle_started = {
 		battle_id = BATTLE_ID,
 		seed = 42,
-		sim_version = 1,
+		sim_version = 2,
 		grid_width = 5,
 		traps_count = 5,
 	},
 	battle_finished = {
 		battle_id = BATTLE_ID,
 		seed = 42,
-		sim_version = 1,
+		sim_version = 2,
 		result_hash = BATTLE_HASH,
-		winner = "attacker",
-		wall_hp = 0,
-		leaked = 40,
-		ticks = 1043,
-		duration_ms = 52150,
+		winner = "defender",
+		wall_hp = 45,
+		leaked = 26,
+		ticks = 1200,
+		duration_ms = 60000,
 	},
 	battle_divergence = { battle_id = BATTLE_ID, expected_hash = BATTLE_HASH, actual_hash = 12345 },
 	-- 2.3 economia
@@ -319,19 +319,19 @@ check("lote: validateAll aponta o indice do invalido", function()
 end)
 
 -- ---------------------------------------------------------------- motor
-check("BattleResult expoe seed e simVersion sem mudar o hash", function()
+check("BattleResult expoe seed e simVersion 2 com o hash novo", function()
 	local result = Core.Run(42)
-	assert(result.hash == 668061367, "hash mudou: " .. tostring(result.hash))
+	assert(result.hash == 2489780106, "hash mudou: " .. tostring(result.hash))
 	assert(result.seed == 42, "seed ausente no resultado: " .. tostring(result.seed))
 	assert(result.simVersion == Core.SIM_VERSION, "simVersion divergente")
-	assert(Core.SIM_VERSION == 1, "simVersion deveria continuar 1 (sem mudanca de matematica)")
+	assert(Core.SIM_VERSION == 2, "simVersion deveria ser 2 (loadout 5x5)")
 
 	local event, err = Analytics.battleFinished(CTX, BATTLE_ID, result)
 	assert(event ~= nil, "evento de batalha invalido: " .. tostring(err))
 	assert(event.battle_id == BATTLE_ID, "battle_id perdido")
 	assert(event.seed == 42, "seed nao foi para o evento")
 	assert(event.sim_version == Core.SIM_VERSION, "sim_version nao foi para o evento")
-	assert(event.result_hash == 668061367, "hash nao foi para o evento")
+	assert(event.result_hash == 2489780106, "hash nao foi para o evento")
 	assert(event.duration_ms == result.ticks * 50, "duracao derivada errada")
 	assert(event.winner == result.winner and event.ticks == result.ticks, "resultado nao copiado")
 end)
@@ -342,7 +342,7 @@ check("analytics nao altera o resultado da batalha", function()
 	assert(Analytics.validate(event), "evento invalido")
 	local after = Core.Run(42)
 	assert(before.hash == after.hash, "hash mudou depois do evento")
-	assert(before.hash == 668061367, "hash de referencia mudou")
+	assert(before.hash == 2489780106, "hash de referencia mudou")
 	assert(before.winner == after.winner, "vencedor mudou")
 	assert(before.ticks == after.ticks and before.leaked == after.leaked, "estado mudou")
 	assert(before.wallHp == after.wallHp, "wallHp mudou")

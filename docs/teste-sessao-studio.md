@@ -1,4 +1,8 @@
 # Teste de sessão no Studio (P0)
+> **Atualização (S1, 09/11/2026):** o protótipo de moedas foi apagado (tag `legacy-coins`). O lugar
+> agora tem `ProfileBoot` + o stub `Main`; as menções a `Main`/`DataService`/asset legado nas
+> evidências abaixo são **históricas** (antes da S1).
+
 
 > **Status:** **Modo A (Mock) e Modo B (DataStore real) executados e aprovados em
 > 09/11/2026 — 8/8 nas duas execuções** (evidência na §8).
@@ -32,8 +36,7 @@ No Studio, escolha um caminho:
 - abrir `build/place.rbxl` (build do `check.sh`), ou
 - conectar o plugin Rojo no projeto (`localhost:34872`).
 
-O lugar tem dois scripts de servidor: `Main` (protótipo de moedas, **legado**) e `ProfileBoot`
-(P0). Avisos do legado sobre DataStore podem aparecer; eles não afetam o teste e morrem na P1.
+O lugar tem `ProfileBoot` (P0) e o stub `Main` (S1); não há mais o protótipo de moedas.
 
 ## 3. Modo A — Mock (rápido, sem publicar; é o padrão no Studio)
 
@@ -124,7 +127,6 @@ Evidência: copie as linhas `[perfil]`/`[selftest]` do Output para o handover.
 | `[selftest] FALHA sessions incrementou` | Mock reiniciado entre as sessões | no Modo A o servidor não pode reiniciar no meio do teste |
 | `[perfil] datastore=NoAccess` + aviso **MODO B INVÁLIDO** | API Services desligado ou lugar não publicado | publicar o lugar e ligar o acesso do Studio, ou voltar ao Modo A (Mock) |
 | Nenhuma linha `[selftest]` | atributo ausente ou fora do Studio | `ProfileSelfTest = true` em `ServerStorage`; self-test só roda em Studio |
-| `Main`/`DataService` lançam erro no Play | protótipo legado de moedas sem lugar publicado (`You must publish this place…`) | esperado no Modo A; morre com o legado na P1 |
 
 ## 7. O que **não** entra na P0
 
@@ -155,9 +157,8 @@ Lugar: `build/place.rbxl` (cópia em `C:\Users\Eudes\Desktop\muralha-p0-place.rb
 [selftest] PASSOU (8/8)
 ```
 
-Ruído esperado, não é P0: o protótipo legado (`Main`/`DataService`) falha sem lugar publicado
-(`You must publish this place to the web to access DataStore`) e um asset do legado não resolve
-(`rbxassetid://203785492`). Os dois saem com o legado na P1 (Q1).
+Ruído histórico (antes da S1): o protótipo legado (`Main`/`DataService`) falhava sem lugar
+publicado e um asset do legado não resolvia (`rbxassetid://203785492`). Ambos saíram com a Q1.
 
 O que fica em aberto: **Modo B** (lugar publicado + API Services, 2 clientes/rejoin) para provar
 persistência real entre servidores; o `ProfileStore` avisa que os dados não são salvos no Modo A.
@@ -189,8 +190,7 @@ Segunda execução (servidor novo, mesmo perfil):
 ```
 
 `sessions=3` no segundo servidor é a prova de persistência: a primeira execução terminou em 2. O
-`ContentId: rbxassetid://203785492` que aparece no meio é asset do protótipo legado, sem relação com
-a P0.
+`ContentId: rbxassetid://203785492` que aparece no meio era asset do protótipo legado (histórico).
 
 Fica para o playtest: duas contas distintas no lugar publicado (duas chaves `User_*`).
 
