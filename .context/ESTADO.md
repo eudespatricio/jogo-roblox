@@ -7,15 +7,13 @@
 (habilita DevEx 18+ e corta custo de arte). Público 13–34, monetização cosmética.
 
 ## Fase
-
 **P1 em execução (autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
 (FPS 60/60); **S5 fechada** (drop-in/+3 ouro); **S6.1 fechada** (fantasma real + replay 3D); **S7
-fechada** (AnalyticsService/envelope, lote, rate limit, idempotência e sink Null). A saída da P1
-(70% de primeira vitória <60 s) está instrumentada por `first_win_seconds` e será medida no teste
-de 3 semanas; P2 bloqueada. Plano em `docs/p1-plano.md`.
+fechada** (telemetria com sink persistente); **S8 fechada** (apresentação visual: diorama, traps/
+horda 3D e UI). A saída da P1 (70% de primeira vitória <60 s) está instrumentada por
+`first_win_seconds`; a série persiste e será medida no teste de 3 semanas. P2 bloqueada.
 
 ## Números atuais (10/11/2026)
-
 | Métrica | Valor |
 |---|---|
 | tick / cap | 0,05s · 1.200 ticks (60s) |
@@ -24,10 +22,10 @@ de 3 semanas; P2 bloqueada. Plano em `docs/p1-plano.md`.
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 30/30 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 8/8 · raid 6/6 |
+| contratos | perfil 20/20 · analytics 34/34 · muralha 13/13 · conteúdo 7/7 · build 14/14 · visual 8/8 · drop-in 8/8 · raid 6/6 |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
-| analytics | contrato v1 · 31 eventos · envelope + anti-PII · serviço S7 (lote 30s/100, 10/min, Null) |
+| analytics | contrato v1 · 31 eventos · envelope + anti-PII · serviço S7 (lote 30s/100, 10/min) · sink DataStore/Memory |
 | teste de sessão | Modo A 8/8 + Modo B schema v1 8/8 (09/11) · Modo B schema v2 8/8 (10/11) |
 
 ## Pronto
@@ -43,9 +41,11 @@ de 3 semanas; P2 bloqueada. Plano em `docs/p1-plano.md`.
 - Dados: `ProfileSchema.luau` (v2/contentVersion) + `ProfileService.luau` +
   `ProfileBoot.server.luau` (migração de conteúdo) + `sim/profile-contract.luau` (20/20); Modo B
   schema v2 8/8 em 10/11/2026 (`docs/teste-sessao-studio.md` §9).
-- Analytics: `AnalyticsTypes.luau` + `AnalyticsService.luau`/`AnalyticsBoot.server.luau`
-  (emit/lote/rate limit/idempotência/sink Null) + `sim/analytics-contract.luau` (30/30);
-  taxonomia v1 congelada; `first_win_seconds` em `docs/teste-s7-studio.md`.
+- Analytics: `AnalyticsTypes.luau` + `AnalyticsService.luau` + `AnalyticsDataStoreSink.luau` +
+  `AnalyticsBoot.server.luau` (emit/lote/rate limit/idempotência; DataStore/Memory) + contrato 34/34;
+  `first_win_seconds` em `docs/teste-s7-studio.md`.
+- Visual S8: `VisualTheme.luau` + `ArenaVisual`/`TrapKit`/`HordeKit`/`Vfx`/`AudioKit`/`UiKit` (diorama,
+  5 traps, 3 silhuetas, UI de cartões) + `sim/visual-contract.luau` (8/8); QA em `docs/teste-s8-studio.md`.
 - Tooling: Rokit + CLI/GUI; CI ativo; doctor; gate de versões (`docs/versoes.md`); ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
@@ -53,9 +53,9 @@ de 3 semanas; P2 bloqueada. Plano em `docs/p1-plano.md`.
 
 ## Não pronto
 
-- **P1**: falta medir a saída (70% de primeira vitória <60s); instrumento pronto, mas o sink Null
-  não persiste a série (GAP-012). Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- P2 bloqueada; GAP-004/005/008/012 abertos; ver `docs/gaps.md`.
+- **P1**: falta medir a saída (70% de primeira vitória <60s) no teste de 3 semanas; instrumento e
+  série persistida prontos. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- P2 bloqueada; GAP-004/005/008 abertos; ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
@@ -68,7 +68,7 @@ de 3 semanas; P2 bloqueada. Plano em `docs/p1-plano.md`.
 
 ## Próximo passo
 
-1. Fechar GAP-012 (sink persistente/export) antes do teste de 3 semanas e medir a saída da P1.
+1. Rodar o teste de 3 semanas com o sink persistente e medir a saída da P1 (70% <60s).
 2. P2 não começa sem autorização.
 
 ## Como verificar o estado em 1 minuto

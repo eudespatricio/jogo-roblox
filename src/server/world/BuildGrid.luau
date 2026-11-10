@@ -64,7 +64,7 @@ function BuildGrid.init(): ()
 				part.CanQuery = false
 				part.Material = Enum.Material.SmoothPlastic
 				part.Color = Color3.fromRGB(66, 66, 72)
-				part.Transparency = 0.35
+				part.Transparency = 1
 				part:SetAttribute("Cell", cell)
 				part:SetAttribute("Row", row)
 				part:SetAttribute("Col", col)
@@ -85,6 +85,7 @@ function BuildGrid.init(): ()
 	wall.CanQuery = false
 	wall.Material = Enum.Material.WoodPlanks
 	wall.Color = Color3.fromRGB(120, 82, 45)
+	wall.Transparency = 1
 	wall.Parent = root
 
 	makeMarkers()
@@ -107,24 +108,8 @@ local function markerFor(cell: string): BasePart
 	part:SetAttribute("Cell", cell)
 	part.Parent = root
 
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "Label"
-	billboard.Size = UDim2.fromOffset(90, 24)
-	billboard.StudsOffset = Vector3.new(0, 2.2, 0)
-	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 80
-	billboard.Parent = part
-
-	local label = Instance.new("TextLabel")
-	label.Name = "Text"
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.TextStrokeTransparency = 0.4
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Parent = billboard
-
+	-- S8: o visual e do cliente (TrapKit); aqui fica so a parte logica/invisivel da celula.
+	part.Transparency = 1
 	trapParts[cell] = part
 	return part
 end

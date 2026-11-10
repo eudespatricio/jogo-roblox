@@ -10,8 +10,8 @@ Leia nesta ordem, antes de qualquer ação:
 ## Regras duras
 
 - **P2+ não começa sem autorização explícita do diretor.** A P1 foi autorizada em 09/11/2026 e está
-  em execução (S1–S7 fechadas; a saída — 70% de primeira vitória <60 s — depende do teste de 3
-  semanas, GAP-012); o plano está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
+  em execução (S1–S8 fechadas; a saída — 70% de primeira vitória <60 s — depende do teste de 3
+  semanas; GAP-012 fechado com sink persistente); o plano está em `docs/p1-plano.md` (S1–S8).
 - **`src/` é produção.** O legado de moedas foi apagado na S1 (09/11/2026) e está preservado na
   tag anotada `legacy-coins` (commit `b07b4c5`). Não ressuscite `CoinService`/`DataService`/`Config`.
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
@@ -35,7 +35,8 @@ bash scripts/check.sh                   # gate: build, StyLua, luau-lsp, versõe
 luau sim/invariants.luau                # oráculo (12 checagens)
 luau sim/acceptance.luau                # P1: 1.000 seeds × 3
 luau sim/profile-contract.luau          # schema v2 + contentVersion + sessão
-luau sim/analytics-contract.luau        # contrato de analytics v1
+luau sim/analytics-contract.luau        # contrato de analytics v1 (34 checagens)
+luau sim/visual-contract.luau           # contrato visual da S8 (8 checagens)
 luau sim/walls-contract.luau            # muralha/economia (S3)
 luau sim/content-contract.luau          # conteúdo/versões (S3.4)
 luau sim/build-contract.luau            # grid/build (S4)

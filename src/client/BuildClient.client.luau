@@ -1,20 +1,29 @@
 --!nonstrict
--- Cliente da S4: camera isometrica fixa + UI de build 5x5 + HUD de debug (FPS/tempos).
--- O cliente so manda intencao (place/remove/upgrade); o servidor valida no WallService e
--- devolve o snapshot. A muralha real e a do perfil, nao a peca visual.
--- Estado, HUD e layout sao modulos puros em src/shared/build (provados no CLI); aqui so
--- desenhamos. Layout: 375x812 e 720x1280 sao os alvos do QA (docs/teste-s4-studio.md §4).
+-- S8: cliente de build. Camera isometrica, arena de diorama, traps 3D e UI de cartoes.
+-- O servidor continua autoritativo (WallService/BuildProtocol); aqui so desenhamos e mandamos
+-- intencao. O HUD de debug da S4 vive atras de F3 e nasce oculto.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
-local sharedBuild = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("build")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local sharedBuild = Shared:WaitForChild("build")
 local GridLayout = require(sharedBuild:WaitForChild("GridLayout"))
 local BuildClientState = require(sharedBuild:WaitForChild("BuildClientState"))
 local BuildHud = require(sharedBuild:WaitForChild("BuildHud"))
 local BuildLayout = require(sharedBuild:WaitForChild("BuildLayout"))
+local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTheme"))
+
+local visual = script.Parent:WaitForChild("visual")
+local UiKit = require(visual:WaitForChild("UiKit"))
+local VisualSetup = require(visual:WaitForChild("VisualSetup"))
+local ArenaVisual = require(visual:WaitForChild("ArenaVisual"))
+local TrapKit = require(visual:WaitForChild("TrapKit"))
+local AudioKit = require(visual:WaitForChild("AudioKit"))
+local Vfx = require(visual:WaitForChild("Vfx"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -23,8 +32,6 @@ local remotes = ReplicatedStorage:WaitForChild("MuralhaRemotes")
 local buildAction = remotes:WaitForChild("BuildAction") :: RemoteFunction
 local buildSnapshot = remotes:WaitForChild("BuildSnapshot") :: RemoteFunction
 
--- S5: a cena de abertura (drop-in) roda antes do build. O servidor liga DropInEnabled e marca
--- DropInDone quando a onda limpa; sem drop-in (atributo false) o build segue direto.
 local function waitForDropIn(): ()
 	for _ = 1, 50 do
 		if ReplicatedStorage:GetAttribute("DropInEnabled") ~= nil then
@@ -39,16 +46,17 @@ local function waitForDropIn(): ()
 		task.wait(0.1)
 	end
 end
+
 waitForDropIn()
 
--- Camera isometrica fixa (GDD §1: sem livre-orbitar; vira clipe).
 local camera = Workspace.CurrentCamera
 if camera == nil then
 	camera = Workspace:WaitForChild("Camera") :: Camera
 end
 camera.CameraType = Enum.CameraType.Scriptable
-camera.CFrame = CFrame.lookAt(Vector3.new(50, 46, 62), Vector3.new(0, 2, 0))
-camera.FieldOfView = 42
+local BASE_CAMERA = CFrame.lookAt(Vector3.new(48, 34, 52), Vector3.new(0, 2, 0))
+camera.CFrame = BASE_CAMERA
+camera.FieldOfView = 40
 
 local function hideCharacter(character: Model): ()
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -68,9 +76,11 @@ if player.Character ~= nil then
 end
 player.CharacterAdded:Connect(hideCharacter)
 
--- ---------------------------------------------------------------- estado e HUD
+VisualSetup.apply()
+ArenaVisual.build(Workspace, Vector3.new(0, 0, 0))
+
 local state = BuildClientState.new()
-local hud = BuildHud.new(time()) -- time() = parede desde o inicio do cliente; dt cobre o resto
+local hud = BuildHud.new(time())
 local currentLayout = nil
 
 local statusMessages = {
@@ -100,86 +110,52 @@ root.Size = UDim2.fromScale(1, 1)
 root.BackgroundTransparency = 1
 root.Parent = gui
 
-local function corner(parent: Instance, radius: number): ()
-	local uiCorner = Instance.new("UICorner")
-	uiCorner.CornerRadius = UDim.new(0, radius)
-	uiCorner.Parent = parent
-end
+local top = UiKit.panel(root, "TopBar")
+local coin = UiKit.iconCoin(top, 22)
+coin.AnchorPoint = Vector2.new(0, 0.5)
+coin.Position = UDim2.new(0, 10, 0.5, 0)
 
-local function limitText(parent: Instance, maxSize: number): UITextSizeConstraint
-	local constraint = Instance.new("UITextSizeConstraint")
-	constraint.MinTextSize = 8
-	constraint.MaxTextSize = maxSize
-	constraint.Parent = parent
-	return constraint
-end
+local goldLabel = UiKit.label(
+	top,
+	"Gold",
+	"0",
+	UiKit.color(VisualTheme.PALETTE.amberBright),
+	Enum.Font.GothamBlack
+)
+goldLabel.Position = UDim2.new(0, 40, 0, 0)
+goldLabel.Size = UDim2.new(0.34, -40, 1, 0)
+goldLabel.TextScaled = true
 
-local top = Instance.new("Frame")
-top.Name = "TopBar"
-top.Size = UDim2.new(1, -24, 0, 42)
-top.Position = UDim2.fromOffset(12, 12)
-top.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-top.BackgroundTransparency = 0.15
-top.BorderSizePixel = 0
-top.Parent = root
-corner(top, 8)
+local leagueLabel = UiKit.label(
+	top,
+	"League",
+	"LIGA 1",
+	UiKit.color(VisualTheme.PALETTE.parchment),
+	Enum.Font.GothamBold
+)
+leagueLabel.Position = UDim2.new(0.34, 0, 0, 0)
+leagueLabel.Size = UDim2.new(0.33, 0, 1, 0)
+leagueLabel.TextXAlignment = Enum.TextXAlignment.Center
+leagueLabel.TextScaled = true
 
-local goldLabel = Instance.new("TextLabel")
-goldLabel.Name = "Gold"
-goldLabel.Size = UDim2.new(0.55, 0, 1, 0)
-goldLabel.Position = UDim2.fromOffset(12, 0)
-goldLabel.BackgroundTransparency = 1
-goldLabel.TextColor3 = Color3.fromRGB(255, 220, 120)
-goldLabel.TextXAlignment = Enum.TextXAlignment.Left
-goldLabel.TextTruncate = Enum.TextTruncate.AtEnd
-goldLabel.Font = Enum.Font.GothamBold
-goldLabel.Text = "OURO 0"
-goldLabel.Parent = top
-
-local versionLabel = Instance.new("TextLabel")
-versionLabel.Name = "Version"
-versionLabel.Size = UDim2.new(0.43, -12, 1, 0)
-versionLabel.Position = UDim2.new(0.55, 0, 0, 0)
-versionLabel.BackgroundTransparency = 1
-versionLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+local versionLabel =
+	UiKit.label(top, "Version", "v2", UiKit.color(VisualTheme.PALETTE.stone), Enum.Font.Gotham)
+versionLabel.Position = UDim2.new(0.67, 0, 0, 0)
+versionLabel.Size = UDim2.new(0.33, -10, 1, 0)
 versionLabel.TextXAlignment = Enum.TextXAlignment.Right
-versionLabel.TextTruncate = Enum.TextTruncate.AtEnd
-versionLabel.Font = Enum.Font.Gotham
-versionLabel.Text = "content v2"
-versionLabel.Parent = top
+versionLabel.TextScaled = true
 
--- HUD de debug da S4 (§6): FPS, tempo desde o Play e tempo ate a UI interativa.
-local hudFrame = Instance.new("Frame")
-hudFrame.Name = "Hud"
-hudFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-hudFrame.BackgroundTransparency = 0.25
-hudFrame.BorderSizePixel = 0
-hudFrame.Parent = root
-corner(hudFrame, 6)
-
-local hudMetrics = Instance.new("TextLabel")
-hudMetrics.Name = "Metrics"
-hudMetrics.Size = UDim2.new(0.62, -8, 1, 0)
-hudMetrics.Position = UDim2.fromOffset(8, 0)
-hudMetrics.BackgroundTransparency = 1
-hudMetrics.TextColor3 = Color3.fromRGB(150, 230, 170)
-hudMetrics.TextXAlignment = Enum.TextXAlignment.Left
-hudMetrics.TextTruncate = Enum.TextTruncate.AtEnd
-hudMetrics.Font = Enum.Font.Code
-hudMetrics.Text = "FPS -- · T -- · UI --"
-hudMetrics.Parent = hudFrame
-
-local hudSelection = Instance.new("TextLabel")
-hudSelection.Name = "Selection"
-hudSelection.Size = UDim2.new(0.38, -8, 1, 0)
-hudSelection.Position = UDim2.new(0.62, 0, 0, 0)
-hudSelection.BackgroundTransparency = 1
-hudSelection.TextColor3 = Color3.fromRGB(235, 220, 150)
-hudSelection.TextXAlignment = Enum.TextXAlignment.Right
-hudSelection.TextTruncate = Enum.TextTruncate.AtEnd
-hudSelection.Font = Enum.Font.GothamBold
-hudSelection.Text = "COLOCAR"
-hudSelection.Parent = hudFrame
+local selectionBar = UiKit.panel(root, "SelectionBar")
+local selectionLabel = UiKit.label(
+	selectionBar,
+	"Selection",
+	"COLOCAR · ESCOLHA UMA ARMADILHA",
+	UiKit.color(VisualTheme.PALETTE.parchment),
+	Enum.Font.GothamBold
+)
+selectionLabel.Position = UDim2.fromOffset(10, 0)
+selectionLabel.Size = UDim2.new(1, -20, 1, 0)
+selectionLabel.TextScaled = true
 
 local gridFrame = Instance.new("Frame")
 gridFrame.Name = "Grid"
@@ -190,42 +166,74 @@ local gridLayout = Instance.new("UIGridLayout")
 gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.FillDirectionMaxCells = GridLayout.WIDTH
 gridLayout.CellSize = UDim2.fromOffset(48, 48)
-gridLayout.CellPadding = UDim2.fromOffset(4, 4)
+gridLayout.CellPadding = UDim2.fromOffset(5, 5)
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 gridLayout.Parent = gridFrame
 
 local cellButtons: { [string]: TextButton } = {}
 
+local send: (action: string, trapId: string, cell: string) -> ()
+local setStatus: (text: string) -> ()
+
+local function makeCellButton(cell: string, row: number, col: number): TextButton
+	local button = Instance.new("TextButton")
+	button.Name = cell
+	button.LayoutOrder = row * 10 + col
+	button.Text = ""
+	button.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.stoneDark)
+	button.BorderSizePixel = 0
+	button.AutoButtonColor = false
+	button.Parent = gridFrame
+	UiKit.corner(button, 7)
+	UiKit.stroke(button, UiKit.color(VisualTheme.PALETTE.iron), 1, 0.25)
+
+	local nameLabel = UiKit.label(
+		button,
+		"Name",
+		"",
+		UiKit.color(VisualTheme.PALETTE.parchment),
+		Enum.Font.GothamBlack
+	)
+	nameLabel.Position = UDim2.new(0, 3, 0, 4)
+	nameLabel.Size = UDim2.new(1, -6, 0.58, -4)
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+	nameLabel.TextScaled = true
+
+	local levelLabel = UiKit.label(
+		button,
+		"Level",
+		"",
+		UiKit.color(VisualTheme.PALETTE.ink),
+		Enum.Font.GothamBlack
+	)
+	levelLabel.AnchorPoint = Vector2.new(1, 1)
+	levelLabel.Position = UDim2.new(1, -5, 1, -3)
+	levelLabel.Size = UDim2.fromOffset(22, 14)
+	levelLabel.TextXAlignment = Enum.TextXAlignment.Right
+	levelLabel.TextScaled = true
+
+	button.MouseButton1Click:Connect(function()
+		local intent, err = BuildClientState.intent(state, cell, GridLayout)
+		if intent == nil then
+			AudioKit.play("ui_deny")
+			setStatus(statusFor(err))
+			return
+		end
+		send(intent.action, intent.trapId, intent.cell)
+	end)
+	return button
+end
+
 for row = 1, GridLayout.HEIGHT do
 	for col = 1, GridLayout.WIDTH do
 		local cell = GridLayout.cellName(row, col)
 		if cell ~= nil then
-			local button = Instance.new("TextButton")
-			button.Name = cell
-			button.LayoutOrder = row * 10 + col
-			button.Text = ""
-			button.BackgroundColor3 = Color3.fromRGB(55, 55, 62)
-			button.BorderSizePixel = 0
-			button.TextColor3 = Color3.fromRGB(240, 240, 240)
-			button.TextScaled = true
-			button.Font = Enum.Font.GothamBold
-			button.AutoButtonColor = true
-			button.Parent = gridFrame
-			corner(button, 6)
-			limitText(button, 20)
-			cellButtons[cell] = button
+			cellButtons[cell] = makeCellButton(cell, row, col)
 		end
 	end
 end
 
-local bottom = Instance.new("Frame")
-bottom.Name = "Bottom"
-bottom.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-bottom.BackgroundTransparency = 0.12
-bottom.BorderSizePixel = 0
-bottom.Parent = root
-corner(bottom, 10)
-
+local bottom = UiKit.panel(root, "Bottom")
 local modes = Instance.new("Frame")
 modes.Name = "Modes"
 modes.BackgroundTransparency = 1
@@ -239,19 +247,8 @@ modeLayout.Parent = modes
 
 local modeButtons: { [string]: TextButton } = {}
 local function makeMode(order: number, id: string, text: string): TextButton
-	local button = Instance.new("TextButton")
-	button.Name = id
+	local button = UiKit.button(modes, id, text)
 	button.LayoutOrder = order
-	button.Size = UDim2.new(0.32, -4, 1, 0)
-	button.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
-	button.BorderSizePixel = 0
-	button.TextColor3 = Color3.fromRGB(235, 235, 240)
-	button.TextScaled = true
-	button.Font = Enum.Font.GothamBold
-	button.Text = text
-	button.Parent = modes
-	corner(button, 6)
-	limitText(button, 20)
 	modeButtons[id] = button
 	return button
 end
@@ -271,27 +268,39 @@ trapLayout.Padding = UDim.new(0, 6)
 trapLayout.SortOrder = Enum.SortOrder.LayoutOrder
 trapLayout.Parent = trapRow
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "Status"
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = Color3.fromRGB(170, 220, 255)
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+local statusLabel = UiKit.label(
+	bottom,
+	"Status",
+	"carregando perfil...",
+	UiKit.color(VisualTheme.PALETTE.stone),
+	Enum.Font.Gotham
+)
 statusLabel.TextTruncate = Enum.TextTruncate.AtEnd
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.Text = "carregando perfil..."
-statusLabel.Parent = bottom
 
-local trapButtons: { [string]: TextButton } = {}
+local debugHud = UiKit.panel(root, "DebugHud")
+debugHud.Visible = VisualTheme.UI.debugHudDefault
+local debugMetrics = UiKit.label(
+	debugHud,
+	"Metrics",
+	"FPS -- · T -- · UI --",
+	UiKit.color(VisualTheme.PALETTE.teal),
+	Enum.Font.Code
+)
+debugMetrics.Position = UDim2.fromOffset(8, 0)
+debugMetrics.Size = UDim2.new(1, -16, 1, 0)
+debugMetrics.TextScaled = false
+debugMetrics.TextSize = 11
 
 -- ---------------------------------------------------------------- acoes
-local function setStatus(text: string): ()
+setStatus = function(text: string): ()
 	statusLabel.Text = text
+	statusLabel.TextColor3 = UiKit.color(VisualTheme.PALETTE.stone)
 end
 
 local function colorFor(trapId: string): Color3
 	local color = GridLayout.colorFor(trapId)
 	if color == nil then
-		return Color3.fromRGB(90, 90, 90)
+		return UiKit.color(VisualTheme.PALETTE.stone)
 	end
 	return Color3.fromRGB(
 		math.floor(color[1] * 255 + 0.5),
@@ -302,11 +311,7 @@ end
 
 local function updateModeButtons(): ()
 	for id, button in pairs(modeButtons) do
-		if id == state.mode then
-			button.BackgroundColor3 = Color3.fromRGB(70, 130, 90)
-		else
-			button.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
-		end
+		UiKit.setSelected(button, id == state.mode)
 	end
 end
 
@@ -315,12 +320,21 @@ local function refreshSelection(): ()
 	if state.selectedTrap ~= nil then
 		trapLabel = GridLayout.labelFor(state.selectedTrap)
 	end
-	hudSelection.Text = BuildHud.formatSelection(state.mode, trapLabel)
+	local mode = state.mode
+	if mode == "place" then
+		selectionLabel.Text = "COLOCAR · " .. (trapLabel or "ESCOLHA UMA ARMADILHA")
+	elseif mode == "remove" then
+		selectionLabel.Text = "REMOVER · TOQUE NA ARMADILHA"
+	else
+		selectionLabel.Text = "UPGRADE · TOQUE NA ARMADILHA"
+	end
 end
 
-local function clearTrapHighlight(): ()
-	for _, button in pairs(trapButtons) do
-		button.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+local trapCards: { [string]: any } = {}
+
+local function clearCardHighlight(): ()
+	for _, card in pairs(trapCards) do
+		UiKit.setSelected(card.frame, false)
 	end
 end
 
@@ -328,86 +342,100 @@ local function selectTrap(trapId: string): ()
 	if not BuildClientState.selectTrap(state, trapId) then
 		return
 	end
+	AudioKit.play("ui_click")
 	updateModeButtons()
-	clearTrapHighlight()
-	local button = trapButtons[trapId]
-	if button ~= nil then
-		button.BackgroundColor3 = colorFor(trapId)
+	clearCardHighlight()
+	local card = trapCards[trapId]
+	if card ~= nil then
+		UiKit.setSelected(card.frame, true)
 	end
 	refreshSelection()
 	setStatus("Colocando " .. (GridLayout.labelFor(trapId) or trapId))
 end
 
-local function ensureTrapButtons(catalog: { any }): ()
+local function ensureTrapCards(catalog: { any }): ()
 	for index, entry in ipairs(catalog) do
 		local id = entry.id
-		if trapButtons[id] == nil then
-			local button = Instance.new("TextButton")
-			button.Name = id
-			button.LayoutOrder = index
-			button.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
-			button.BorderSizePixel = 0
-			button.TextColor3 = Color3.fromRGB(235, 235, 240)
-			button.TextScaled = true
-			button.Font = Enum.Font.GothamBold
-			button.Text = string.format("%s\n%d", GridLayout.labelFor(id) or id, entry.cost)
-			button.Parent = trapRow
-			corner(button, 6)
-			limitText(button, 18)
+		if trapCards[id] == nil then
+			local card = UiKit.card(trapRow, id)
+			card.frame.LayoutOrder = index
 			if currentLayout ~= nil then
-				button.Size =
+				card.frame.Size =
 					UDim2.fromOffset(currentLayout.trapButton.w, currentLayout.trapButton.h)
-			else
-				button.Size = UDim2.new(0.19, -4, 1, 0)
 			end
-			button.MouseButton1Click:Connect(function()
+			card.frame.MouseButton1Click:Connect(function()
 				selectTrap(id)
 			end)
-			trapButtons[id] = button
+			trapCards[id] = card
 		end
 	end
 end
 
-local function updateTrapAffordability(): ()
+local function updateCardAffordability(): ()
 	local snapshot = state.snapshot
 	if snapshot == nil then
 		return
 	end
-	for id, button in pairs(trapButtons) do
+	for id, card in pairs(trapCards) do
 		local entry = BuildClientState.catalogEntry(state, id)
-		if entry ~= nil then
+		local spec = VisualTheme.TRAPS[id]
+		if entry ~= nil and spec ~= nil then
 			if entry.unlockLeague > snapshot.league then
-				button.Text =
-					string.format("%s\nliga %d", GridLayout.labelFor(id) or id, entry.unlockLeague)
-				button.TextColor3 = Color3.fromRGB(140, 140, 145)
+				card.cost.Text = "LIGA " .. tostring(entry.unlockLeague)
+				card.cost.TextColor3 = UiKit.color(VisualTheme.PALETTE.stone)
+				card.icon.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.iron)
+				card.icon.Glyph.Text = spec.icon
+				card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.stone)
 			else
-				button.Text = string.format("%s\n%d", GridLayout.labelFor(id) or id, entry.cost)
-				button.TextColor3 = Color3.fromRGB(235, 235, 240)
+				card.cost.Text = tostring(entry.cost) .. " OURO"
+				card.cost.TextColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
+				card.icon.BackgroundColor3 = UiKit.color(spec.color)
+				card.icon.Glyph.Text = spec.icon
+				card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.ink)
 			end
+			card.name.Text = spec.label
 		end
 	end
 end
 
 local function refresh(snapshot: any): ()
 	BuildClientState.setSnapshot(state, snapshot)
-	goldLabel.Text = string.format("OURO %d", snapshot.gold)
+	goldLabel.Text = tostring(snapshot.gold)
+	leagueLabel.Text = "LIGA " .. tostring(snapshot.league)
 	versionLabel.Text =
-		string.format("content v%d · liga %d", snapshot.contentVersion, snapshot.league)
-	ensureTrapButtons(snapshot.catalog)
-	updateTrapAffordability()
+		string.format("v%d · c%d", snapshot.schemaVersion or 2, snapshot.contentVersion or 2)
+	ensureTrapCards(snapshot.catalog)
+	updateCardAffordability()
 
 	for cell, button in pairs(cellButtons) do
 		local data = snapshot.cells[cell]
+		local nameLabel = button:FindFirstChild("Name")
+		local levelLabel = button:FindFirstChild("Level")
 		if data ~= nil then
-			local label = GridLayout.labelFor(data.trap) or data.trap
-			button.Text = string.format("%s\nL%d", label, data.level)
+			local spec = VisualTheme.TRAPS[data.trap]
 			button.BackgroundColor3 = colorFor(data.trap)
-			button.TextColor3 = Color3.fromRGB(255, 255, 255)
+			UiKit.stroke(button, UiKit.color(VisualTheme.PALETTE.amberBright), 2, 0)
+			if nameLabel ~= nil and nameLabel:IsA("TextLabel") then
+				nameLabel.Text = spec ~= nil and spec.icon
+					or string.upper(string.sub(data.trap, 1, 1))
+				nameLabel.TextColor3 = UiKit.color(VisualTheme.PALETTE.ink)
+			end
+			if levelLabel ~= nil and levelLabel:IsA("TextLabel") then
+				levelLabel.Text = "L" .. tostring(data.level)
+				levelLabel.TextColor3 = UiKit.color(VisualTheme.PALETTE.ink)
+			end
 		else
-			button.Text = ""
-			button.BackgroundColor3 = Color3.fromRGB(55, 55, 62)
+			button.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.stoneDark)
+			UiKit.stroke(button, UiKit.color(VisualTheme.PALETTE.iron), 1, 0.25)
+			if nameLabel ~= nil and nameLabel:IsA("TextLabel") then
+				nameLabel.Text = ""
+			end
+			if levelLabel ~= nil and levelLabel:IsA("TextLabel") then
+				levelLabel.Text = ""
+			end
 		end
 	end
+	TrapKit.sync(Workspace, snapshot.cells, Vector3.new(0, 0, 0))
 
 	local wasReady = hud.uiSeconds ~= nil
 	local uiSeconds = BuildHud.markReady(hud)
@@ -416,33 +444,43 @@ local function refresh(snapshot: any): ()
 	end
 end
 
--- S6: a raid credita ouro no servidor; o atributo avisa a UI de build para reabrir o snapshot.
-player:GetAttributeChangedSignal("MuralhaGold"):Connect(function()
-	if state.snapshot == nil then
-		return
+local function positionOfCell(cell: string): Vector3?
+	local row, col = GridLayout.parseCell(cell)
+	if row == nil or col == nil then
+		return nil
 	end
-	local ok, snapshot = pcall(function()
-		return buildSnapshot:InvokeServer()
-	end)
-	if ok and type(snapshot) == "table" then
-		refresh(snapshot)
+	local x, _, z = GridLayout.cellPosition(row, col)
+	if x == nil or z == nil then
+		return nil
 	end
-end)
+	return Vector3.new(x, 0.6, z)
+end
 
-local function send(action: string, trapId: string, cell: string): ()
+send = function(action: string, trapId: string, cell: string): ()
 	local ok, result = pcall(function()
 		return buildAction:InvokeServer(action, trapId, cell)
 	end)
 	if not ok or type(result) ~= "table" then
+		AudioKit.play("ui_deny")
 		setStatus("Servidor indisponivel")
 		return
 	end
 	if result.ok then
+		if action == "place" then
+			AudioKit.play("trap_place")
+			local position = positionOfCell(cell)
+			if position ~= nil then
+				Vfx.dust(Workspace, position, 5)
+			end
+		else
+			AudioKit.play("trap_upgrade")
+		end
 		if result.snapshot ~= nil then
 			refresh(result.snapshot)
 		end
 		setStatus("OK")
 	else
+		AudioKit.play("ui_deny")
 		setStatus("Recusado: " .. tostring(result.err))
 	end
 end
@@ -468,21 +506,25 @@ local function applyLayout(): ()
 	top.Position = UDim2.fromOffset(layout.top.x, layout.top.y)
 	top.Size = UDim2.fromOffset(layout.top.w, layout.top.h)
 	goldLabel.TextSize = layout.topFont
-	versionLabel.TextSize = layout.topFont
+	leagueLabel.TextSize = layout.topFont
+	versionLabel.TextSize = math.max(10, layout.topFont - 2)
 
-	hudFrame.Position = UDim2.fromOffset(layout.hud.x, layout.hud.y)
-	hudFrame.Size = UDim2.fromOffset(layout.hud.w, layout.hud.h)
-	hudMetrics.TextSize = layout.hudFont
-	hudSelection.TextSize = layout.hudFont
+	selectionBar.Position = UDim2.fromOffset(layout.hud.x, layout.hud.y)
+	selectionBar.Size = UDim2.fromOffset(layout.hud.w, layout.hud.h)
+	selectionLabel.TextSize = layout.hudFont
 
 	gridFrame.Position = UDim2.fromOffset(layout.grid.x, layout.grid.y)
 	gridFrame.Size = UDim2.fromOffset(layout.grid.w, layout.grid.h)
 	gridLayout.CellSize = UDim2.fromOffset(layout.cellSize, layout.cellSize)
 	gridLayout.CellPadding = UDim2.fromOffset(layout.cellPadding, layout.cellPadding)
 	for _, button in pairs(cellButtons) do
-		local constraint = button:FindFirstChildOfClass("UITextSizeConstraint")
-		if constraint ~= nil then
-			constraint.MaxTextSize = layout.cellFont
+		local nameLabel = button:FindFirstChild("Name")
+		local levelLabel = button:FindFirstChild("Level")
+		if nameLabel ~= nil and nameLabel:IsA("TextLabel") then
+			nameLabel.TextSize = layout.cellFont
+		end
+		if levelLabel ~= nil and levelLabel:IsA("TextLabel") then
+			levelLabel.TextSize = math.max(8, math.floor(layout.cellFont * 0.7))
 		end
 	end
 
@@ -505,18 +547,17 @@ local function applyLayout(): ()
 		UDim2.fromOffset(layout.traps.x - layout.bottom.x, layout.traps.y - layout.bottom.y)
 	trapRow.Size = UDim2.fromOffset(layout.traps.w, layout.traps.h)
 	trapLayout.Padding = UDim.new(0, layout.trapButton.gap)
-	for _, button in pairs(trapButtons) do
-		button.Size = UDim2.fromOffset(layout.trapButton.w, layout.trapButton.h)
-		local constraint = button:FindFirstChildOfClass("UITextSizeConstraint")
-		if constraint ~= nil then
-			constraint.MaxTextSize = layout.trapButton.font
-		end
+	for _, card in pairs(trapCards) do
+		card.frame.Size = UDim2.fromOffset(layout.trapButton.w, layout.trapButton.h)
 	end
 
 	statusLabel.Position =
 		UDim2.fromOffset(layout.status.x - layout.bottom.x, layout.status.y - layout.bottom.y)
 	statusLabel.Size = UDim2.fromOffset(layout.status.w, layout.status.h)
 	statusLabel.TextSize = layout.statusFont
+
+	debugHud.Position = UDim2.fromOffset(layout.top.x, layout.top.y + layout.top.h + 4)
+	debugHud.Size = UDim2.fromOffset(math.min(240, layout.top.w), 20)
 end
 
 root:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyLayout)
@@ -526,18 +567,26 @@ task.defer(applyLayout)
 for id, button in pairs(modeButtons) do
 	button.MouseButton1Click:Connect(function()
 		if BuildClientState.setMode(state, id) then
+			AudioKit.play("ui_click")
 			updateModeButtons()
-			clearTrapHighlight()
+			clearCardHighlight()
 			refreshSelection()
 		end
 	end)
 end
 
-for cell, button in pairs(cellButtons) do
-	button.MouseButton1Click:Connect(function()
-		onCell(cell)
-	end)
+local function toggleDebug(): ()
+	debugHud.Visible = not debugHud.Visible
 end
+
+UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+	if processed then
+		return
+	end
+	if input.KeyCode == Enum.KeyCode.F3 then
+		toggleDebug()
+	end
+end)
 
 updateModeButtons()
 refreshSelection()
@@ -560,12 +609,24 @@ task.spawn(function()
 	setStatus("Perfil nao carregou em 30s")
 end)
 
+player:GetAttributeChangedSignal("MuralhaGold"):Connect(function()
+	if state.snapshot == nil then
+		return
+	end
+	local ok, snapshot = pcall(function()
+		return buildSnapshot:InvokeServer()
+	end)
+	if ok and type(snapshot) == "table" then
+		refresh(snapshot)
+	end
+end)
+
 local hudAccumulator = 0
 RunService.RenderStepped:Connect(function(dt: number)
 	BuildHud.tick(hud, dt)
 	hudAccumulator += dt
-	if hudAccumulator >= 0.1 then
+	if hudAccumulator >= 0.2 then
 		hudAccumulator = 0
-		hudMetrics.Text = BuildHud.formatMetrics(hud)
+		debugMetrics.Text = BuildHud.formatMetrics(hud)
 	end
 end)

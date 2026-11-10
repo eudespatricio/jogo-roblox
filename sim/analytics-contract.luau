@@ -5,6 +5,7 @@
 local Core = require("../src/shared/sim/core")
 local Analytics = require("../src/shared/analytics/AnalyticsTypes")
 local AnalyticsService = require("../src/server/analytics/AnalyticsService")
+local AnalyticsDataStoreSink = require("../src/server/analytics/AnalyticsDataStoreSink")
 
 local failures = {}
 local checks = 0
@@ -767,6 +768,127 @@ check("servico sem boot recusa sem quebrar", function()
 	assert(event == nil and err == "not_started", tostring(err))
 	assert(AnalyticsService.flush("test") == 0, "flush sem servico")
 	assert(AnalyticsService.getStats() == nil, "stats sem servico")
+end)
+
+-- ---------------------------------------------------------------- sink persistente (GAP-012)
+local function fixtureEvent(name, id)
+	local event = clone(FIXTURES[name])
+	event.event_id = string.format("00000000-0000-4000-8000-%012d", id)
+	local ok, err = Analytics.validate(event)
+	assert(ok, "fixture " .. name .. " invalida: " .. tostring(err))
+	return event
+end
+
+local function fakeStore()
+	return {
+		data = {},
+		writes = 0,
+		SetAsync = function(self, key, value)
+			self.data[key] = value
+			self.writes += 1
+		end,
+		GetAsync = function(self, key)
+			return self.data[key]
+		end,
+	}
+end
+
+check("sink DataStore: grava lote valido e e idempotente por chave", function()
+	local store = fakeStore()
+	local sink = AnalyticsDataStoreSink.new({
+		types = Analytics,
+		store = store,
+		now = function()
+			return 1762800000000
+		end,
+	})
+	local first = fixtureEvent("session_start", 101)
+	local second = fixtureEvent("dropin_shown", 102)
+	local batch = { first, second }
+	local ok, err = sink.write(batch)
+	assert(ok, tostring(err))
+	assert(store.writes == 1, "writes=" .. tostring(store.writes))
+	local key = assert(sink.keyFor(batch))
+	assert(string.find(key, "A_", 1, true) == 1, "prefixo da chave: " .. key)
+	local record = assert(sink.get(key))
+	assert(record.version == 1, "version")
+	assert(#record.events == 2, "eventos no registro")
+	for _, event in ipairs(record.events) do
+		assert(Analytics.validate(event), "registro invalido")
+	end
+	assert(sink.write(batch), "retry deveria passar")
+	assert(store.writes == 2, "retry reescreveu a mesma chave")
+	local keys = 0
+	for _ in pairs(store.data) do
+		keys += 1
+	end
+	assert(keys == 1, "idempotencia: " .. tostring(keys) .. " chaves")
+end)
+
+check("sink DataStore: lote invalido nao grava", function()
+	local store = fakeStore()
+	local sink = AnalyticsDataStoreSink.new({
+		types = Analytics,
+		store = store,
+		now = function()
+			return 1762800000000
+		end,
+	})
+	local dirty = fixtureEvent("session_start", 103)
+	dirty.campo_inventado = 1
+	local ok, err = sink.write({ dirty })
+	assert(not ok and err ~= nil, "aceitou lote invalido")
+	assert(store.writes == 0, "gravou lote invalido")
+end)
+
+check("sink Memory: lotes, chunk e leitura", function()
+	local sink = AnalyticsDataStoreSink.new({
+		types = Analytics,
+		mock = true,
+		now = function()
+			return 1762800000000
+		end,
+		maxEventsPerKey = 1,
+	})
+	local first = fixtureEvent("session_start", 104)
+	local second = fixtureEvent("dropin_shown", 105)
+	assert(sink.write({ first, second }), "write")
+	assert(sink.count() == 2, "duas chaves com maxEvents=1")
+	local keys = sink.keys()
+	assert(#keys == 2, "keys")
+	for _, key in ipairs(keys) do
+		local record = assert(sink.get(key))
+		assert(#record.events == 1, "um evento por chave")
+	end
+	assert(sink.write({ first, second }), "retry")
+	assert(sink.count() == 2, "retry duplicou chave")
+end)
+
+check("sink DataStore integra com AnalyticsService", function()
+	local store = fakeStore()
+	local sink = AnalyticsDataStoreSink.new({
+		types = Analytics,
+		store = store,
+		now = function()
+			return 1762800000000
+		end,
+	})
+	local service = AnalyticsService.new({
+		types = Analytics,
+		sink = sink,
+		now = function()
+			return 1762800000000
+		end,
+		generateId = newUuidFactory(),
+		flushIntervalMs = 30000,
+		maxBatch = 100,
+	})
+	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
+	assert(service.emit(1, "dropin_shown", { ms_since_join = 10 }) ~= nil, "emit")
+	assert(service.flush("test") == 2, "flush")
+	assert(store.writes == 1, "sink nao recebeu o lote")
+	local stats = service.getStats()
+	assert(stats.flushed == 2, "flushed=" .. tostring(stats.flushed))
 end)
 
 print(string.format("contrato de analytics: %d checagens, %d falhas", checks, #failures))

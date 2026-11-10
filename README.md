@@ -17,9 +17,11 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > e **Play→UI 1,9 s** ([roteiro](docs/teste-s4-studio.md)). **S5 fechada** (drop-in/funil/+3 ouro,
 > [roteiro](docs/teste-s5-studio.md)). **S6.1 fechada** (raid, fantasma real e replay 3D,
 > [roteiro](docs/teste-s6-studio.md)). **S7 fechada** (telemetria: envelope v1, lote 30 s/100,
-> rate limit 10/min, idempotência, sink `Null` e `first_win_seconds`; contrato **30/30**,
-> [roteiro](docs/teste-s7-studio.md)). A saída da P1 (70% de primeira vitória <60 s) está
-> instrumentada e será medida no teste de 3 semanas; o sink Null não persiste a série (GAP-012).
+> rate limit 10/min, idempotência, sink DataStore/Memory e `first_win_seconds`; contrato **34/34**,
+> [roteiro](docs/teste-s7-studio.md)). **S8 fechada** (apresentação visual: diorama 5×5, traps/horda
+> 3D, UI de cartões, VFX/SFX; contrato visual **8/8**, [roteiro](docs/teste-s8-studio.md)). A saída da
+> P1 (70% de primeira vitória <60 s) está instrumentada e será medida no teste de 3 semanas; a série
+> agora persiste (GAP-012 fechado).
 > A S3.4 fechou o GAP-009 no Modo B real (schema v2, 8/8). O teste de produto de 3 semanas
 > roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
@@ -36,7 +38,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 
 - [`docs/gdd-muralha.md`](docs/gdd-muralha.md) — loop, drop-in de 5s, modos, economia, fases.
 - [`docs/spec-motor-deterministico.md`](docs/spec-motor-deterministico.md) — motor, replay, clipe, anti-cheat.
-- [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S7, critérios de pronto e riscos.
+- [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S8, critérios de pronto e riscos.
 - [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — como expandir conteúdo/features sem quebrar.
 - [`docs/gaps.md`](docs/gaps.md) — lacunas conhecidas entre P's/S's, com gatilho para fechar.
 - [`docs/versoes.md`](docs/versoes.md) — bloco canônico de versões e gate do CI.
@@ -45,6 +47,8 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/teste-s5-studio.md`](docs/teste-s5-studio.md) — roteiro de QA do drop-in da S5.
 - [`docs/teste-s6-studio.md`](docs/teste-s6-studio.md) — roteiro de QA da raid/BattleLog/replay.
 - [`docs/teste-s7-studio.md`](docs/teste-s7-studio.md) — roteiro de QA da telemetria/`first_win_seconds`.
+- [`docs/s8-plano-visual.md`](docs/s8-plano-visual.md) — plano e direção de arte da S8.
+- [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md) — roteiro de QA visual do S8 (prints/FPS).
 - [`docs/expansion-test-2026-11-10.md`](docs/expansion-test-2026-11-10.md) — trial real de classe/trait/raridade.
 - [`tools/expansion-test/`](tools/expansion-test/README.md) — kit reutilizável de trial de expansão.
 - [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
@@ -60,11 +64,12 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   poc.luau               benchmark e demo do motor v2
   invariants.luau        oráculo executável (12 checagens)
   acceptance.luau        P1: 1.000 seeds × 3 (hash 2489780106)
-  profile-contract.luau  contrato do schema v1 e da sessão do perfil
-  analytics-contract.luau contrato de analytics v1 (30 checagens: serviço/lote/rate limit/PII)
+  profile-contract.luau  contrato do schema v2 e da sessão do perfil
+  analytics-contract.luau contrato de analytics v1 (34 checagens: serviço/lote/rate limit/sink/PII)
   walls-contract.luau    contrato da muralha/economia (S3; 13 checagens, toBattleWall)
   content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
   build-contract.luau    contrato do grid/build da S4 (14 checagens: protocolo/estado/HUD/layout)
+  visual-contract.luau   contrato visual da S8 (8 checagens: paleta/traps/horda/UI/áudio/budgets)
   dropin-contract.luau   contrato do drop-in da S5 (8 checagens: estado/funil/batalha/reward)
   raid-contract.luau     contrato da raid da S6.1 (6 checagens: BattleLog/wall/replay/idempotência)
   fixtures/              fixtures da migração 0→1→2 do perfil
@@ -74,7 +79,9 @@ src/shared/dropin/       DropInState + DropInTelemetry (fases/timeout/retry e pr
 src/shared/raid/         BattleLog, ledger, replay e telemetria da raid (puros)
 src/shared/data/         schema v2 do perfil + TrapCatalog (economia/conteúdo)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
-src/server/analytics/    AnalyticsService (emit/lote/rate limit/idempotência/Null) + boot
+src/server/analytics/    AnalyticsService (emit/lote/rate limit/idempotência) + sink DataStore + boot
+src/shared/visual/       VisualTheme (paleta, traps, horda, UI, VFX, áudio)
+src/client/visual/       ArenaVisual, TrapKit, HordeKit, Vfx, AudioKit, UiKit, VisualSetup
 src/server/data/         sessão sobre o ProfileStore vendorizado + ProfileRegistry
 src/server/walls/        WallService + WallController (remotes snapshot/place/remove/upgrade)
 src/server/world/        BuildGrid: 25 células e muralha visual no Workspace
@@ -104,7 +111,8 @@ bash scripts/check.sh                  # gate: versões, build, StyLua, luau-lsp
 luau sim/invariants.luau               # oráculo do motor (12 checagens)
 luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v2)
 luau sim/profile-contract.luau         # schema v1 + sessão
-luau sim/analytics-contract.luau       # contrato de analytics v1 (30 checagens)
+luau sim/analytics-contract.luau       # contrato de analytics v1 (34 checagens)
+luau sim/visual-contract.luau          # contrato visual da S8 (8 checagens)
 luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
 luau sim/build-contract.luau           # grid/build (S4; 14 checagens)

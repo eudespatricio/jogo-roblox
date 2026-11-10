@@ -1,10 +1,11 @@
 --!nonstrict
--- S6: raid com replay visual 3D. O servidor devolve seed + wall fantasma; o cliente roda o
--- MESMO Battle deterministicamente, confere o hash e reproduz 8 s em um ViewportFrame.
--- Nao altera a camera do build: o replay mora dentro do modal.
+-- S8: raid com replay 3D em diorama. O servidor devolve seed + wall fantasma; o cliente roda o
+-- MESMO Battle, confere o hash e anima 8 s no ViewportFrame. O visual e cosmetico; a decisao
+-- de recompensa continua no servidor.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -13,6 +14,17 @@ local remotes = ReplicatedStorage:WaitForChild("MuralhaRemotes")
 local raidStart = remotes:WaitForChild("RaidStart") :: RemoteFunction
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
+local GridLayout = require(Shared:WaitForChild("build"):WaitForChild("GridLayout"))
+local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTheme"))
+
+local visual = script.Parent:WaitForChild("visual")
+local UiKit = require(visual:WaitForChild("UiKit"))
+local VisualSetup = require(visual:WaitForChild("VisualSetup"))
+local ArenaVisual = require(visual:WaitForChild("ArenaVisual"))
+local TrapKit = require(visual:WaitForChild("TrapKit"))
+local HordeKit = require(visual:WaitForChild("HordeKit"))
+local Vfx = require(visual:WaitForChild("Vfx"))
+local AudioKit = require(visual:WaitForChild("AudioKit"))
 
 for _ = 1, 50 do
 	if ReplicatedStorage:GetAttribute("RaidEnabled") ~= nil then
@@ -36,6 +48,8 @@ if ReplicatedStorage:GetAttribute("DropInEnabled") == true then
 	end
 end
 
+VisualSetup.apply()
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "RaidGui"
 gui.ResetOnSpawn = false
@@ -49,160 +63,107 @@ root.Size = UDim2.fromScale(1, 1)
 root.BackgroundTransparency = 1
 root.Parent = gui
 
-local function corner(parent: Instance, radius: number): ()
-	local uiCorner = Instance.new("UICorner")
-	uiCorner.CornerRadius = UDim.new(0, radius)
-	uiCorner.Parent = parent
-end
+local attackButton = UiKit.button(root, "Attack", "ATACAR")
+attackButton.AnchorPoint = Vector2.new(1, 0)
+attackButton.Position = UDim2.new(1, -10, 0.16, 0)
+attackButton.Size = UDim2.fromOffset(96, 34)
+attackButton.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.tealDark)
+attackButton.TextColor3 = UiKit.color(VisualTheme.PALETTE.white)
+UiKit.stroke(attackButton, UiKit.color(VisualTheme.PALETTE.teal), 2, 0)
 
-local attackButton = Instance.new("TextButton")
-attackButton.Name = "Attack"
-attackButton.Position = UDim2.fromOffset(12, 118)
-attackButton.Size = UDim2.fromOffset(104, 36)
-attackButton.BackgroundColor3 = Color3.fromRGB(90, 70, 130)
-attackButton.BorderSizePixel = 0
-attackButton.Text = "ATACAR"
-attackButton.TextColor3 = Color3.fromRGB(245, 245, 255)
-attackButton.TextScaled = true
-attackButton.Font = Enum.Font.GothamBold
-attackButton.Parent = root
-corner(attackButton, 8)
-
-local modal = Instance.new("Frame")
-modal.Name = "Modal"
+local modal = UiKit.panel(root, "Modal")
 modal.AnchorPoint = Vector2.new(0.5, 0.5)
 modal.Position = UDim2.fromScale(0.5, 0.5)
-modal.Size = UDim2.fromScale(0.8, 0.68)
-modal.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-modal.BackgroundTransparency = 0.06
-modal.BorderSizePixel = 0
+modal.Size = UDim2.fromScale(0.86, 0.7)
 modal.Visible = false
-modal.Parent = root
-corner(modal, 12)
 
 local modalConstraint = Instance.new("UISizeConstraint")
 modalConstraint.MinSize = Vector2.new(280, 420)
-modalConstraint.MaxSize = Vector2.new(440, 620)
+modalConstraint.MaxSize = Vector2.new(440, 640)
 modalConstraint.Parent = modal
 
-local title = Instance.new("TextLabel")
-title.Name = "Title"
-title.Position = UDim2.fromOffset(12, 8)
-title.Size = UDim2.new(1, -24, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "RAID"
-title.TextColor3 = Color3.fromRGB(230, 220, 255)
-title.TextXAlignment = Enum.TextXAlignment.Left
+local title = UiKit.label(
+	modal,
+	"Title",
+	"RAID",
+	UiKit.color(VisualTheme.PALETTE.amberBright),
+	Enum.Font.GothamBlack
+)
+title.Position = UDim2.fromOffset(14, 8)
+title.Size = UDim2.new(1, -28, 0, 30)
 title.TextScaled = true
-title.Font = Enum.Font.GothamBlack
-title.Parent = modal
 
-local status = Instance.new("TextLabel")
-status.Name = "Status"
-status.Position = UDim2.fromOffset(12, 42)
-status.Size = UDim2.new(1, -24, 0, 24)
-status.BackgroundTransparency = 1
-status.Text = "ATACANDO..."
-status.TextColor3 = Color3.fromRGB(200, 210, 235)
-status.TextXAlignment = Enum.TextXAlignment.Left
+local status = UiKit.label(
+	modal,
+	"Status",
+	"ATACANDO...",
+	UiKit.color(VisualTheme.PALETTE.parchment),
+	Enum.Font.GothamBold
+)
+status.Position = UDim2.fromOffset(14, 40)
+status.Size = UDim2.new(1, -28, 0, 22)
 status.TextScaled = true
-status.Font = Enum.Font.Gotham
-status.Parent = modal
 
-local details = Instance.new("TextLabel")
-details.Name = "Details"
-details.Position = UDim2.fromOffset(12, 68)
-details.Size = UDim2.new(1, -24, 0, 80)
-details.BackgroundTransparency = 1
-details.Text = ""
-details.TextColor3 = Color3.fromRGB(220, 235, 220)
-details.TextXAlignment = Enum.TextXAlignment.Left
+local details =
+	UiKit.label(modal, "Details", "", UiKit.color(VisualTheme.PALETTE.stone), Enum.Font.Code)
+details.Position = UDim2.fromOffset(14, 64)
+details.Size = UDim2.new(1, -28, 0, 64)
 details.TextYAlignment = Enum.TextYAlignment.Top
 details.TextWrapped = true
+details.TextScaled = false
 details.TextSize = 11
-details.Font = Enum.Font.Code
-details.Parent = modal
 
 local viewport = Instance.new("ViewportFrame")
 viewport.Name = "Replay"
-viewport.Position = UDim2.new(0.05, 0, 0.30, 0)
+viewport.Position = UDim2.new(0.05, 0, 0.27, 0)
 viewport.Size = UDim2.new(0.9, 0, 0.38, 0)
-viewport.BackgroundColor3 = Color3.fromRGB(20, 28, 24)
+viewport.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
 viewport.BorderSizePixel = 0
 viewport.Ambient = Color3.fromRGB(120, 120, 120)
-viewport.LightColor = Color3.fromRGB(255, 245, 220)
+viewport.LightColor = Color3.fromRGB(255, 240, 210)
 viewport.LightDirection = Vector3.new(-1, -1, -0.5)
 viewport.Visible = false
 viewport.Parent = modal
-corner(viewport, 8)
+UiKit.corner(viewport, 8)
+UiKit.stroke(viewport, UiKit.color(VisualTheme.PALETTE.iron), 1, 0.15)
 
-local wallLabel = Instance.new("TextLabel")
-wallLabel.Name = "WallLabel"
-wallLabel.Position = UDim2.new(0.06, 0, 0.305, 0)
+local wallLabel = UiKit.label(
+	modal,
+	"WallLabel",
+	"MURALHA 100%",
+	UiKit.color(VisualTheme.PALETTE.parchment),
+	Enum.Font.GothamBold
+)
+wallLabel.Position = UDim2.new(0.06, 0, 0.66, 0)
 wallLabel.Size = UDim2.new(0.88, 0, 0, 18)
-wallLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-wallLabel.BackgroundTransparency = 0.35
-wallLabel.BorderSizePixel = 0
-wallLabel.Text = "MURALHA 100%"
-wallLabel.TextColor3 = Color3.fromRGB(220, 240, 220)
-wallLabel.TextXAlignment = Enum.TextXAlignment.Left
-wallLabel.TextSize = 11
-wallLabel.Font = Enum.Font.Code
 wallLabel.Visible = false
-wallLabel.Parent = modal
+wallLabel.TextScaled = true
 
-local bar = Instance.new("Frame")
-bar.Name = "ReplayBar"
-bar.Position = UDim2.new(0, 12, 0.72, 0)
-bar.Size = UDim2.new(1, -24, 0, 16)
-bar.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
-bar.BorderSizePixel = 0
-bar.ClipsDescendants = true
-bar.Parent = modal
-corner(bar, 6)
+local wallProgress = UiKit.progress(modal, "WallProgress", UiKit.color(VisualTheme.PALETTE.amber))
+wallProgress.frame.Position = UDim2.new(0, 14, 0.71, 0)
+wallProgress.frame.Size = UDim2.new(1, -28, 0, 14)
+wallProgress.frame.Visible = false
 
-local fill = Instance.new("Frame")
-fill.Name = "Fill"
-fill.Size = UDim2.fromScale(0, 1)
-fill.BackgroundColor3 = Color3.fromRGB(120, 90, 190)
-fill.BorderSizePixel = 0
-fill.Parent = bar
-corner(fill, 6)
+local replayProgress =
+	UiKit.progress(modal, "ReplayProgress", UiKit.color(VisualTheme.PALETTE.teal))
+replayProgress.frame.Position = UDim2.new(0, 14, 0.78, 0)
+replayProgress.frame.Size = UDim2.new(1, -28, 0, 8)
+replayProgress.frame.Visible = false
 
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "Close"
+local closeButton = UiKit.button(modal, "Close", "FECHAR")
 closeButton.AnchorPoint = Vector2.new(0.5, 1)
-closeButton.Position = UDim2.new(0.5, 0, 0.82, 0)
-closeButton.Size = UDim2.new(0.5, 0, 0, 34)
-closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-closeButton.BorderSizePixel = 0
-closeButton.Text = "FECHAR"
-closeButton.TextColor3 = Color3.fromRGB(235, 235, 245)
-closeButton.TextScaled = true
-closeButton.Font = Enum.Font.GothamBold
-closeButton.Parent = modal
-corner(closeButton, 8)
+closeButton.Position = UDim2.new(0.5, 0, 0.88, 0)
+closeButton.Size = UDim2.new(0.5, 0, 0, 36)
 
 local busy = false
 local scene: Folder? = nil
-local unitParts: { BasePart } = {}
+local units: { any } = {}
+local unitVisible: { boolean } = {}
+local lastWallPct = 1
 
 local function setBusy(value: boolean): ()
 	busy = value
 	attackButton.Visible = not value
-end
-
-local function makePart(parent: Instance, size: Vector3, cframe: CFrame, color: Color3): BasePart
-	local part = Instance.new("Part")
-	part.Anchored = true
-	part.CanCollide = false
-	part.CastShadow = false
-	part.Size = size
-	part.CFrame = cframe
-	part.Color = color
-	part.Material = Enum.Material.SmoothPlastic
-	part.Parent = parent
-	return part
 end
 
 local function clearScene(): ()
@@ -213,7 +174,10 @@ local function clearScene(): ()
 	viewport.CurrentCamera = nil
 	viewport.Visible = false
 	wallLabel.Visible = false
-	unitParts = {}
+	wallProgress.frame.Visible = false
+	replayProgress.frame.Visible = false
+	units = {}
+	unitVisible = {}
 end
 
 -- Roda o MESMO Battle do servidor e captura quadros. O hash final tem que bater.
@@ -226,10 +190,10 @@ local function buildFrames(result: any): (any, any)
 	})
 	local frames = {}
 	local function snapshot()
-		local units = {}
+		local unitsFrame = {}
 		for index = 1, battle.uCount do
 			if battle.uHp[index] > 0 then
-				units[#units + 1] = {
+				unitsFrame[#unitsFrame + 1] = {
 					lane = battle.uLane[index],
 					x = battle.uX[index],
 				}
@@ -237,7 +201,7 @@ local function buildFrames(result: any): (any, any)
 		end
 		frames[#frames + 1] = {
 			wallPct = math.clamp(battle.wallHp / battle.wallMax, 0, 1),
-			units = units,
+			units = unitsFrame,
 		}
 	end
 	snapshot()
@@ -256,64 +220,63 @@ local function buildScene(result: any): ()
 	scene.Parent = viewport
 
 	local camera = Instance.new("Camera")
-	camera.FieldOfView = 55
-	camera.CFrame = CFrame.lookAt(Vector3.new(20, 22, 38), Vector3.new(20, 1, 0))
+	camera.FieldOfView = 60
+	camera.CFrame = CFrame.lookAt(Vector3.new(28, 20, 38), Vector3.new(0, 2, 0))
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
 
-	makePart(scene, Vector3.new(48, 1, 22), CFrame.new(20, -0.5, 0), Color3.fromRGB(60, 100, 58))
-	for lane = 0, 4 do
-		local z = -8 + lane * 4
-		makePart(
-			scene,
-			Vector3.new(44, 0.14, 3.2),
-			CFrame.new(20, 0.07, z),
-			Color3.fromRGB(45, 65, 45)
-		)
-	end
-	makePart(scene, Vector3.new(3, 9, 23), CFrame.new(0, 4.5, 0), Color3.fromRGB(42, 62, 44))
-	makePart(scene, Vector3.new(1.4, 7, 11), CFrame.new(1.5, 3.5, 0), Color3.fromRGB(92, 54, 34))
+	ArenaVisual.build(scene, Vector3.new(0, 0, 0), { dropIn = false })
 
-	local colors = {
-		archer = Color3.fromRGB(80, 190, 110),
-		frost = Color3.fromRGB(120, 200, 240),
-		tar = Color3.fromRGB(150, 120, 70),
-		cannon = Color3.fromRGB(220, 120, 60),
-		catapult = Color3.fromRGB(210, 90, 160),
-	}
+	local cells = {}
 	for _, trap in ipairs(result.wall.traps or {}) do
-		local row, col = string.match(tostring(trap.cell), "^r(%d+)c(%d+)$")
-		if row ~= nil and col ~= nil then
-			local x = 2 + tonumber(col) * 6
-			local z = -8 + (tonumber(row) - 1) * 4
-			local color = colors[trap.type] or Color3.fromRGB(180, 180, 180)
-			makePart(scene, Vector3.new(2.6, 1.8, 3.2), CFrame.new(x, 0.9, z), color)
+		if trap.cell ~= nil then
+			cells[trap.cell] = { trap = trap.type, level = trap.level }
 		end
 	end
+	TrapKit.sync(scene, cells, Vector3.new(0, 0, 0))
 
-	unitParts = {}
+	units = {}
+	unitVisible = {}
 	for index = 1, 70 do
-		local part = makePart(
-			scene,
-			Vector3.new(2.2, 2.2, 2.2),
-			CFrame.new(40, 1.2, 0),
-			Color3.fromRGB(200, 55, 55)
-		)
-		part.Transparency = 1
-		unitParts[index] = part
+		local kind = (index % 7 == 0 and "brute") or (index % 3 == 0 and "swarm") or "runner"
+		local unit = HordeKit.create(kind, scene, CFrame.new(24, 0.9, 0))
+		if unit ~= nil then
+			HordeKit.setVisible(unit, false)
+			units[index] = unit
+			unitVisible[index] = false
+		end
 	end
 end
 
 local function updateFrame(frame: any): ()
-	wallLabel.Text = string.format("MURALHA %d%%", math.floor((frame.wallPct or 0) * 100))
-	for _, part in ipairs(unitParts) do
-		part.Transparency = 1
+	local pct = frame.wallPct or 0
+	if math.abs(pct - lastWallPct) > 0.005 then
+		lastWallPct = pct
+		Vfx.dust(scene, Vector3.new(-22, 1, 0), 4)
 	end
-	for index, unit in ipairs(frame.units or {}) do
-		local part = unitParts[index]
-		if part ~= nil then
-			part.Transparency = 0
-			part.CFrame = CFrame.new(unit.x / 10000 * 40, 1.2, -8 + unit.lane * 4)
+	wallLabel.Text = string.format("MURALHA %d%%", math.floor(pct * 100))
+	wallProgress.set(pct)
+	local seen = {}
+	for index, unitData in ipairs(frame.units or {}) do
+		seen[index] = true
+		local unit = units[index]
+		if unit ~= nil then
+			if not unitVisible[index] then
+				HordeKit.setVisible(unit, true)
+				unitVisible[index] = true
+			end
+			local z = -16 + (unitData.lane - 1) * 8
+			local x = -22 + (unitData.x / 10000) * 47
+			HordeKit.setBase(unit, CFrame.new(x, 0.9, z))
+			HordeKit.step(unit, time(), true)
+		end
+	end
+	for index, unit in pairs(units) do
+		if not seen[index] and unitVisible[index] then
+			local position = unit.base and unit.base.Position or Vector3.new(0, 0, 0)
+			Vfx.death(scene, position, Color3.fromRGB(20, 184, 166))
+			HordeKit.setVisible(unit, false)
+			unitVisible[index] = false
 		end
 	end
 end
@@ -329,8 +292,12 @@ local function startReplay(result: any): ()
 	clearScene()
 	viewport.Visible = true
 	wallLabel.Visible = true
+	wallProgress.frame.Visible = true
+	replayProgress.frame.Visible = true
 	closeButton.Visible = false
-	fill.Size = UDim2.fromScale(0, 1)
+	wallProgress.set(1)
+	replayProgress.set(0)
+	lastWallPct = 1
 
 	local ok, frames, final = pcall(buildFrames, result)
 	if not ok or type(frames) ~= "table" or type(final) ~= "table" then
@@ -354,11 +321,7 @@ local function startReplay(result: any): ()
 		showError("Replay 3D indisponivel: " .. tostring(sceneErr))
 		return
 	end
-	local firstOk, firstErr = pcall(updateFrame, frames[1])
-	if not firstOk then
-		showError("Replay 3D indisponivel: " .. tostring(firstErr))
-		return
-	end
+	pcall(updateFrame, frames[1])
 	local seconds = tonumber(result.replaySeconds) or 8
 	local started = time()
 	task.spawn(function()
@@ -367,15 +330,16 @@ local function startReplay(result: any): ()
 				local progress = math.clamp((time() - started) / seconds, 0, 1)
 				local index = math.clamp(math.floor(progress * (#frames - 1)) + 1, 1, #frames)
 				updateFrame(frames[index])
-				fill.Size = UDim2.fromScale(progress, 1)
+				replayProgress.set(progress)
 				if progress >= 1 then
 					break
 				end
-				task.wait(0.03)
+				RunService.Heartbeat:Wait()
 			end
 		end)
 		if animationOk then
 			status.Text = "REPLAY CONCLUIDO · " .. tostring(seconds) .. "s"
+			AudioKit.play(result.winner == "attacker" and "victory" or "defeat", 0.6)
 		else
 			status.Text = "REPLAY FALHOU"
 			details.Text = "Erro na animacao: " .. tostring(animationErr)
@@ -394,8 +358,6 @@ local function hideModal(): ()
 	modal.Visible = false
 	status.Text = "PRONTO"
 	details.Text = ""
-	fill.Size = UDim2.fromScale(0, 1)
-	closeButton.Visible = true
 	setBusy(false)
 end
 
@@ -406,9 +368,11 @@ attackButton.MouseButton1Click:Connect(function()
 	setBusy(true)
 	showModal()
 	status.Text = "ATACANDO..."
+	status.TextColor3 = UiKit.color(VisualTheme.PALETTE.parchment)
 	details.Text = ""
 	closeButton.Visible = false
 	clearScene()
+	AudioKit.play("ui_click")
 
 	local ok, result = pcall(function()
 		return raidStart:InvokeServer()
@@ -424,8 +388,12 @@ attackButton.MouseButton1Click:Connect(function()
 
 	if result.winner == "attacker" then
 		status.Text = "VITORIA"
+		status.TextColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
+		AudioKit.play("victory")
 	else
 		status.Text = "DERROTA"
+		status.TextColor3 = UiKit.color(VisualTheme.PALETTE.danger)
+		AudioKit.play("defeat")
 	end
 	details.Text = string.format(
 		"fantasma %s\n%s\nhash %s\nHP %s · vazados %s · +%s ouro",

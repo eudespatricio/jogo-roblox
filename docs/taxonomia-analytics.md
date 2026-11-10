@@ -3,7 +3,8 @@
 > **Status:** **v1 aprovada e implementada em 09/11/2026** (fechamento da P0). O contrato
 > executável é `src/shared/analytics/AnalyticsTypes.luau`, validado no CI por
 > `sim/analytics-contract.luau`; o serviço da S7 (`AnalyticsService`) valida 100% dos eventos e o
-> sink do MVP é `Null` (GAP-012: sem persistência da série; DataStore/externo fica para o teste/P2).
+> sink do MVP é `DataStore` em lote (`MuralhaAnalytics_v1`), com `Memory` no Studio e `Null` por
+> override; a série de `first_win_seconds` persiste para o teste de 3 semanas.
 > Não escolhe fornecedor: define nomes, envelope, funil, métricas e regras de emissão.
 > Fontes: [spec do motor](spec-motor-deterministico.md) §8, [GDD](gdd-muralha.md) §8,
 > [revisão de direção](revisao-direcao.md) §7, [padrões](padroes-engenharia.md) §3 e §8.3.
@@ -18,8 +19,8 @@
 3. **Servidor é a fonte** dos eventos de jogo. Cliente só emite eventos de UI, com rate limit.
 4. **`schema_version = 1`**; mudanças só aditivas. Renomear = evento novo + depreciação.
 5. **Sink do MVP/teste:** `AnalyticsService` para os funis da plataforma + DataStore em lote para o
-   detalhe. A S7 entrega o sink `Null` (valida e descarta); a persistência da série é GAP-012 e o
-   sink externo/DataStore só entra no teste/P2, quando o volume justificar.
+   detalhe. A S7 entrega `AnalyticsDataStoreSink` (DataStore em produção, Memory no Studio e Null
+   por override); o sink externo/warehouse continua fora do escopo até o volume justificar (P2).
 6. **Sem PII:** nada de nome, chat, idade exata, IP ou device ID. `player_id` é hash com salt do lugar.
 7. **Batalha:** eventos carregam `battle_id`, `seed`, `sim_version` e `result_hash`; analytics **nunca**
    entra no hash nem no estado da simulação.
@@ -169,7 +170,7 @@ D1/D7 usam **dia UTC** e `lastSeenAt` do servidor; sessão que cruza meia-noite 
 
 | Fase | Sink | Por quê |
 |---|---|---|
-| MVP/teste (300–500 jogadores) | `AnalyticsService` + DataStore em lote | barato, sem infra; exportar com `rbxcloud` e apagar |
+| MVP/teste (300–500 jogadores) | `AnalyticsService` + `AnalyticsDataStoreSink` (`MuralhaAnalytics_v1`) | barato, sem infra; exportar com `rbxcloud` e apagar |
 | P2 (25 mil DAU) | sink externo via `HttpService` | DataStore não é banco analítico: 4 MB/chave e cooldown de escrita |
 | P3+ | warehouse (BigQuery/Postgres/ClickHouse) + schema registry | consulta, coorte e dashboard |
 
@@ -188,15 +189,16 @@ nada de texto livre; `PolicyService`/idade só como booleano.
 | `src/shared/analytics/AnalyticsTypes.luau` | envelope, catálogo tipado, enums, limites, anti-PII, `newEvent`/batalha | **feito** |
 | `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII, integração com o motor | **feito** |
 | `sim/walls-contract.luau` | valida `trap_placed`/`gold_spent`/`gold_earned` da S3 | **feito (S3)** |
-| `src/server/analytics/AnalyticsService.luau` | `emit`, sink `Null`, lote 30 s/100, rate limit 10/min, idempotência, teto de 200/sessão e `first_win_seconds` | **feito na S7 (10/11/2026)** |
+| `src/server/analytics/AnalyticsService.luau` | `emit`, lote 30 s/100, rate limit 10/min, idempotência, teto de 200/sessão e `first_win_seconds` | **feito na S7 (10/11/2026)** |
+| `src/server/analytics/AnalyticsDataStoreSink.luau` | sink persistente em DataStore (`A_<event_id>`, 100 eventos/lote), Memory no Studio, retry idempotente | **feito no GAP-012 (10/11/2026)** |
 | `src/server/analytics/AnalyticsBoot.server.luau` | liga sessão/perfil, `player_id` hash32 com salt, `session_start`/`session_end`, ticker de flush e relatório de `first_win_seconds` | **feito na S7** |
-| `docs/teste-s7-studio.md` | roteiro de QA da telemetria (logs, contrato, limites do sink Null) | **feito na S7** |
+| `docs/teste-s7-studio.md` | roteiro de QA da telemetria (logs, contrato, sink DataStore/Memory e export) | **feito na S7; GAP-012 fechado** |
 | `src/shared/sim/core.luau` | motor v3 (5×5/N=5, 5 tipos); `BattleResult` carrega `seed`, `simVersion` e `hash` | **feito** |
 | CI | `check.sh` roda o contrato junto dos invariantes; hash `2489780106` e `sim_version 3` obrigatórios | **feito** |
 
 Teste de aceitação: 1.000 batalhas com hash estável **e** todos os eventos de batalha validados;
-nenhum evento altera `result_hash`; sink `Null` não quebra o fluxo. Na S7 o contrato está em
-**30/30** e inclui lote, rate limit, idempotência, teto de sessão, PII e a coorte sintética de
+nenhum evento altera `result_hash`; sink persistente não quebra o fluxo e `Null` continua como override. Na S7 o contrato está em
+**34/34** e inclui lote, rate limit, idempotência, teto de sessão, PII e a coorte sintética de
 `first_win_seconds` (7/10 = 70%, prova da aritmética; não é medição de produto).
 
 ---
@@ -222,8 +224,8 @@ limit de cliente é 10/min (`client_error(code=rate_limited)` no excedente) e o 
 200 eventos (acima disso só funil/monetização). `first_win_seconds` usa o `ts` do `first_win` menos
 o `ts` do `session_start` e o relatório separa jogadores novos (`is_returning=false`).
 
-**Limite conhecido — GAP-012:** o sink é `Null`; nada persiste. O relatório de 70% é deste servidor
-e se perde no leave. O teste de 3 semanas precisa de sink persistente/export antes de fechar a P1.
-Nenhuma mudança de schema, conteúdo ou simulação foi feita na S7. A única mudança de contrato foi
-**aditiva**: `battle_started.traps_count` aceita `0` (muralha vazia), estado que o motor já produz;
-nomes, enums e `schema_version = 1` continuam iguais.
+**GAP-012 fechado em 10/11/2026:** o sink é `DataStore` em produção (`MuralhaAnalytics_v1`) e
+`Memory` no Studio; o relatório de 70% agora tem série persistida/exportável para o teste de 3
+semanas. Nenhuma mudança de schema, conteúdo ou simulação foi feita na S7. A única mudança de
+contrato foi **aditiva**: `battle_started.traps_count` aceita `0` (muralha vazia), estado que o motor
+já produz; nomes, enums e `schema_version = 1` continuam iguais.

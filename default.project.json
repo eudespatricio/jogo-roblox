@@ -2,14 +2,12 @@
   "name": "jogo-roblox",
   "tree": {
     "$className": "DataModel",
-
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Shared": {
         "$path": "src/shared"
       }
     },
-
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
@@ -17,12 +15,10 @@
         "$path": "src/client"
       }
     },
-
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "$path": "src/server"
     },
-
     "ServerStorage": {
       "$className": "ServerStorage",
       "Vendor": {
@@ -32,7 +28,6 @@
         }
       }
     },
-
     "Workspace": {
       "$className": "Workspace",
       "$path": "src/world",
@@ -40,16 +35,26 @@
         "$className": "Terrain"
       }
     },
-
     "Lighting": {
       "$className": "Lighting",
       "$properties": {
         "Technology": "ShadowMap",
-        "ClockTime": 14.5,
-        "Brightness": 2.5,
+        "ClockTime": 17.1,
+        "Brightness": 2.15,
         "GlobalShadows": true,
-        "Ambient": [0.35, 0.35, 0.4],
-        "OutdoorAmbient": [0.55, 0.55, 0.6]
+        "Ambient": [
+          0.12,
+          0.13,
+          0.15
+        ],
+        "OutdoorAmbient": [
+          0.2,
+          0.22,
+          0.24
+        ],
+        "EnvironmentDiffuseScale": 0.35,
+        "EnvironmentSpecularScale": 0.2,
+        "ShadowSoftness": 0.35
       }
     }
   }

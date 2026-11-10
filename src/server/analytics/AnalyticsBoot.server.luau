@@ -1,12 +1,14 @@
 --!nonstrict
 -- S7: liga o AnalyticsService ao servidor. O servico e puro; aqui ficam o relogio, o UUID,
--- o contexto do jogador (player_id com salt, nunca UserId cru), o sink Null e o ciclo de
--- sessao (join/leave/shutdown). O envelope e validado pelo contrato v1 antes de entrar no lote.
+-- o contexto do jogador (player_id com salt, nunca UserId cru), o sink e o ciclo de sessao
+-- (join/leave/shutdown). O envelope e validado pelo contrato v1 antes de entrar no lote.
 --
+-- Sink (GAP-012): producao usa DataStore em lote (`MuralhaAnalytics_v1`); Studio usa Memory
+-- por padrao. ServerStorage.AnalyticsSink = "DataStore" | "Memory" | "Null" forca o modo.
 -- Debug: no Studio (ou com ServerStorage.AnalyticsDebug=true) cada evento aceito sai como
--- "[analytics] <nome> <props>" e cada lote como "[analytics] lote ...". Em producao o sink Null
--- descarta os eventos e so as linhas de sessao/relatorio aparecem no Output.
+-- "[analytics] <nome> <props>" e cada lote como "[analytics] lote ...".
 
+local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
@@ -20,6 +22,7 @@ local ProfileSchema = require(Shared:WaitForChild("data"):WaitForChild("ProfileS
 local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local AnalyticsService = require(script.Parent:WaitForChild("AnalyticsService"))
+local AnalyticsDataStoreSink = require(script.Parent:WaitForChild("AnalyticsDataStoreSink"))
 
 local DEBUG = RunService:IsStudio() or ServerStorage:GetAttribute("AnalyticsDebug") == true
 local SALT =
@@ -93,9 +96,40 @@ local function nowMs(): number
 	return DateTime.now().UnixTimestampMillis
 end
 
+local function resolveSink(): (any, string)
+	local requested = ServerStorage:GetAttribute("AnalyticsSink")
+	if requested == "Null" then
+		return AnalyticsService.NullSink(AnalyticsTypes), "Null"
+	end
+	local wantDataStore = requested == "DataStore"
+		or (requested == nil and not RunService:IsStudio())
+	if wantDataStore then
+		local ok, dataStore = pcall(function()
+			return DataStoreService:GetDataStore(AnalyticsDataStoreSink.STORE_NAME)
+		end)
+		if ok and dataStore ~= nil then
+			return AnalyticsDataStoreSink.new({
+				types = AnalyticsTypes,
+				store = dataStore,
+				now = nowMs,
+			}),
+				"DataStore"
+		end
+		warn("[analytics] DataStore indisponivel; caindo para Memory: " .. tostring(dataStore))
+	end
+	local memory = AnalyticsDataStoreSink.new({
+		types = AnalyticsTypes,
+		mock = true,
+		now = nowMs,
+	})
+	return memory, "Memory"
+end
+
+local sink, sinkName = resolveSink()
+
 local service = AnalyticsService.new({
 	types = AnalyticsTypes,
-	sink = AnalyticsService.NullSink(AnalyticsTypes),
+	sink = sink,
 	now = nowMs,
 	generateId = newUuid,
 	onError = function(message: string)
@@ -114,6 +148,13 @@ local service = AnalyticsService.new({
 })
 
 AnalyticsService.start(service)
+print(
+	string.format(
+		"[analytics] sink=%s name=%s",
+		sinkName,
+		sinkName == "DataStore" and AnalyticsDataStoreSink.STORE_NAME or "-"
+	)
+)
 
 local function waitForProfile(player: Player): any?
 	for _ = 1, 100 do
@@ -173,13 +214,14 @@ local function finishSession(player: Player): ()
 	local report = service.getFirstWinReport()
 	print(
 		string.format(
-			"[analytics] first_win_seconds novas=%d ganhos=%d <60s=%d taxa=%.1f%% p50=%ss p95=%ss (amostra deste servidor; sink Null)",
+			"[analytics] first_win_seconds novas=%d ganhos=%d <60s=%d taxa=%.1f%% p50=%ss p95=%ss (amostra deste servidor; sink %s)",
 			report.new_players,
 			report.new_player_first_wins,
 			report.new_player_under_60,
 			report.rate_under_60 * 100,
 			formatSeconds(report.p50_seconds),
-			formatSeconds(report.p95_seconds)
+			formatSeconds(report.p95_seconds),
+			sinkName
 		)
 	)
 end
@@ -210,7 +252,8 @@ end
 
 print(
 	string.format(
-		"[analytics] servico pronto sink=Null flush=%ds/%d rate=%d/min debug=%s",
+		"[analytics] servico pronto sink=%s flush=%ds/%d rate=%d/min debug=%s",
+		sinkName,
 		AnalyticsService.FLUSH_INTERVAL_MS / 1000,
 		AnalyticsService.MAX_BATCH,
 		AnalyticsService.MAX_CLIENT_EVENTS_PER_MINUTE,
