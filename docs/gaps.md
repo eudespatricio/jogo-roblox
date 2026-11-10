@@ -50,8 +50,8 @@ conteúdo/feature/P2 e não bloqueiam a cena/build.
 | GAP-008 | não | campos de variante na taxonomia v2 | feature de classe/variantes |
 | GAP-005 | não | eventos/flags/calendário | P2/live ops |
 
-**Próximo:** QA humano da S6.1 (replay 3D + fantasma real). A expansão de classe/taxonomia v2
-continua bloqueada por GAP-004/008; GAP-011 fechou no `BattleLog`.
+**Próximo:** S7 — telemetria (não iniciada). A expansão de classe/taxonomia v2 continua
+bloqueada por GAP-004/008; GAP-011 fechou no `BattleLog`.
 
 ## S3.4 — conteúdo e versões (10/11/2026)
 
@@ -77,10 +77,10 @@ entrega cena/DEFENDER, timeout/retry, `dropin_shown`/`dropin_pressed` como props
 **+3 ouro** no clear (`WallService.creditGold(3, "defense")`); envelope/sink é S7. A taxa ≥60% é
 medida no teste de 3 semanas; QA de feature em [`teste-s5-studio.md`](teste-s5-studio.md) §8.
 
-## S6.1 — fantasma real + replay 3D + GAP-011 fechado (10/11/2026)
+## S6.1 — fechada: fantasma real + replay 3D + GAP-011 (10/11/2026)
 
 Sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `2489780106`). O `BattleLog` agora
 persiste `contentVersion` e `isReplayable` recusa conteúdo futuro; `sim/raid-contract.luau` prova
 hash de replay, 1 chave por `battle_id`, `wall` no log, `MuralhaPhantom_v1` e recompensa
-idempotente. GAP-011 **fechado**; QA visual do replay 3D/fantasma pendente em
-[`teste-s6-studio.md`](teste-s6-studio.md) §7.
+idempotente. GAP-011 **fechado**; QA visual do replay 3D/fantasma fechado em
+[`teste-s6-studio.md`](teste-s6-studio.md) §7. Próxima: S7.

@@ -15,8 +15,8 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > GAP-001/002/003/010 fechados. **S4 fechada** em 10/11/2026: cena 5×5, UI de build, remotes,
 > HUD de debug, layout 375×812/720×1280, grant de QA e contrato **14/14**; QA runtime com **FPS 60/60**
 > e **Play→UI 1,9 s** ([roteiro](docs/teste-s4-studio.md)). **S5 fechada** (drop-in/funil/+3 ouro,
-> [roteiro](docs/teste-s5-studio.md)). **S6.1 iniciada** (raid, fantasma real e replay 3D; QA
-> visual pendente, [roteiro](docs/teste-s6-studio.md)).
+> [roteiro](docs/teste-s5-studio.md)). **S6.1 fechada** (raid, fantasma real e replay 3D,
+> [roteiro](docs/teste-s6-studio.md)); **S7** é a próxima fatia (não iniciada).
 > A S3.4 fechou o GAP-009 no Modo B real (schema v2, 8/8). O teste de produto de 3 semanas
 > roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
