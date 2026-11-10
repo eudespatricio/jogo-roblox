@@ -10,7 +10,7 @@ Leia nesta ordem, antes de qualquer ação:
 ## Regras duras
 
 - **P2+ não começa sem autorização explícita do diretor.** A P1 foi autorizada em 09/11/2026 e está
-  em execução (S1–S3.3 fechadas; S3.4 fechada com Modo B real 8/8; S4 em QA headless, falta Studio); o plano está em
+  em execução (S1–S4 fechadas; S5 pendente); o plano está em
   `docs/p1-plano.md` (S1–S7, critérios de pronto).
 - **`src/` é produção.** O legado de moedas foi apagado na S1 (09/11/2026) e está preservado na
   tag anotada `legacy-coins` (commit `b07b4c5`). Não ressuscite `CoinService`/`DataService`/`Config`.

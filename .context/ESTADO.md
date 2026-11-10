@@ -10,8 +10,8 @@
 ## Fase
 
 **P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 fechada** (código + Modo B
-real 8/8); **S4 em QA headless pronto** (cena/UI/remotes + HUD/layout; falta Studio). Plano em
-`docs/p1-plano.md`, teste de 3 semanas em paralelo.
+real 8/8); **S4 fechada** (FPS 60/60, Play→UI 1,9 s, prints 375×812/720×1280); **S5 pendente**.
+Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -35,7 +35,7 @@ real 8/8); **S4 em QA headless pronto** (cena/UI/remotes + HUD/layout; falta Stu
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
-- Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
+- Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial); S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s).
 - Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
@@ -51,10 +51,9 @@ real 8/8); **S4 em QA headless pronto** (cena/UI/remotes + HUD/layout; falta Stu
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S4 cena 5×5/build em QA → S5 drop-in → S6 raid/replay → S7 telemetria.
-  Saída: 70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- S4: cena/UI/remotes + HUD/layout/grant de QA prontos; falta o QA humano no Studio (logs/prints/FPS
-  da §7). O sink `AnalyticsService` é S7.
+- **P1** (2–3 semanas): S5 drop-in → S6 raid/replay → S7 telemetria. Saída: 70% de primeira vitória
+  < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- S5: drop-in de 5 s ainda não iniciado; S6/S7 depois. O sink `AnalyticsService` é S7.
 - GAPs abertos: GAP-004/005/008/011 (001/002/003/009/010 fechados); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
@@ -68,8 +67,8 @@ real 8/8); **S4 em QA headless pronto** (cena/UI/remotes + HUD/layout; falta Stu
 
 ## Próximo passo
 
-1. S4: QA humano no Studio (itens 1–3 de `docs/teste-s4-studio.md` §7) e corrigir o que apontar.
-2. Depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
+1. S5: drop-in de 5 s (`docs/p1-plano.md`); não iniciada nesta janela.
+2. Depois S6–S7; GAP-011 entra na S6.
 
 ## Como verificar o estado em 1 minuto
 

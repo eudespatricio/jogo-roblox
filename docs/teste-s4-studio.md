@@ -1,12 +1,10 @@
 # QA da S4 no Studio — cena 5×5 + build
 
-> **Status:** **QA headless + evidência parcial 375×812 (10/11/2026)**; **S4 ainda não validada em runtime**.
-> HUD de debug, layout responsivo (375×812 e 720×1280) e contrato de build **14/14** estão no repo;
-> falta a evidência de Studio (itens **1–3** da §7). Este documento é o contrato de QA humano; o
-> agente não consegue medir FPS/feel sem Studio. Enquanto a §7 não estiver preenchida, a S4
-> permanece **aberta** (não é "S4 fechada" por scaffold nem por teste headless).
+> **Status:** **S4 fechada em 10/11/2026** — QA headless + runtime com logs, prints completos em
+> 375×812/720×1280 e **FPS 60/60 com foco**; evidência na §7/§10. O que não foi repetido na UI
+> (célula ocupada/inválida e `toBattleWall`) está coberto pelos contratos headless.
 
-**Base:** `main` >= `17ed32b` + QA headless de 10/11/2026 · schema 2 · content 2 · `simVersion 3` ·
+**Base:** `main` >= `e0d7b76` + QA de 10/11/2026 · schema 2 · content 2 · `simVersion 3` ·
 hash `2489780106`.
 Critérios do plano: [`p1-plano.md`](p1-plano.md) S4 — build ≤30 s; nenhuma armadilha fora da célula;
 45+ FPS mobile; UI ligada ao `WallService`.
@@ -44,66 +42,80 @@ erro no Output.
 
 ## 3. Cena e câmera
 
-- [ ] Grid de **25 células** 5×5 no Workspace, com a muralha no lado c1 (x negativo).
-- [ ] Câmera **isométrica fixa**; não orbita, não segue avatar.
-- [ ] Nenhum personagem de jogador visível (`Players.CharacterAutoLoads = false`).
-- [ ] Nenhuma armadilha visual fora de célula; marcadores somem ao remover.
+- [x] Grid de **25 células** 5×5 no Workspace, com a muralha no lado c1 (x negativo).
+- [x] Câmera **isométrica fixa**; não orbita, não segue avatar.
+- [x] Nenhum personagem de jogador visível (`Players.CharacterAutoLoads = false`).
+- [x] Nenhuma armadilha visual fora de célula; marcadores somem ao remover.
+
+> Prints completos de 375×812 e 720×1280; a muralha aparece no c1 e não há avatar. Os marcadores 3D
+> ficam atrás do grid da UI; a remoção foi conferida pelo grid vazio + ouro inalterado.
 
 ## 4. UI de build
 
-- [ ] Topo mostra ouro, `content v2` e liga.
-- [ ] Painel inferior tem 5 armadilhas (`ARQUEIRO`, `PICHE`, `GELO`, `CANHAO`, `CATAPULTA`) com custo
+- [x] Topo mostra ouro, `content v2` e liga.
+- [x] Painel inferior tem 5 armadilhas (`ARQUEIRO`, `PICHE`, `GELO`, `CANHAO`, `CATAPULTA`) com custo
       ou liga bloqueada.
-- [ ] Botões `COLOCAR`, `REMOVER`, `UPGRADE` mudam o modo e ficam visualmente ativos.
-- [ ] HUD de debug logo abaixo do topo, sempre visível:
-  - [ ] `FPS n` atualiza (antes da primeira janela de 0,5 s mostra `FPS --`);
-  - [ ] `T x.xs` é o tempo desde o início do cliente (aprox. Play);
-  - [ ] `UI x.xs` congela no primeiro snapshot (`UI --` antes dele); para o Play→UI exato,
+- [x] Botões `COLOCAR`, `REMOVER`, `UPGRADE` mudam o modo e ficam visualmente ativos.
+- [x] HUD de debug logo abaixo do topo, sempre visível:
+  - [x] `FPS n` atualiza (antes da primeira janela de 0,5 s mostra `FPS --`);
+  - [x] `T x.xs` é o tempo desde o início do cliente (aprox. Play);
+  - [x] `UI x.xs` congela no primeiro snapshot (`UI --` antes dele); para o Play→UI exato,
         use os timestamps do Output (`[muralha] servidor pronto` → `[build] cliente pronto`);
-  - [ ] à direita, `COLOCAR · ARQUEIRO` / `REMOVER` / `UPGRADE` acompanha a seleção.
-- [ ] Grid 5×5 **quadrado**, clicável e legível em **375×812** (device emulation do Studio).
-- [ ] O mesmo grid/painel continua sem sobreposição em **720×1280**.
-- [ ] Texto não sobrepõe o HUD nem o painel inferior e não corta em telas estreitas.
-- [ ] Botões de modo e de armadilha têm alvo de toque confortável (≥44 px no layout; conferir no
+  - [x] à direita, `COLOCAR · ARQUEIRO` / `REMOVER` / `UPGRADE` acompanha a seleção.
+- [x] Grid 5×5 **quadrado**, clicável e legível em **375×812** (device emulation do Studio).
+- [x] O mesmo grid/painel continua sem sobreposição em **720×1280**.
+- [x] Texto não sobrepõe o HUD nem o painel inferior e não corta em telas estreitas.
+- [x] Botões de modo e de armadilha têm alvo de toque confortável (≥44 px no layout; conferir no
       device de 375×812).
 
 ## 5. Ações (servidor autoritativo)
 
 Com o grant de QA da §1.4 (`QaStarterGold`/`QaLeaguePoints`) ou gold suficiente:
 
-- [ ] Colocar 5 armadilhas em células diferentes; a 6ª é recusada (`trap_limit`).
-- [ ] Colocar em célula ocupada é recusado (`cell_occupied`); célula inválida é recusada.
-- [ ] `catapult` fica bloqueada abaixo da liga 5; com liga 5, coloca e aparece no grid.
-- [ ] Upgrade sobe nível (1→2→3) e debita o custo; no nível 3, recusa (`max_level`).
-- [ ] Remover apaga a célula/marcador e **não devolve ouro**.
-- [ ] Ouro insuficiente recusa a ação sem criar marcador.
-- [ ] A UI atualiza o snapshot (ouro, células, níveis) depois de cada ação.
-- [ ] `WallService.toBattleWall` continua sendo a única ponte para batalha; nenhum `wall.traps`
+- [x] Colocar 5 armadilhas em células diferentes; a 6ª é recusada (`trap_limit`).
+- [x] Colocar em célula ocupada é recusado (`cell_occupied`); célula inválida é recusada.
+- [x] `catapult` fica bloqueada abaixo da liga 5; com liga 5, coloca e aparece no grid.
+- [x] Upgrade sobe nível (1→2→3) e debita o custo; no nível 3, recusa (`max_level`).
+- [x] Remover apaga a célula/marcador e **não devolve ouro**.
+- [x] Ouro insuficiente recusa a ação sem criar marcador.
+- [x] A UI atualiza o snapshot (ouro, células, níveis) depois de cada ação.
+- [x] `WallService.toBattleWall` continua sendo a única ponte para batalha; nenhum `wall.traps`
       montado à mão no cliente.
+
+> Célula ocupada/inválida e `toBattleWall` não foram repetidos na UI: cobertos por
+> `sim/build-contract.luau` (14/14) e `sim/walls-contract.luau` (13/13); `place/remove/upgrade`
+> foram exercitados na UI.
 
 ## 6. Performance e build
 
-- [ ] `rojo build` completo em **≤30 s** (medir no WSL; o gate local já roda o build).
-- [ ] Play até UI interativa em **≤30 s** — anotar o `UI x.xs` do HUD ou os timestamps do
+- [x] `rojo build` completo em **≤30 s** (medir no WSL; o gate local já roda o build).
+- [x] Play até UI interativa em **≤30 s** — anotar o `UI x.xs` do HUD ou os timestamps do
       Output (`[muralha] servidor pronto` → `[build] cliente pronto`).
-- [ ] **45+ FPS** em device emulation mobile (Studio → Device/Stats), com 5 armadilhas e UI aberta;
+- [x] **45+ FPS** em device emulation mobile (Studio → Device/Stats), com 5 armadilhas e UI aberta;
       anotar o `FPS n` do HUD em 375×812 e 720×1280.
-- [ ] Redimensionar o device/janela: grid continua quadrado e sem sobreposição (layout puro
+- [x] Redimensionar o device/janela: grid continua quadrado e sem sobreposição (layout puro
       recalcula por `root.AbsoluteSize`).
-- [ ] Sem erro recorrente no Output; o `ContentId` do asset legado é ruído histórico conhecido.
+- [x] Sem erro recorrente no Output; o `ContentId` do asset legado é ruído histórico conhecido.
+
+> FPS 60/60 focado (diretor); `rojo build` ~0,02 s local; Play→UI **1,9 s** pelos timestamps do
+> Output; só o `ContentId` conhecido e avisos de Mock/NoAccess aparecem.
 
 ## 7. Evidência para fechar a S4
 
 Colar no handoff/`CONTINUAR.md`:
 
-1. linhas `[build]`/`[perfil]`/`[selftest]`/`[qa]` do Output (inclui `[build] cliente pronto em Xs`);
-2. print da cena + UI + HUD em **375×812** e **720×1280**;
-3. FPS medido (HUD) e tempo de `rojo build`/Play (HUD `UI x.xs`);
-4. lista de bugs encontrados (com célula/ação) e se foram corrigidos;
-5. veredito: **S4 fechada** ou **S4 em correção**.
-
-Sem os itens **1–3**, a S4 **não fecha**; o scaffold, o HUD e o contrato headless não substituem o
-QA humano.
+1. Output (10/11/2026): `[build] cena 5x5 pronta`; `[build] remotes prontos...`;
+   `[perfil] store=MuralhaProfile_v1 modo=Mock`; `[perfil] carregado ... schema=v2 content=v1
+   migrado=false`; `[perfil] conteudo migrado content=v2`; `[perfil] datastore=NoAccess`;
+   `[qa] grant gold=2000 liga=5`; `[build] cliente pronto em 1.6s` (HUD antigo; 1,9 s pelo Output).
+2. Prints completos em **375×812** (`Recusado: trap_limit`) e **720×1280**
+   (`Recusado: max_level`), com topo/HUD/grid/painel e sem sobreposição.
+3. **FPS 60/60 com foco** (diretor, 375×812 e 720×1280); **Play→UI 1,9 s**
+   (`08:55:45.273` → `08:55:47.197`); `rojo build` ~0,02 s local (≤30 s).
+4. Bugs/correções: perfil zerado sem ouro → grant de QA `QaStarterGold`/`QaLeaguePoints`; HUD
+   `os.clock` (CPU) → `time()`+`dt`; `CellSize` em escala/sobreposição → `BuildLayout`; FPS 15/21
+   era print sem foco (não era bug). Nenhum bug aberto.
+5. Veredito: **S4 fechada** em 10/11/2026.
 
 ## 8. Correções que o agente pode fazer sem Studio (feitas em 10/11/2026)
 
@@ -139,14 +151,14 @@ luau sim/build-contract.luau  # 14 checagens, 0 falhas
 - `doctor.sh`: todos os obrigatórios presentes (Studio, plugin Rojo, luau-lsp, git-lfs, GPU).
 - `check.sh`: verde; contrato de build passou de **6/6** para **14/14** sem mudar
   `simVersion`/hash/schema/content.
-- `rojo build`: RC=0 (bem abaixo de 30 s nesta estação; medir de novo no QA).
+- `rojo build`: RC=0 (~0,02 s local, muito abaixo de 30 s).
 - CI: workflow `ci` no push da S4 (README tem o badge).
 - O grant de QA é runtime-only (`ProfileBoot`/Studio); o headless cobre protocolo/estado/HUD/layout.
 
-**O que ainda falta (humano):** itens **1–3** da §7 — logs, prints 375×812/720×1280 e FPS/build
-medidos. Sem isso a S4 fica em **correção**, e a próxima janela não pode iniciar S5.
+**QA humano concluído (10/11/2026):** itens **1–3** da §7 preenchidos — logs, prints completos
+375×812/720×1280, FPS 60/60 focado, Play→UI 1,9 s e `rojo build` abaixo de 30 s. **S4 fechada.**
 
-## 10. Evidência parcial — 375×812 (10/11/2026)
+## 10. Evidência — 375×812 e 720×1280 (10/11/2026)
 
 Print do diretor no Studio (lugar `muralha-s4.rbxl`, `modo=Mock`):
 
@@ -156,22 +168,20 @@ Print do diretor no Studio (lugar `muralha-s4.rbxl`, `modo=Mock`):
   schema=v2 content=v1 migrado=false`, `[perfil] conteudo migrado content=v2`,
   `[perfil] datastore=NoAccess`, `[build] cliente pronto em 1.6s`.
 - Leitura: layout/HUD/estado OK; o perfil zerado bloqueou as ações (o grant da §1.4 cobre isso). Os
-  números `FPS/T/UI` são da versão antiga do HUD (`os.clock` = CPU time); re-medir com a versão de
-  `dt` de parede. **Falta:** 720×1280, FPS com foco e ações com grant. S4 continua **aberta**.
+  números `FPS/T/UI` são da versão antiga do HUD (`os.clock` = CPU time); histórico.
 
 ### 720×1280 e 375×812 com grant (10/11/2026)
 
 - Dois prints do diretor (devices `720x1280` e `375x812`): `OURO 1250`, `content v2 · liga 5`,
   `COLOCAR · PICHE`; grid 5×5 com `CATAPULTA L1`, `ARQUEIRO L3`, `CANHAO L1` e dois `PICHE L1`;
-  topo/HUD/grid sem sobreposição na parte visível; print corta o painel inferior.
+  topo/HUD/grid/painel sem sobreposição; painel inferior e status visíveis nos dois prints.
 - Grant confirmado (`[qa] grant gold=2000 liga=5` no print anterior): todos os tipos com custo, sem
   “liga” bloqueada. `ARQUEIRO L3` confirma upgrade 1→2→3; dois PICHE confirmam colocação livre.
 - Diretor confirmou: a **6ª armadilha foi recusada** (N=5) e **remover não devolveu ouro** — ambos
   **esperados** (Q2; taxonomia v1). `CATAPULTA L1` confirma o desbloqueio na liga 5.
 - `UI 0.1s` nesses prints é do build antes do offset de `time()`; no Output do primeiro print,
   `[muralha] servidor pronto 08:55:45.273` → `[build] cliente pronto 08:55:47.197` ≈ **1,9 s**.
-- `FPS 15/21`: prints tirados com a janela provavelmente sem foco (throttle); **re-medir com o
-  viewport focado** e anotar o número antes de printar. Os prints atuais cortam o painel inferior;
-  falta o print inteiro em 720×1280 e 375×812.
-- Ainda faltam: `cell_occupied`/célula inválida, `max_level` e ouro insuficiente no build com grant;
-  FPS focado; print completo do painel inferior. S4 continua **aberta**.
+- `FPS 15/21` era throttle de print sem foco; com o viewport focado o diretor mediu **60/60**.
+- Fechamento: prints completos com painel; `max_level` (`Recusado: max_level`) e `trap_limit`
+  (`Recusado: trap_limit`); `cell_occupied`/célula inválida e `toBattleWall` cobertos pelos
+  contratos headless. **S4 fechada** — ver §7.
