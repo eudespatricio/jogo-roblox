@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 fechada** (código + Modo B
-real 8/8); **S4 fechada** (FPS 60/60, Play→UI 1,9 s); **S5 iniciada (scaffold; QA humano
-pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
+**P1 em execução (autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
+(FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, +3 ouro; taxa ≥60% no teste); **S6 pendente**.
+Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -35,7 +35,7 @@ pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
-- Engenharia: `docs/padroes-engenharia.md`; S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s); S5 drop-in scaffold (8/8).
+- Engenharia: `docs/padroes-engenharia.md`; S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s); S5 drop-in fechado (8/8, +3 ouro).
 - Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
@@ -51,10 +51,9 @@ pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S5 drop-in em QA → S6 raid/replay → S7 telemetria. Saída: 70% de primeira
-  vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- S5: scaffold pronto; falta QA humano (logs/prints/FPS da §8); S6/S7 depois. O sink
-  `AnalyticsService` é S7.
+- **P1** (2–3 semanas): S6 raid/replay → S7 telemetria. Saída: 70% de primeira vitória < 60s.
+  Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- S6: raid assíncrona + replay ainda não iniciados; S7 depois. O sink `AnalyticsService` é S7.
 - GAPs abertos: GAP-004/005/008/011 (001/002/003/009/010 fechados); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
@@ -68,8 +67,8 @@ pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Próximo passo
 
-1. S5: QA humano do drop-in (itens 1–3 de `docs/teste-s5-studio.md` §8) e corrigir o que apontar.
-2. Depois S6–S7; GAP-011 entra na S6.
+1. S6: raid + replay 8 s (docs/p1-plano.md); GAP-011 entra nela.
+2. Depois S7; P2 não começa sem autorização.
 
 ## Como verificar o estado em 1 minuto
 

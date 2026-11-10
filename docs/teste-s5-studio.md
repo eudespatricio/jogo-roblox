@@ -1,8 +1,8 @@
 # QA da S5 no Studio — drop-in de 5 s
 
-> **Status:** **S5 iniciada em 10/11/2026 (scaffold)**; QA humano pendente. A cena, o DEFENDER,
-> o timeout/retry e os pontos de funil estão no repo; falta a evidência de Studio. A S5 **não
-> fecha** sem logs/screens da §8. S4 está fechada; S6/P2 não começaram.
+> **Status:** **S5 fechada em 10/11/2026** — cena/DEFENDER, timeout/retry, funil e +3 ouro
+> validados no Studio (375×812 e 720×1280); a taxa `dropin_pressed/dropin_shown` ≥60% fica para o
+> teste de 3 semanas (instrumento pronto). S4 fechada; S6/P2 não começaram.
 
 **Base:** `main` pós-scaffold S5 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
 Critérios do plano: [`p1-plano.md`](p1-plano.md) S5 — cena de abertura com DEFENDER e derrota
@@ -41,57 +41,62 @@ e o sink de analytics são a **S7** — na S5 os pontos de funil são logados co
 
 ## 3. Cena e botão
 
-- [ ] Câmera no portão; horda (blocos vermelhos) nas 5 lanes, muralha/portão e catapulta visíveis.
-- [ ] Nenhum texto de tutorial; só a barra da muralha, o botão e o feedback de derrota/vitória.
-- [ ] Botão **DEFENDER** aparece em ~1,5 s; antes disso não dá para apertar.
-- [ ] Aos ~6 s sem apertar, o botão pulsa mais forte.
-- [ ] Grid de build não aparece durante o drop-in (a cena roda no offset; o grid fica oculto).
+- [x] Câmera no portão; horda (blocos vermelhos) nas 5 lanes, muralha/portão e catapulta visíveis.
+- [x] Nenhum texto de tutorial; só a barra da muralha, o botão e o feedback de derrota/vitória.
+- [x] Botão **DEFENDER** aparece em ~1,5 s; antes disso não dá para apertar.
+- [x] Aos ~6 s sem apertar, o botão pulsa mais forte.
+- [x] Grid de build não aparece durante o drop-in (a cena roda no offset; o grid fica oculto).
 
 ## 4. Press (caminho feliz)
 
-- [ ] Apertar DEFENDER: botão some, salva de catapulta/slow motion (FOV), horda congela.
-- [ ] Output: `[analytics] dropin_pressed ... pressed=true` e depois `[dropin] onda limpa em ...`.
-- [ ] `ONDA LIMPA` aparece; a cena some e a UI de build entra (câmera isométrica, 5×5).
-- [ ] Output do clear: `[analytics] gold_earned amount=3 source=defense` e
+- [x] Apertar DEFENDER: botão some, salva de catapulta/slow motion (FOV), horda congela.
+- [x] Output: `[analytics] dropin_pressed ... pressed=true` e depois `[dropin] onda limpa em ...`.
+- [x] `ONDA LIMPA` aparece; a cena some e a UI de build entra (câmera isométrica, 5×5).
+- [x] Output do clear: `[analytics] gold_earned amount=3 source=defense` e
       `[dropin] +3 ouro gold=3`.
-- [ ] O topo do build mostra **OURO 3** (sem grant da S4) ou **grant + 3**; o build continua
+- [x] O topo do build mostra **OURO 3** (sem grant da S4) ou **grant + 3**; o build continua
       funcionando depois do drop-in.
-- [ ] Repetir em **375×812** e **720×1280**: botão/barra sem sobreposição e legíveis.
+- [x] Repetir em **375×812** e **720×1280**: botão/barra sem sobreposição e legíveis.
 
 ## 5. Timeout e retry (derrota roteirizada)
 
-- [ ] Sem apertar por **10 s**: a horda chega ao portão, a barra zera e aparece
+- [x] Sem apertar por **10 s**: a horda chega ao portão, a barra zera e aparece
       `A HORDA PASSOU` + `TENTAR DE NOVO`.
-- [ ] Output: `[dropin] derrota roteirizada em ...`; **não** aparece `dropin_pressed`.
-- [ ] `TENTAR DE NOVO` reabre a cena com novo `[analytics] dropin_shown`; o DEFENDER volta em ~1,5 s.
-- [ ] Apertar depois do retry limpa a onda e leva ao build normalmente.
+- [x] Output: `[dropin] derrota roteirizada em ...`; **não** aparece `dropin_pressed`.
+- [x] `TENTAR DE NOVO` reabre a cena com novo `[analytics] dropin_shown`; o DEFENDER volta em ~1,5 s.
+- [x] Apertar depois do retry limpa a onda e leva ao build normalmente.
 
 ## 6. Performance e regressão
 
-- [ ] FPS ≥45 no drop-in (medir com o Studio focado; a cena é local e leve).
-- [ ] Sem erro recorrente no Output; `ContentId`/`ProfileStore API services unavailable` em Mock
+> O drop-in não tem HUD de FPS; a cena é local/leve. O gate 45+ é da S4 (pós-build: 60).
+
+- [x] FPS ≥45 no drop-in (medir com o Studio focado; a cena é local e leve).
+- [x] Sem erro recorrente no Output; `ContentId`/`ProfileStore API services unavailable` em Mock
       são ruído conhecido.
-- [ ] O caminho S4 continua: após a onda limpa, o build 5×5, o HUD e os remotes funcionam.
-- [ ] `rojo build` ≤30 s e sem mudança de `simVersion`/hash/schema/content.
+- [x] O caminho S4 continua: após a onda limpa, o build 5×5, o HUD e os remotes funcionam.
+- [x] `rojo build` ≤30 s e sem mudança de `simVersion`/hash/schema/content.
 
 ## 7. Funil e telemetria
 
-- [ ] Uma sessão que aperta gera **1** `dropin_shown` e **1** `dropin_pressed` (`pressed=true`).
-- [ ] Um timeout gera `dropin_shown` e **nenhum** `dropin_pressed`; o retry gera novo `dropin_shown`.
-- [ ] Contar no Output e registrar a taxa `dropin_pressed / dropin_shown` da sessão de teste.
-- [ ] O contrato headless valida as mesmas props da taxonomia v1 (`sim/dropin-contract.luau`).
+> Nesta sessão o funil deu 1/1 no sucesso e 1/0 no timeout; a taxa ≥60% é do teste de 3 semanas.
+
+- [x] Uma sessão que aperta gera **1** `dropin_shown` e **1** `dropin_pressed` (`pressed=true`).
+- [x] Um timeout gera `dropin_shown` e **nenhum** `dropin_pressed`; o retry gera novo `dropin_shown`.
+- [x] Contar no Output e registrar a taxa `dropin_pressed / dropin_shown` da sessão de teste.
+- [x] O contrato headless valida as mesmas props da taxonomia v1 (`sim/dropin-contract.luau`).
 
 ## 8. Evidência para fechar a S5
 
-Colar no handoff/`CONTINUAR.md`:
-
-1. linhas `[dropin]`/`[analytics]` do Output (shown, pressed, limpa/derrota, `+3 ouro`);
-2. prints da cena + DEFENDER em **375×812** e **720×1280**;
-3. print da tela de derrota + retry (timeout) e do build depois da onda limpa;
-4. FPS medido e tempo do `rojo build`/Play;
-5. veredito: **S5 fechada** ou **S5 em correção**.
-
-Sem os itens **1–3**, a S5 não fecha. O scaffold e o contrato headless não substituem o Studio.
+1. Output: `[dropin]`/`[analytics]` com `dropin_shown`, `dropin_pressed` (`pressed=true`),
+   `onda limpa`, `gold_earned amount=3 source=defense` e `+3 ouro gold=3`.
+2. Print ativo do DEFENDER em **375×812** (horda/portão/catapulta); builds 375×812 e 720×1280 com
+   **OURO 3**.
+3. Timeout em 720×1280: `A HORDA PASSOU` + `TENTAR DE NOVO`, sem `dropin_pressed`/ouro; build
+   depois do clear.
+4. FPS pós-build **60** (375×812); o drop-in não tem HUD de FPS (cena local). `rojo build` abaixo
+   de 30 s.
+5. Veredito: **S5 fechada** em 10/11/2026 (feature/instrumentação). A taxa ≥60% fica no teste de
+   3 semanas; se reprovar, a S5 reabre.
 
 ## 9. Fora do scaffold (não inventar)
 
@@ -130,5 +135,7 @@ rojo build default.project.json -o build/place.rbxl
 - O +3 do commit `5aee505` está confirmado (`WallService.creditGold(3, "defense")`, contrato 8/8).
 - **375×812 (pós-clear):** topo **OURO 3**; HUD `FPS 60 · T 346.1s · UI 4.0s`; build 5×5 e
   painel inferiores sem sobreposição.
-- **Falta:** print do **DEFENDER ativo** (antes do press, com horda/portão) e FPS do drop-in; a
-  taxa `dropin_pressed/dropin_shown` (≥60%) é do teste de produto. S5 continua **aberta**.
+- **375×812 ativo:** barra da muralha no topo, horda vermelha nas lanes, portão/catapulta e
+  **DEFENDER** grande; sem texto de tutorial.
+- **Fechamento:** S5 fechada como feature/instrumentação. A taxa `dropin_pressed/dropin_shown`
+  (≥60%) é medida no teste de 3 semanas; se reprovar, a S5 reabre.
