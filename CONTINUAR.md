@@ -98,7 +98,8 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     `A HORDA PASSOU` + `TENTAR DE NOVO`; `BuildClient` espera `DropInDone`.
   - Funil: `[analytics] dropin_shown/dropin_pressed` como props validadas; envelope/sink é a S7.
     O clear credita **+3 ouro** (`WallService.creditGold(3, "defense")`) antes de liberar o build.
-    **Falta QA humano** (logs/prints/FPS da §8 de `docs/teste-s5-studio.md`).
+  - Runtime 720×1280 validado: timeout (10,1 s, sem pressed/ouro) e sucesso (`pressed=true`,
+    `+3 ouro gold=3`, `OURO 3`, build em 4,0 s). Falta 375×812, FPS focado e a taxa do teste.
 - Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 

@@ -117,16 +117,16 @@ rojo build default.project.json -o build/place.rbxl
 - Batalha fixa: seed 4, 100 ticks, defensor, catapulta na muralha, hash estável.
 - Funil: `dropin_shown`/`dropin_pressed` validam em `AnalyticsTypes` (taxonomia v1).
 - Reward: `creditGold(3, "defense")` credita 3 e emite `gold_earned`.
-- **Falta (humano):** itens 1–3 da §8 — logs/prints/FPS da cena e do timeout/retry.
+- **Falta (humano):** print em 375×812 com OURO 3, FPS focado e a taxa do teste de
+  produto; timeout/sucesso/reward já validados em 720×1280.
 
 ## 11. Evidência parcial — 720×1280 (10/11/2026)
 
-- **Timeout:** `[analytics] dropin_shown ms_since_join=100`; `[dropin] derrota roteirizada em
-  10.0s`; **sem** `dropin_pressed`; tela `A HORDA PASSOU` + `TENTAR DE NOVO`.
-- **Sucesso:** `dropin_shown ms_since_join=89`; `dropin_pressed ms_since_join=4064 pressed=true`;
-  `[dropin] onda limpa em 5.7s`; `[build] cliente pronto em 4.2s`; `ONDA LIMPA` e build.
-- `OURO 0` no sucesso era o build **antes** do reward; o +3 entrou no commit `5aee505`
-  (`WallService.creditGold(3, "defense")`, contrato 8/8). Re-testar para ver `[dropin] +3 ouro
-  gold=3` e `OURO 3` no topo.
-- **Falta:** print em 375×812 com o OURO 3, FPS focado do drop-in e veredito. S5 continua
-  **aberta**.
+- **Timeout:** `[analytics] dropin_shown ms_since_join=96`; `[dropin] derrota roteirizada em
+  10.1s`; **sem** `dropin_pressed` e **sem** ouro; tela `A HORDA PASSOU` + `TENTAR DE NOVO`.
+- **Sucesso com reward:** `dropin_shown ms_since_join=73`; `dropin_pressed ms_since_join=3885
+  pressed=true`; `[dropin] onda limpa em 5.4s`; `[analytics] gold_earned amount=3 source=defense`;
+  `[dropin] +3 ouro gold=3`; `[build] cliente pronto em 4.0s`; topo **OURO 3** e `ONDA LIMPA`.
+- O +3 do commit `5aee505` está confirmado (`WallService.creditGold(3, "defense")`, contrato 8/8).
+- **Falta:** print em 375×812 com OURO 3, FPS focado do drop-in e a taxa `dropin_pressed/
+  dropin_shown` do teste de produto (≥60%). S5 continua **aberta**.
