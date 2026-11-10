@@ -3,7 +3,7 @@
 **Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.4 fechadas** (S3.4 com Modo B real);
 **S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
 **S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 30/30 e
-`first_win_seconds`); GAP-011 fechado na S6; GAP-004/005/008/012 abertos · base `main` @ `f7dcf49`,
+`first_win_seconds`); GAP-011 fechado na S6; GAP-004/005/008/012 abertos · base `main` @ `6d48d43`,
 CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
