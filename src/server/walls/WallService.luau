@@ -80,7 +80,6 @@ WallService.ERRORS = table.freeze({
 	INVALID_AMOUNT = "invalid_amount",
 	INVALID_SOURCE = "invalid_source",
 })
-
 local function isInteger(value: any): boolean
 	if type(value) ~= "number" then
 		return false
