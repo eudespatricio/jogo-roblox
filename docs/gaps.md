@@ -50,8 +50,8 @@ conteúdo/feature/P2 e não bloqueiam a cena/build.
 | GAP-008 | não | campos de variante na taxonomia v2 | feature de classe/variantes |
 | GAP-005 | não | eventos/flags/calendário | P2/live ops |
 
-**Próximo:** S5 — drop-in de 5 s (não iniciada). A expansão de classe/taxonomia v2 continua
-bloqueada por GAP-004/008; GAP-011 entra na S6.
+**Próximo:** QA humano da S5 (scaffold do drop-in pronto). A expansão de classe/taxonomia v2
+continua bloqueada por GAP-004/008; GAP-011 entra na S6.
 
 ## S3.4 — conteúdo e versões (10/11/2026)
 
@@ -69,3 +69,10 @@ bloqueada por GAP-004/008; GAP-011 entra na S6.
 Sem gap novo e sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `2489780106`). QA
 runtime com FPS 60/60, Play→UI 1,9 s e prints 375×812/720×1280; evidência em
 [`teste-s4-studio.md`](teste-s4-studio.md) §7. Nenhum GAP-004/005/008/011 mudou de estado.
+
+## S5 — scaffold (10/11/2026)
+
+Sem gap novo e sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `2489780106`). O
+scaffold entrega cena/DEFENDER, timeout/retry e os pontos `dropin_shown`/`dropin_pressed` como props
+validadas; o envelope/sink é a S7. QA humano pendente em
+[`teste-s5-studio.md`](teste-s5-studio.md) §8.

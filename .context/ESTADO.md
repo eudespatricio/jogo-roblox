@@ -10,8 +10,8 @@
 ## Fase
 
 **P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 fechada** (código + Modo B
-real 8/8); **S4 fechada** (FPS 60/60, Play→UI 1,9 s, prints 375×812/720×1280); **S5 pendente**.
-Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
+real 8/8); **S4 fechada** (FPS 60/60, Play→UI 1,9 s); **S5 iniciada (scaffold; QA humano
+pendente)**. Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -23,7 +23,7 @@ Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 14/14 · drop-in 7/7 |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
@@ -35,7 +35,7 @@ Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 - Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
-- Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial); S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s).
+- Engenharia: `docs/padroes-engenharia.md`; S4 cena/UI/build fechada (60/60 FPS · Play→UI 1,9 s); S5 drop-in scaffold (7/7).
 - Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
@@ -51,9 +51,10 @@ Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S5 drop-in → S6 raid/replay → S7 telemetria. Saída: 70% de primeira vitória
-  < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- S5: drop-in de 5 s ainda não iniciado; S6/S7 depois. O sink `AnalyticsService` é S7.
+- **P1** (2–3 semanas): S5 drop-in em QA → S6 raid/replay → S7 telemetria. Saída: 70% de primeira
+  vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- S5: scaffold pronto; falta QA humano (logs/prints/FPS da §8); S6/S7 depois. O sink
+  `AnalyticsService` é S7.
 - GAPs abertos: GAP-004/005/008/011 (001/002/003/009/010 fechados); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
@@ -67,7 +68,7 @@ Plano em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Próximo passo
 
-1. S5: drop-in de 5 s (`docs/p1-plano.md`); não iniciada nesta janela.
+1. S5: QA humano do drop-in (itens 1–3 de `docs/teste-s5-studio.md` §8) e corrigir o que apontar.
 2. Depois S6–S7; GAP-011 entra na S6.
 
 ## Como verificar o estado em 1 minuto

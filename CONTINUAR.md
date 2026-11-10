@@ -1,9 +1,9 @@
 # CONTINUAR — handoff de sessão
 
 **Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.4 fechadas** (S3.4 com Modo B real);
-**S4 fechada** (QA headless + runtime: FPS 60/60, Play→UI 1,9 s, prints 375×812/720×1280);
-**S5 não iniciada**; GAP-011 aberto para a S6 · base `main`. Este arquivo é autossuficiente: a
-conversa pode ser fechada.
+**S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 iniciada (scaffold; QA humano
+pendente)**; GAP-011 aberto para a S6 · base `main`. Este arquivo é autossuficiente: a conversa
+pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; GAP-011 (`contentVersion` no
 > `BattleLog`) aberto para a S6. A linha canônica e o plano por gap estão em `docs/gaps.md`.
@@ -89,7 +89,16 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     de FPS/UI; o QA corrigiu os dois. Runtime: **FPS 60/60 focado** em 375×812/720×1280,
     **Play→UI 1,9 s**, prints completos e `trap_limit`/`max_level`; evidência na §7 de
     `docs/teste-s4-studio.md`.
-- Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 79/80 ·
+- **S5 iniciada — drop-in de 5 s (10/11/2026, scaffold):**
+  - `DropInState`/`DropInTelemetry` puros + `sim/dropin-contract.luau` **7/7**: fases, press
+    1,5–10 s, timeout, retry, props do funil.
+  - `DropInController.server`: remotes `DropInAction`/`DropInSnapshot`, batalha **real** fixa
+    (seed 4, 100 ticks, muralha com catapulta), derrota roteirizada em 10 s e novo `shown` no retry.
+  - `DropInClient`: cena local (portão/horda/catapulta), DEFENDER em 1,5 s, pulso em 6 s,
+    `A HORDA PASSOU` + `TENTAR DE NOVO`; `BuildClient` espera `DropInDone`.
+  - Funil: `[analytics] dropin_shown/dropin_pressed` como props validadas; envelope/sink é a S7.
+    **Falta QA humano** (logs/prints/FPS da §8 de `docs/teste-s5-studio.md`).
+- Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 
 ---
@@ -111,7 +120,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B schema v1 8/8 (09/11/2026) · Modo B schema v2 8/8 (10/11/2026) |
-| contexto | ESTADO 79/80 · MAPA 59/60 · REJEITADOS 19/40 |
+| contexto | ESTADO 80/80 · MAPA 59/60 · REJEITADOS 19/40 |
 
 ---
 
@@ -139,16 +148,17 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | S3.3 | Gaps antes da S4 | GAP-006/007 fechados; GAP-010 preparado | **feito 10/11/2026** |
 | S3.4 | Conteúdo e versões | schema v2/contentVersion, 5º tipo, alias, migração neutra e Modo B | **feito 10/11/2026** |
 | S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **feito 10/11/2026 (FPS 60/60 · Play→UI 1,9 s)** |
-| S5 | Drop-in de 5 s | `dropin_pressed` ≥ 60% | pendente |
+| S5 | Drop-in de 5 s | cena DEFENDER + derrota roteirizada; `dropin_pressed` ≥ 60% | **scaffold 10/11/2026 · QA humano pendente** |
 | S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | pendente |
 | S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | pendente |
 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** **S5 — drop-in de 5 s**, ainda **não iniciada** nesta janela. S6/S7 depois, na
-ordem do plano; GAP-011 entra na S6. A S4 está fechada com a evidência da
-[`§7 do teste-s4-studio`](docs/teste-s4-studio.md).
+**Próximo passo:** **QA humano da S5** no Studio — cena/DEFENDER, press, timeout/retry e
+`[analytics] dropin_shown/dropin_pressed`; evidência na §8 de
+[`teste-s5-studio.md`](docs/teste-s5-studio.md). S6/S7 depois, na ordem do plano; GAP-011 na S6.
+A S4 está fechada com a evidência da [`§7 do teste-s4-studio`](docs/teste-s4-studio.md).
 
 ## Pipeline de expansão e gaps
 
@@ -162,12 +172,12 @@ ordem do plano; GAP-011 entra na S6. A S4 está fechada com a evidência da
 
 ---
 
-## Handover — S4 fechada + S5 (próxima)
+## Handover — S4 fechada + S5 scaffold
 
 **Estado:** S3.4 **fechada** (schema 2, content 2, sim 3, Modo B real 8/8); **S4 fechada** (QA
-runtime: FPS 60/60, Play→UI 1,9 s, prints 375×812/720×1280); **S5 não iniciada**.
+runtime: FPS 60/60, Play→UI 1,9 s); **S5 iniciada (scaffold; QA humano pendente)**.
 GAP-001/002/003/009/010 fechados; GAP-004/005/008/011 abertos.
-**Base:** `main` pós-S4 (`e0d7b76`); hash `2489780106`; RFC em
+**Base:** `main` pós-S4 + scaffold S5; hash `2489780106`; RFC em
 [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md).
 
 - **Modo B fechado:** [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md) §9 registra
@@ -177,6 +187,9 @@ GAP-001/002/003/009/010 fechados; GAP-004/005/008/011 abertos.
   `sim/build-contract.luau` **14/14**; `BuildGrid` cria 25 células/muralha; `WallController` expõe
   snapshot/place/remove/upgrade; `BuildClient` tem câmera fixa, UI 5×5, HUD e layout responsivo.
   Runtime: FPS 60/60, Play→UI 1,9 s, prints com painel e `trap_limit`/`max_level`; §7 preenchida.
+- **S5 (scaffold):** `DropInState`/`DropInTelemetry` + `sim/dropin-contract.luau` **7/7**;
+  `DropInController.server` remotes/estado/batalha fixa/retry; `DropInClient` cena local + DEFENDER;
+  `BuildClient` espera `DropInDone`. Runtime/QA pendente; envelope de analytics é S7.
 - **Fonte da parede:** use só `WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, hp)` para
   qualquer batalha; nunca monte `wall.traps` à mão. Perfil inválido devolve `nil + erro` e não entra no
   `Battle.new`; o boot já rodou `TrapCatalog.ensureProfileContent`.
@@ -185,9 +198,9 @@ GAP-001/002/003/009/010 fechados; GAP-004/005/008/011 abertos.
 - **Critério de pronto (p1-plano S4):** build ≤30 s; nenhuma armadilha fora da célula; 45+ FPS
   mobile; UI ligada ao `WallService`. **Atendido:** 60/60 FPS focado, Play→UI 1,9 s, 5 armadilhas
   em células distintas e 6ª recusada; evidência na §7.
-- **Próxima janela:** S5 drop-in (não iniciada). **Fora:** S6/S7, GAP-004/008 (classe/taxonomia v2),
-  GAP-005 (P2) e GAP-011 (`BattleLog`, S6). **Não iniciar P2.** O trial/teste de 3 semanas segue em
-  paralelo.
+- **Próxima janela:** QA humano da S5 (scaffold pronto). **Fora:** S6/S7, GAP-004/008
+  (classe/taxonomia v2), GAP-005 (P2) e GAP-011 (`BattleLog`, S6). **Não iniciar P2.** O trial/teste
+  de 3 semanas segue em paralelo.
 - **Saída:** `doctor.sh` + `check.sh` RC=0; docs atualizados; CI verde; uma linha `GAP:` no handoff.
 
 ---
@@ -249,7 +262,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
    `2489780106`, agora com `simVersion 3` (o hash da parede padrão não mudou na S3.4). Não "ajustar"
    o hash antigo nem os thresholds sem registro. Mudou `schemaVersion`/`CONTENT_VERSION`/`SIM_VERSION`?
    Atualize `docs/versoes.md`; o `check.sh` falha se fonte e docs divergirem.
-3. **Contexto tem teto.** ESTADO está em 79/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
+3. **Contexto tem teto.** ESTADO está em 80/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
    linha antes de acrescentar outra.
 
 ---
@@ -311,32 +324,37 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
     o grant de Studio (`QaStarterGold`/`QaLeaguePoints`) liberou o §5 sem mudar produção.
 26. **FPS 15/21 era print sem foco.** Com o viewport focado, 375×812 e 720×1280 deram 60/60; o
     número baixo era throttle do Studio ao abrir a ferramenta de captura, não performance do jogo.
+27. **S5 usa batalha real e visual local.** O servidor roda `Core` com seed 4/muralha com catapulta
+    no press; a cena (horda/blocos) é local no cliente para não replicar 10 partes. O funil sai como
+    `[analytics] ...` validado pela taxonomia v1 até o sink/envelope da S7.
 
 ---
 
-## Goal da próxima janela — S5 drop-in (não iniciada)
+## Goal da próxima janela — QA humano da S5
 
-**Objective:** implementar a S5 (cena de abertura + botão DEFENDER, drop-in de 5 s) seguindo
-`docs/p1-plano.md`, com o funil `dropin_shown`/`dropin_pressed`; não iniciar S6/P2 e não reabrir
-S4/taxonomia v2.
+**Objective:** coletar e registrar a evidência de Studio da S5 (logs `[dropin]`/`[analytics]`,
+prints da cena/DEFENDER em 375×812 e 720×1280, timeout/retry e FPS) em
+`docs/teste-s5-studio.md` §8; corrigir só o que o QA apontar e, com os itens 1–3, fechar a S5.
 
-**Status:** S4 fechada em 10/11/2026; S5 **não iniciada** nesta janela.
+**Status:** S5 scaffold em 10/11/2026; QA humano pendente; S6/P2 não começaram.
 
-**Prompt para disparar:**
+**Prompt para disparar (depois do QA):**
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S4 fechadas; S5 não começou). Leia
-> `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md`, `docs/p1-plano.md`,
-> `docs/teste-s4-studio.md`, `docs/versoes.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`,
-> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não edite
-> `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1 congelada.
+> Você está no repositório `jogo-roblox` (MURALHA — P1; S1–S4 fechadas; S5 scaffold com QA humano
+> pendente; S6 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`,
+> `CONTINUAR.md`, `docs/p1-plano.md`, `docs/teste-s5-studio.md`, `docs/versoes.md` e `docs/gaps.md`.
+> No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem
+> passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1
+> congelada.
 >
-> **Objetivo:** entregar a S5 — cena de abertura com botão DEFENDER e derrota roteirizada se
-> demorar — com `dropin_shown`/`dropin_pressed` no funil; não iniciar S6 nem P2.
+> **Objetivo:** registrar a evidência de Studio da S5 (itens 1–3 da §8 do `teste-s5-studio.md`),
+> corrigir os bugs do drop-in e só então marcar a S5 como fechada; não iniciar S6/P2 sem essa
+> evidência.
 >
 > **Fora:** S6, P2, classe/taxonomia v2, mudança de schema/content/sim. Se precisar mudar versão,
 > pare e registre em `docs/gaps.md`; não invente produto.
 >
-> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; contrato/telemetria da S5; docs e linha
-> `GAP:` atualizados.
+> **Saída:** `doctor.sh` + `check.sh` RC=0; CI verde; §8 preenchida com logs/prints/FPS; docs e
+> linha `GAP:` atualizados.
 
-**Checkpoint:** S4 fechada com evidência de Studio; a próxima janela começa a S5.
+**Checkpoint:** o scaffold da S5 está pronto e o contrato headless passa; falta a cena no Studio.

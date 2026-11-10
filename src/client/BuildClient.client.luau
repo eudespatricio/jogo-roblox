@@ -23,6 +23,24 @@ local remotes = ReplicatedStorage:WaitForChild("MuralhaRemotes")
 local buildAction = remotes:WaitForChild("BuildAction") :: RemoteFunction
 local buildSnapshot = remotes:WaitForChild("BuildSnapshot") :: RemoteFunction
 
+-- S5: a cena de abertura (drop-in) roda antes do build. O servidor liga DropInEnabled e marca
+-- DropInDone quando a onda limpa; sem drop-in (atributo false) o build segue direto.
+local function waitForDropIn(): ()
+	for _ = 1, 50 do
+		if ReplicatedStorage:GetAttribute("DropInEnabled") ~= nil then
+			break
+		end
+		task.wait(0.1)
+	end
+	if ReplicatedStorage:GetAttribute("DropInEnabled") ~= true then
+		return
+	end
+	while player:GetAttribute("DropInDone") ~= true do
+		task.wait(0.1)
+	end
+end
+waitForDropIn()
+
 -- Camera isometrica fixa (GDD §1: sem livre-orbitar; vira clipe).
 local camera = Workspace.CurrentCamera
 if camera == nil then

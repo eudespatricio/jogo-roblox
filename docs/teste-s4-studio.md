@@ -25,6 +25,10 @@ Critérios do plano: [`p1-plano.md`](p1-plano.md) S4 — build ≤30 s; nenhuma 
 5. Se for testar o fluxo real de perfil, `ServerStorage.ProfileSelfTest = true` é opcional e só roda
    em Studio.
 
+> **S5:** o Play agora abre o drop-in; aperte **DEFENDER** (ou espere a derrota e use **TENTAR DE
+> NOVO**) para chegar ao build. O `BuildClient` espera `DropInDone`.
+
+
 ## 2. Logs esperados no servidor/cliente
 
 ```text

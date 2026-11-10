@@ -21,7 +21,7 @@ echo "== stylua =="
 stylua --check sim src
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/shared/build src/server/data src/server/walls/WallService.luau src/server/Main.server.luau
+luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/shared/build src/shared/dropin src/server/data src/server/walls/WallService.luau src/server/Main.server.luau
 
 echo "== invariantes =="
 luau sim/invariants.luau
@@ -43,6 +43,9 @@ luau sim/content-contract.luau
 
 echo "== contrato de build (S4) =="
 luau sim/build-contract.luau
+
+echo "== contrato de drop-in (S5) =="
+luau sim/dropin-contract.luau
 
 echo "== migracao neutra (kit GAP-010) =="
 luau tools/expansion-test/neutral-migration.luau
