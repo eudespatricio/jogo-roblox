@@ -92,6 +92,12 @@ check("catalogo espelha o motor e desbloqueia por liga", function()
 		assert(def.upgrade > 0 and def.upgrade % 1 == 0, "upgrade invalido")
 		assert(def.unlockLeague >= 1 and def.unlockLeague <= 4, "unlock invalido")
 	end
+
+	-- Primeira calibragem da S3 (docs/economia-muralha.md); mudar exige atualizar os dois.
+	assert(WallService.CATALOG.archer.cost == 40 and WallService.CATALOG.archer.upgrade == 30)
+	assert(WallService.CATALOG.oil.cost == 60 and WallService.CATALOG.oil.unlockLeague == 2)
+	assert(WallService.CATALOG.frost.cost == 90 and WallService.CATALOG.frost.unlockLeague == 3)
+	assert(WallService.CATALOG.cannon.cost == 140 and WallService.CATALOG.cannon.unlockLeague == 4)
 end)
 
 check("place valido persiste celula, debita ouro e emite eventos", function()

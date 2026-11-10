@@ -363,7 +363,7 @@ não inflar o histórico com um "bug" que não existiu.
 
 ---
 
-## 14. Camada de dados e analytics (P0, 09/11/2026)
+## 14. Camada de dados, analytics e muralha (P0/S3, 09/11/2026)
 
 **Perfil** — `src/shared/data/ProfileSchema.luau` (puro, sem API do Roblox):
 
