@@ -188,3 +188,10 @@ teste local. O reward 5 continua provisório.
   archer/piche foram colocados; o hash local continuou batendo.
 - Ainda falta o print final 375×812/720×1280 **depois** de `REPLAY CONCLUIDO · 8s` (com FECHAR) e
   o veredito. S6.1 aberta.
+
+### Ajuste para tela larga (10/11/2026 11:31)
+
+No desktop a modal ficava muito larga e o `ViewportFrame` virava uma faixa; o board 3D continuava
+pequeno. A modal agora tem `UISizeConstraint` (máx. 440×620), o viewport ocupa 38% da altura e a
+câmera foi para `(20,22,38)` olhando `(20,1,0)`. Re-testar em 375×812/720×1280 e no desktop; o
+`FECHAR` só aparece depois de `REPLAY CONCLUIDO · 8s`.

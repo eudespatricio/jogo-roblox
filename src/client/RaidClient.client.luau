@@ -80,6 +80,11 @@ modal.Visible = false
 modal.Parent = root
 corner(modal, 12)
 
+local modalConstraint = Instance.new("UISizeConstraint")
+modalConstraint.MinSize = Vector2.new(280, 420)
+modalConstraint.MaxSize = Vector2.new(440, 620)
+modalConstraint.Parent = modal
+
 local title = Instance.new("TextLabel")
 title.Name = "Title"
 title.Position = UDim2.fromOffset(12, 8)
@@ -121,7 +126,7 @@ details.Parent = modal
 local viewport = Instance.new("ViewportFrame")
 viewport.Name = "Replay"
 viewport.Position = UDim2.new(0.05, 0, 0.30, 0)
-viewport.Size = UDim2.new(0.9, 0, 0.31, 0)
+viewport.Size = UDim2.new(0.9, 0, 0.38, 0)
 viewport.BackgroundColor3 = Color3.fromRGB(20, 28, 24)
 viewport.BorderSizePixel = 0
 viewport.Ambient = Color3.fromRGB(120, 120, 120)
@@ -148,7 +153,7 @@ wallLabel.Parent = modal
 
 local bar = Instance.new("Frame")
 bar.Name = "ReplayBar"
-bar.Position = UDim2.new(0, 12, 0.7, 0)
+bar.Position = UDim2.new(0, 12, 0.72, 0)
 bar.Size = UDim2.new(1, -24, 0, 16)
 bar.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
 bar.BorderSizePixel = 0
@@ -167,7 +172,7 @@ corner(fill, 6)
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "Close"
 closeButton.AnchorPoint = Vector2.new(0.5, 1)
-closeButton.Position = UDim2.new(0.5, 0, 0.86, 0)
+closeButton.Position = UDim2.new(0.5, 0, 0.88, 0)
 closeButton.Size = UDim2.new(0.5, 0, 0, 34)
 closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 closeButton.BorderSizePixel = 0
@@ -252,7 +257,7 @@ local function buildScene(result: any): ()
 
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 55
-	camera.CFrame = CFrame.lookAt(Vector3.new(20, 30, 50), Vector3.new(20, 2, 0))
+	camera.CFrame = CFrame.lookAt(Vector3.new(20, 22, 38), Vector3.new(20, 1, 0))
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
 
