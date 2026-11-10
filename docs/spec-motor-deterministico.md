@@ -279,7 +279,8 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 
 ## 12. Prova de conceito executada (09/11/2026)
 
-Arquivo: [`../sim/poc.luau`](../sim/poc.luau) — Luau puro, roda no CLI, sem Roblox.
+Arquivo: [`../sim/poc.luau`](../sim/poc.luau) — Luau puro, roda no CLI, sem Roblox. A tabela
+abaixo é **histórica da v1**; o `poc.luau` atual imprime a curva da v2 (§15).
 Modelo: 5 lanes, 5 armadilhas (uma por lane), 4 tipos de armadilha, 3 tipos de unidade,
 tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 
@@ -288,8 +289,8 @@ tick de 0,05s, cap de 60s, RNG xorshift128+, hash FNV-1a por tick.
 > ou seja, várias armadilhas por lane. O PoC não é a arquitetura final; é a prova de determinismo.
 >
 > **Decisão de 09/11/2026 (Q2):** produção com **N=5 armadilhas ativas** e colocação livre nas 25
-> células; o PoC usa N=5, mas preso a 1 por lane. O port da P0 preserva a matemática e o hash; a
-> grade entra no schema e na cena.
+> células; o PoC usa N=5, mas preso a 1 por lane. O port da P0 preservou a matemática e o hash v1;
+> a S2 trocou a matemática para a grade 5×5 com loadout por célula.
 >
 > **Port P0 (09/11/2026):** o motor de produção mora em [`../src/shared/sim/core.luau`](../src/shared/sim/core.luau);
 > `sim/poc.luau`, `sim/invariants.luau` e `sim/acceptance.luau` são harnesses. O hash `668061367`
