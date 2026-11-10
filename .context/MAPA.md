@@ -33,7 +33,7 @@
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
 | `src/server/walls/WallService.luau` · `WallController.server.luau` · `sim/walls-contract.luau` · `sim/content-contract.luau` · `sim/build-contract.luau` | S3/S3.4: regras, `toBattleWall`, `contentVersion`; S4: UI pura (estado/HUD/layout), remotes + contratos | mexer em muralha/economia/conteúdo/build |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
-| `src/` | produção: `shared/{sim,data,analytics,build,dropin}`, `server/{data,walls,world,dropin,ProfileBoot,Main stub}`, `client/`, `world/` | navegar no código |
+| `src/` | produção: `shared/{sim,data,analytics,build,dropin,raid}`, `server/{data,walls,world,dropin,raid,ProfileBoot,Main stub}`, `client/`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (produção + vendor + world) | build do lugar |

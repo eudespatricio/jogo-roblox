@@ -7,7 +7,7 @@
 **Linha atual:**
 
 ```text
-GAP: GAP-004, GAP-005, GAP-008, GAP-011 · classes/taxonomia v2, live ops e contentVersion no BattleLog ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 (GAP-011 na S6) · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 · ver docs/gaps.md
 ```
 
 | ID | Fase | Gap | Risco | Gatilho para fechar | Status |
@@ -22,7 +22,7 @@ GAP: GAP-004, GAP-005, GAP-008, GAP-011 · classes/taxonomia v2, live ops e cont
 | GAP-008 | S3.2 (trial) | `trap_placed`/`upgrade_bought` não carregam class/trait/rarity; a taxonomia v1 é congelada | médio — live ops e funil não conseguem segmentar variantes | quando variantes forem para produção (taxonomia v2) | aberto |
 | GAP-009 | S3.2 (trial) | schema v2 não foi testado em ProfileStore/Studio real; `STORE_NAME` continua `MuralhaProfile_v1` com `schemaVersion=2` | alto — Reconcile/DataStore real pode se comportar diferente do store fake | antes do deploy de schema v2 | fechado em 10/11/2026 · Modo B DataStore real: `schema=v2 content=v2`, sessions 11→12, selftest 8/8 |
 | GAP-010 | S3.2 (trial) | default de migração neutro não é garantido por teste; um default com bônus mudaria o hash sem ninguém ver | alto — migração silenciosa buffa/nerfa muralhas antigas | em toda migração de conteúdo; teste de hash antigo x migrado | fechado em 10/11/2026 · schema v2 + `sim/content-contract.luau`/`neutral-migration.luau` |
-| GAP-011 | S6 | `BattleLog` ainda não existe/persiste `contentVersion`; replay de conteúdo futuro não tem gate no log | médio — replay pode simular conteúdo que o servidor não conhece | na S6, junto do `BattleLog`, antes de conteúdo em produção | aberto |
+| GAP-011 | S6 | `BattleLog` não existia/persistia `contentVersion`; replay de conteúdo futuro não tinha gate no log | médio — replay podia simular conteúdo que o servidor não conhece | na S6, junto do `BattleLog`, antes de conteúdo em produção | fechado em 10/11/2026 · `BattleLog`/`RaidController` + `contentVersion` e `isReplayable` (`sim/raid-contract.luau`) |
 
 ## Como fechar um gap
 
@@ -50,8 +50,8 @@ conteúdo/feature/P2 e não bloqueiam a cena/build.
 | GAP-008 | não | campos de variante na taxonomia v2 | feature de classe/variantes |
 | GAP-005 | não | eventos/flags/calendário | P2/live ops |
 
-**Próximo:** S6 — raid assíncrona + replay (não iniciada). A expansão de classe/taxonomia v2
-continua bloqueada por GAP-004/008; GAP-011 entra na S6.
+**Próximo:** QA humano da S6 (scaffold da raid/BattleLog/replay). A expansão de classe/taxonomia
+v2 continua bloqueada por GAP-004/008; GAP-011 fechou no `BattleLog`.
 
 ## S3.4 — conteúdo e versões (10/11/2026)
 
@@ -62,7 +62,7 @@ continua bloqueada por GAP-004/008; GAP-011 entra na S6.
 | GAP-003 | **fechado** | `catapult` (5º tipo, splash) com `SIM_VERSION 3`; política explícita no catálogo/`walls-contract` |
 | GAP-010 | **fechado** | hash da parede antiga (`oil`) x migrada (`tar`) igual em `sim/content-contract.luau` e no kit |
 | GAP-009 | **fechado** | Modo B DataStore real (10/11/2026): `schema=v2 content=v2`, `sessions 11→12`, `[selftest] PASSOU (8/8)`; `STORE_NAME=MuralhaProfile_v1` com schema v2 |
-| GAP-011 | **aberto** | `contentVersion` no `BattleLog` fica para a S6 |
+| GAP-011 | **fechado na S6** | `BattleLog.contentVersion` + `isReplayable`; prova em `sim/raid-contract.luau` |
 
 ## S4 — fechada (10/11/2026)
 
@@ -76,3 +76,10 @@ Sem gap novo e sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `
 entrega cena/DEFENDER, timeout/retry, `dropin_shown`/`dropin_pressed` como props validadas e o
 **+3 ouro** no clear (`WallService.creditGold(3, "defense")`); envelope/sink é S7. A taxa ≥60% é
 medida no teste de 3 semanas; QA de feature em [`teste-s5-studio.md`](teste-s5-studio.md) §8.
+
+## S6 — scaffold + GAP-011 fechado (10/11/2026)
+
+Sem mudança de versão (`schema 2`, `content 2`, `sim 3`, hash `2489780106`). O `BattleLog` agora
+persiste `contentVersion` e `isReplayable` recusa conteúdo futuro; `sim/raid-contract.luau` prova
+hash de replay, 1 chave por `battle_id` e recompensa idempotente. GAP-011 **fechado**; QA humano da
+raid pendente em [`teste-s6-studio.md`](teste-s6-studio.md) §7.

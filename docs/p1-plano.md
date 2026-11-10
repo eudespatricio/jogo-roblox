@@ -7,8 +7,9 @@
 > **Execução (10/11/2026):** S1–S3.3 fechadas; **S3.4 (conteúdo e versões) fechada** — schema 2,
 > content 2, `simVersion 3`, hash `2489780106` (seed 42), Modo B real 8/8; GAP-001/002/003/009/010
 > fechados. **S4 fechada** em 10/11/2026 (QA headless + runtime: FPS 60/60, Play→UI 1,9 s,
-> prints 375×812/720×1280); S5 fechada (drop-in, funil e +3 ouro); S6–S7 pendentes.
-> **GAP:** GAP-004/005/008/011 — classe/taxonomia v2, P2 e `BattleLog`.
+> prints 375×812/720×1280); S5 fechada; S6 iniciada (raid/BattleLog/replay; QA pendente);
+> S7 pendente.
+> **GAP:** GAP-004/005/008 — classe/taxonomia v2 e P2; GAP-011 fechado no `BattleLog` da S6.
 > Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
 > [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).
@@ -34,7 +35,7 @@ da S7 (contrato v1 já validado no CI). Sem número, a fase não fecha.
 | S3.4 | **Conteúdo e versões** — **feito 10/11/2026** | `contentVersion` no schema v2, `oil → tar`, `catapult` (5º tipo), `SIM_VERSION 3`, migração neutra e Modo B | contratos 20/13/7/6; GAP-001/002/003/009/010 fechados; Modo B schema v2 8/8 |
 | S4 | **Cena 5×5 + build** — **feito 10/11/2026** | grid 5×5 no Workspace, câmera fixa, UI de build (colocar 5 em 25), HUD de FPS/tempos, layout 375×812/720×1280; `GridLayout`/`BuildProtocol`/`BuildClientState`/`BuildHud`/`BuildLayout`/`BuildGrid`/`WallController`/`BuildClient`; QA em [`teste-s4-studio.md`](teste-s4-studio.md) | build ≤30 s; nenhuma armadilha fora da célula; 45+ FPS; evidência §7 (FPS 60/60, Play→UI 1,9 s) |
 | S5 | **Drop-in de 5 s** — **feito 10/11/2026** | cena de abertura com DEFENDER, derrota roteirizada e retry; `DropInState`/`DropInController`/`DropInClient`/`sim/dropin-contract.luau`; +3 ouro no clear; QA em [`teste-s5-studio.md`](teste-s5-studio.md) | `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥ 60% no teste de produto |
-| S6 | **Raid assíncrona + replay** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`), replay por seed de 8 s | `battle_finished.result_hash` igual ao replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence` |
+| S6 | **Raid assíncrona + replay** — **iniciada 10/11/2026 (scaffold); QA humano pendente** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`, `contentVersion`), replay por seed de 8 s; `BattleLog`/`RaidReplay`/`RaidController`/`RaidClient`; QA em [`teste-s6-studio.md`](teste-s6-studio.md) | `battle_finished.result_hash` igual ao replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence`; GAP-011 fechado |
 | S7 | **Telemetria** | `src/server/analytics/AnalyticsService.luau`: `emit`, lote (30 s/100), rate limit de cliente (10/min), idempotência, sink `Null` | contrato v1 valida 100% dos eventos; nenhum evento altera `BattleResult`; sem PII |
 
 Regras de sequência:

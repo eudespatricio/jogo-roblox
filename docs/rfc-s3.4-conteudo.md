@@ -22,4 +22,4 @@
   antigo (`schema_future`/`content_future`), sem sobrescrever. Rollback = reverter o commit; o
   perfil v2 permanece no store e o servidor antigo recusa até o rollback completo.
 - **GAP:** GAP-001/002/003/009/010 fechados com a fatia; o Modo B schema v2 foi executado em
-  10/11/2026 (`schema=v2 content=v2`, 8/8). GAP-011 (`contentVersion` no `BattleLog`) fica na S6.
+  10/11/2026 (`schema=v2 content=v2`, 8/8). GAP-011 (`contentVersion` no `BattleLog`) fechou na S6.

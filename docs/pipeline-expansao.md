@@ -100,7 +100,7 @@ Não garantido ainda (ver `docs/gaps.md`):
 - flags/calendário para eventos semanais (GAP-005);
 - rollback de conteúdo em servidores antigos;
 - docs fora do bloco de versões ainda podem envelhecer sem o CI reclamar;
-- `BattleLog` com `contentVersion` (GAP-011, S6).
+- `BattleLog` com `contentVersion` (GAP-011, fechado na S6 em 10/11/2026).
 
 ---
 

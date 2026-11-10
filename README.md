@@ -14,8 +14,9 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > `contentVersion`, `oil → tar`, 5º tipo `catapult`, `simVersion 3` e hash `2489780106` preservado;
 > GAP-001/002/003/010 fechados. **S4 fechada** em 10/11/2026: cena 5×5, UI de build, remotes,
 > HUD de debug, layout 375×812/720×1280, grant de QA e contrato **14/14**; QA runtime com **FPS 60/60**
-> e **Play→UI 1,9 s** ([roteiro](docs/teste-s4-studio.md)). **S5 fechada** (drop-in, timeout/retry,
-> funil e +3 ouro, [roteiro](docs/teste-s5-studio.md)); **S6** é a próxima fatia (não iniciada).
+> e **Play→UI 1,9 s** ([roteiro](docs/teste-s4-studio.md)). **S5 fechada** (drop-in/funil/+3 ouro,
+> [roteiro](docs/teste-s5-studio.md)). **S6 iniciada** (raid, BattleLog e replay; QA pendente,
+> [roteiro](docs/teste-s6-studio.md)).
 > A S3.4 fechou o GAP-009 no Modo B real (schema v2, 8/8). O teste de produto de 3 semanas
 > roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
@@ -39,6 +40,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md) — RFC da fatia de conteúdo e versões.
 - [`docs/teste-s4-studio.md`](docs/teste-s4-studio.md) — roteiro de QA da cena/build da S4.
 - [`docs/teste-s5-studio.md`](docs/teste-s5-studio.md) — roteiro de QA do drop-in da S5.
+- [`docs/teste-s6-studio.md`](docs/teste-s6-studio.md) — roteiro de QA da raid/BattleLog/replay.
 - [`docs/expansion-test-2026-11-10.md`](docs/expansion-test-2026-11-10.md) — trial real de classe/trait/raridade.
 - [`tools/expansion-test/`](tools/expansion-test/README.md) — kit reutilizável de trial de expansão.
 - [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
@@ -60,19 +62,22 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
   build-contract.luau    contrato do grid/build da S4 (14 checagens: protocolo/estado/HUD/layout)
   dropin-contract.luau   contrato do drop-in da S5 (8 checagens: estado/funil/batalha/reward)
+  raid-contract.luau     contrato da raid da S6 (6 checagens: BattleLog/replay/idempotência)
   fixtures/              fixtures da migração 0→1→2 do perfil
 src/shared/sim/core.luau motor v3 (RNG, mul32/add32, Battle 5×5/N=5, 5 tipos)
 src/shared/build/        GridLayout, BuildProtocol, BuildClientState, BuildHud e BuildLayout (puros)
 src/shared/dropin/       DropInState + DropInTelemetry (fases/timeout/retry e props do funil)
+src/shared/raid/         BattleLog, ledger, replay e telemetria da raid (puros)
 src/shared/data/         schema v2 do perfil + TrapCatalog (economia/conteúdo)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado + ProfileRegistry
 src/server/walls/        WallService + WallController (remotes snapshot/place/remove/upgrade)
 src/server/world/        BuildGrid: 25 células e muralha visual no Workspace
 src/server/dropin/       DropInController: remotes, batalha fixa seed 4 e timeout/retry
+src/server/raid/         RaidController + BattleLogStore (MuralhaBattleLog_v1)
 src/server/ProfileBoot.server.luau  ligação com Players + self-test no Studio
 src/server/Main.server.luau  stub de entrada do servidor (S1)
-src/client/              BuildClient (câmera/UI de build) + DropInClient (cena/DEFENDER)
+src/client/              BuildClient, DropInClient (cena/DEFENDER) e RaidClient (ATACAR/replay)
 src/world/               Baseplate/SpawnLocation da cena
 vendor/ProfileStore.luau ProfileStore oficial (Apache-2.0, não editar)
 docs/                    GDD, spec, pesquisas, economia, roteiro do Studio
@@ -99,6 +104,7 @@ luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
 luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
 luau sim/build-contract.luau           # grid/build (S4; 14 checagens)
 luau sim/dropin-contract.luau          # drop-in (S5; 8 checagens)
+luau sim/raid-contract.luau            # raid/BattleLog/replay (S6; 6 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
 python3 scripts/check-versions.py      # gate de versões docs x fonte
 
