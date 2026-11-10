@@ -57,7 +57,7 @@ end
 
 local attackButton = Instance.new("TextButton")
 attackButton.Name = "Attack"
-attackButton.Position = UDim2.fromOffset(12, 86)
+attackButton.Position = UDim2.fromOffset(12, 118)
 attackButton.Size = UDim2.fromOffset(104, 36)
 attackButton.BackgroundColor3 = Color3.fromRGB(90, 70, 130)
 attackButton.BorderSizePixel = 0
@@ -172,7 +172,7 @@ corner(fill, 6)
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "Close"
 closeButton.AnchorPoint = Vector2.new(0.5, 1)
-closeButton.Position = UDim2.new(0.5, 0, 0.88, 0)
+closeButton.Position = UDim2.new(0.5, 0, 0.82, 0)
 closeButton.Size = UDim2.new(0.5, 0, 0, 34)
 closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 closeButton.BorderSizePixel = 0

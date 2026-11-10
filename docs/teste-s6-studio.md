@@ -195,3 +195,11 @@ No desktop a modal ficava muito larga e o `ViewportFrame` virava uma faixa; o bo
 pequeno. A modal agora tem `UISizeConstraint` (máx. 440×620), o viewport ocupa 38% da altura e a
 câmera foi para `(20,22,38)` olhando `(20,1,0)`. Re-testar em 375×812/720×1280 e no desktop; o
 `FECHAR` só aparece depois de `REPLAY CONCLUIDO · 8s`.
+
+### Ajuste final de layout — 10/11/2026 11:37
+
+- **375×812:** o `FECHAR` ficava no limite inferior; subiu de 0.88 para 0.82 da modal.
+- O botão **ATACAR** em y=86 encostava na linha `FPS/T/UI`; foi para y=118, abaixo do HUD e antes
+  do grid.
+- O 3D já mostra lanes/traps/horda e o print de 720×1280 com `REPLAY CONCLUIDO · 8s`/FECHAR.
+  Falta só o print final 375×812 com o novo FECHAR e o veredito.
