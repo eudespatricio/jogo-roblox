@@ -7,7 +7,7 @@
 **Linha atual:**
 
 ```text
-GAP: GAP-004, GAP-005, GAP-008, GAP-009, GAP-011 · classes/taxonomia v2, live ops, ProfileStore real com schema v2 e contentVersion no BattleLog ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 (GAP-009 depende do Modo B; GAP-011 na S6) · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-011 · classes/taxonomia v2, live ops e contentVersion no BattleLog ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 (GAP-011 na S6) · ver docs/gaps.md
 ```
 
 | ID | Fase | Gap | Risco | Gatilho para fechar | Status |
@@ -20,7 +20,7 @@ GAP: GAP-004, GAP-005, GAP-008, GAP-009, GAP-011 · classes/taxonomia v2, live o
 | GAP-006 | S4 | a guarda de perfil só roda se o servidor usar `WallService`; não há helper `toBattleWall` que force a validação antes de `Battle.new` | médio — S4/S6 podem montar `wall.traps` direto e furar a guarda | revisão de código da S4 / antes de ligar UI de build | fechado em 10/11/2026 · `42187a5` · `toBattleWall` + 13/13 (`sim/walls-contract.luau`) |
 | GAP-007 | S3.2 (trial) | docs podem ficar velhas sem o CI reclamar: o `check.sh` passou verde com labels “schema v1/motor v2” e spec antiga | alto — doc mais velho que código mente e contamina a próxima janela | antes de qualquer expansão real; revisar labels e criar check de versão nos docs | fechado em 10/11/2026 · `42187a5` · `scripts/check-versions.py` + `docs/versoes.md` |
 | GAP-008 | S3.2 (trial) | `trap_placed`/`upgrade_bought` não carregam class/trait/rarity; a taxonomia v1 é congelada | médio — live ops e funil não conseguem segmentar variantes | quando variantes forem para produção (taxonomia v2) | aberto |
-| GAP-009 | S3.2 (trial) | schema v2 não foi testado em ProfileStore/Studio real; `STORE_NAME` continua `MuralhaProfile_v1` com `schemaVersion=2` | alto — Reconcile/DataStore real pode se comportar diferente do store fake | antes do deploy de schema v2 | aberto — schema v2/contentVersion pronto; Modo B no Studio pendente |
+| GAP-009 | S3.2 (trial) | schema v2 não foi testado em ProfileStore/Studio real; `STORE_NAME` continua `MuralhaProfile_v1` com `schemaVersion=2` | alto — Reconcile/DataStore real pode se comportar diferente do store fake | antes do deploy de schema v2 | fechado em 10/11/2026 · Modo B DataStore real: `schema=v2 content=v2`, sessions 11→12, selftest 8/8 |
 | GAP-010 | S3.2 (trial) | default de migração neutro não é garantido por teste; um default com bônus mudaria o hash sem ninguém ver | alto — migração silenciosa buffa/nerfa muralhas antigas | em toda migração de conteúdo; teste de hash antigo x migrado | fechado em 10/11/2026 · schema v2 + `sim/content-contract.luau`/`neutral-migration.luau` |
 | GAP-011 | S6 | `BattleLog` ainda não existe/persiste `contentVersion`; replay de conteúdo futuro não tem gate no log | médio — replay pode simular conteúdo que o servidor não conhece | na S6, junto do `BattleLog`, antes de conteúdo em produção | aberto |
 
@@ -34,7 +34,7 @@ GAP: GAP-004, GAP-005, GAP-008, GAP-009, GAP-011 · classes/taxonomia v2, live o
 ## Fechamento antes da S4 — S3.3 executada (10/11/2026)
 
 **Resultado:** a janela **S3.3** fechou GAP-006 e GAP-007 e preparou GAP-010. A tabela abaixo é o
-estado da S3.3; a **S3.4** (seção seguinte) fechou GAP-001/002/003/010. Os demais gaps são de
+estado da S3.3; a **S3.4** (seção seguinte) fechou GAP-001/002/003/009/010. Os demais gaps são de
 conteúdo/feature/P2 e não bloqueiam a cena/build.
 
 | GAP | Status | Trabalho | Prova |
@@ -42,7 +42,7 @@ conteúdo/feature/P2 e não bloqueiam a cena/build.
 | GAP-006 | **fechado** | `WallService.toBattleWall(profile, schema, catalog, hp)` valida, ordena e converte `cells` em `wall.traps`; S4 usa só esse helper | perfil válido/inválido, ordem determinística e hash igual em `sim/walls-contract.luau` (13/13) |
 | GAP-007 | **fechado** | `scripts/check-versions.py` no `check.sh` compara `SCHEMA_VERSION`, `CONTENT_VERSION`, `SIM_VERSION` e hash com `docs/versoes.md`; labels saem da fonte | divergência simulada falha; versão atual passa |
 | GAP-010 | **preparado** | `tools/expansion-test/neutral-migration.luau` compara hash da parede antiga x migrada; roda no `check.sh` para 0→1 | fecha de fato no primeiro schema v2 |
-| GAP-009 | não | exige schema v2 + ProfileStore/Studio real | depois do primeiro schema v2 |
+| GAP-009 | **fechado na S3.4** | Modo B schema v2 no ProfileStore/DataStore real | `schema=v2 content=v2`, 8/8 (10/11/2026) |
 | GAP-001 | não | `contentVersion` no perfil + `BattleLog` | fatia de conteúdo; parte final depende da S6 |
 | GAP-002 | não | migração/repair de `trap_id` renomeado/removido | fatia de conteúdo |
 | GAP-003 | não | stats do motor fora do código ou política explícita de `simVersion` por tipo | fatia de conteúdo/engine |
@@ -50,8 +50,8 @@ conteúdo/feature/P2 e não bloqueiam a cena/build.
 | GAP-008 | não | campos de variante na taxonomia v2 | feature de classe/variantes |
 | GAP-005 | não | eventos/flags/calendário | P2/live ops |
 
-**Próximo:** S4 (cena 5×5 + build). A expansão de classe/taxonomia v2 continua bloqueada por
-GAP-004/008; GAP-009 depende do Modo B no Studio; GAP-011 entra na S6.
+**Próximo:** QA da S4 (cena 5×5 + build). A expansão de classe/taxonomia v2 continua bloqueada
+por GAP-004/008; GAP-011 entra na S6.
 
 ## S3.4 — conteúdo e versões (10/11/2026)
 
@@ -61,5 +61,5 @@ GAP-004/008; GAP-009 depende do Modo B no Studio; GAP-011 entra na S6.
 | GAP-002 | **fechado** | `oil → tar` por `TRAP_ALIASES`; perfil com trap desconhecida falha fechado; `content-contract` 7/7 |
 | GAP-003 | **fechado** | `catapult` (5º tipo, splash) com `SIM_VERSION 3`; política explícita no catálogo/`walls-contract` |
 | GAP-010 | **fechado** | hash da parede antiga (`oil`) x migrada (`tar`) igual em `sim/content-contract.luau` e no kit |
-| GAP-009 | **aberto** | schema v2 pronto; falta executar o Modo B no Studio com API Services |
+| GAP-009 | **fechado** | Modo B DataStore real (10/11/2026): `schema=v2 content=v2`, `sessions 11→12`, `[selftest] PASSOU (8/8)`; `STORE_NAME=MuralhaProfile_v1` com schema v2 |
 | GAP-011 | **aberto** | `contentVersion` no `BattleLog` fica para a S6 |

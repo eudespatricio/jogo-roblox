@@ -100,7 +100,7 @@ Não garantido ainda (ver `docs/gaps.md`):
 - flags/calendário para eventos semanais (GAP-005);
 - rollback de conteúdo em servidores antigos;
 - docs fora do bloco de versões ainda podem envelhecer sem o CI reclamar;
-- ProfileStore/Studio real com schema v2 (GAP-009).
+- `BattleLog` com `contentVersion` (GAP-011, S6).
 
 ---
 
@@ -155,5 +155,5 @@ silencioso em toda parede antiga. `artillery` (100%) preservou o hash.
    fechou o GAP-007 com `scripts/check-versions.py` + `docs/versoes.md`. Docs fora do bloco ainda
    podem envelhecer.
 3. **Variantes precisam de decisão de analytics.** Eventos v1 não carregam classe/trait/raridade. GAP-008.
-4. **Teste com ProfileStore real é obrigatório** antes de deploy de schema. GAP-009.
+4. **Teste com ProfileStore real é obrigatório** antes de deploy de schema. GAP-009 fechado no Modo B (10/11/2026).
 5. **Default neutro precisa de teste de hash antigo x migrado**, não só de campo preenchido. GAP-010.

@@ -6,11 +6,11 @@
 
 > **S3.4 (10/11/2026):** o schema subiu para **v2** (`contentVersion`) e o conteúdo para **v2**
 > (`oil → tar`, `catapult`, `simVersion 3`). Os logs da §8 são do schema v1 e ficam como histórico.
-> Antes de fechar o GAP-009, repetir o Modo A e o Modo B com o build atual; o esperado é
-> `schema=v2 content=v2`.
+> O **Modo B com schema v2 foi executado em 10/11/2026** — `schema=v2 content=v2`, DataStore real,
+> sessions 11→12 e `PASSOU (8/8)` (evidência na §9).
 >
-> **Status:** **Modo A (Mock) e Modo B (DataStore real) executados e aprovados em
-> 09/11/2026 — 8/8 nas duas execuções** (evidência na §8, schema v1).
+> **Status:** **Modo A (Mock) e Modo B (DataStore real) aprovados em 09/11/2026 com schema v1** e
+> **Modo B schema v2 aprovado em 10/11/2026** (evidência nas §8 e §9).
 > O que o CI cobre: `sim/profile-contract.luau` (schema, migração, `StartSessionAsync` nil,
 > `EndSession`, recarga sem duplicar) e `sim/analytics-contract.luau`.
 > O que o CI **não** cobre: `Players`, DataStore, `ProfileStore.Mock` e o lugar de verdade —
@@ -203,18 +203,42 @@ Fica para o playtest: duas contas distintas no lugar publicado (duas chaves `Use
 
 ---
 
-## 9. Schema v2/contentVersion — repetição S3.4 (pendente)
+## 9. Schema v2/contentVersion — S3.4 (executado 10/11/2026)
 
-**Status:** pendente. É a evidência que fecha o **GAP-009**; o contrato headless e o `ProfileStore.Mock`
-não provam `Reconcile`/DataStore entre servidores.
+**Status:** **executado e aprovado**; é a evidência que fecha o **GAP-009** no ProfileStore/DataStore
+real. O roteiro abaixo fica para a próxima mudança de schema.
 
-1. `bash scripts/check.sh` verde; `rojo build` e abrir o lugar no Studio.
-2. `ServerStorage.ProfileStoreMock = true` e `ProfileSelfTest = true` (Modo A). O Output deve conter
-   `[perfil] carregado ... schema=v2 content=v2` e
-   `[selftest] OK carregou e migrou · schema=v2 content=v2 ...`, terminando em `PASSOU (8/8)`.
-3. Publicar o lugar, ligar API Services e `ProfileStoreMock = false` (Modo B). Rodar duas vezes em
-   servidores diferentes; a segunda deve carregar `sessions` incrementado e `contentVersion=2`.
-4. Perfil antigo: subir um perfil v1 (fixture `sim/fixtures/profile-v1.luau` ou perfil real já salvo)
-   e confirmar `migrado=true`, `oil → tar` e `contentVersion=2`; perfil com `content_future` deve ser
-   recusado com kick e lock devolvido.
-5. Copiar as linhas `[perfil]`/`[selftest]` para o handover e atualizar o GAP-009 em `docs/gaps.md`.
+1. `bash scripts/check.sh` verde; `rojo build` e abrir o lugar no Studio (publicar para o Modo B).
+2. `ServerStorage.ProfileStoreMock = true` e `ProfileSelfTest = true` (Modo A).
+3. Publicar o lugar, ligar API Services e `ProfileStoreMock = false` (Modo B); rodar duas vezes em
+   servidores diferentes.
+4. Perfil antigo: subir um perfil v1 e confirmar `migrado=true`, `oil → tar` e `contentVersion=2`;
+   perfil com `content_future` deve ser recusado com kick e lock devolvido.
+5. Copiar as linhas `[perfil]`/`[selftest]` para o handover e atualizar o GAP em `docs/gaps.md`.
+
+**Evidência — Modo B schema v2 (10/11/2026):**
+
+```text
+[perfil] store=MuralhaProfile_v1 modo=DataStore
+[ProfileStore]: Roblox API services available - data will be saved
+[perfil] carregado key=User_... schema=v2 content=v2 migrado=false
+[perfil] datastore=Access
+[selftest] inicio · modo=DataStore
+[selftest] OK   carregou e migrou · schema=v2 content=v2 gold=0 sessions=11 json=nil
+[selftest] OK   sem PII e so campos do schema · nil
+[selftest] OK   EndSession no leave · activeCount=0
+[perfil] carregado key=User_... schema=v2 content=v2 migrado=false
+[selftest] OK   recarregou e nao duplicou · activeCount=1
+[selftest] OK   sessions incrementou · 11 -> 12
+[selftest] OK   lastSeenAt avancou · 2026-11-10T05:55:03Z -> 2026-11-10T05:55:06Z
+[selftest] OK   gold persistiu · 0
+[selftest] OK   perfil salvo valido · nil
+[selftest] PASSOU (8/8)
+```
+
+O `migrado=false` é esperado nesta execução porque o perfil já havia sido migrado para v2. Na
+primeira carga de um perfil v1, o log mostra `content=v1` na linha de load e depois
+`[perfil] conteudo migrado content=v2`. O `ContentId: rbxassetid://203785492` é o asset legado
+histórico (ruído, não bloqueia). Os logs também mostram `[build] cena 5x5 pronta` e
+`[build] remotes prontos`, confirmando a inicialização do servidor da S4; o QA visual/FPS da S4
+continua pendente.

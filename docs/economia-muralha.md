@@ -145,5 +145,5 @@ adicionar em `TrapCatalog.GOLD_SOURCES`/`GOLD_SINKS`. O teste de contrato valida
 
 **Pendência para conteúdo em produção:** GAP-004/005/008/009 em [`gaps.md`](gaps.md).
 `CONTENT_VERSION` já é persistido no perfil (`contentVersion`) com reparo/recusa no boot; o
-`BattleLog` da S6 deve carregar a mesma versão antes de conteúdo em massa. GAP-009 (ProfileStore
-real com schema v2) depende do Modo B no Studio.
+`BattleLog` da S6 deve carregar a mesma versão antes de conteúdo em massa. O GAP-009 (ProfileStore
+real com schema v2) foi fechado no Modo B em 10/11/2026; o GAP-011 fica na S6.

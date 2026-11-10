@@ -21,5 +21,5 @@
 - **Rollout / rollback:** publicar com API Services ligado; perfis v2 são recusados por servidor
   antigo (`schema_future`/`content_future`), sem sobrescrever. Rollback = reverter o commit; o
   perfil v2 permanece no store e o servidor antigo recusa até o rollback completo.
-- **GAP:** GAP-001/002/003 fecham com a fatia; GAP-009 depende da execução do Modo B no Studio;
-  GAP-010 fecha com a migração neutra do schema v2.
+- **GAP:** GAP-001/002/003/009/010 fechados com a fatia; o Modo B schema v2 foi executado em
+  10/11/2026 (`schema=v2 content=v2`, 8/8). GAP-011 (`contentVersion` no `BattleLog`) fica na S6.

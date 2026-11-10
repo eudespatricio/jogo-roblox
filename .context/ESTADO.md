@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 com código verde e GAP-009
-pendente no Studio**; **S4 iniciada** (cena 5×5/UI de build, scaffold sem validação no Studio). Plano
-em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
+**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 fechada** (código + Modo B
+real 8/8); **S4 iniciada** (cena 5×5/UI de build, scaffold com QA visual pendente). Plano em
+`docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -27,7 +27,7 @@ em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
-| teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
+| teste de sessão | Modo A 8/8 + Modo B schema v1 8/8 (09/11) · Modo B schema v2 8/8 (10/11) |
 
 ## Pronto
 
@@ -40,7 +40,8 @@ em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
 - Dados: `ProfileSchema.luau` (v2/contentVersion) + `ProfileService.luau` +
-  `ProfileBoot.server.luau` (migração de conteúdo) + `sim/profile-contract.luau` (20/20).
+  `ProfileBoot.server.luau` (migração de conteúdo) + `sim/profile-contract.luau` (20/20); Modo B
+  schema v2 8/8 em 10/11/2026 (`docs/teste-sessao-studio.md` §9).
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
   taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
 - Tooling: Rokit + CLI/GUI; CI ativo; doctor; gate de versões (`docs/versoes.md`); ProfileStore vendorizado.
@@ -54,7 +55,7 @@ em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
   Saída: 70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
 - S4: cena/UI/remote scaffold prontos; falta validar no Studio (FPS mobile, build ≤30s, feel).
   O sink `AnalyticsService` é S7.
-- GAPs abertos: GAP-004/005/008/009/011 (001/002/003/010 fechados; 009 depende do Modo B); ver `docs/gaps.md`.
+- GAPs abertos: GAP-004/005/008/011 (001/002/003/009/010 fechados); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
@@ -63,12 +64,12 @@ em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
   `A MURALHA` / `WALLBREAKER`; co-op na P3.
 - Servidor autoritativo + replay por seed + `simVersion`; hash só muda com `simVersion` novo.
 - Regras dos jogadores: nenhuma unidade obrigatória; poder só por gameplay; sem loot box.
-- Schema v1 + taxonomia v1: mudança só aditiva, com migração/`schema_version`.
+- Schema v2 (com `contentVersion`) + taxonomia v1: mudança só aditiva, com migração/`schema_version`.
 
 ## Próximo passo
 
-1. GAP-009: rodar o Modo B do schema v2 no Studio e registrar a evidência.
-2. S4: validar cena/UI no Studio; depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
+1. S4: validar cena/UI/FPS/build no Studio e corrigir o que o QA apontar.
+2. Depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
 
 ## Como verificar o estado em 1 minuto
 

@@ -27,7 +27,8 @@ hash=2489780106
    divergência e a mudança precisa ser registrada em
    [`spec-motor-deterministico.md`](spec-motor-deterministico.md).
 3. **`STORE_NAME` não é versão de schema.** `MuralhaProfile_v1` é a chave do DataStore e continua
-   `v1` com `schemaVersion = 2`; o teste real no ProfileStore/Studio é o GAP-009.
+   `v1` com `schemaVersion = 2`; o teste real no ProfileStore/DataStore foi o Modo B de 10/11/2026
+   (GAP-009 fechado).
 4. **Conteúdo tem gate próprio.** `profile.contentVersion` é comparado ao catálogo no boot:
    perfil antigo é reparado (`TrapCatalog.TRAP_ALIASES`) e perfil futuro é recusado
    (`content_future`); o `WallService` não aceita perfil fora da versão do catálogo.

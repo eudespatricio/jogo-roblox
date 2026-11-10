@@ -13,9 +13,9 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > (`toBattleWall`) e GAP-007 (gate de versões) fechados. **S3.4** com código verde: schema v2 +
 > `contentVersion`, `oil → tar`, 5º tipo `catapult`, `simVersion 3` e hash `2489780106` preservado;
 > GAP-001/002/003/010 fechados. **S4 iniciada** com cena 5×5, UI de build e remotes
-> (`GridLayout`/`BuildGrid`/`WallController`/`BuildClient`); falta validar no Studio e fechar o
-> GAP-009 (Modo B). O teste de produto de 3 semanas roda em paralelo
-> ([plano da P1](docs/p1-plano.md)).
+> (`GridLayout`/`BuildGrid`/`WallController`/`BuildClient`); falta validar FPS/build/feel no
+> Studio. A S3.4 fechou o GAP-009 no Modo B real (schema v2, 8/8). O teste de produto de 3 semanas
+> roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
 
