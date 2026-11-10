@@ -10,7 +10,7 @@
 | `docs/gdd-muralha.md` · `docs/economia-muralha.md` | design, catálogo, custos e desbloqueio | decisão de produto/economia |
 | `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
 | `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
-| `docs/p1-plano.md` | P1: fatias S1–S7, critérios de pronto, riscos | **início da P1** |
+| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` | P1 + pipeline de expansão + gaps | **início da P1/expansão** |
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |

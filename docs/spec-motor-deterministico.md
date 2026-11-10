@@ -391,7 +391,8 @@ A S3 não altera esta matemática: `simVersion 2` e hash `2489780106` continuam.
 
 **Muralha (S3)** — `src/shared/data/TrapCatalog.luau` (economia) + `src/server/walls/WallService.luau`
 validam célula, N=5, ouro, desbloqueio e perfil compatível; mutam `Profile.Data.wall.cells`/`gold`
-e devolvem eventos. Regras: [`economia-muralha.md`](economia-muralha.md).
+e devolvem eventos. Regras: [`economia-muralha.md`](economia-muralha.md). Processo de expansão:
+[`pipeline-expansao.md`](pipeline-expansao.md); lacunas: [`gaps.md`](gaps.md).
 
 ---
 

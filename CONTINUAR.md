@@ -3,6 +3,9 @@
 **Data:** 09/11/2026 · **Status:** P1 em execução — **S1, S2 e S3 fechadas**; próxima fatia é a S4 ·
 base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
+> **GAP (09/11/2026):** GAP-001..GAP-006 — conteúdo em produção ainda exige versão/migração;
+> stats do motor são código; classes e eventos não modelados. Ver `docs/gaps.md`.
+
 ---
 
 ## O que é este projeto
@@ -50,7 +53,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     `{name, props}`; perfil com trap desconhecida/fora da grade/acima de N falha fechado.
   - `sim/walls-contract.luau` **12/12**: catálogo x motor, fontes/sinks, perfil, célula, N=5,
     ouro, desbloqueio, upgrade, remove, `creditGold`, snapshot e eventos válidos.
-- Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 75/80 · MAPA 59/60 ·
+- Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 76/80 · MAPA 59/60 ·
   REJEITADOS 19/40**.
 
 ---
@@ -71,7 +74,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
-| contexto | ESTADO 75/80 · MAPA 59/60 · REJEITADOS 19/40 |
+| contexto | ESTADO 76/80 · MAPA 59/60 · REJEITADOS 19/40 |
 
 ---
 
@@ -106,6 +109,13 @@ Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido c
 
 **Próximo passo:** S4 — cena 5×5 no Workspace, câmera fixa e UI de build (colocar 5 em 25), com
 build ≤ 30 s e 45+ FPS mobile. Depois S5–S7 na ordem do plano.
+
+## Pipeline de expansão e gaps
+
+- Processo reproduzível: [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — três versões
+  (`schemaVersion`, `CONTENT_VERSION`, `simVersion`), matriz de decisão, passo a passo, RFC e migração.
+- Registro: [`docs/gaps.md`](docs/gaps.md) — GAP-001..GAP-006, cada um com gatilho objetivo.
+- Fechamento: toda P/S termina com uma linha `GAP:`; sem linha, a fatia não fecha.
 
 ---
 
@@ -153,6 +163,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 7. Invariante não vira markdown: vira teste ou vira pergunta.
 8. Não reabrir `REJEITADOS.md` sem a condição objetiva listada.
 9. Custo/desbloqueio: fonte em `src/shared/data/TrapCatalog.luau`; mudança exige docs + contrato.
+10. Expansão segue `docs/pipeline-expansao.md`; toda P/S fecha com `GAP:` e atualiza `docs/gaps.md`.
 
 ---
 
@@ -162,7 +173,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
    o protótipo. Se algum dia recriar a tag, faça no HEAD **antes** de apagar qualquer arquivo.
 2. **A S2 mudou a matemática de propósito.** O hash `668061367` **não é mais o alvo**; o novo é
    `2489780106`, com `simVersion 2`. Não "ajustar" o hash antigo nem os thresholds sem registro.
-3. **Contexto tem teto.** ESTADO está em 75/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
+3. **Contexto tem teto.** ESTADO está em 76/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
    linha antes de acrescentar outra.
 
 ---
@@ -191,6 +202,8 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
     anotada no HEAD `b07b4c5` e publicada antes da deleção; o commit antigo continua no histórico.
 13. **Remover armadilha não devolve ouro.** A taxonomia v1 não tem source de refund;
     `gold_earned` só aceita raid/defense/daily. Reembolso exigiria taxonomia v2.
+14. **Economia hardcoded não era reproduzível.** A S3.1 extraiu `TrapCatalog`, pinou listas/custos
+    e fez perfil inválido falhar fechado; o processo está em `docs/pipeline-expansao.md`.
 
 ---
 
@@ -200,8 +213,9 @@ Cole na nova sessão:
 
 > Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1, S2 e S3 fechadas; S4 é a
 > próxima). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md` e
-> `docs/p1-plano.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
-> `bash scripts/check.sh` (devem passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
+> `docs/p1-plano.md`, `docs/pipeline-expansao.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`,
+> `bash scripts/doctor.sh` e `bash scripts/check.sh` (devem passar). Não edite
+> `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
 > colocação livre; taxonomia v1 congelada. O motor está em `simVersion 2`, hash de referência
 > `2489780106` (seed 42) — o `668061367` da v1 está aposentado. A muralha/economia está em
 > `src/server/walls/WallService.luau` + `docs/economia-muralha.md` (sem refund). O teste de produto

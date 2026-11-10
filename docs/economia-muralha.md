@@ -1,7 +1,8 @@
 # Economia da muralha — S3 (09/11/2026)
 
 > Primeira calibragem da P1. Os números são ponto de partida; mudança de custo/desbloqueio exige
-> atualizar este documento **e** o contrato (`sim/walls-contract.luau`). Fonte executável:
+> atualizar este documento **e** o contrato (`sim/walls-contract.luau`). Processo completo de
+> expansão: [`pipeline-expansao.md`](pipeline-expansao.md). Fonte executável:
 > [`../src/shared/data/TrapCatalog.luau`](../src/shared/data/TrapCatalog.luau) (dados) e
 > [`../src/server/walls/WallService.luau`](../src/server/walls/WallService.luau) (regras).
 
@@ -128,6 +129,7 @@ uma entrada no `TrapCatalog`. Não simule classe só no serviço: o replay preci
 adicionar em `TrapCatalog.GOLD_SOURCES`/`GOLD_SINKS`. O teste de contrato valida cada chave contra
 `AnalyticsTypes` e falha se o enum não existir.
 
-**Pendência para conteúdo em produção:** persistir `CONTENT_VERSION` no perfil/battle log e definir
-a política de migração/rolling deploy. Hoje o catálogo é versionado no código e a guarda falha
-fechado; a S6 deve carregar a versão no `BattleLog` antes de adicionar conteúdo em massa.
+**Pendência para conteúdo em produção:** GAP-001..GAP-006 em [`gaps.md`](gaps.md). Persistir
+`CONTENT_VERSION` no perfil/battle log e definir migração/rolling deploy; hoje o catálogo é
+versionado no código e a guarda falha fechado. A S6 deve carregar a versão no `BattleLog` antes
+de adicionar conteúdo em massa.

@@ -6,6 +6,8 @@
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
 > **Execução (09/11/2026):** S1, S2 e S3 fechadas; `simVersion = 2`, hash de referência
 > `2489780106` (seed 42). S4 é a próxima fatia; S5–S7 pendentes.
+> **GAP:** GAP-001..GAP-006 — expansão de conteúdo ainda exige versão/migração; ver
+> [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 
 ---
 
@@ -69,3 +71,9 @@ blueprint, física real de ragdoll.
 A [revisão de direção](revisao-direcao.md) recomendou o teste **antes** da P1. O diretor decidiu
 seguir com a P1 em 09/11/2026; o teste continua recomendado e pode rodar em paralelo. Se reprovar, a
 P1 para e o escopo é revisto — motor e camada de dados continuam válidos para qualquer versão.
+
+## 7. Expansão (conteúdo e features)
+
+Toda expansão segue [`pipeline-expansao.md`](pipeline-expansao.md) (versões, matriz de decisão, RFC,
+migração e rollback). Cada P/S fecha com uma linha `GAP:`; gaps abertos ficam em
+[`gaps.md`](gaps.md), cada um com gatilho objetivo.

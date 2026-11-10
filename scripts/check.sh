@@ -42,4 +42,10 @@ rojo sourcemap default.project.json -o sourcemap.json
 echo "== contexto =="
 python3 skills/context-recovery/scan_repo.py --root . --check
 
+echo "== gaps =="
+if [ ! -f docs/gaps.md ] || ! grep -q "GAP:" CONTINUAR.md; then
+	echo "FALHA: CONTINUAR.md precisa da linha GAP: e docs/gaps.md precisa existir"
+	exit 1
+fi
+
 echo "OK: check passou"

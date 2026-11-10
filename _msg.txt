@@ -1,0 +1,11 @@
+docs: pipeline de expansao reproduzivel + registro de gaps
+
+- docs/pipeline-expansao.md: tres versoes (schema/content/sim), matriz de
+  decisao, passo a passo, templates de RFC/migracao, rollout/rollback e
+  fechamento com linha GAP.
+- docs/gaps.md: GAP-001..GAP-006 com risco e gatilho objetivo; GAP-001/002/003
+  bloqueiam a primeira expansao de conteudo em producao.
+- AGENTS/CONTINUAR/ESTADO/MAPA/README/p1-plano/spec/economia apontam para o
+  pipeline e carregam a linha GAP atual.
+- check.sh passa a falhar se a linha GAP: sumir do CONTINUAR.md ou se
+  docs/gaps.md nao existir.
