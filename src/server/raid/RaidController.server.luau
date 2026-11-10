@@ -217,15 +217,18 @@ local function startRaid(player: Player): any
 		if currentSnapshot == nil then
 			return { ok = false, err = "phantom: " .. tostring(currentErr) }
 		end
-		local target = phantomStore.get()
-		if target == nil or target.contentVersion > TrapCatalog.CONTENT_VERSION then
-			target = currentSnapshot
-		end
-		local wall = wallFromSnapshot(target)
+		-- Publica a muralha ATUAL antes de escolher o alvo. Antes o alvo era lido
+		-- primeiro e ficava uma rodada atras: o archer recem-colocado so aparecia
+		-- no replay seguinte. Publicar primeiro mantem o replay sincronizado com
+		-- o build que o jogador acabou de fazer.
 		local storedPhantom, phantomStoreErr = phantomStore.put(currentSnapshot)
 		if not storedPhantom then
 			warn("[raid] nao publicou fantasma: " .. tostring(phantomStoreErr))
 		end
+		-- O alvo e a snapshot recem-publicada: garante que o replay mostre o archer
+		-- colocado agora, sem depender de consistencia imediata do DataStore.
+		local target = currentSnapshot
+		local wall = wallFromSnapshot(target)
 		print(
 			string.format(
 				"[raid] phantom owner=%s traps=%d hp=%d content=v%d store=%s",

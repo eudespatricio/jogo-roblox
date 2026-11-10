@@ -242,7 +242,9 @@ fechados; GAP-004/005/008 abertos. **Base:** `main` pós-S8; hash `2489780106`; 
 - **S6.1 fechada:** `PhantomStore` (`MuralhaPhantom_v1`) + `BattleLog.wall` + replay 3D
   (`ViewportFrame`, 8 s) + `MuralhaGold`; contrato de raid **6/6**; QA em 375×812 com
   `REPLAY CONCLUIDO`/`FECHAR`. Limites: fantasma é a última muralha publicada; replay local sem
-  câmera cinematográfica; reward 5 provisório.
+  câmera cinematográfica; reward 5 provisório. **Correção pós-S8:** o raid publica a muralha atual
+  antes de montar o alvo, então o primeiro ataque após colocar o archer já o mostra no replay (antes
+  ficava uma rodada atrás).
 - **S7 fechada:** `AnalyticsService` puro + `AnalyticsDataStoreSink` + `AnalyticsBoot`; contrato
   **34/34**. `session_start` usa `days_since_last_seen` capturado no `onStart` do `ProfileBoot`;
   `player_id` é hash32 com salt (sem PII). Drop-in/raid passam o funil, batalha, ouro e `first_win`

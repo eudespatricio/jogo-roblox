@@ -214,3 +214,11 @@ câmera foi para `(20,22,38)` olhando `(20,1,0)`. Re-testar em 375×812/720×128
   `[raid] battlelog ... content=v2 reward=5`; sem `DIVERGENCIA`.
 - Limites aceitos do MVP: fantasma = última muralha publicada; replay local em `ViewportFrame`;
   reward 5 provisório. S6.1 **fechada**; S7/P2 não iniciados.
+
+### Correção pós-S8 — alvo do raid (10/11/2026)
+
+O `RaidController` lia o fantasma **antes** de publicar a muralha atual; o primeiro ataque depois de
+colocar o archer usava a snapshot anterior e o replay só mostrava o archer na rodada seguinte. Agora
+o servidor publica `currentSnapshot` primeiro e usa essa mesma snapshot como alvo do `Core`/replay;
+o `BattleLog.wall` e o `result.wall` acompanham o build atual. Sem mudança de schema/content/sim/hash
+e sem novo contrato (o caminho é server-only).
