@@ -10,7 +10,7 @@
 | `docs/gdd-muralha.md` · `docs/economia-muralha.md` | design, catálogo, custos e desbloqueio | decisão de produto/economia |
 | `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
 | `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
-| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` | P1 + pipeline de expansão + gaps | **início da P1/expansão** |
+| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/expansion-test-2026-11-10.md` | P1 + pipeline + gaps + trial real | **início da P1/expansão** |
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
@@ -37,7 +37,7 @@
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (produção + vendor + world) | build do lugar |
-| `scripts/` | env.sh, check.sh, doctor.sh, install-tools.sh | rodar/validar ambiente |
+| `scripts/` · `tools/expansion-test/` | env/check/doctor + kit de trial de expansão | rodar/validar/expandir |
 | `.github/workflows/ci.yml` | CI: check + artefato do place | após push/PR |
 | `art/` | calibração Blender + pipeline 3D | produzir asset |
 | `.luaurc` · `.vscode/settings.json` | strict + LSP/sourcemap | editar código |

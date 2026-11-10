@@ -29,3 +29,5 @@
 *.json text eol=lf
 *.toml text eol=lf
 *.yml  text eol=lf
+# Patch de referencia: contem diff com tabs/trailing spaces de proposito
+tools/expansion-test/examples/*.patch -whitespace

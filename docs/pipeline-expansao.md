@@ -51,6 +51,7 @@ com `(seed, simVersion, wallSpec, waveSpec)`. Enquanto `CONTENT_VERSION` não es
    `sim/fixtures/profile-v*.luau` e `sim/profile-contract.luau`; nunca renomear campo sem migração.
 5. **Migração de conteúdo:** se renomeou/removeu `trap_id`, escrever migração explícita (mapa
    antigo→novo, compensação, remoção) e testar perfil antigo. Sem isso, **não remover** (GAP-002).
+   Default de campo novo deve ser **neutro** (preserva HP/dano/hash antigos); bônus silencioso é bug.
 6. **Testes:** `sim/invariants.luau`, `sim/acceptance.luau`, `sim/walls-contract.luau`,
    `sim/profile-contract.luau`, `sim/analytics-contract.luau`; adicionar caso novo e caso de
    regressão. O contrato da muralha pina `TRAP_IDS`, custos e fontes/sinks — atualizar de propósito.
@@ -83,9 +84,13 @@ Não garantido ainda (ver `docs/gaps.md`):
 - `CONTENT_VERSION` persistido/checado em perfil e `BattleLog`;
 - migração/repair para `trap_id` renomeado/removido;
 - stats do motor fora do código (data-driven);
-- classes/traits (schema v2);
+- classes/traits (schema v2) — o trial provou o mecanismo, mas o schema real não foi mergeado;
 - flags/calendário para eventos semanais;
-- rollback de conteúdo em servidores antigos.
+- rollback de conteúdo em servidores antigos;
+- docs antigos não são detectados pelo `check.sh` (GAP-007);
+- eventos de analytics não carregam variantes (GAP-008);
+- ProfileStore/Studio real com schema v2 (GAP-009);
+- default neutro de migração garantido por teste (GAP-010).
 
 ---
 
@@ -127,3 +132,16 @@ GAP: <id(s)> · <resumo> · <risco> · <gatilho> · ver docs/gaps.md
 
 Se não houver gap: `GAP: nenhum`. Gap aberto ganha uma linha em `docs/gaps.md` com o mesmo ID.
 O `CONTINUAR.md` não fecha uma fatia sem essa linha, e o `scripts/check.sh` falha se ela sumir.
+
+## 8. Lições do primeiro trial (09/11/2026)
+
+O trial de classe/trait/raridade está em
+[`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md), com o kit reutilizável em
+[`../tools/expansion-test/README.md`](../tools/expansion-test/README.md). O que ele ensinou:
+
+1. **Default de migração tem que ser neutro.** `vanguard` como default teria dado +10% de dano
+silencioso em toda parede antiga. `artillery` (100%) preservou o hash.
+2. **CI verde não prova docs atualizados.** O trial passou com labels “schema v1/motor v2”. GAP-007.
+3. **Variantes precisam de decisão de analytics.** Eventos v1 não carregam classe/trait/raridade. GAP-008.
+4. **Teste com ProfileStore real é obrigatório** antes de deploy de schema. GAP-009.
+5. **Default neutro precisa de teste de hash antigo x migrado**, não só de campo preenchido. GAP-010.

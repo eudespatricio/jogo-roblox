@@ -6,8 +6,10 @@
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
 > **Execução (09/11/2026):** S1, S2 e S3 fechadas; `simVersion = 2`, hash de referência
 > `2489780106` (seed 42). S4 é a próxima fatia; S5–S7 pendentes.
-> **GAP:** GAP-001..GAP-006 — expansão de conteúdo ainda exige versão/migração; ver
+> **GAP:** GAP-001..GAP-010 — expansão de conteúdo ainda exige versão/migração; ver
 > [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
+> **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
+> [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).
 
 ---
 

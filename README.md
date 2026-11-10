@@ -28,6 +28,8 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S7, critérios de pronto e riscos.
 - [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — como expandir conteúdo/features sem quebrar.
 - [`docs/gaps.md`](docs/gaps.md) — lacunas conhecidas entre P's/S's, com gatilho para fechar.
+- [`docs/expansion-test-2026-11-10.md`](docs/expansion-test-2026-11-10.md) — trial real de classe/trait/raridade.
+- [`tools/expansion-test/`](tools/expansion-test/README.md) — kit reutilizável de trial de expansão.
 - [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
 - [`docs/padroes-engenharia.md`](docs/padroes-engenharia.md) — regras com fonte oficial.
 - [`docs/pesquisa-jogadores.md`](docs/pesquisa-jogadores.md) — reclamações, pedidos, 10 regras.
@@ -57,6 +59,7 @@ vendor/ProfileStore.luau ProfileStore oficial (Apache-2.0, não editar)
 docs/                    GDD, spec, pesquisas, economia, roteiro do Studio
 .context/                contexto residente (teto de linhas)
 skills/context-recovery/ protocolo de auditoria + scanner + templates
+tools/expansion-test/    kit de trial de expansão (branch + patch + relatório)
 ```
 
 O legado de moedas (`CoinService`, `DataService`, `Config`, `Hud`) **não existe mais**; está

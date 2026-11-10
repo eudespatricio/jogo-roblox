@@ -7,7 +7,7 @@
 **Linha atual:**
 
 ```text
-GAP: GAP-001..GAP-006 · conteúdo em produção ainda exige versão/migração; stats do motor são código; classes e eventos não modelados · risco alto para updates semanais · fechar antes da 1ª expansão de conteúdo/P2 · ver docs/gaps.md
+GAP: GAP-001..GAP-010 · conteúdo em produção ainda exige versão/migração; docs e analytics não acompanham variantes; ProfileStore real não testado · risco alto para updates semanais · fechar antes da 1ª expansão de conteúdo/P2 · ver docs/gaps.md
 ```
 
 | ID | Fase | Gap | Risco | Gatilho para fechar | Status |
@@ -18,6 +18,10 @@ GAP: GAP-001..GAP-006 · conteúdo em produção ainda exige versão/migração;
 | GAP-004 | S3.1 | `Cell` só tem `trap` e `level`; classe, raridade e trait não existem no schema nem no motor | médio — a primeira feature de classe exige schema v2 + migração + replay | quando classe/trait entrar no roadmap | aberto |
 | GAP-005 | P2 | sem sistema de eventos/feature flags/calendário; atualização semanal e evento sazonal dependem de deploy de código | alto — live ops sem cadência; risco de update quebrar servidor em produção | antes do primeiro evento semanal/sazonal | aberto |
 | GAP-006 | S4 | a guarda de perfil só roda se o servidor usar `WallService`; não há helper `toBattleWall` que force a validação antes de `Battle.new` | médio — S4/S6 podem montar `wall.traps` direto e furar a guarda | revisão de código da S4 / antes de ligar UI de build | aberto |
+| GAP-007 | S3.2 (trial) | docs podem ficar velhas sem o CI reclamar: o `check.sh` passou verde com labels “schema v1/motor v2” e spec antiga | alto — doc mais velho que código mente e contamina a próxima janela | antes de qualquer expansão real; revisar labels e criar check de versão nos docs | aberto |
+| GAP-008 | S3.2 (trial) | `trap_placed`/`upgrade_bought` não carregam class/trait/rarity; a taxonomia v1 é congelada | médio — live ops e funil não conseguem segmentar variantes | quando variantes forem para produção (taxonomia v2) | aberto |
+| GAP-009 | S3.2 (trial) | schema v2 não foi testado em ProfileStore/Studio real; `STORE_NAME` continua `MuralhaProfile_v1` com `schemaVersion=2` | alto — Reconcile/DataStore real pode se comportar diferente do store fake | antes do deploy de schema v2 | aberto |
+| GAP-010 | S3.2 (trial) | default de migração neutro não é garantido por teste; um default com bônus mudaria o hash sem ninguém ver | alto — migração silenciosa buffa/nerfa muralhas antigas | em toda migração de conteúdo; teste de hash antigo x migrado | aberto |
 
 ## Como fechar um gap
 

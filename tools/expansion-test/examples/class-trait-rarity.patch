@@ -1,0 +1,803 @@
+diff --git a/sim/acceptance.luau b/sim/acceptance.luau
+index b28786c..9a8acc2 100644
+--- a/sim/acceptance.luau
++++ b/sim/acceptance.luau
+@@ -15,9 +15,9 @@ local function check(name, fn)
+ 	end
+ end
+ 
+-check("hash de referencia (seed 42, simVersion 2)", function()
++check("hash de referencia (seed 42, simVersion 3)", function()
+ 	local r = Core.Run(42)
+-	assert(r.simVersion == 2, "simVersion != 2: " .. tostring(r.simVersion))
++	assert(r.simVersion == 3, "simVersion != 3: " .. tostring(r.simVersion))
+ 	assert(r.hash == 2489780106, "hash mudou: " .. tostring(r.hash))
+ 	print(string.format("  seed 42: hash=%d winner=%s ticks=%d", r.hash, r.winner, r.ticks))
+ end)
+@@ -30,7 +30,7 @@ check("1.000 seeds x 3 (hash e resultado identicos)", function()
+ 		local b = Core.Run(seed)
+ 		local c = Core.Run(seed)
+ 		assert(a.hash == b.hash and b.hash == c.hash, "hash divergiu na seed " .. seed)
+-		assert(a.simVersion == 2, "simVersion divergente na seed " .. seed)
++		assert(a.simVersion == 3, "simVersion divergente na seed " .. seed)
+ 		assert(
+ 			a.winner == b.winner
+ 				and b.winner == c.winner
+@@ -57,6 +57,29 @@ check("1.000 seeds x 3 (hash e resultado identicos)", function()
+ 	print(string.format("  seeds=%d distintas=%d vitorias_defensor=%.1f%%", SEEDS, n, pct))
+ end)
+ 
++check("variante dmgPct muda o hash e e deterministica", function()
++	local base = Core.Run(42).hash
++	local wall = Core.defaultWall()
++	for _, trap in ipairs(wall.traps) do
++		trap.dmgPct = 121
++	end
++	local function runVariant()
++		return Core.Battle
++			.new({
++				seed = 42,
++				simVersion = Core.SIM_VERSION,
++				wall = wall,
++				wave = { count = 70 },
++			})
++			:Run()
++	end
++	local a = runVariant()
++	local b = runVariant()
++	assert(a.hash == b.hash, "variante nao reproduziu")
++	assert(a.hash ~= base, "dmgPct nao mudou o hash")
++	assert(a.simVersion == 3, "simVersion da variante")
++end)
++
+ check("performance: 1.000 batalhas < 5s", function()
+ 	local t0 = os.clock()
+ 	for seed = 1, SEEDS do
+diff --git a/sim/analytics-contract.luau b/sim/analytics-contract.luau
+index 606fc39..db41530 100644
+--- a/sim/analytics-contract.luau
++++ b/sim/analytics-contract.luau
+@@ -84,14 +84,14 @@ local PROPS = {
+ 	battle_started = {
+ 		battle_id = BATTLE_ID,
+ 		seed = 42,
+-		sim_version = 2,
++		sim_version = 3,
+ 		grid_width = 5,
+ 		traps_count = 5,
+ 	},
+ 	battle_finished = {
+ 		battle_id = BATTLE_ID,
+ 		seed = 42,
+-		sim_version = 2,
++		sim_version = 3,
+ 		result_hash = BATTLE_HASH,
+ 		winner = "defender",
+ 		wall_hp = 45,
+@@ -319,12 +319,12 @@ check("lote: validateAll aponta o indice do invalido", function()
+ end)
+ 
+ -- ---------------------------------------------------------------- motor
+-check("BattleResult expoe seed e simVersion 2 com o hash novo", function()
++check("BattleResult expoe seed e simVersion 3 com o hash novo", function()
+ 	local result = Core.Run(42)
+ 	assert(result.hash == 2489780106, "hash mudou: " .. tostring(result.hash))
+ 	assert(result.seed == 42, "seed ausente no resultado: " .. tostring(result.seed))
+ 	assert(result.simVersion == Core.SIM_VERSION, "simVersion divergente")
+-	assert(Core.SIM_VERSION == 2, "simVersion deveria ser 2 (loadout 5x5)")
++	assert(Core.SIM_VERSION == 3, "simVersion deveria ser 3 (trial variantes)")
+ 
+ 	local event, err = Analytics.battleFinished(CTX, BATTLE_ID, result)
+ 	assert(event ~= nil, "evento de batalha invalido: " .. tostring(err))
+diff --git a/sim/fixtures/profile-v1.luau b/sim/fixtures/profile-v1.luau
+new file mode 100644
+index 0000000..fc4a27a
+--- /dev/null
++++ b/sim/fixtures/profile-v1.luau
+@@ -0,0 +1,25 @@
++--!nonstrict
++-- TRIAL: fixture de perfil v1 (antes de class/trait/rarity) para provar a migracao 1 -> 2.
++return {
++	schemaVersion = 1,
++	wall = {
++		gridWidth = 5,
++		activeTrapLimit = 5,
++		cells = {
++			r1c1 = { trap = "archer", level = 2 },
++			r2c3 = { trap = "oil", level = 1 },
++		},
++	},
++	gold = 50,
++	league = { points = 100, season = 1 },
++	cosmetics = {},
++	stats = {
++		raids = 1,
++		defenses = 0,
++		wins = 0,
++		sessions = 1,
++		playSeconds = 60,
++		firstSeenAt = 1762800000,
++		lastSeenAt = 1762800000,
++	},
++}
+diff --git a/sim/invariants.luau b/sim/invariants.luau
+index 706cca4..eef1e4d 100644
+--- a/sim/invariants.luau
++++ b/sim/invariants.luau
+@@ -95,7 +95,7 @@ check("I5 resultado consistente", function()
+ 		assert(r.ticks > 0 and r.ticks <= Core.MAX_TICKS, "ticks fora do cap")
+ 		assert(r.spawned <= 70, "spawnou mais que a onda")
+ 		assert(r.traps == 5, "loadout padrao deveria ter 5 ativas")
+-		assert(r.simVersion == 2, "simVersion deveria ser 2")
++		assert(r.simVersion == 3, "simVersion deveria ser 3")
+ 		assert(r.hash == math.floor(r.hash), "hash fracionario")
+ 	end
+ end)
+diff --git a/sim/profile-contract.luau b/sim/profile-contract.luau
+index 94dbcd6..a91ad4c 100644
+--- a/sim/profile-contract.luau
++++ b/sim/profile-contract.luau
+@@ -6,6 +6,7 @@
+ local ProfileSchema = require("../src/shared/data/ProfileSchema")
+ local ProfileService = require("../src/server/data/ProfileService")
+ local fixtureV0 = require("./fixtures/profile-v0")
++local fixtureV1 = require("./fixtures/profile-v1")
+ 
+ local failures = {}
+ local checks = 0
+@@ -274,15 +275,18 @@ check("isJsonSafe recusa o que o DataStore nao serializa", function()
+ end)
+ 
+ -- ---------------------------------------------------------------- migracao 0 -> 1
+-check("migracao 0->1 com fixture preserva o valido e descarta o resto", function()
++check("migracao 0->2 com fixture preserva o valido e descarta o resto", function()
+ 	local original = clone(fixtureV0)
+ 	local profile, err = ProfileSchema.migrate(fixtureV0)
+ 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+-	assert(profile.schemaVersion == 1, "schemaVersion nao subiu")
++	assert(profile.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion nao subiu")
+ 	assert(profile.gold == 120, "gold perdido")
+ 	assert(profile.league.points == 34, "league.points perdido")
+ 	assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
+ 	assert(profile.wall.cells.r1c1.trap == "cannon", "trap da cell errada")
++	assert(profile.wall.cells.r1c1.class == ProfileSchema.DEFAULT_CLASS, "class default")
++	assert(profile.wall.cells.r1c1.trait == ProfileSchema.DEFAULT_TRAIT, "trait default")
++	assert(profile.wall.cells.r1c1.rarity == ProfileSchema.DEFAULT_RARITY, "rarity default")
+ 	assert(profile.stats.lastSeenAt == 1762800000, "lastSeenAt perdido")
+ 	assert(profile.stats.firstSeenAt == 0, "firstSeenAt deveria nascer zerado")
+ 	assert(profile.cosmetics.banner_default == true, "cosmetico perdido")
+@@ -301,10 +305,27 @@ end)
+ check("migracao de v0 vazio devolve o template", function()
+ 	local profile, err = ProfileSchema.migrate({}, 0)
+ 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+-	assert(profile.schemaVersion == 1 and profile.gold == 0, "template esperado")
++	assert(
++		profile.schemaVersion == ProfileSchema.SCHEMA_VERSION and profile.gold == 0,
++		"template esperado"
++	)
+ 	assert(ProfileSchema.validate(profile), "v0 vazio gerou perfil invalido")
+ end)
+ 
++check("migracao 1->2 preenche class/trait/rarity e preserva o resto", function()
++	local profile, err = ProfileSchema.migrate(fixtureV1)
++	assert(profile ~= nil, "migracao v1 falhou: " .. tostring(err))
++	assert(profile.schemaVersion == 2, "schemaVersion")
++	assert(profile.gold == 50, "gold")
++	assert(profile.wall.cells.r1c1.level == 2, "level")
++	assert(profile.wall.cells.r1c1.class == "artillery", "class default")
++	assert(profile.wall.cells.r1c1.trait == "none", "trait default")
++	assert(profile.wall.cells.r1c1.rarity == "common", "rarity default")
++	assert(profile.wall.cells.r2c3.trap == "oil", "trap")
++	local ok, validateErr = ProfileSchema.validate(profile)
++	assert(ok, "perfil v1 migrado invalido: " .. tostring(validateErr))
++end)
++
+ check("migracao e idempotente", function()
+ 	local once = assert(ProfileSchema.migrate(fixtureV0))
+ 	local twice = assert(ProfileSchema.migrate(once))
+@@ -385,7 +406,7 @@ check("migra no load e persiste a migracao", function()
+ 		end,
+ 	})
+ 	local session = assert(controller.startSession("User_3"))
+-	assert(session.Data.schemaVersion == 1, "nao migrou")
++	assert(session.Data.schemaVersion == ProfileSchema.SCHEMA_VERSION, "nao migrou")
+ 	assert(profile.saves == 1, "migracao nao foi salva: " .. tostring(profile.saves))
+ 	assert(profile.reconciles == 1, "Reconcile nao rodou")
+ 	assert(infos[1].migrated == true, "info.migrated deveria ser true")
+diff --git a/sim/walls-contract.luau b/sim/walls-contract.luau
+index 05afccd..a6de2ea 100644
+--- a/sim/walls-contract.luau
++++ b/sim/walls-contract.luau
+@@ -60,6 +60,16 @@ local function sortedKeys(value)
+ 	return table.concat(keys, ",")
+ end
+ 
++local function newCell(trap, level, class, trait, rarity)
++	return {
++		trap = trap,
++		level = level,
++		class = class or TrapCatalog.DEFAULT_CLASS,
++		trait = trait or TrapCatalog.DEFAULT_TRAIT,
++		rarity = rarity or TrapCatalog.DEFAULT_RARITY,
++	}
++end
++
+ local function newHarness()
+ 	local profile = ProfileSchema.template()
+ 	local emitted = {}
+@@ -83,7 +93,7 @@ end
+ check("catalogo espelha o motor e desbloqueia por liga", function()
+ 	local okCatalog, catalogErr = TrapCatalog.validate()
+ 	assert(okCatalog, tostring(catalogErr))
+-	assert(TrapCatalog.CONTENT_VERSION == 1, "CONTENT_VERSION")
++	assert(TrapCatalog.CONTENT_VERSION == 2, "CONTENT_VERSION")
+ 	assert(TrapCatalog.MAX_LEVEL == 3, "MAX_LEVEL")
+ 	assert(TrapCatalog.POINTS_PER_LEAGUE == 100, "POINTS_PER_LEAGUE")
+ 	-- Lista pinada: adicionar/renomear trap exige atualizar este teste, o doc, CONTENT_VERSION
+@@ -94,6 +104,12 @@ check("catalogo espelha o motor e desbloqueia por liga", function()
+ 	)
+ 	assert(sortedKeys(TrapCatalog.GOLD_SOURCES) == "daily,defense,raid", "GOLD_SOURCES mudou")
+ 	assert(sortedKeys(TrapCatalog.GOLD_SINKS) == "trap,upgrade", "GOLD_SINKS mudou")
++	assert(sortedKeys(TrapCatalog.CLASSES) == "artillery,vanguard", "CLASSES mudou")
++	assert(sortedKeys(TrapCatalog.TRAITS) == "none,ranged,sharp", "TRAITS mudou")
++	assert(sortedKeys(TrapCatalog.RARITIES) == "common,rare", "RARITIES mudou")
++	assert(TrapCatalog.resolveDamagePct("artillery", "none", "common") == 100, "dano default")
++	assert(TrapCatalog.resolveDamagePct("vanguard", "sharp", "rare") == 121, "dano variante")
++	assert(TrapCatalog.resolveDamagePct("wizard", "none", "common") == nil, "class invalida")
+ 	assert(TrapCatalog.leagueOf(0) == 1, "liga 0")
+ 	assert(TrapCatalog.leagueOf(99) == 1, "liga 99")
+ 	assert(TrapCatalog.leagueOf(100) == 2, "liga 100")
+@@ -147,35 +163,47 @@ check("perfil carregado e validado contra o catalogo", function()
+ 	end
+ 
+ 	local unknown = ProfileSchema.template()
+-	unknown.wall.cells["r1c1"] = { trap = "tesla", level = 1 }
++	unknown.wall.cells["r1c1"] = newCell("tesla", 1)
+ 	rejects(unknown, "trap desconhecida")
+ 
+ 	local over = ProfileSchema.template()
+ 	for col = 1, 5 do
+-		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
++		over.wall.cells["r1c" .. col] = newCell("archer", 1)
+ 	end
+-	over.wall.cells["r2c1"] = { trap = "archer", level = 1 }
++	over.wall.cells["r2c1"] = newCell("archer", 1)
+ 	rejects(over, "6 celulas")
+ 
+ 	local highLevel = ProfileSchema.template()
+-	highLevel.wall.cells["r1c1"] = { trap = "archer", level = 4 }
++	highLevel.wall.cells["r1c1"] = newCell("archer", 4)
+ 	rejects(highLevel, "level acima do cap")
+ 
+ 	local alias = ProfileSchema.template()
+-	alias.wall.cells["r01c1"] = { trap = "archer", level = 1 }
++	alias.wall.cells["r01c1"] = newCell("archer", 1)
+ 	rejects(alias, "celula alias")
+ 
+ 	local lowLimit = ProfileSchema.template()
+ 	lowLimit.wall.activeTrapLimit = 3
+ 	for col = 1, 5 do
+-		lowLimit.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
++		lowLimit.wall.cells["r1c" .. col] = newCell("archer", 1)
+ 	end
+ 	rejects(lowLimit, "5 celulas com limite 3")
+ 
+ 	local valid = ProfileSchema.template()
+ 	for col = 1, 5 do
+-		valid.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
++		valid.wall.cells["r1c" .. col] = newCell("archer", 1)
+ 	end
++	local badClass = ProfileSchema.template()
++	badClass.wall.cells["r1c1"] = newCell("archer", 1, "wizard")
++	rejects(badClass, "class desconhecida")
++
++	local badTrait = ProfileSchema.template()
++	badTrait.wall.cells["r1c1"] = newCell("archer", 1, nil, "wizard")
++	rejects(badTrait, "trait desconhecido")
++
++	local badRarity = ProfileSchema.template()
++	badRarity.wall.cells["r1c1"] = newCell("archer", 1, nil, nil, "mythic")
++	rejects(badRarity, "rarity desconhecida")
++
+ 	local service =
+ 		WallService.new({ profile = valid, schema = ProfileSchema, catalog = TrapCatalog })
+ 	assert(service ~= nil, "perfil valido recusado")
+@@ -193,6 +221,10 @@ check("place valido persiste celula, debita ouro e emite eventos", function()
+ 	assert(profile.gold == 460, "gold nao debitado")
+ 	assert(profile.wall.cells["r1c1"].trap == "archer", "celula nao persistiu")
+ 	assert(profile.wall.cells["r1c1"].level == 1, "nivel inicial")
++	assert(profile.wall.cells["r1c1"].class == "artillery", "class default")
++	assert(profile.wall.cells["r1c1"].trait == "none", "trait default")
++	assert(profile.wall.cells["r1c1"].rarity == "common", "rarity default")
++	assert(result.damagePct == 100, "dano default")
+ 	assert(#result.events == 2, "eventos")
+ 	assert(result.events[1].name == "trap_placed", "ordem trap_placed")
+ 	assert(result.events[2].name == "gold_spent", "ordem gold_spent")
+@@ -204,6 +236,24 @@ check("place valido persiste celula, debita ouro e emite eventos", function()
+ 	assert(jsonOk, tostring(jsonErr))
+ end)
+ 
++check("variante classe/trait/raridade persiste e resolve o dano", function()
++	local service, profile = newHarness()
++	seedGold(service, 500)
++	local result, err = service.place("archer", "r1c2", {
++		class = "vanguard",
++		trait = "sharp",
++		rarity = "rare",
++	})
++	assert(result ~= nil, tostring(err))
++	assert(result.damagePct == 121, "dano da variante")
++	local cell = profile.wall.cells["r1c2"]
++	assert(
++		cell.class == "vanguard" and cell.trait == "sharp" and cell.rarity == "rare",
++		"variante nao persistiu"
++	)
++	validateEvents(result.events)
++end)
++
+ check("celula invalida e recusada sem mutar estado", function()
+ 	local service, profile, emitted = newHarness()
+ 	seedGold(service, 500)
+diff --git a/src/server/walls/WallService.luau b/src/server/walls/WallService.luau
+index 6324256..fede45a 100644
+--- a/src/server/walls/WallService.luau
++++ b/src/server/walls/WallService.luau
+@@ -14,7 +14,13 @@
+ 
+ local WallService = {}
+ 
+-export type Cell = { trap: string, level: number }
++export type Cell = {
++	trap: string,
++	level: number,
++	class: string,
++	trait: string,
++	rarity: string,
++}
+ export type Profile = {
+ 	wall: { gridWidth: number, activeTrapLimit: number, cells: { [string]: Cell } },
+ 	gold: number,
+@@ -29,6 +35,9 @@ export type Schema = {
+ 	validate: (data: any) -> (boolean, string?),
+ }
+ export type TrapDef = { cost: number, upgrade: number, unlockLeague: number }
++export type VariantDef = { dmgPct: number }
++export type VariantCatalog = { [string]: VariantDef }
++export type Variant = { class: string?, trait: string?, rarity: string? }
+ export type Catalog = {
+ 	CONTENT_VERSION: number,
+ 	POINTS_PER_LEAGUE: number,
+@@ -37,7 +46,14 @@ export type Catalog = {
+ 	TRAPS: { [string]: TrapDef },
+ 	GOLD_SOURCES: { [string]: boolean },
+ 	GOLD_SINKS: { [string]: boolean },
++	DEFAULT_CLASS: string,
++	DEFAULT_TRAIT: string,
++	DEFAULT_RARITY: string,
++	CLASSES: VariantCatalog,
++	TRAITS: VariantCatalog,
++	RARITIES: VariantCatalog,
+ 	leagueOf: (points: number) -> number,
++	resolveDamagePct: (classId: string, traitId: string, rarityId: string) -> number?,
+ 	validate: () -> (boolean, string?),
+ }
+ export type EventSpec = { name: string, props: { [string]: any } }
+@@ -46,6 +62,10 @@ export type Result = {
+ 	cell: string?,
+ 	trap: string?,
+ 	level: number?,
++	class: string?,
++	trait: string?,
++	rarity: string?,
++	damagePct: number?,
+ 	cost: number?,
+ 	amount: number?,
+ 	gold: number,
+@@ -53,7 +73,7 @@ export type Result = {
+ }
+ export type Snapshot = { gold: number, cells: { [string]: Cell } }
+ export type Controller = {
+-	place: (trapId: string, cell: string) -> (Result?, string?),
++	place: (trapId: string, cell: string, variant: Variant?) -> (Result?, string?),
+ 	remove: (cell: string) -> (Result?, string?),
+ 	upgrade: (cell: string) -> (Result?, string?),
+ 	creditGold: (amount: number, source: string, battleId: string?) -> (Result?, string?),
+@@ -79,6 +99,7 @@ WallService.ERRORS = table.freeze({
+ 	GOLD_CAP = "gold_cap",
+ 	INVALID_AMOUNT = "invalid_amount",
+ 	INVALID_SOURCE = "invalid_source",
++	INVALID_VARIANT = "invalid_variant",
+ })
+ local function isInteger(value: any): boolean
+ 	if type(value) ~= "number" then
+@@ -123,7 +144,13 @@ end
+ local function copyCells(cells: { [string]: Cell }): { [string]: Cell }
+ 	local copy: { [string]: Cell } = {}
+ 	for key, cell in pairs(cells) do
+-		copy[key] = { trap = cell.trap, level = cell.level }
++		copy[key] = {
++			trap = cell.trap,
++			level = cell.level,
++			class = cell.class,
++			trait = cell.trait,
++			rarity = cell.rarity,
++		}
+ 	end
+ 	return copy
+ end
+@@ -173,6 +200,24 @@ function WallService.validateWall(
+ 					catalog.MAX_LEVEL
+ 				) .. "]"
+ 		end
++		if catalog.CLASSES[data.class] == nil then
++			return false,
++				"wall.cells[" .. tostring(cell) .. "] com class desconhecida: " .. tostring(
++					data.class
++				)
++		end
++		if catalog.TRAITS[data.trait] == nil then
++			return false,
++				"wall.cells[" .. tostring(cell) .. "] com trait desconhecido: " .. tostring(
++					data.trait
++				)
++		end
++		if catalog.RARITIES[data.rarity] == nil then
++			return false,
++				"wall.cells[" .. tostring(cell) .. "] com rarity desconhecida: " .. tostring(
++					data.rarity
++				)
++		end
+ 	end
+ 	return true, nil
+ end
+@@ -209,7 +254,11 @@ function WallService.new(options: Options): Controller
+ 			and type(catalog.TRAP_IDS) == "table"
+ 			and type(catalog.GOLD_SOURCES) == "table"
+ 			and type(catalog.GOLD_SINKS) == "table"
++			and type(catalog.CLASSES) == "table"
++			and type(catalog.TRAITS) == "table"
++			and type(catalog.RARITIES) == "table"
+ 			and type(catalog.leagueOf) == "function"
++			and type(catalog.resolveDamagePct) == "function"
+ 			and type(catalog.validate) == "function"
+ 			and isInteger(catalog.MAX_LEVEL)
+ 			and isInteger(catalog.POINTS_PER_LEAGUE),
+@@ -248,7 +297,7 @@ function WallService.new(options: Options): Controller
+ 		assert(ok, "WallService: perfil invalido apos " .. action .. ": " .. tostring(err))
+ 	end
+ 
+-	local function place(trapId: string, cell: string): (Result?, string?)
++	local function place(trapId: string, cell: string, variant: Variant?): (Result?, string?)
+ 		local def = catalog.TRAPS[trapId]
+ 		if def == nil then
+ 			return nil, WallService.ERRORS.UNKNOWN_TRAP
+@@ -269,12 +318,36 @@ function WallService.new(options: Options): Controller
+ 			return nil, WallService.ERRORS.INSUFFICIENT_GOLD
+ 		end
+ 
++		local classId = catalog.DEFAULT_CLASS
++		local traitId = catalog.DEFAULT_TRAIT
++		local rarityId = catalog.DEFAULT_RARITY
++		if variant ~= nil then
++			classId = variant.class or classId
++			traitId = variant.trait or traitId
++			rarityId = variant.rarity or rarityId
++		end
++		if
++			catalog.CLASSES[classId] == nil
++			or catalog.TRAITS[traitId] == nil
++			or catalog.RARITIES[rarityId] == nil
++		then
++			return nil, WallService.ERRORS.INVALID_VARIANT
++		end
++		local damagePct = catalog.resolveDamagePct(classId, traitId, rarityId)
++		assert(damagePct ~= nil, "WallService: resolveDamagePct nil")
++
+ 		local events = {
+ 			event("trap_placed", { trap_id = trapId, cell = cell, cost = def.cost }),
+ 			event("gold_spent", { amount = def.cost, sink = "trap" }),
+ 		}
+ 		profile.gold -= def.cost
+-		profile.wall.cells[cell] = { trap = trapId, level = 1 }
++		profile.wall.cells[cell] = {
++			trap = trapId,
++			level = 1,
++			class = classId,
++			trait = traitId,
++			rarity = rarityId,
++		}
+ 		validateAfter("place")
+ 		publish(events)
+ 
+@@ -283,6 +356,10 @@ function WallService.new(options: Options): Controller
+ 			cell = cell,
+ 			trap = trapId,
+ 			level = 1,
++			class = classId,
++			trait = traitId,
++			rarity = rarityId,
++			damagePct = damagePct,
+ 			cost = def.cost,
+ 			gold = profile.gold,
+ 			events = events,
+diff --git a/src/shared/data/ProfileSchema.luau b/src/shared/data/ProfileSchema.luau
+index 8b56693..7d278dd 100644
+--- a/src/shared/data/ProfileSchema.luau
++++ b/src/shared/data/ProfileSchema.luau
+@@ -6,7 +6,7 @@
+ 
+ local ProfileSchema = {}
+ 
+-ProfileSchema.SCHEMA_VERSION = 1
++ProfileSchema.SCHEMA_VERSION = 2
+ ProfileSchema.STORE_NAME = "MuralhaProfile_v1"
+ ProfileSchema.SECONDS_PER_DAY = 86400
+ 
+@@ -23,8 +23,18 @@ ProfileSchema.MAX_COSMETICS = 200
+ ProfileSchema.MAX_GOLD = 1000000000
+ ProfileSchema.MAX_COUNTER = 9007199254740991
+ ProfileSchema.MAX_ID_LENGTH = 48
+-
+-export type Cell = { trap: string, level: number }
++ProfileSchema.MAX_VARIANT_LENGTH = 24
++ProfileSchema.DEFAULT_CLASS = "artillery"
++ProfileSchema.DEFAULT_TRAIT = "none"
++ProfileSchema.DEFAULT_RARITY = "common"
++
++export type Cell = {
++	trap: string,
++	level: number,
++	class: string,
++	trait: string,
++	rarity: string,
++}
+ 
+ export type Wall = {
+ 	gridWidth: number,
+@@ -81,7 +91,7 @@ ProfileSchema.PII_KEYS = {
+ 
+ local TOP_FIELDS = { "schemaVersion", "wall", "gold", "league", "cosmetics", "stats" }
+ local WALL_FIELDS = { "gridWidth", "activeTrapLimit", "cells" }
+-local CELL_FIELDS = { "trap", "level" }
++local CELL_FIELDS = { "trap", "level", "class", "trait", "rarity" }
+ local LEAGUE_FIELDS = { "points", "season" }
+ local STATS_FIELDS = {
+ 	"raids",
+@@ -256,6 +266,15 @@ local function validateWall(wall: any): (boolean, string?)
+ 		if level < 1 or level > ProfileSchema.MAX_TRAP_LEVEL then
+ 			return false, "wall.cells." .. tostring(key) .. ".level fora de [1,5]"
+ 		end
++		if not isIdString(cell.class, ProfileSchema.MAX_VARIANT_LENGTH) then
++			return false, "wall.cells." .. tostring(key) .. ".class invalida"
++		end
++		if not isIdString(cell.trait, ProfileSchema.MAX_VARIANT_LENGTH) then
++			return false, "wall.cells." .. tostring(key) .. ".trait invalido"
++		end
++		if not isIdString(cell.rarity, ProfileSchema.MAX_VARIANT_LENGTH) then
++			return false, "wall.cells." .. tostring(key) .. ".rarity invalida"
++		end
+ 	end
+ 	return true, nil
+ end
+@@ -373,7 +392,25 @@ local function sanitizeCell(key: string, cell: any, gridWidth: number): Cell?
+ 		return nil
+ 	end
+ 	local level = clampInt(cell.level :: number, 1, ProfileSchema.MAX_TRAP_LEVEL)
+-	return { trap = cell.trap :: string, level = level }
++	local classId = ProfileSchema.DEFAULT_CLASS
++	if isIdString(cell.class, ProfileSchema.MAX_VARIANT_LENGTH) then
++		classId = cell.class :: string
++	end
++	local traitId = ProfileSchema.DEFAULT_TRAIT
++	if isIdString(cell.trait, ProfileSchema.MAX_VARIANT_LENGTH) then
++		traitId = cell.trait :: string
++	end
++	local rarityId = ProfileSchema.DEFAULT_RARITY
++	if isIdString(cell.rarity, ProfileSchema.MAX_VARIANT_LENGTH) then
++		rarityId = cell.rarity :: string
++	end
++	return {
++		trap = cell.trap :: string,
++		level = level,
++		class = classId,
++		trait = traitId,
++		rarity = rarityId,
++	}
+ end
+ 
+ -- Reconstroi um perfil v1 valido a partir de qualquer tabela: so entra o que o schema
+@@ -496,12 +533,17 @@ end
+ -- Passos de migracao: MIGRATIONS[n] leva um perfil da versao n para n+1.
+ local MIGRATIONS: { [number]: (data: any) -> any } = {}
+ 
+--- 0 -> 1: dados escreveram antes do schemaVersion existir. Copia so o que o v1 reconhece;
+--- campos do prototipo (`coins`, `hackAttempt`, PII) ficam de fora. Grade do MVP e do template.
++-- 0 -> 2: dados escreveram antes do schemaVersion existir. A normalizacao preenche os
++-- defaults de classe/trait/raridade; campos do prototipo (`coins`, `hackAttempt`, PII) ficam de fora.
+ MIGRATIONS[0] = function(data: any): any
+ 	return sanitizeV1(data)
+ end
+ 
++-- 1 -> 2 (TRIAL): adiciona class/trait/rarity as celulas antigas com defaults; preserva o resto.
++MIGRATIONS[1] = function(data: any): any
++	return sanitizeV1(data)
++end
++
+ -- Migra e devolve um perfil v1 valido. Versao futura (build mais novo) e recusada: nao
+ -- sobrescrever dado que este servidor nao entende. Nunca muta a tabela recebida.
+ function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, string?)
+diff --git a/src/shared/data/TrapCatalog.luau b/src/shared/data/TrapCatalog.luau
+index 309a8d5..9d16b8e 100644
+--- a/src/shared/data/TrapCatalog.luau
++++ b/src/shared/data/TrapCatalog.luau
+@@ -1,17 +1,21 @@
+ --!strict
+--- Catalogo economico das armadilhas (S3). Fonte unica de custo, upgrade, desbloqueio,
+--- liga e nivel maximo. O motor (Core.TRAP) e a simulacao; este modulo e a economia.
+--- Adicionar um tipo aqui NAO basta: ele precisa existir em Core.TRAP e no teste de paridade
+--- (sim/walls-contract.luau). Ver "Como expandir" em docs/economia-muralha.md.
++-- TRIAL: catalogo economico + variantes (classe/trait/raridade) para testar o pipeline.
++-- Esta versao vive apenas na branch trial/class-trait-rarity e sera descartada.
+ 
+ local TrapCatalog = {}
+ 
+-TrapCatalog.CONTENT_VERSION = 1
++TrapCatalog.CONTENT_VERSION = 2
+ TrapCatalog.POINTS_PER_LEAGUE = 100
+ TrapCatalog.MAX_LEVEL = 3
+ 
++TrapCatalog.DEFAULT_CLASS = "artillery"
++TrapCatalog.DEFAULT_TRAIT = "none"
++TrapCatalog.DEFAULT_RARITY = "common"
++
+ export type TrapDef = { cost: number, upgrade: number, unlockLeague: number }
+ export type Catalog = { [string]: TrapDef }
++export type VariantDef = { dmgPct: number }
++export type VariantCatalog = { [string]: VariantDef }
+ 
+ local TRAPS: Catalog = {
+ 	archer = { cost = 40, upgrade = 30, unlockLeague = 1 },
+@@ -25,6 +29,22 @@ TrapCatalog.TRAP_IDS = table.freeze({ "archer", "oil", "frost", "cannon" })
+ TrapCatalog.GOLD_SOURCES = table.freeze({ raid = true, defense = true, daily = true })
+ TrapCatalog.GOLD_SINKS = table.freeze({ trap = true, upgrade = true })
+ 
++TrapCatalog.CLASSES = table.freeze({
++	vanguard = table.freeze({ dmgPct = 110 }),
++	artillery = table.freeze({ dmgPct = 100 }),
++}) :: VariantCatalog
++
++TrapCatalog.TRAITS = table.freeze({
++	none = table.freeze({ dmgPct = 100 }),
++	sharp = table.freeze({ dmgPct = 105 }),
++	ranged = table.freeze({ dmgPct = 100 }),
++}) :: VariantCatalog
++
++TrapCatalog.RARITIES = table.freeze({
++	common = table.freeze({ dmgPct = 100 }),
++	rare = table.freeze({ dmgPct = 105 }),
++}) :: VariantCatalog
++
+ local function isInteger(value: any): boolean
+ 	if type(value) ~= "number" then
+ 		return false
+@@ -43,8 +63,39 @@ function TrapCatalog.leagueOf(points: number): number
+ 	return 1 + math.floor(points / TrapCatalog.POINTS_PER_LEAGUE)
+ end
+ 
+--- Valida o proprio catalogo antes de qualquer uso: evita custo/desbloqueio invalido e
+--- divergencia entre TRAP_IDS e TRAPS. Nao valida o motor (a paridade e teste).
++-- Resolve os tres eixos em um unico percentual inteiro de dano (100 = base).
++function TrapCatalog.resolveDamagePct(classId: string, traitId: string, rarityId: string): number?
++	local classDef = TrapCatalog.CLASSES[classId]
++	local traitDef = TrapCatalog.TRAITS[traitId]
++	local rarityDef = TrapCatalog.RARITIES[rarityId]
++	if classDef == nil or traitDef == nil or rarityDef == nil then
++		return nil
++	end
++	return math.floor(classDef.dmgPct * traitDef.dmgPct * rarityDef.dmgPct / 10000)
++end
++
++local function validateVariant(
++	label: string,
++	catalog: VariantCatalog,
++	defaultId: string
++): (boolean, string?)
++	if catalog[defaultId] == nil then
++		return false, "default " .. label .. " ausente: " .. defaultId
++	end
++	if next(catalog) == nil then
++		return false, label .. " vazio"
++	end
++	for id, def in pairs(catalog) do
++		if type(id) ~= "string" or id == "" then
++			return false, label .. " com id invalido"
++		end
++		if type(def) ~= "table" or not isInteger(def.dmgPct) or def.dmgPct < 1 then
++			return false, label .. " com dmgPct invalido: " .. tostring(id)
++		end
++	end
++	return true, nil
++end
++
+ function TrapCatalog.validate(): (boolean, string?)
+ 	if not isInteger(TrapCatalog.CONTENT_VERSION) or TrapCatalog.CONTENT_VERSION < 1 then
+ 		return false, "CONTENT_VERSION invalida"
+@@ -80,11 +131,15 @@ function TrapCatalog.validate(): (boolean, string?)
+ 		end
+ 	end
+ 
++	if next(TrapCatalog.TRAPS) ~= nil and next(seen) == nil then
++		return false, "TRAPS sem ids"
++	end
+ 	for trapId in pairs(TrapCatalog.TRAPS) do
+ 		if not seen[trapId] then
+ 			return false, "TRAPS fora de TRAP_IDS: " .. trapId
+ 		end
+ 	end
++
+ 	for _, source in ipairs({ "raid", "defense", "daily" }) do
+ 		if TrapCatalog.GOLD_SOURCES[source] ~= true then
+ 			return false, "GOLD_SOURCES sem " .. source
+@@ -95,6 +150,22 @@ function TrapCatalog.validate(): (boolean, string?)
+ 			return false, "GOLD_SINKS sem " .. sink
+ 		end
+ 	end
++
++	local okClass, classErr =
++		validateVariant("CLASSES", TrapCatalog.CLASSES, TrapCatalog.DEFAULT_CLASS)
++	if not okClass then
++		return false, tostring(classErr)
++	end
++	local okTrait, traitErr =
++		validateVariant("TRAITS", TrapCatalog.TRAITS, TrapCatalog.DEFAULT_TRAIT)
++	if not okTrait then
++		return false, tostring(traitErr)
++	end
++	local okRarity, rarityErr =
++		validateVariant("RARITIES", TrapCatalog.RARITIES, TrapCatalog.DEFAULT_RARITY)
++	if not okRarity then
++		return false, tostring(rarityErr)
++	end
+ 	return true, nil
+ end
+ 
+diff --git a/src/shared/sim/core.luau b/src/shared/sim/core.luau
+index 2af977c..8623baf 100644
+--- a/src/shared/sim/core.luau
++++ b/src/shared/sim/core.luau
+@@ -18,7 +18,8 @@ Core.ACTIVE_TRAP_LIMIT = 5
+ -- Versao da matematica do motor. Muda SO quando o resultado muda; replay antigo
+ -- nao paga recompensa. Metadado: nao entra no hash nem no estado.
+ -- v2 (09/11/2026): loadout por celula e 5 lanes; o hash 668061367 foi aposentado.
+-Core.SIM_VERSION = 2
++-- v3 (TRIAL): modificador dmgPct por trap (classe/trait/raridade vem da camada de dados).
++Core.SIM_VERSION = 3
+ 
+ -- ---------------------------------------------------------------- aritmetica segura
+ local function add32(a, b)
+@@ -128,7 +129,8 @@ end
+ local function trapDamage(trap)
+ 	local def = TRAP[trap.type]
+ 	local levelPct = 100 + 20 * (trap.level - 1)
+-	return math.floor(def.dmg * TUNING.powerPct * levelPct / 10000)
++	-- 1e6 = powerPct (100) * levelPct (100) * dmgPct (100)
++	return math.floor(def.dmg * TUNING.powerPct * levelPct * trap.dmgPct / 1000000)
+ end
+ 
+ local function normalizeTraps(traps)
+@@ -166,9 +168,15 @@ local function normalizeTraps(traps)
+ 			type(level) == "number" and level % 1 == 0 and level >= 1 and level <= 5,
+ 			"wall.traps[" .. index .. "].level fora de [1,5]"
+ 		)
++		local dmgPct = trap.dmgPct or 100
++		assert(
++			type(dmgPct) == "number" and dmgPct % 1 == 0 and dmgPct >= 1,
++			"wall.traps[" .. index .. "].dmgPct invalido"
++		)
+ 		normalized[#normalized + 1] = {
+ 			type = trap.type,
+ 			level = level,
++			dmgPct = dmgPct,
+ 			cell = trap.cell,
+ 			row = row,
+ 			col = col,

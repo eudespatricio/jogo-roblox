@@ -45,13 +45,14 @@ fatia: S4 (cena 5×5 + build). Plano em `docs/p1-plano.md`; teste de 3 semanas e
 - Tooling: Rokit + CLI/GUI; CI ativo; doctor; ProfileStore vendorizado.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
+- Trial S3.2: classe/trait/raridade executado e revertido; relatório/kit em `docs/`/`tools/`.
 
 ## Não pronto
 
 - **P1** (2–3 semanas): S4 cena 5×5/build → S5 drop-in → S6 raid/replay → S7 telemetria. Saída:
   70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
 - Cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
-- GAPs abertos: GAP-001..GAP-006 (conteúdo/migração, motor, classes, eventos); ver `docs/gaps.md`.
+- GAPs abertos: GAP-001..GAP-010 (conteúdo/migração, motor, classes, eventos); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
