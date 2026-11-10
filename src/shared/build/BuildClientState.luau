@@ -84,6 +84,32 @@ function BuildClientState.catalogEntry(state: State, trapId: string): CatalogEnt
 	return nil
 end
 
+-- Custo do proximo upgrade de uma celula (upgrade base * nivel atual). A UI usa o mesmo
+-- numero que o WallService cobra; nil se a celula/snapshot/catalogo ainda nao existe.
+function BuildClientState.upgradeCost(state: State, cell: string): number?
+	local snapshot = state.snapshot
+	if snapshot == nil then
+		return nil
+	end
+	local data = snapshot.cells[cell]
+	if data == nil then
+		return nil
+	end
+	local entry = BuildClientState.catalogEntry(state, data.trap)
+	if entry == nil or type(entry.upgrade) ~= "number" or type(data.level) ~= "number" then
+		return nil
+	end
+	return entry.upgrade * data.level
+end
+
+-- Faixa exibida no cartao no modo UPGRADE: (1->2, 2->3). MAX_LEVEL da P1 e 3.
+function BuildClientState.upgradeRange(entry: CatalogEntry?): (number?, number?)
+	if entry == nil or type(entry.upgrade) ~= "number" then
+		return nil, nil
+	end
+	return entry.upgrade, entry.upgrade * 2
+end
+
 -- Decide a intencao de um clique. Devolve a request (action/trapId/cell) ou o motivo da
 -- recusa local. O servidor continua sendo a fonte da verdade para N=5, ouro e liga.
 function BuildClientState.intent(state: State, cell: any, grid: Grid): (Intent?, string?)

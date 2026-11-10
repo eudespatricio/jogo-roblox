@@ -90,6 +90,14 @@ local statusMessages = {
 	cell_occupied = "Celula ocupada",
 	empty_cell = "Celula vazia",
 	bad_mode = "Modo invalido",
+	insufficient_gold = "Ouro insuficiente",
+	max_level = "Nivel maximo",
+	gold_cap = "Ouro no teto",
+	trap_locked = "Armadilha bloqueada",
+	trap_limit = "Limite de 5 armadilhas",
+	unknown_trap = "Armadilha desconhecida",
+	content_version = "Conteudo desatualizado",
+	content_future = "Conteudo futuro",
 }
 
 local function statusFor(err: string?): string
@@ -219,6 +227,22 @@ local function makeCellButton(cell: string, row: number, col: number): TextButto
 			setStatus(statusFor(err))
 			return
 		end
+		if intent.action == "upgrade" then
+			local cost = BuildClientState.upgradeCost(state, cell)
+			local data = state.snapshot and state.snapshot.cells[cell]
+			if cost ~= nil and data ~= nil then
+				local label = GridLayout.labelFor(data.trap) or data.trap
+				setStatus(
+					string.format(
+						"UPGRADE %s L%d→L%d · %d OURO",
+						label,
+						data.level,
+						data.level + 1,
+						cost
+					)
+				)
+			end
+		end
 		send(intent.action, intent.trapId, intent.cell)
 	end)
 	return button
@@ -331,6 +355,7 @@ local function refreshSelection(): ()
 end
 
 local trapCards: { [string]: any } = {}
+local updateCardAffordability: () -> ()
 
 local function clearCardHighlight(): ()
 	for _, card in pairs(trapCards) do
@@ -350,6 +375,7 @@ local function selectTrap(trapId: string): ()
 		UiKit.setSelected(card.frame, true)
 	end
 	refreshSelection()
+	updateCardAffordability()
 	setStatus("Colocando " .. (GridLayout.labelFor(trapId) or trapId))
 end
 
@@ -371,7 +397,7 @@ local function ensureTrapCards(catalog: { any }): ()
 	end
 end
 
-local function updateCardAffordability(): ()
+updateCardAffordability = function(): ()
 	local snapshot = state.snapshot
 	if snapshot == nil then
 		return
@@ -386,6 +412,19 @@ local function updateCardAffordability(): ()
 				card.icon.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.iron)
 				card.icon.Glyph.Text = spec.icon
 				card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.stone)
+			elseif state.mode == "upgrade" then
+				local low, high = BuildClientState.upgradeRange(entry)
+				card.cost.Text = string.format("%s/%s", tostring(low), tostring(high))
+				card.cost.TextColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
+				card.icon.BackgroundColor3 = UiKit.color(spec.color)
+				card.icon.Glyph.Text = spec.icon
+				card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.ink)
+			elseif state.mode == "remove" then
+				card.cost.Text = "REMOVER"
+				card.cost.TextColor3 = UiKit.color(VisualTheme.PALETTE.stone)
+				card.icon.BackgroundColor3 = UiKit.color(spec.color)
+				card.icon.Glyph.Text = spec.icon
+				card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.ink)
 			else
 				card.cost.Text = tostring(entry.cost) .. " OURO"
 				card.cost.TextColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
@@ -478,7 +517,12 @@ send = function(action: string, trapId: string, cell: string): ()
 		if result.snapshot ~= nil then
 			refresh(result.snapshot)
 		end
-		setStatus("OK")
+		local charged = result.result and result.result.cost
+		if action == "upgrade" and type(charged) == "number" then
+			setStatus(string.format("UPGRADE OK · -%d ouro", charged))
+		else
+			setStatus("OK")
+		end
 	else
 		AudioKit.play("ui_deny")
 		setStatus("Recusado: " .. tostring(result.err))
@@ -571,6 +615,7 @@ for id, button in pairs(modeButtons) do
 			updateModeButtons()
 			clearCardHighlight()
 			refreshSelection()
+			updateCardAffordability()
 		end
 	end)
 end

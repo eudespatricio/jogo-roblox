@@ -26,7 +26,8 @@ O catálogo espelha os **5 tipos que o motor v3 simula** (`Core.TRAP` / `Core.TR
   `WallService` recebe o catálogo por injeção; não há cópia de custos no serviço.
 - **Liga:** `TrapCatalog.leagueOf(points) = 1 + floor(points / 100)`.
 - **Upgrade:** do nível `n` para `n+1` custa `upgrade * n` (nível atual). Ex.: archer 1→2 = 30;
-  2→3 = 60.
+  2→3 = 60. No modo UPGRADE a UI mostra a faixa `upgrade/2*upgrade` (30/60); ao tocar na célula o
+  status mostra o custo exato pelo nível atual e, após a ação, o valor realmente debitado.
 - **Nível máximo:** **3** (`TrapCatalog.MAX_LEVEL`, GDD §5). O schema aceita até 5 para expansão
   futura, mas a economia da P1 trava em 3.
 - **N=5 ativas**, célula `rXcY` (linha = lane, coluna = profundidade), colocação livre nas 25.
