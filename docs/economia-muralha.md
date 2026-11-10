@@ -1,4 +1,4 @@
-# Economia da muralha — S3 (09/11/2026)
+# Economia da muralha — S3/S3.4 (10/11/2026)
 
 > Primeira calibragem da P1. Os números são ponto de partida; mudança de custo/desbloqueio exige
 > atualizar este documento **e** o contrato (`sim/walls-contract.luau`). Processo completo de
@@ -10,19 +10,20 @@
 
 ## 1. Catálogo
 
-O catálogo espelha os **4 tipos que o motor v2 simula** (`Core.TRAP` / `Core.TRAP_NAMES`). O 5º
-tipo do GDD (§5) só entra quando o motor souber simulá-lo; não inventar tipo no serviço.
+O catálogo espelha os **5 tipos que o motor v3 simula** (`Core.TRAP` / `Core.TRAP_NAMES`).
+`oil` foi renomeada para `tar` na S3.4 (alias de migração) e `catapult` entrou como 5º tipo.
 
 | Trap | Custo | Upgrade base | Desbloqueio |
 |---|---:|---:|---|
 | `archer` | 40 | 30 | liga 1 (0 pontos) |
-| `oil` | 60 | 45 | liga 2 (100 pontos) |
+| `tar` | 60 | 45 | liga 2 (100 pontos) |
 | `frost` | 90 | 65 | liga 3 (200 pontos) |
 | `cannon` | 140 | 100 | liga 4 (300 pontos) |
+| `catapult` | 180 | 130 | liga 5 (400 pontos) |
 
-- **Fonte única:** `src/shared/data/TrapCatalog.luau` (`TRAPS`, `TRAP_IDS`, `MAX_LEVEL`,
-  `POINTS_PER_LEAGUE`, `GOLD_SOURCES`, `GOLD_SINKS`, `CONTENT_VERSION`). O `WallService` recebe o
-  catálogo por injeção; não há cópia de custos no serviço.
+- **Fonte única:** `src/shared/data/TrapCatalog.luau` (`TRAPS`, `TRAP_IDS`, `TRAP_ALIASES`,
+  `MAX_LEVEL`, `POINTS_PER_LEAGUE`, `GOLD_SOURCES`, `GOLD_SINKS`, `CONTENT_VERSION`). O
+  `WallService` recebe o catálogo por injeção; não há cópia de custos no serviço.
 - **Liga:** `TrapCatalog.leagueOf(points) = 1 + floor(points / 100)`.
 - **Upgrade:** do nível `n` para `n+1` custa `upgrade * n` (nível atual). Ex.: archer 1→2 = 30;
   2→3 = 60.
@@ -54,8 +55,10 @@ não for válido. O `ProfileStore` autosalva o `Profile.Data`; o serviço não c
 decidem o momento de persistência explícita).
 
 Na criação, `WallService.new` roda `WallService.validateWall` e **falha fechado** se o perfil
-carregar trap desconhecida, célula fora da grade/alias, mais ativos que o limite ou nível acima do
-cap econômico. Esses dados nunca chegam ao motor (`Battle.new`).
+carregar trap desconhecida, célula fora da grade/alias, mais ativos que o limite, nível acima do
+cap econômico ou `contentVersion` diferente do catálogo. Esses dados nunca chegam ao motor
+(`Battle.new`). O boot (`ProfileBoot`) roda `TrapCatalog.ensureProfileContent` antes de expor
+`Data`: perfil v1 é reparado (`oil → tar`) e perfil futuro é recusado (`content_future`).
 
 A ponte perfil → motor é `WallService.toBattleWall(profile, schema, catalog, hp)`: ele roda
 `validateWall`, converte `wall.cells` em `wall.traps` e ordena por célula (linha, coluna). A S4/S6
@@ -77,7 +80,8 @@ envelope e valida cada evento com `AnalyticsTypes.validate`.
 ## 5. Erros estáveis
 
 `invalid_cell`, `cell_occupied`, `empty_cell`, `trap_limit`, `unknown_trap`, `trap_locked`,
-`insufficient_gold`, `max_level`, `gold_cap`, `invalid_amount`, `invalid_source`.
+`insufficient_gold`, `max_level`, `gold_cap`, `invalid_amount`, `invalid_source`,
+`content_version`, `content_future`.
 
 ## 6. API e teste
 
@@ -99,7 +103,8 @@ local wall, wallErr = WallService.toBattleWall(profile.Data, ProfileSchema, Trap
 
 Contrato headless: `luau sim/walls-contract.luau` — **13 checagens** (catálogo x motor, fontes/sinks,
 perfil carregado, `toBattleWall`, célula, N=5, ouro, desbloqueio, upgrade, remove, creditGold,
-snapshot e eventos).
+snapshot e eventos). Conteúdo/versões: `luau sim/content-contract.luau` — **7 checagens** (5 tipos,
+alias, `contentVersion`, gate e hash antigo x migrado).
 
 ## 7. Como expandir sem quebrar
 
@@ -118,7 +123,9 @@ CI falha se divergir.
 5. **nunca renomear/remover um `trap_id` sem migração de perfil** — o schema guarda string e o
    `WallService` falha fechado; perfis antigos com o ID removido precisam de migração/limpeza
    explícita antes do deploy. Registre a mudança e suba `TrapCatalog.CONTENT_VERSION`;
-6. atualizar `docs/economia-muralha.md`, `docs/spec-motor-deterministico.md` e o runbook de deploy.
+6. atualizar `docs/economia-muralha.md`, `docs/spec-motor-deterministico.md`, `docs/versoes.md`
+   e o runbook de deploy. Tipo novo/renomeado exige `CONTENT_VERSION++`; se aparece em batalha,
+   `SIM_VERSION++` + re-ancoragem de hash/acceptance (política do GAP-003).
 
 **Novo nível de upgrade:** atualizar `TrapCatalog.MAX_LEVEL`, este documento e o contrato. O
 `schema.MAX_TRAP_LEVEL` (5) e `Core` já suportam até 5; a taxonomia também valida `level` 1..5.
@@ -136,7 +143,7 @@ uma entrada no `TrapCatalog`. Não simule classe só no serviço: o replay preci
 adicionar em `TrapCatalog.GOLD_SOURCES`/`GOLD_SINKS`. O teste de contrato valida cada chave contra
 `AnalyticsTypes` e falha se o enum não existir.
 
-**Pendência para conteúdo em produção:** GAP-001..GAP-005 e GAP-008..GAP-010 em [`gaps.md`](gaps.md). Persistir
-`CONTENT_VERSION` no perfil/battle log e definir migração/rolling deploy; hoje o catálogo é
-versionado no código e a guarda falha fechado. A S6 deve carregar a versão no `BattleLog` antes
-de adicionar conteúdo em massa.
+**Pendência para conteúdo em produção:** GAP-004/005/008/009 em [`gaps.md`](gaps.md).
+`CONTENT_VERSION` já é persistido no perfil (`contentVersion`) com reparo/recusa no boot; o
+`BattleLog` da S6 deve carregar a mesma versão antes de conteúdo em massa. GAP-009 (ProfileStore
+real com schema v2) depende do Modo B no Studio.

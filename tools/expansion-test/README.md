@@ -67,7 +67,8 @@ Depois, na `main`:
 - hash base (seed 42) e hash de uma variante (se houver);
 - migração de perfil antigo: campos preenchidos e comportamento preservado;
 - migração neutra: hash da parede antiga x migrada (`neutral-migration.luau`);
-- contagens: invariantes, acceptance, profile, analytics, walls;
+- versões: `schemaVersion`, `contentVersion`, `CONTENT_VERSION` e `simVersion`;
+- contagens: invariantes, acceptance, profile, analytics, walls, content;
 - `doctor.sh`/`check.sh` RC e `scan_repo.py --check`;
 - gaps descobertos com ID/risco/gatilho;
 - veredito: pipeline aguentou? o que precisa fechar antes do merge real?
@@ -75,10 +76,11 @@ Depois, na `main`:
 ## 5. Migração neutra (GAP-010)
 
 `neutral-migration.luau` compara o hash da parede antiga (congelada em `OLD_WALL`, antes do schema
-novo) com o da parede migrada (`ProfileSchema.migrate` + `WallService.toBattleWall`) na seed 42.
-Hoje ele prova a migração 0→1 e roda no `check.sh`; no primeiro schema v2, congele o perfil v1 em
-`sim/fixtures/profile-v1.luau` e troque `OLD_PROFILE`/`OLD_WALL` **antes** do merge. Qualquer default
-de migração com bônus muda o hash e o teste falha.
+novo) com o da parede migrada (`ProfileSchema.migrate` + `TrapCatalog.ensureProfileContent` +
+`WallService.toBattleWall`) na seed 42. Hoje ele prova a migração 1→2 + conteúdo 1→2 (`oil → tar`) e
+roda no `check.sh`; no próximo schema, congele o perfil v2 em `sim/fixtures/profile-v2.luau` e troque
+`OLD_PROFILE`/`OLD_WALL` **antes** do merge. Qualquer default de migração com bônus muda o hash e o
+teste falha.
 
 ## 6. Exemplo real
 

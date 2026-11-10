@@ -38,6 +38,9 @@ luau sim/analytics-contract.luau
 echo "== contrato de muralha (S3, content v$CONTENT_VERSION) =="
 luau sim/walls-contract.luau
 
+echo "== contrato de conteudo (S3.4, content v$CONTENT_VERSION) =="
+luau sim/content-contract.luau
+
 echo "== migracao neutra (kit GAP-010) =="
 luau tools/expansion-test/neutral-migration.luau
 

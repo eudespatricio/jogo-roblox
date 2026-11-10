@@ -60,8 +60,15 @@ local function sortedKeys(value)
 	return table.concat(keys, ",")
 end
 
-local function newHarness()
+-- Perfil de teste ja no conteudo atual: o WallService exige contentVersion == catalogo.
+local function newProfile()
 	local profile = ProfileSchema.template()
+	profile.contentVersion = TrapCatalog.CONTENT_VERSION
+	return profile
+end
+
+local function newHarness()
+	local profile = newProfile()
 	local emitted = {}
 	local service = WallService.new({
 		profile = profile,
@@ -83,13 +90,13 @@ end
 check("catalogo espelha o motor e desbloqueia por liga", function()
 	local okCatalog, catalogErr = TrapCatalog.validate()
 	assert(okCatalog, tostring(catalogErr))
-	assert(TrapCatalog.CONTENT_VERSION == 1, "CONTENT_VERSION")
+	assert(TrapCatalog.CONTENT_VERSION == 2, "CONTENT_VERSION")
 	assert(TrapCatalog.MAX_LEVEL == 3, "MAX_LEVEL")
 	assert(TrapCatalog.POINTS_PER_LEAGUE == 100, "POINTS_PER_LEAGUE")
 	-- Lista pinada: adicionar/renomear trap exige atualizar este teste, o doc, CONTENT_VERSION
 	-- e decidir simVersion (ver docs/economia-muralha.md secao 7).
 	assert(
-		table.concat(TrapCatalog.TRAP_IDS, ",") == "archer,oil,frost,cannon",
+		table.concat(TrapCatalog.TRAP_IDS, ",") == "archer,tar,frost,cannon,catapult",
 		"nova trap: atualize contrato/CONTENT_VERSION/simVersion"
 	)
 	assert(sortedKeys(TrapCatalog.GOLD_SOURCES) == "daily,defense,raid", "GOLD_SOURCES mudou")
@@ -121,9 +128,14 @@ check("catalogo espelha o motor e desbloqueia por liga", function()
 
 	-- Primeira calibragem da S3 (docs/economia-muralha.md); mudar exige atualizar os dois.
 	assert(TrapCatalog.TRAPS.archer.cost == 40 and TrapCatalog.TRAPS.archer.upgrade == 30)
-	assert(TrapCatalog.TRAPS.oil.cost == 60 and TrapCatalog.TRAPS.oil.unlockLeague == 2)
+	assert(TrapCatalog.TRAPS.tar.cost == 60 and TrapCatalog.TRAPS.tar.unlockLeague == 2)
 	assert(TrapCatalog.TRAPS.frost.cost == 90 and TrapCatalog.TRAPS.frost.unlockLeague == 3)
 	assert(TrapCatalog.TRAPS.cannon.cost == 140 and TrapCatalog.TRAPS.cannon.unlockLeague == 4)
+	assert(
+		TrapCatalog.TRAPS.catapult.cost == 180
+			and TrapCatalog.TRAPS.catapult.upgrade == 130
+			and TrapCatalog.TRAPS.catapult.unlockLeague == 5
+	)
 
 	-- As fontes/sinks do catalogo precisam existir na taxonomia v1 (sem drift silencioso).
 	for source in pairs(TrapCatalog.GOLD_SOURCES) do
@@ -146,33 +158,33 @@ check("perfil carregado e validado contra o catalogo", function()
 		assert(not ok, "aceitou " .. label)
 	end
 
-	local unknown = ProfileSchema.template()
+	local unknown = newProfile()
 	unknown.wall.cells["r1c1"] = { trap = "tesla", level = 1 }
 	rejects(unknown, "trap desconhecida")
 
-	local over = ProfileSchema.template()
+	local over = newProfile()
 	for col = 1, 5 do
 		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
 	end
 	over.wall.cells["r2c1"] = { trap = "archer", level = 1 }
 	rejects(over, "6 celulas")
 
-	local highLevel = ProfileSchema.template()
+	local highLevel = newProfile()
 	highLevel.wall.cells["r1c1"] = { trap = "archer", level = 4 }
 	rejects(highLevel, "level acima do cap")
 
-	local alias = ProfileSchema.template()
+	local alias = newProfile()
 	alias.wall.cells["r01c1"] = { trap = "archer", level = 1 }
 	rejects(alias, "celula alias")
 
-	local lowLimit = ProfileSchema.template()
+	local lowLimit = newProfile()
 	lowLimit.wall.activeTrapLimit = 3
 	for col = 1, 5 do
 		lowLimit.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
 	end
 	rejects(lowLimit, "5 celulas com limite 3")
 
-	local valid = ProfileSchema.template()
+	local valid = newProfile()
 	for col = 1, 5 do
 		valid.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
 	end
@@ -182,12 +194,12 @@ check("perfil carregado e validado contra o catalogo", function()
 end)
 
 check("toBattleWall valida, ordena e reproduz o hash", function()
-	local profile = ProfileSchema.template()
+	local profile = newProfile()
 	profile.wall.cells = {
 		r3c2 = { trap = "frost", level = 2 },
-		r1c5 = { trap = "oil", level = 1 },
+		r1c5 = { trap = "tar", level = 1 },
 		r5c1 = { trap = "cannon", level = 3 },
-		r2c4 = { trap = "archer", level = 3 },
+		r2c4 = { trap = "catapult", level = 1 },
 		r1c1 = { trap = "archer", level = 1 },
 	}
 	local wall, err = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, 500)
@@ -199,12 +211,12 @@ check("toBattleWall valida, ordena e reproduz o hash", function()
 	end
 	assert(
 		table.concat(order, ",")
-			== "r1c1:archer:1,r1c5:oil:1,r2c4:archer:3,r3c2:frost:2,r5c1:cannon:3",
+			== "r1c1:archer:1,r1c5:tar:1,r2c4:catapult:1,r3c2:frost:2,r5c1:cannon:3",
 		"ordem: " .. table.concat(order, ",")
 	)
 
 	-- a ordem de insercao no perfil nao pode mudar o replay
-	local reversed = ProfileSchema.template()
+	local reversed = newProfile()
 	for index = #wall.traps, 1, -1 do
 		local trap = wall.traps[index]
 		reversed.wall.cells[trap.cell] = { trap = trap.type, level = trap.level }
@@ -223,12 +235,12 @@ check("toBattleWall valida, ordena e reproduz o hash", function()
 	assert(hashOf(wall) == hashOf(reversedWall), "ordem de insercao mudou o hash")
 
 	-- perfil invalido nao chega ao motor
-	local unknown = ProfileSchema.template()
+	local unknown = newProfile()
 	unknown.wall.cells.r1c1 = { trap = "tesla", level = 1 }
 	local invalid, invalidErr = WallService.toBattleWall(unknown, ProfileSchema, TrapCatalog, 500)
 	assert(invalid == nil and invalidErr ~= nil, "aceitou trap desconhecida")
 
-	local over = ProfileSchema.template()
+	local over = newProfile()
 	for col = 1, 5 do
 		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
 	end
@@ -236,7 +248,7 @@ check("toBattleWall valida, ordena e reproduz o hash", function()
 	local tooMany, tooManyErr = WallService.toBattleWall(over, ProfileSchema, TrapCatalog, 500)
 	assert(tooMany == nil and tooManyErr ~= nil, "aceitou 6 ativas")
 
-	local highLevel = ProfileSchema.template()
+	local highLevel = newProfile()
 	highLevel.wall.cells.r1c1 = { trap = "archer", level = 4 }
 	local capped, cappedErr = WallService.toBattleWall(highLevel, ProfileSchema, TrapCatalog, 500)
 	assert(capped == nil and cappedErr ~= nil, "aceitou level acima do cap")
@@ -325,12 +337,12 @@ end)
 check("desbloqueio por liga e recusado antes do limiar", function()
 	local service, profile = newHarness()
 	seedGold(service, 1000)
-	local result, err = service.place("oil", "r1c1")
+	local result, err = service.place("tar", "r1c1")
 	assert(result == nil and err == "trap_locked", tostring(err))
 	assert(next(profile.wall.cells) == nil, "celula criada")
 
 	profile.league.points = 100
-	result, err = service.place("oil", "r1c1")
+	result, err = service.place("tar", "r1c1")
 	assert(result ~= nil, tostring(err))
 	profile.league.points = 200
 	result, err = service.place("frost", "r1c2")
@@ -339,6 +351,10 @@ check("desbloqueio por liga e recusado antes do limiar", function()
 	result, err = service.place("cannon", "r1c3")
 	assert(result ~= nil, tostring(err))
 	assert(profile.wall.cells["r1c3"].trap == "cannon", "cannon nao persistiu")
+	profile.league.points = 400
+	result, err = service.place("catapult", "r1c4")
+	assert(result ~= nil, tostring(err))
+	assert(profile.wall.cells["r1c4"].trap == "catapult", "catapult nao persistiu")
 end)
 
 check("upgrade debita ouro, sobe nivel e emite eventos", function()

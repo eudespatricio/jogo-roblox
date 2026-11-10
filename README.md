@@ -9,9 +9,11 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
 > determinístico com grade **5×5**, **N=5** ativas e colocação livre; `simVersion 2` e hash de
 > referência `2489780106`. **S3** concluída: muralha/economia server-side, catálogo em
-> [`docs/economia-muralha.md`](docs/economia-muralha.md). **S3.3** concluída: GAP-006 (`toBattleWall`)
-> e GAP-007 (gate de versões) fechados; GAP-010 preparado. Próxima janela: **S4** (cena + build).
-> O teste de produto de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
+> [`docs/economia-muralha.md`](docs/economia-muralha.md). **S3.3** concluída: GAP-006
+> (`toBattleWall`) e GAP-007 (gate de versões) fechados. **S3.4** com código verde: schema v2 +
+> `contentVersion`, `oil → tar`, 5º tipo `catapult`, `simVersion 3` e hash `2489780106` preservado;
+> GAP-001/002/003/010 fechados. Falta GAP-009 (Modo B) e a **S4** (cena + build). O teste de produto
+> de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
 
@@ -30,6 +32,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — como expandir conteúdo/features sem quebrar.
 - [`docs/gaps.md`](docs/gaps.md) — lacunas conhecidas entre P's/S's, com gatilho para fechar.
 - [`docs/versoes.md`](docs/versoes.md) — bloco canônico de versões e gate do CI.
+- [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md) — RFC da fatia de conteúdo e versões.
 - [`docs/expansion-test-2026-11-10.md`](docs/expansion-test-2026-11-10.md) — trial real de classe/trait/raridade.
 - [`tools/expansion-test/`](tools/expansion-test/README.md) — kit reutilizável de trial de expansão.
 - [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
@@ -48,9 +51,10 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   profile-contract.luau  contrato do schema v1 e da sessão do perfil
   analytics-contract.luau contrato de analytics v1
   walls-contract.luau    contrato da muralha/economia (S3; 13 checagens, toBattleWall)
-  fixtures/              fixture da migração 0→1 do perfil
-src/shared/sim/core.luau motor v2 (RNG, mul32/add32, Battle 5×5/N=5)
-src/shared/data/         schema v1 do perfil + TrapCatalog (economia)
+  content-contract.luau  contrato de conteúdo/versões (S3.4; 7 checagens)
+  fixtures/              fixtures da migração 0→1→2 do perfil
+src/shared/sim/core.luau motor v3 (RNG, mul32/add32, Battle 5×5/N=5, 5 tipos)
+src/shared/data/         schema v2 do perfil + TrapCatalog (economia/conteúdo)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado
 src/server/walls/        WallService: colocar/remover/upgrade, ouro, desbloqueio, toBattleWall
@@ -79,6 +83,7 @@ luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v2)
 luau sim/profile-contract.luau         # schema v1 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1
 luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
+luau sim/content-contract.luau         # conteúdo/versões (S3.4; 7 checagens)
 luau sim/poc.luau                      # benchmark e curva de balanço
 python3 scripts/check-versions.py      # gate de versões docs x fonte
 

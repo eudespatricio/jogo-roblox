@@ -6,6 +6,7 @@
 local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local ProfileService = require("../src/server/data/ProfileService")
 local fixtureV0 = require("./fixtures/profile-v0")
+local fixtureV1 = require("./fixtures/profile-v1")
 
 local failures = {}
 local checks = 0
@@ -123,16 +124,17 @@ local function newController(store, options)
 end
 
 -- ---------------------------------------------------------------- template e validacao
-check("template v1 e JSON-safe", function()
+check("template v2 e JSON-safe", function()
 	local profile = ProfileSchema.template()
 	assert(profile.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion errado")
+	assert(profile.contentVersion == ProfileSchema.DEFAULT_CONTENT_VERSION, "contentVersion errado")
 	assert(profile.wall.gridWidth == 5 and profile.wall.activeTrapLimit == 5, "grade fora do Q2")
 	assert(
 		type(profile.wall.cells) == "table" and next(profile.wall.cells) == nil,
 		"cells nao vazio"
 	)
 	assert(
-		keysOf(profile) == "cosmetics,gold,league,schemaVersion,stats,wall",
+		keysOf(profile) == "contentVersion,cosmetics,gold,league,schemaVersion,stats,wall",
 		"chaves: " .. keysOf(profile)
 	)
 	local ok, err = ProfileSchema.validate(profile)
@@ -239,6 +241,22 @@ check("validacao recusa perfil invalido", function()
 				return p
 			end,
 		},
+		{
+			"contentVersion 0",
+			function()
+				local p = ProfileSchema.template()
+				p.contentVersion = 0
+				return p
+			end,
+		},
+		{
+			"contentVersion ausente",
+			function()
+				local p = ProfileSchema.template()
+				p.contentVersion = nil
+				return p
+			end,
+		},
 	}
 	for _, case in ipairs(cases) do
 		local ok, err = ProfileSchema.validate(case[2]())
@@ -274,11 +292,12 @@ check("isJsonSafe recusa o que o DataStore nao serializa", function()
 end)
 
 -- ---------------------------------------------------------------- migracao 0 -> 1
-check("migracao 0->1 com fixture preserva o valido e descarta o resto", function()
+check("migracao 0->2 com fixture preserva o valido e descarta o resto", function()
 	local original = clone(fixtureV0)
 	local profile, err = ProfileSchema.migrate(fixtureV0)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 1, "schemaVersion nao subiu")
+	assert(profile.schemaVersion == 2, "schemaVersion nao subiu")
+	assert(profile.contentVersion == 1, "contentVersion legado")
 	assert(profile.gold == 120, "gold perdido")
 	assert(profile.league.points == 34, "league.points perdido")
 	assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
@@ -298,10 +317,25 @@ check("migracao 0->1 com fixture preserva o valido e descarta o resto", function
 	assert(fixtureV0.gold == 120 and fixtureV0.stats.lastSeenAt == 1762800000, "fixture mutado")
 end)
 
+check("migracao 1->2 adiciona contentVersion sem perder a parede", function()
+	local profile, err = ProfileSchema.migrate(fixtureV1)
+	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+	assert(profile.schemaVersion == 2, "schemaVersion nao subiu")
+	assert(profile.contentVersion == 1, "contentVersion deveria nascer 1")
+	assert(profile.gold == 120, "gold perdido")
+	assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
+	assert(profile.wall.cells.r1c1.trap == "oil", "trap antiga deveria sobreviver ao schema")
+	local ok, validateErr = ProfileSchema.validate(profile)
+	assert(ok, "perfil v2 invalido: " .. tostring(validateErr))
+end)
+
 check("migracao de v0 vazio devolve o template", function()
 	local profile, err = ProfileSchema.migrate({}, 0)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 1 and profile.gold == 0, "template esperado")
+	assert(
+		profile.schemaVersion == 2 and profile.contentVersion == 1 and profile.gold == 0,
+		"template esperado"
+	)
 	assert(ProfileSchema.validate(profile), "v0 vazio gerou perfil invalido")
 end)
 
@@ -385,7 +419,7 @@ check("migra no load e persiste a migracao", function()
 		end,
 	})
 	local session = assert(controller.startSession("User_3"))
-	assert(session.Data.schemaVersion == 1, "nao migrou")
+	assert(session.Data.schemaVersion == 2, "nao migrou")
 	assert(profile.saves == 1, "migracao nao foi salva: " .. tostring(profile.saves))
 	assert(profile.reconciles == 1, "Reconcile nao rodou")
 	assert(infos[1].migrated == true, "info.migrated deveria ser true")

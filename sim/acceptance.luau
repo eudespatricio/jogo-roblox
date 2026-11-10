@@ -15,9 +15,9 @@ local function check(name, fn)
 	end
 end
 
-check("hash de referencia (seed 42, simVersion 2)", function()
+check("hash de referencia (seed 42, simVersion 3)", function()
 	local r = Core.Run(42)
-	assert(r.simVersion == 2, "simVersion != 2: " .. tostring(r.simVersion))
+	assert(r.simVersion == 3, "simVersion != 3: " .. tostring(r.simVersion))
 	assert(r.hash == 2489780106, "hash mudou: " .. tostring(r.hash))
 	print(string.format("  seed 42: hash=%d winner=%s ticks=%d", r.hash, r.winner, r.ticks))
 end)
@@ -30,7 +30,7 @@ check("1.000 seeds x 3 (hash e resultado identicos)", function()
 		local b = Core.Run(seed)
 		local c = Core.Run(seed)
 		assert(a.hash == b.hash and b.hash == c.hash, "hash divergiu na seed " .. seed)
-		assert(a.simVersion == 2, "simVersion divergente na seed " .. seed)
+		assert(a.simVersion == 3, "simVersion divergente na seed " .. seed)
 		assert(
 			a.winner == b.winner
 				and b.winner == c.winner

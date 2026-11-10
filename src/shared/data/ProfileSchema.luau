@@ -6,9 +6,12 @@
 
 local ProfileSchema = {}
 
-ProfileSchema.SCHEMA_VERSION = 1
+ProfileSchema.SCHEMA_VERSION = 2
 ProfileSchema.STORE_NAME = "MuralhaProfile_v1"
 ProfileSchema.SECONDS_PER_DAY = 86400
+-- Versao de conteudo gravada no perfil quando o schema v2 nasceu. O catalogo atual e
+-- quem manda no gate (TrapCatalog.CONTENT_VERSION); o schema so valida a faixa.
+ProfileSchema.DEFAULT_CONTENT_VERSION = 1
 
 -- Grade do MVP (Q2, 09/11/2026): 5x5, N=5 ativas, colocacao livre. 7 colunas e expansao por
 -- nivel, entao e dado do perfil, nao codigo.
@@ -46,6 +49,7 @@ export type Stats = {
 
 export type Profile = {
 	schemaVersion: number,
+	contentVersion: number,
 	wall: Wall,
 	gold: number,
 	league: League,
@@ -79,7 +83,8 @@ ProfileSchema.PII_KEYS = {
 	username = true,
 }
 
-local TOP_FIELDS = { "schemaVersion", "wall", "gold", "league", "cosmetics", "stats" }
+local TOP_FIELDS =
+	{ "schemaVersion", "contentVersion", "wall", "gold", "league", "cosmetics", "stats" }
 local WALL_FIELDS = { "gridWidth", "activeTrapLimit", "cells" }
 local CELL_FIELDS = { "trap", "level" }
 local LEAGUE_FIELDS = { "points", "season" }
@@ -110,6 +115,7 @@ local STATS_SET = fieldSet(STATS_FIELDS)
 local function newProfile(): Profile
 	return {
 		schemaVersion = ProfileSchema.SCHEMA_VERSION,
+		contentVersion = ProfileSchema.DEFAULT_CONTENT_VERSION,
 		wall = {
 			gridWidth = ProfileSchema.GRID_WIDTH,
 			activeTrapLimit = ProfileSchema.ACTIVE_TRAP_LIMIT,
@@ -336,6 +342,12 @@ function ProfileSchema.validate(data: any): (boolean, string?)
 				ProfileSchema.SCHEMA_VERSION
 			)
 	end
+	if not isFiniteInteger(data.contentVersion) then
+		return false, "contentVersion nao e inteiro"
+	end
+	if (data.contentVersion :: number) < 1 then
+		return false, "contentVersion fora de [1,inf)"
+	end
 	local okWall, errWall = validateWall(data.wall)
 	if not okWall then
 		return false, errWall
@@ -378,7 +390,7 @@ end
 
 -- Reconstroi um perfil v1 valido a partir de qualquer tabela: so entra o que o schema
 -- reconhece e cabe na faixa. E o que roda em todo load, entao lixo/PII nunca e persistido.
-local function sanitizeV1(data: any): Profile
+local function sanitizeCurrent(data: any): Profile
 	local profile = newProfile()
 	if type(data) ~= "table" then
 		return profile
@@ -489,7 +501,20 @@ local function sanitizeV1(data: any): Profile
 		end
 	end
 
+	if isFiniteInteger(data.contentVersion) then
+		profile.contentVersion =
+			clampInt(data.contentVersion :: number, 1, ProfileSchema.MAX_COUNTER)
+	end
+
 	profile.schemaVersion = ProfileSchema.SCHEMA_VERSION
+	return profile
+end
+
+-- Forma v1 (sem contentVersion) usada apenas pela migracao 0 -> 1.
+local function sanitizeV1(data: any): any
+	local profile: any = sanitizeCurrent(data)
+	profile.schemaVersion = 1
+	profile.contentVersion = nil
 	return profile
 end
 
@@ -502,7 +527,20 @@ MIGRATIONS[0] = function(data: any): any
 	return sanitizeV1(data)
 end
 
--- Migra e devolve um perfil v1 valido. Versao futura (build mais novo) e recusada: nao
+-- 1 -> 2: adiciona `contentVersion = 1` (conteudo legado). A migracao de conteudo real
+-- (aliases/reparos) roda depois, no boot, com o catalogo injetado (TrapCatalog).
+MIGRATIONS[1] = function(data: any): any
+	local copy: any = {}
+	if type(data) == "table" then
+		for key, value in pairs(data) do
+			copy[key] = value
+		end
+	end
+	copy.contentVersion = ProfileSchema.DEFAULT_CONTENT_VERSION
+	return copy
+end
+
+-- Migra e devolve um perfil v2 valido. Versao futura (build mais novo) e recusada: nao
 -- sobrescrever dado que este servidor nao entende. Nunca muta a tabela recebida.
 function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, string?)
 	local version: number
@@ -532,7 +570,7 @@ function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, stri
 		current = migration(current)
 		step += 1
 	end
-	local profile = sanitizeV1(current)
+	local profile = sanitizeCurrent(current)
 	local ok, err = ProfileSchema.validate(profile)
 	if not ok then
 		return nil, err

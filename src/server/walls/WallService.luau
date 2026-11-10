@@ -16,6 +16,7 @@ local WallService = {}
 
 export type Cell = { trap: string, level: number }
 export type Profile = {
+	contentVersion: number,
 	wall: { gridWidth: number, activeTrapLimit: number, cells: { [string]: Cell } },
 	gold: number,
 	league: { points: number, season: number },
@@ -81,6 +82,8 @@ WallService.ERRORS = table.freeze({
 	GOLD_CAP = "gold_cap",
 	INVALID_AMOUNT = "invalid_amount",
 	INVALID_SOURCE = "invalid_source",
+	CONTENT_VERSION = "content_version",
+	CONTENT_FUTURE = "content_future",
 })
 local function isInteger(value: any): boolean
 	if type(value) ~= "number" then
@@ -149,6 +152,15 @@ function WallService.validateWall(
 	local okCatalog, catalogErr = catalog.validate()
 	if not okCatalog then
 		return false, "catalogo: " .. tostring(catalogErr)
+	end
+	if not isInteger(profile.contentVersion) or profile.contentVersion < 1 then
+		return false, WallService.ERRORS.CONTENT_VERSION
+	end
+	if profile.contentVersion > catalog.CONTENT_VERSION then
+		return false, WallService.ERRORS.CONTENT_FUTURE
+	end
+	if profile.contentVersion ~= catalog.CONTENT_VERSION then
+		return false, WallService.ERRORS.CONTENT_VERSION
 	end
 
 	local gridWidth = math.min(profile.wall.gridWidth, schema.GRID_WIDTH)
@@ -239,6 +251,7 @@ function WallService.new(options: Options): Controller
 	assert(type(profile.wall) == "table", "WallService.new: profile.wall ausente")
 	assert(type(profile.wall.cells) == "table", "WallService.new: profile.wall.cells ausente")
 	assert(type(profile.league) == "table", "WallService.new: profile.league ausente")
+	assert(isInteger(profile.contentVersion), "WallService.new: contentVersion invalido")
 	assert(
 		isInteger(profile.league.points) and profile.league.points >= 0,
 		"WallService.new: league.points invalido"

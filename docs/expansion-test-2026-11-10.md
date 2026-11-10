@@ -6,8 +6,9 @@
 - **Tipo:** schema + conteúdo + motor (dry run, sem merge)
 
 > **Atualização (10/11/2026):** o GAP-007 foi fechado na S3.3 (`scripts/check-versions.py` +
-> `docs/versoes.md`) e o GAP-010 está preparado (`tools/expansion-test/neutral-migration.luau`). O
-> relatório abaixo preserva o estado do trial em 09/11/2026.
+> `docs/versoes.md`) e o GAP-010 foi fechado na S3.4 (schema v2 + migração neutra em
+> `sim/content-contract.luau`). GAP-004/008 (classe/taxonomia v2) e GAP-009 (ProfileStore real)
+> continuam abertos. O relatório abaixo preserva o estado do trial em 09/11/2026.
 
 ## 1. Escopo do trial
 

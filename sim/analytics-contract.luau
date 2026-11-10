@@ -84,14 +84,14 @@ local PROPS = {
 	battle_started = {
 		battle_id = BATTLE_ID,
 		seed = 42,
-		sim_version = 2,
+		sim_version = 3,
 		grid_width = 5,
 		traps_count = 5,
 	},
 	battle_finished = {
 		battle_id = BATTLE_ID,
 		seed = 42,
-		sim_version = 2,
+		sim_version = 3,
 		result_hash = BATTLE_HASH,
 		winner = "defender",
 		wall_hp = 45,
@@ -319,12 +319,12 @@ check("lote: validateAll aponta o indice do invalido", function()
 end)
 
 -- ---------------------------------------------------------------- motor
-check("BattleResult expoe seed e simVersion 2 com o hash novo", function()
+check("BattleResult expoe seed e simVersion 3 com o hash novo", function()
 	local result = Core.Run(42)
 	assert(result.hash == 2489780106, "hash mudou: " .. tostring(result.hash))
 	assert(result.seed == 42, "seed ausente no resultado: " .. tostring(result.seed))
 	assert(result.simVersion == Core.SIM_VERSION, "simVersion divergente")
-	assert(Core.SIM_VERSION == 2, "simVersion deveria ser 2 (loadout 5x5)")
+	assert(Core.SIM_VERSION == 3, "simVersion deveria ser 3 (5 tipos)")
 
 	local event, err = Analytics.battleFinished(CTX, BATTLE_ID, result)
 	assert(event ~= nil, "evento de batalha invalido: " .. tostring(err))

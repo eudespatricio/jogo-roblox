@@ -1,12 +1,13 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 10/11/2026 · **Status:** P1 em execução — **S1, S2, S3 e S3.3 fechadas**; próxima janela é a
-**S4 (cena 5×5 + build)** · base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
+**Data:** 10/11/2026 · **Status:** P1 em execução — **S1–S3.3 fechadas**; **S3.4 (conteúdo e versões)
+em execução**, código verde e GAP-009 pendente no Studio; S4 depois · base `main`. Este arquivo é
+autossuficiente: a conversa pode ser fechada.
 
-> **GAP (10/11/2026):** GAP-006/007 fechados na S3.3; GAP-010 preparado (fecha no 1º schema v2).
-> A linha canônica e o plano por gap estão em `docs/gaps.md`.
+> **GAP (10/11/2026):** GAP-001/002/003/010 fechados na S3.4; GAP-009 (Modo B) e GAP-011
+> (`contentVersion` no `BattleLog`) abertos. A linha canônica e o plano por gap estão em `docs/gaps.md`.
 
-GAP: GAP-001..GAP-005, GAP-008..GAP-010 · conteúdo em produção ainda exige versão/migração; analytics sem variantes; ProfileStore real não testado; default neutro preparado no kit · risco alto para updates semanais · fechar antes da 1ª expansão de conteúdo/P2 (GAP-010 no 1º schema v2) · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-009, GAP-011 · classes/taxonomia v2, live ops, ProfileStore real com schema v2 e contentVersion no BattleLog ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 (GAP-009 depende do Modo B; GAP-011 na S6) · ver docs/gaps.md
 
 ---
 
@@ -63,6 +64,13 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     `CONTENT_VERSION`, `SIM_VERSION` e o hash com o bloco documentado; labels saem da fonte.
   - GAP-010 preparado: `tools/expansion-test/neutral-migration.luau` compara o hash da parede antiga
     x migrada e roda no `check.sh` (0→1); falta o primeiro schema v2 para fechar.
+- **S3.4 em execução — conteúdo e versões (10/11/2026):**
+  - schema v2 com `contentVersion` (migração 1→2); `TrapCatalog.ensureProfileContent` roda no boot,
+    repara `oil → tar` e recusa `content_future`; o `WallService` exige a versão do catálogo.
+  - conteúdo v2: `oil` virou `tar` (alias) e entrou `catapult` (5º tipo, splash); `simVersion 3` e
+    hash `2489780106` preservado na parede padrão.
+  - contratos: perfil **20/20**, muralha **13/13**, conteúdo **7/7**, analytics **16/16**;
+    GAP-001/002/003/010 fechados; GAP-009 (Modo B) e GAP-011 (`BattleLog`) abertos.
 - Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 78/80 · MAPA 59/60 ·
   REJEITADOS 19/40**.
 
@@ -75,14 +83,14 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | tick / cap | 0,05 s · 1.200 ticks (60 s) |
 | estado | 100% inteiro (`MILLI = 1000`) |
 | custo por batalha | ~1,4 ms (~710 batalhas/s) |
-| simVersion | **2** |
+| simVersion | **3** |
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos | perfil 19/19 · analytics 16/16 · muralha 13/13 (`sim/*-contract.luau`) |
-| versões | schema 1 · content 1 · sim 2 · hash `2489780106` (`docs/versoes.md`) |
-| muralha/economia | catálogo 4 tipos · N=5 · sem refund · `toBattleWall` · `docs/economia-muralha.md` |
-| perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 (`sim/*-contract.luau`) |
+| versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`) |
+| muralha/economia | catálogo 5 tipos · N=5 · sem refund · `toBattleWall` · `docs/economia-muralha.md` |
+| perfil | schema v2 · contentVersion · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
 | contexto | ESTADO 78/80 · MAPA 59/60 · REJEITADOS 19/40 |
@@ -111,6 +119,7 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | S2 | Motor 5×5/N=5 | `simVersion 2` + hash novo + invariants/acceptance re-ancorados | **feito 09/11/2026** |
 | S3 | Muralha e economia | célula/6ª armadilha/ouro insuficiente recusados; perfil persistido; eventos válidos | **feito 09/11/2026** |
 | S3.3 | Gaps antes da S4 | GAP-006/007 fechados; GAP-010 preparado | **feito 10/11/2026** |
+| S3.4 | Conteúdo e versões | schema v2/contentVersion, 5º tipo, alias e migração neutra; GAP-009 | **código verde 10/11/2026; GAP-009 pendente** |
 | S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **próxima janela** |
 | S5 | Drop-in de 5 s | `dropin_pressed` ≥ 60% | pendente |
 | S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | pendente |
@@ -119,14 +128,15 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** S4 — cena 5×5 + build (UI de colocar 5 em 25, câmera fixa, ≤30 s de build e
-45+ FPS mobile). S5–S7 depois, na ordem do plano. GAP-010 fecha no 1º schema v2.
+**Próximo passo:** fechar GAP-009 no Modo B do Studio (`docs/teste-sessao-studio.md`) e iniciar S4
+— cena 5×5 + build (UI de colocar 5 em 25, câmera fixa, ≤30 s de build e 45+ FPS mobile). S5–S7
+depois, na ordem do plano; GAP-011 entra na S6.
 
 ## Pipeline de expansão e gaps
 
 - Processo reproduzível: [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — três versões
   (`schemaVersion`, `CONTENT_VERSION`, `simVersion`), matriz de decisão, passo a passo, RFC e migração.
-- Registro: [`docs/gaps.md`](docs/gaps.md) — GAP-001..005 e GAP-008..010, cada um com gatilho objetivo.
+- Registro: [`docs/gaps.md`](docs/gaps.md) — GAP-004/005/008/009/011, cada um com gatilho objetivo.
 - Gate de versões: [`docs/versoes.md`](docs/versoes.md) + `scripts/check-versions.py` no `check.sh`.
 - Fechamento: toda P/S termina com uma linha `GAP:`; sem linha, a fatia não fecha.
 - Trial 09/11/2026: classe/trait/raridade na branch `7d53327` (apagada); relatório em
@@ -134,21 +144,25 @@ Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido c
 
 ---
 
-## Handover — janela S4 (cena 5×5 + build)
+## Handover — S3.4 (conteúdo) + S4 (cena/build)
 
-**Objetivo:** S4 — cena 5×5 no Workspace, câmera fixa e UI de build (colocar até 5 em 25), sem
-iniciar conteúdo/feature de classe. **Não iniciar P2.**
-**Base:** `main` pós-S3.3; `simVersion 2`, hash `2489780106`; GAP-006/007 fechados; GAP-010 preparado.
+**Estado:** S3.4 com código verde — schema 2, content 2, sim 3. Falta **GAP-009** (Modo B do schema
+v2 no Studio) e iniciar a **S4**. GAP-001/002/003/010 fechados; GAP-004/005/008/009/011 abertos.
+**Base:** `main` pós-S3.3 + S3.4; hash `2489780106`; RFC em
+[`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md).
 
+- **Antes da S4:** rodar o **Modo B** de [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md)
+  com schema v2/contentVersion; se `Reconcile`/DataStore real falhar, corrigir antes de fechar o
+  GAP-009. O Modo A/fake não prova persistência entre servidores.
 - **Fonte da parede:** use só `WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, hp)` para
   qualquer batalha; nunca monte `wall.traps` à mão. Perfil inválido devolve `nil + erro` e não entra no
-  `Battle.new`.
-- **Versões:** se a S4 não mudar a matemática, `simVersion`/hash ficam; se mudar, siga
-  `docs/pipeline-expansao.md` e atualize `docs/versoes.md` (o `check.sh` falha se divergir).
+  `Battle.new`; o boot já rodou `TrapCatalog.ensureProfileContent`.
+- **Versões:** S4 não deve mudar `simVersion`/hash; se mudar, siga `docs/pipeline-expansao.md`,
+  atualize `docs/versoes.md` e re-ancore acceptance. `contentVersion` novo é schema v3 + RFC.
 - **Critério de pronto (p1-plano S4):** build completo em ≤30 s; nenhuma armadilha fora da célula;
-  45+ FPS em mobile; UI ligada ao `WallService` (place/remove/upgrade).
-- **Fora da janela:** GAP-001/002/003/009 (conteúdo), GAP-004/008 (classe/taxonomia v2), GAP-005
-  (P2), GAP-010 (só fecha no 1º schema v2). O trial/teste de 3 semanas segue em paralelo.
+  45+ FPS em mobile; UI ligada ao `WallService` (place/remove/upgrade) e à cena 5×5.
+- **Fora da janela:** GAP-004/008 (classe/taxonomia v2), GAP-005 (P2) e GAP-011 (`BattleLog`, S6).
+  **Não iniciar P2.** O trial/teste de 3 semanas segue em paralelo.
 - **Saída:** `doctor.sh` + `check.sh` RC=0; docs atualizados; CI verde; uma linha `GAP:` no handoff.
 
 ---
@@ -192,7 +206,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 2. **`src/` é produção.** O legado de moedas está na tag anotada `legacy-coins` (`b07b4c5`); não
    ressuscite `CoinService`/`DataService`/`Config`.
 3. Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
-4. Mudou a matemática → subir `simVersion`, registrar na spec e em `docs/versoes.md` (`simVersion` atual = **2**).
+4. Mudou a matemática → subir `simVersion`, registrar na spec e em `docs/versoes.md` (`simVersion` atual = **3**).
 5. `bit32` só recebe `[0, 2^32)`: usar `add32`/`mul32`.
 6. Contexto residente tem teto (80/60/40); `scan_repo.py --check` falha se estourar.
 7. Invariante não vira markdown: vira teste ou vira pergunta.
@@ -207,9 +221,9 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 1. **Tag antes da deleção.** A `legacy-coins` é anotada e aponta para `b07b4c5` — o último commit com
    o protótipo. Se algum dia recriar a tag, faça no HEAD **antes** de apagar qualquer arquivo.
 2. **A S2 mudou a matemática de propósito.** O hash `668061367` **não é mais o alvo**; o novo é
-   `2489780106`, com `simVersion 2`. Não "ajustar" o hash antigo nem os thresholds sem registro.
-   Mudou `schemaVersion`/`CONTENT_VERSION`/`SIM_VERSION`? Atualize `docs/versoes.md`; o `check.sh`
-   falha se fonte e docs divergirem.
+   `2489780106`, agora com `simVersion 3` (o hash da parede padrão não mudou na S3.4). Não "ajustar"
+   o hash antigo nem os thresholds sem registro. Mudou `schemaVersion`/`CONTENT_VERSION`/`SIM_VERSION`?
+   Atualize `docs/versoes.md`; o `check.sh` falha se fonte e docs divergirem.
 3. **Contexto tem teto.** ESTADO está em 78/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
    linha antes de acrescentar outra.
 
@@ -247,8 +261,16 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
     `nil + erro`; S4/S6 não montam `wall.traps` à mão.
 17. **O gate de versões fecha o buraco do trial.** `scripts/check-versions.py` compara 4 valores com
     `docs/versoes.md`; labels do `check.sh` saem da fonte; divergência simulada falhou o gate.
-18. **GAP-010 tem teste, mas não cobertura de schema futuro.** `neutral-migration.luau` prova 0→1 e
-    roda no `check.sh`; a garantia real é no 1º schema v2.
+18. **GAP-010 fechou no primeiro schema v2.** `sim/content-contract.luau` e
+    `neutral-migration.luau` comparam o hash da parede antiga (`oil`) com a migrada (`tar`) e rodam
+    no `check.sh`.
+19. **`contentVersion` separa schema de conteúdo.** Schema 2 adiciona a versão de conteúdo, não
+    classe; `oil → tar` e `catapult` são conteúdo. Classe/trait/raridade exigem schema v3 +
+    taxonomia v2 (GAP-004/008).
+20. **O gate do `WallService` é por igualdade de `contentVersion`.** O boot repara e salva; o
+    serviço recusa perfil não migrado (`content_version`) ou futuro (`content_future`).
+21. **GAP-009 só fecha com ProfileStore real.** Mock/fake prova schema e migração, não
+    `Reconcile`/DataStore entre servidores; o Modo B com schema v2 está pendente.
 
 ---
 
@@ -256,15 +278,16 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1, S2, S3 e S3.3 fechadas;
-> **S4 é a próxima janela; ainda não começou**). Leia `AGENTS.md`, `.context/ESTADO.md`,
-> `.context/MAPA.md`, `CONTINUAR.md`, `docs/p1-plano.md`, `docs/pipeline-expansao.md`,
-> `docs/gaps.md` e `docs/versoes.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
+> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1–S3.3 fechadas; **S3.4
+> (conteúdo e versões) com código verde e GAP-009 pendente no Studio; S4 é a próxima janela e ainda
+> não começou**). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md`,
+> `docs/p1-plano.md`, `docs/pipeline-expansao.md`, `docs/gaps.md`, `docs/versoes.md` e
+> `docs/rfc-s3.4-conteudo.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
 > `bash scripts/check.sh` (devem passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
-> colocação livre; taxonomia v1 congelada. O motor está em `simVersion 2`, hash `2489780106`
-> (seed 42). **Objetivo desta janela:** S4 — cena 5×5 + build; usar só
-> `WallService.toBattleWall` para a parede; não iniciar conteúdo/feature de classe nem P2. Fora da
-> janela: GAP-001/002/003/009, GAP-004/008, GAP-005; GAP-010 só fecha no 1º schema v2. Rode
-> `doctor.sh`/`check.sh`, atualize docs e feche com a linha `GAP:` atualizada. O trial/kit está em
-> `docs/expansion-test-2026-11-10.md`/`tools/expansion-test/`; o teste de produto de 3 semanas roda
-> em paralelo.
+> colocação livre; taxonomia v1 congelada. O motor está em `simVersion 3`, hash `2489780106`
+> (seed 42); perfil schema 2 com `contentVersion 2`. **Objetivo desta janela:** fechar GAP-009 no
+> Modo B do Studio e iniciar S4 — cena 5×5 + build; usar só `WallService.toBattleWall` para a
+> parede; não iniciar classe/taxonomia v2 nem P2. Fora: GAP-004/008, GAP-005; GAP-011 entra na S6.
+> Rode `doctor.sh`/`check.sh`, atualize docs e feche com a linha `GAP:` atualizada. O trial/kit está
+> em `docs/expansion-test-2026-11-10.md`/`tools/expansion-test/`; o teste de produto de 3 semanas
+> roda em paralelo.

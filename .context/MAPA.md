@@ -10,7 +10,7 @@
 | `docs/gdd-muralha.md` · `docs/economia-muralha.md` | design, catálogo, custos e desbloqueio | decisão de produto/economia |
 | `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
 | `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
-| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/versoes.md` · `docs/expansion-test-2026-11-10.md` | P1 + pipeline + gaps + gate de versões + trial real | **início da P1/expansão** |
+| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/versoes.md` · `docs/rfc-s3.4-conteudo.md` · `docs/expansion-test-2026-11-10.md` | P1 + pipeline + gaps + gate + RFC de conteúdo + trial real | **início da P1/expansão** |
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
 | `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
@@ -28,10 +28,10 @@
 | `sim/invariants.luau` | oráculo executável (12 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
-| `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v1 + catálogo econômico; migração 0→1, JSON-safe | mexer em dado/catálogo |
+| `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v2 + `contentVersion` + catálogo (5 tipos/aliases); migração 0→2/1→2, JSON-safe | mexer em dado/catálogo |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
-| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` | S3: colocar/remover/upgrade, ouro, desbloqueio, `toBattleWall` + contrato | mexer em muralha/economia |
+| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` · `sim/content-contract.luau` | S3/S3.4: colocar/remover/upgrade, ouro, desbloqueio, `toBattleWall`, `contentVersion` + contratos | mexer em muralha/economia/conteúdo |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{sim,data,analytics}`, `server/{data,walls,ProfileBoot,Main stub}`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
@@ -46,7 +46,7 @@
 ## Armadilhas conhecidas
 
 1. **Não edite `src/shared/sim/core.luau` sem rodar `sim/invariants.luau` e `sim/acceptance.luau`.**
-2. **Mudou a matemática? Suba `simVersion` e atualize `docs/versoes.md`.** Atual = **2**; replay v1 não roda no motor v2.
+2. **Mudou a matemática? Suba `simVersion` e atualize `docs/versoes.md`.** Atual = **3**; replay v1/v2 não roda no motor v3.
 3. **`src/` é produção**; o legado de moedas foi apagado na S1 e vive na tag anotada `legacy-coins`.
 4. **Doc mais velho que código mente.** Rode a radiografia antes de confiar em README/tese.
 5. **`.tools/` não é versionado.** Reinstale com `rokit install` se sumir.

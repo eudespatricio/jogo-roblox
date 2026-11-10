@@ -95,7 +95,7 @@ check("I5 resultado consistente", function()
 		assert(r.ticks > 0 and r.ticks <= Core.MAX_TICKS, "ticks fora do cap")
 		assert(r.spawned <= 70, "spawnou mais que a onda")
 		assert(r.traps == 5, "loadout padrao deveria ter 5 ativas")
-		assert(r.simVersion == 2, "simVersion deveria ser 2")
+		assert(r.simVersion == 3, "simVersion deveria ser 3")
 		assert(r.hash == math.floor(r.hash), "hash fracionario")
 	end
 end)

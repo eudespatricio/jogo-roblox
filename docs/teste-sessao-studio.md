@@ -4,8 +4,13 @@
 > agora tem `ProfileBoot` + o stub `Main`; as menções a `Main`/`DataService`/asset legado nas
 > evidências abaixo são **históricas** (antes da S1).
 
+> **S3.4 (10/11/2026):** o schema subiu para **v2** (`contentVersion`) e o conteúdo para **v2**
+> (`oil → tar`, `catapult`, `simVersion 3`). Os logs da §8 são do schema v1 e ficam como histórico.
+> Antes de fechar o GAP-009, repetir o Modo A e o Modo B com o build atual; o esperado é
+> `schema=v2 content=v2`.
+>
 > **Status:** **Modo A (Mock) e Modo B (DataStore real) executados e aprovados em
-> 09/11/2026 — 8/8 nas duas execuções** (evidência na §8).
+> 09/11/2026 — 8/8 nas duas execuções** (evidência na §8, schema v1).
 > O que o CI cobre: `sim/profile-contract.luau` (schema, migração, `StartSessionAsync` nil,
 > `EndSession`, recarga sem duplicar) e `sim/analytics-contract.luau`.
 > O que o CI **não** cobre: `Players`, DataStore, `ProfileStore.Mock` e o lugar de verdade —
@@ -194,3 +199,22 @@ Segunda execução (servidor novo, mesmo perfil):
 
 Fica para o playtest: duas contas distintas no lugar publicado (duas chaves `User_*`).
 
+
+
+---
+
+## 9. Schema v2/contentVersion — repetição S3.4 (pendente)
+
+**Status:** pendente. É a evidência que fecha o **GAP-009**; o contrato headless e o `ProfileStore.Mock`
+não provam `Reconcile`/DataStore entre servidores.
+
+1. `bash scripts/check.sh` verde; `rojo build` e abrir o lugar no Studio.
+2. `ServerStorage.ProfileStoreMock = true` e `ProfileSelfTest = true` (Modo A). O Output deve conter
+   `[perfil] carregado ... schema=v2 content=v2` e
+   `[selftest] OK carregou e migrou · schema=v2 content=v2 ...`, terminando em `PASSOU (8/8)`.
+3. Publicar o lugar, ligar API Services e `ProfileStoreMock = false` (Modo B). Rodar duas vezes em
+   servidores diferentes; a segunda deve carregar `sessions` incrementado e `contentVersion=2`.
+4. Perfil antigo: subir um perfil v1 (fixture `sim/fixtures/profile-v1.luau` ou perfil real já salvo)
+   e confirmar `migrado=true`, `oil → tar` e `contentVersion=2`; perfil com `content_future` deve ser
+   recusado com kick e lock devolvido.
+5. Copiar as linhas `[perfil]`/`[selftest]` para o handover e atualizar o GAP-009 em `docs/gaps.md`.

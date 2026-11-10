@@ -53,9 +53,10 @@ com `(seed, simVersion, wallSpec, waveSpec)`. Enquanto `CONTENT_VERSION` não es
    `SIM_VERSION`; re-ancorar `sim/acceptance.luau`, `docs/spec-motor-deterministico.md` e hash.
 4. **Schema:** se o formato do perfil mudou, `SCHEMA_VERSION += 1`, `MIGRATIONS[n]`, fixture
    `sim/fixtures/profile-v*.luau` e `sim/profile-contract.luau`; nunca renomear campo sem migração.
-5. **Migração de conteúdo:** se renomeou/removeu `trap_id`, escrever migração explícita (mapa
-   antigo→novo, compensação, remoção) e testar perfil antigo. Sem isso, **não remover** (GAP-002).
-   Default de campo novo deve ser **neutro** (preserva HP/dano/hash antigos); bônus silencioso é bug.
+5. **Migração de conteúdo:** se renomeou/removeu `trap_id`, registrar em
+   `TrapCatalog.TRAP_ALIASES` (antigo→novo), subir `CONTENT_VERSION` e testar perfil antigo em
+   `sim/content-contract.luau`. Sem alias, **não remover**: o perfil falha fechado. Default de
+   campo novo deve ser **neutro** (preserva HP/dano/hash antigos); bônus silencioso é bug.
 6. **Testes:** `sim/invariants.luau`, `sim/acceptance.luau`, `sim/walls-contract.luau`,
    `sim/profile-contract.luau`, `sim/analytics-contract.luau`; adicionar caso novo e caso de
    regressão. O contrato da muralha pina `TRAP_IDS`, custos e fontes/sinks — atualizar de propósito.
@@ -80,22 +81,26 @@ Garantido hoje:
 - cada tipo do catálogo é aceito pelo motor;
 - `TRAP_IDS`, custos, fontes e sinks pinados no contrato;
 - perfil inválido (trap desconhecida, >N, nível acima do cap) falha fechado no `WallService`;
+- `contentVersion` persistido no perfil e comparado ao catálogo no boot/`WallService`
+  (GAP-001 fechado na S3.4);
+- rename/repair de `trap_id` por `TrapCatalog.TRAP_ALIASES`, com `content_future` recusado
+  (GAP-002 fechado; remoção sem alias continua falhando fechado);
+- 5º tipo no motor/catálogo com `SIM_VERSION++` e contrato de paridade (política do GAP-003);
+- migração neutra de schema/conteúdo testada por hash (GAP-010 fechado na S3.4);
 - eventos da muralha validados contra a taxonomia v1;
 - bloco de versões (`docs/versoes.md`) comparado ao código pelo `scripts/check-versions.py`;
 - tetos de contexto.
 
 Não garantido ainda (ver `docs/gaps.md`):
 
-- `CONTENT_VERSION` persistido/checado em perfil e `BattleLog`;
-- migração/repair para `trap_id` renomeado/removido;
-- stats do motor fora do código (data-driven);
-- classes/traits (schema v2) — o trial provou o mecanismo, mas o schema real não foi mergeado;
-- flags/calendário para eventos semanais;
+- `CONTENT_VERSION` no `BattleLog` (S6) — hoje só o perfil carrega `contentVersion`;
+- remoção de trap sem alias/substituto: falha fechado, não apaga a célula;
+- stats do motor fora do código (data-driven) — a política atual é `SIM_VERSION++` por tipo;
+- classes/traits/raridades — exigem schema v3 + migração + taxonomia v2 (GAP-004/008);
+- flags/calendário para eventos semanais (GAP-005);
 - rollback de conteúdo em servidores antigos;
 - docs fora do bloco de versões ainda podem envelhecer sem o CI reclamar;
-- eventos de analytics não carregam variantes (GAP-008);
-- ProfileStore/Studio real com schema v2 (GAP-009);
-- default neutro de migração garantido por teste em todo schema novo (GAP-010; kit preparado).
+- ProfileStore/Studio real com schema v2 (GAP-009).
 
 ---
 

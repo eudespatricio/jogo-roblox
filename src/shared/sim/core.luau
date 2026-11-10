@@ -1,5 +1,5 @@
 --!nonstrict
--- Nucleo deterministico da Muralha (matematica v2: grade 5x5, loadout por celula).
+-- Nucleo deterministico da Muralha (matematica v3: grade 5x5, loadout por celula, 5 tipos).
 -- Regras: zero float no estado, mul32/add32 em toda operacao 32-bit, 1200 ticks = 60s.
 -- Sem dependencia de API do Roblox: roda no Luau CLI e no servidor.
 
@@ -18,7 +18,9 @@ Core.ACTIVE_TRAP_LIMIT = 5
 -- Versao da matematica do motor. Muda SO quando o resultado muda; replay antigo
 -- nao paga recompensa. Metadado: nao entra no hash nem no estado.
 -- v2 (09/11/2026): loadout por celula e 5 lanes; o hash 668061367 foi aposentado.
-Core.SIM_VERSION = 2
+-- v3 (10/11/2026): 5o tipo (catapult, splash) e oil -> tar; a parede padrao nao muda de
+-- comportamento, entao o hash de referencia 2489780106 continua valido.
+Core.SIM_VERSION = 3
 
 -- ---------------------------------------------------------------- aritmetica segura
 local function add32(a, b)
@@ -87,10 +89,11 @@ local UNIT_NAMES = { "runner", "brute", "swarm" }
 local TRAP = {
 	archer = { dmg = 4 * MILLI, cd = 10, range = 3000 },
 	cannon = { dmg = 10 * MILLI, cd = 28, range = 2200 },
+	catapult = { dmg = 9 * MILLI, cd = 40, range = 3000, splash = true },
 	frost = { dmg = 2 * MILLI, cd = 14, range = 2600, slowPct = 55, slowTicks = 20 },
-	oil = { dmg = 6 * MILLI, cd = 18, range = 1600 },
+	tar = { dmg = 6 * MILLI, cd = 18, range = 1600 },
 }
-local TRAP_NAMES = { "archer", "cannon", "frost", "oil" }
+local TRAP_NAMES = { "archer", "cannon", "catapult", "frost", "tar" }
 
 Core.UNIT = UNIT
 Core.TRAP = TRAP
@@ -102,7 +105,7 @@ Core.TUNING = TUNING
 -- Geometria da grade: a linha e a lane de caminhada; a coluna e a profundidade.
 -- c1 fica junto da muralha (x=2000) e c5 junto do spawn (x=8000).
 local COLUMN_X = { 2000, 3500, 5000, 6500, 8000 }
-local DEFAULT_WALL_TYPES = { "archer", "archer", "frost", "oil", "frost" }
+local DEFAULT_WALL_TYPES = { "archer", "archer", "frost", "tar", "frost" }
 
 local function parseCell(cell)
 	if type(cell) ~= "string" then
@@ -263,6 +266,24 @@ end
 
 function Battle:applyTrap(trap)
 	local def = TRAP[trap.type]
+	local damage = trapDamage(trap)
+	-- Catapult atinge todas as unidades da lane dentro do alcance; os outros tipos
+	-- continuam mirando a unidade mais a frente (uma por cooldown).
+	if def.splash then
+		for i = 1, self.uCount do
+			if self.uHp[i] > 0 and self.uLane[i] == trap.row then
+				local dx = self.uX[i] - trap.x
+				if dx > 0 and dx <= def.range then
+					self.uHp[i] -= damage
+					if self.uHp[i] <= 0 then
+						self.uHp[i] = 0
+						self.killed += 1
+					end
+				end
+			end
+		end
+		return
+	end
 	local best, bestX = nil, math.huge
 	for i = 1, self.uCount do
 		if self.uHp[i] > 0 and self.uLane[i] == trap.row then
@@ -275,7 +296,7 @@ function Battle:applyTrap(trap)
 	if not best then
 		return
 	end
-	self.uHp[best] -= trapDamage(trap)
+	self.uHp[best] -= damage
 	if def.slowPct then
 		self.uSlowUntil[best] = self.tick + def.slowTicks
 	end

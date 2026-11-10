@@ -28,7 +28,7 @@ local Core = require(Shared.sim.core)
 
 local battle = Core.Battle.new({
     seed = 123456789,          -- uint32 derivado do battleId
-    simVersion = 2,            -- v2: 5×5/N=5; replay v1 é recusado
+    simVersion = 3,            -- v3: 5 tipos; replay v2/v1 é recusado
     wall = {
         hp = 500,
         traps = {
@@ -256,14 +256,18 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 4. **Fuzz:** placements aleatórios não quebram (sem NaN, sem loop infinito).
 5. **Regressão de versão:** `simVersion` antiga não é aceita em reward.
 6. **Aceitação P1:** `sim/acceptance.luau` roda 1.000 seeds × 3, exige hash/resultado idênticos
-   (referência `2489780106`, `simVersion 2`) e 1.000 hashes distintos; está no `check.sh` e no CI.
-7. **Contrato de perfil:** `sim/profile-contract.luau` — schema v1, migração 0→1 com fixture,
-   `StartSessionAsync` nil, `EndSession` no leave e recarga sem duplicar (store injetado).
+   (referência `2489780106`, `simVersion 3`) e 1.000 hashes distintos; está no `check.sh` e no CI.
+7. **Contrato de perfil:** `sim/profile-contract.luau` — schema v2, migração 0→2 e 1→2 com
+   fixtures, `contentVersion`, `StartSessionAsync` nil, `EndSession` no leave e recarga sem
+   duplicar (store injetado).
 8. **Contrato de analytics:** `sim/analytics-contract.luau` — envelope/catálogo/limites/PII e
-   prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`; usa `sim_version 2`.
+   prova de que montar o evento de batalha não altera `hash`/`seed`/`ticks`; usa `sim_version 3`.
 9. **Gate de versões:** `scripts/check-versions.py` compara `SCHEMA_VERSION`, `CONTENT_VERSION`,
    `SIM_VERSION` e o hash de referência com o bloco de [`versoes.md`](versoes.md); divergência falha
    o `check.sh` (GAP-007 fechado na S3.3).
+10. **Contrato de conteúdo:** `sim/content-contract.luau` — 7 checagens: 5 tipos, alias
+    `oil → tar`, `content_future`, gate do `WallService` e hash da parede antiga x migrada
+    (GAP-001/002/003/010).
 
 ---
 
@@ -390,7 +394,8 @@ no `BindToClose` (o lock só é liberado depois do save — reabrir sessão exig
 envelope e 31 eventos da [taxonomia](taxonomia-analytics.md) validados no CI (obrigatoriedade,
 enum, limites, UUID/hash de 32 hex, anti-PII). Mudar o catálogo exige atualizar fixture e contrato
 na mesma mudança. Na P0 `simVersion` era **1**; a S2 subiu para **2** com o loadout 5×5/N=5 (§15).
-A S3 e a S3.3 não alteram esta matemática: `simVersion 2` e hash `2489780106` continuam.
+A S3 e a S3.3 não alteraram esta matemática. A S3.4 subiu para `simVersion 3` (5º tipo/splash)
+e manteve o hash de referência `2489780106` para a parede padrão; ver §16.
 
 **Muralha (S3/S3.3)** — `src/shared/data/TrapCatalog.luau` (economia) + `src/server/walls/WallService.luau`
 validam célula, N=5, ouro, desbloqueio e perfil compatível; mutam `Profile.Data.wall.cells`/`gold`
@@ -402,6 +407,9 @@ ordena as células por (linha, coluna); S4/S6 não montam `wall.traps` à mão. 
 ---
 
 ## 15. Matemática v2 — loadout 5×5/N=5 (S2, 09/11/2026)
+
+> **Histórico:** esta seção descreve a S2 (`simVersion 2`). A S3.4 subiu para `simVersion 3` e
+> adicionou o 5º tipo; os números atuais estão na §16.
 
 **Contrato novo:** `Battle.new({ seed, simVersion, wall, wave })`; `simVersion` é obrigatório e
 qualquer valor diferente de **2** é recusado (replay v1 não paga recompensa). `wall.traps` é uma lista
@@ -424,3 +432,28 @@ referência (5 ativas na coluna 3) para os harnesses.
 
 O hash `668061367` da v1 está **aposentado** e não deve ser reutilizado. `sim/poc.luau` imprime a
 curva da v2; `sim/acceptance.luau` ancora o hash e a faixa de balanceamento.
+
+
+---
+
+## 16. Conteúdo v3 — 5º tipo e contentVersion (S3.4, 10/11/2026)
+
+**Versões:** `SCHEMA_VERSION 2` · `CONTENT_VERSION 2` · `SIM_VERSION 3` · hash de referência
+`2489780106` (seed 42; a parede padrão não mudou de comportamento).
+
+**Conteúdo:** `oil` virou `tar` (mesmas estatísticas) e `catapult` entrou como 5º tipo (dano em
+área na lane, `splash = true`, custo 180/upgrade 130/liga 5). O catálogo tem
+`TRAP_ALIASES = { oil = "tar" }`; `TrapCatalog.ensureProfileContent` repara perfis v1 e recusa
+`content_future`.
+
+**Perfil:** schema v2 adiciona `contentVersion` (migração 1→2 nasce com `1`); o boot roda a
+migração de conteúdo, salva e só então expõe `Data`. O `WallService` recusa perfil fora da versão
+do catálogo (`content_version`/`content_future`).
+
+**Replay:** `simVersion 3` recusa replays v2; o `BattleLog` da S6 deve persistir a mesma
+`contentVersion` para o replay não simular conteúdo desconhecido.
+
+**Provas no CI:** `sim/content-contract.luau` 7/7 (alias, futuro, inválido, gate e hash antigo x
+migrado), `sim/profile-contract.luau` 20/20, `sim/walls-contract.luau` 13/13,
+`sim/acceptance.luau` 5/5 e `scripts/check-versions.py` (schema 2 · content 2 · sim 3 · hash
+`2489780106`).

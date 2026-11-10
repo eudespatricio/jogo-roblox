@@ -1,5 +1,5 @@
 --!strict
--- Liga o perfil da P0 (ProfileService + schema v1) aos jogadores do servidor.
+-- Liga o perfil (ProfileService + schema v2/contentVersion) aos jogadores do servidor.
 -- Studio usa ProfileStore.Mock por padrao; o atributo booleano `ProfileStoreMock` em
 -- ServerStorage forca o modo (true = Mock, false = DataStore real, precisa de API Services).
 -- Atributo `ProfileSelfTest = true` (so no Studio) roda o teste de sessao automatico:
@@ -13,6 +13,9 @@ local ServerStorage = game:GetService("ServerStorage")
 local ProfileService = require(script.Parent:WaitForChild("data"):WaitForChild("ProfileService"))
 local ProfileSchema = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("data"):WaitForChild("ProfileSchema")
+)
+local TrapCatalog = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("data"):WaitForChild("TrapCatalog")
 )
 
 local vendorFolder = ServerStorage:FindFirstChild("Vendor")
@@ -58,9 +61,10 @@ local service = ProfileService.new({
 	onStart = function(session, info)
 		print(
 			string.format(
-				"[perfil] carregado key=%s schema=v%d migrado=%s dias_desde_ultimo_acesso=%s",
+				"[perfil] carregado key=%s schema=v%d content=v%d migrado=%s dias_desde_ultimo_acesso=%s",
 				info.key,
 				session.Data.schemaVersion,
+				session.Data.contentVersion,
 				tostring(info.migrated),
 				tostring(info.daysSinceLastSeen)
 			)
@@ -139,10 +143,13 @@ local function runSelfTest(player: Player, key: string)
 		local jsonOk, jsonErr = ProfileSchema.isJsonSafe(data)
 		record(
 			"carregou e migrou",
-			data.schemaVersion == ProfileSchema.SCHEMA_VERSION and jsonOk,
+			data.schemaVersion == ProfileSchema.SCHEMA_VERSION
+				and data.contentVersion == TrapCatalog.CONTENT_VERSION
+				and jsonOk,
 			string.format(
-				"schema=v%d gold=%d sessions=%d json=%s",
+				"schema=v%d content=v%d gold=%d sessions=%d json=%s",
 				data.schemaVersion,
+				data.contentVersion,
 				goldBefore,
 				sessionsBefore,
 				tostring(jsonErr)
@@ -224,8 +231,27 @@ local function loadPlayer(player: Player)
 		return
 	end
 	session:AddUserId(player.UserId)
+	local contentOk, contentErr, contentChanged = TrapCatalog.ensureProfileContent(session.Data)
+	if not contentOk then
+		warn("[perfil] conteudo recusado (" .. tostring(contentErr) .. "); devolvendo o lock")
+		service.endSession(key)
+		player:Kick("Seu perfil usa uma versao de conteudo mais nova. Atualize o jogo.")
+		return
+	end
+	if contentChanged and type(session.Save) == "function" then
+		local saveOk, saveErr = pcall(function()
+			session:Save()
+		end)
+		if not saveOk then
+			warn("[perfil] save pos-migracao de conteudo falhou: " .. tostring(saveErr))
+		end
+	end
+	if contentChanged then
+		print(string.format("[perfil] conteudo migrado content=v%d", session.Data.contentVersion))
+	end
 	sessionsByPlayer[player] = session
 	player:SetAttribute("ProfileSchemaVersion", session.Data.schemaVersion)
+	player:SetAttribute("ProfileContentVersion", session.Data.contentVersion)
 	printStoreState()
 	maybeSelfTest(player, key)
 end

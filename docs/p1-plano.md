@@ -4,12 +4,11 @@
 > dia: motor determinístico, schema v1 + wrapper ProfileStore, contrato de analytics e teste de
 > sessão nos Modos A (Mock) e B (DataStore real), 8/8 nas duas execuções.
 > Este plano é o contrato da fase: ordem, critério de pronto por fatia e o que **não** entra.
-> **Execução (10/11/2026):** S1, S2, S3 e S3.3 fechadas; `simVersion = 2`, hash de referência
-> `2489780106` (seed 42). S3.3 fechou GAP-006/007 e preparou GAP-010; próxima janela é a S4; S5–S7
-> pendentes.
-> **GAP:** GAP-001..005 e GAP-008..010 — expansão de conteúdo ainda exige versão/migração;
-> GAP-006/007 fechados e GAP-010 preparado. Ver [`gaps.md`](gaps.md) e
-> [`pipeline-expansao.md`](pipeline-expansao.md).
+> **Execução (10/11/2026):** S1–S3.3 fechadas; **S3.4 (conteúdo e versões) com código verde** —
+> schema 2, content 2, `simVersion 3`, hash `2489780106` (seed 42); GAP-001/002/003/010 fechados.
+> GAP-009 (Modo B) pendente; próxima janela é a S4; S5–S7 pendentes.
+> **GAP:** GAP-004/005/008/009/011 — classe/taxonomia v2, P2, ProfileStore real e `BattleLog`.
+> Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
 > [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).
 
@@ -31,6 +30,7 @@ da S7 (contrato v1 já validado no CI). Sem número, a fase não fecha.
 | S2 | **Motor com loadout 5×5/N=5** | `Battle.new({ seed, simVersion, wall, wave })` com armadilhas por célula (N=5 ativas, colocação livre nas 25), 5 lanes; `Core.Run(seed)` continua como atalho de loadout padrão para os harnesses | `simVersion` = **2** e registrada na spec; hash de referência novo; `sim/invariants.luau` e `sim/acceptance.luau` re-ancorados (1.000 seeds × 3 estáveis); `sim/analytics-contract.luau` continua verde |
 | S3 | **Muralha e economia** — **feito 09/11/2026** | `src/shared/data/TrapCatalog.luau` + `src/server/walls/WallService.luau` (colocar/remover/upgrade com validação server-side: célula, N=5, ouro, desbloqueio; perfil incompatível é recusado); custos em [`economia-muralha.md`](economia-muralha.md), persistindo em `Profile.Data.wall.cells` / `gold` | célula inválida, 6ª armadilha e ouro insuficiente recusados; eventos `trap_placed`/`gold_spent`/`gold_earned` válidos — **12/12 na S3** (13/13 após a S3.3) |
 | S3.3 | **Gaps antes da S4** — **feito 10/11/2026** | `WallService.toBattleWall` (valida/ordena) + `scripts/check-versions.py`/`docs/versoes.md` | helper 13/13; gate falha na divergência; GAP-010 preparado |
+| S3.4 | **Conteúdo e versões** — **código verde 10/11/2026** | `contentVersion` no schema v2, `oil → tar`, `catapult` (5º tipo), `SIM_VERSION 3` e migração neutra | contratos 20/13/7; GAP-001/002/003/010 fechados; GAP-009 pendente |
 | S4 | **Cena 5×5 + build** | grid 5×5 no Workspace, câmera fixa, UI de build (colocar 5 em 25) | build completo em ≤ 30 s; nenhuma armadilha fora da célula; 45+ FPS em mobile |
 | S5 | **Drop-in de 5 s** | cena de abertura com botão DEFENDER e derrota roteirizada se demorar | `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥ 60% |
 | S6 | **Raid assíncrona + replay** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`), replay por seed de 8 s | `battle_finished.result_hash` igual ao replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence` |
@@ -45,15 +45,15 @@ Regras de sequência:
 ## 3. Decisões herdadas (não reabrir)
 
 Q2 = 5×5, N=5, colocação livre · Q1 = apagar o legado com tag `legacy-coins` · store do perfil =
-`MuralhaProfile_v1` (schema v1, migração 0→1) · taxonomia v1 congelada (`schema_version = 1`) ·
+`MuralhaProfile_v1` (schema v2 com `contentVersion`, migração 0→2/1→2) · taxonomia v1 congelada (`schema_version = 1`) ·
 ProfileStore vendorizado, server-only, sem editar · monetização base 2% × US$ 2, gate ARPDAU líquido
 US$ 0,005 · servidor autoritativo + replay por seed.
 
 ## 4. Riscos e armadilhas
 
 1. **O motor da P0 era o recorte do PoC** — a S2 trocou por loadout por célula (5×5/N=5), com
-   `simVersion 2` e hash `2489780106`. Não "ajustar" o hash antigo (`668061367`) nem thresholds
-   sem registro; replay v1 é recusado.
+   `simVersion 2`; a S3.4 subiu para `simVersion 3` (5º tipo) e manteve o hash `2489780106`. Não
+   "ajustar" o hash antigo (`668061367`) nem thresholds sem registro; replay v1/v2 é recusado.
 2. **Analytics fora do hash**: `battle_finished` é montado do `BattleResult` **depois** do hash;
    `sim_version` do evento acompanha o motor.
 3. **Idempotência de recompensa** por `battle_id` (chave do `BattleLog`); cliente nunca decide

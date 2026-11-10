@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas — S3.3 fechou GAP-006/007 e
-preparou GAP-010. Próxima janela: S4 (cena 5×5/build); plano em `docs/p1-plano.md`, teste de 3
-semanas em paralelo.
+**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 (conteúdo e versões) com
+código verde e GAP-009 pendente no Studio**. Próxima janela: S4 (cena 5×5/build); plano em
+`docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -20,12 +20,12 @@ semanas em paralelo.
 | tick / cap | 0,05s · 1.200 ticks (60s) |
 | estado | 100% inteiro (MILLI = 1000) |
 | custo por batalha | ~1,4 ms (~710 batalhas/s) |
-| determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 2` |
+| determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 19/19 · analytics 16/16 · muralha 13/13 (`sim/*-contract.luau`) |
-| versões | schema 1 · content 1 · sim 2 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
-| perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 (`sim/*-contract.luau`) |
+| versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
+| perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
 
@@ -36,11 +36,11 @@ semanas em paralelo.
 - Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
   `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
-- Motor: `src/shared/sim/core.luau` (v2, loadout 5×5/N=5) + harnesses em `sim/`.
-- Muralha: `TrapCatalog.luau` + `WallService.luau` (`toBattleWall`) + `sim/walls-contract.luau`
-  (S3/S3.3, 13/13); custos/desbloqueio em `docs/economia-muralha.md`.
-- Dados: `src/shared/data/ProfileSchema.luau` + `src/server/data/ProfileService.luau` +
-  `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
+- Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
+- Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
+  `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
+- Dados: `ProfileSchema.luau` (v2/contentVersion) + `ProfileService.luau` +
+  `ProfileBoot.server.luau` (migração de conteúdo) + `sim/profile-contract.luau` (20/20).
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
   taxonomia v1 aprovada (`docs/taxonomia-analytics.md`).
 - Tooling: Rokit + CLI/GUI; CI ativo; doctor; gate de versões (`docs/versoes.md`); ProfileStore vendorizado.
@@ -53,7 +53,7 @@ semanas em paralelo.
 - **P1** (2–3 semanas): S4 cena 5×5/build → S5 drop-in → S6 raid/replay → S7 telemetria. Saída:
   70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
 - Cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
-- GAPs abertos: GAP-001..005 e GAP-008..010 (GAP-006/007 fechados; GAP-010 preparado); ver `docs/gaps.md`.
+- GAPs abertos: GAP-004/005/008/009/011 (001/002/003/010 fechados; 009 depende do Modo B); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
@@ -66,8 +66,8 @@ semanas em paralelo.
 
 ## Próximo passo
 
-1. S4: cena 5×5/build; depois S5–S7 (`docs/p1-plano.md`).
-2. GAP-010 fecha no 1º schema v2; GAP-001/002/003/009 antes de conteúdo em produção.
+1. GAP-009: rodar o Modo B do schema v2 no Studio e registrar a evidência.
+2. S4: cena 5×5/build; depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
 
 ## Como verificar o estado em 1 minuto
 
