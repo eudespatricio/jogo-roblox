@@ -112,8 +112,11 @@ local function isValidCell(cell: any, gridWidth: number, gridHeight: number): bo
 	if rowText == nil or colText == nil then
 		return false
 	end
-	local row = tonumber(rowText) :: number
-	local col = tonumber(colText) :: number
+	local row = tonumber(rowText)
+	local col = tonumber(colText)
+	if row == nil or col == nil then
+		return false
+	end
 	if row < 1 or row > gridHeight or col < 1 or col > gridWidth then
 		return false
 	end
@@ -180,6 +183,7 @@ function WallService.new(options: Options): Controller
 	local trapLimit = math.min(profile.wall.activeTrapLimit, schema.ACTIVE_TRAP_LIMIT)
 
 	local emit = options.emit
+	assert(emit == nil or type(emit) == "function", "WallService.new: emit invalido")
 
 	local function publish(events: { EventSpec })
 		if emit == nil then
