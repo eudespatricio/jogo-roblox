@@ -179,12 +179,13 @@ nada de texto livre; `PolicyService`/idade só como booleano.
 
 ---
 
-## 6. Implementação (P0)
+## 6. Implementação (P0/S3)
 
 | Artefato | Papel | Status (09/11/2026) |
 |---|---|---|
 | `src/shared/analytics/AnalyticsTypes.luau` | envelope, catálogo tipado, enums, limites, anti-PII, `newEvent`/batalha | **feito** |
 | `sim/analytics-contract.luau` | validador headless: campos, enums, limites, PII, integração com o motor | **feito** |
+| `sim/walls-contract.luau` | valida `trap_placed`/`gold_spent`/`gold_earned` da S3 | **feito (S3)** |
 | `src/server/analytics/AnalyticsService.luau` | `emit`, sinks, lote, rate limit, idempotência | **P1** (não entra na P0) |
 | `src/shared/sim/core.luau` | motor v2 (5×5/N=5); `BattleResult` carrega `seed`, `simVersion` e `hash` | **feito** |
 | CI | `check.sh` roda o contrato junto dos invariantes; hash `2489780106` e `sim_version 2` obrigatórios | **feito** |

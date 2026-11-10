@@ -8,8 +8,9 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 > **Status: P1 em execução (09/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
 > tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
 > determinístico com grade **5×5**, **N=5** ativas e colocação livre; `simVersion 2` e hash de
-> referência `2489780106`. Próxima fatia: S3 (muralha/economia). O teste de produto de 3 semanas
-> roda em paralelo ([plano da P1](docs/p1-plano.md)).
+> referência `2489780106`. **S3** concluída: muralha/economia server-side, catálogo em
+> [`docs/economia-muralha.md`](docs/economia-muralha.md). Próxima fatia: S4 (cena + build). O teste
+> de produto de 3 semanas roda em paralelo ([plano da P1](docs/p1-plano.md)).
 
 ## Comece por aqui
 
@@ -25,6 +26,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/gdd-muralha.md`](docs/gdd-muralha.md) — loop, drop-in de 5s, modos, economia, fases.
 - [`docs/spec-motor-deterministico.md`](docs/spec-motor-deterministico.md) — motor, replay, clipe, anti-cheat.
 - [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S7, critérios de pronto e riscos.
+- [`docs/economia-muralha.md`](docs/economia-muralha.md) — catálogo, custos, desbloqueio e eventos da S3.
 - [`docs/padroes-engenharia.md`](docs/padroes-engenharia.md) — regras com fonte oficial.
 - [`docs/pesquisa-jogadores.md`](docs/pesquisa-jogadores.md) — reclamações, pedidos, 10 regras.
 - [`docs/pesquisa-tendencias-2026.md`](docs/pesquisa-tendencias-2026.md) — mercado e gêneros.
@@ -39,11 +41,13 @@ sim/                     harnesses do motor (Luau puro, roda sem Roblox)
   acceptance.luau        P1: 1.000 seeds × 3 (hash 2489780106)
   profile-contract.luau  contrato do schema v1 e da sessão do perfil
   analytics-contract.luau contrato de analytics v1
+  walls-contract.luau    contrato da muralha/economia (S3)
   fixtures/              fixture da migração 0→1 do perfil
 src/shared/sim/core.luau motor v2 (RNG, mul32/add32, Battle 5×5/N=5)
 src/shared/data/         schema v1 do perfil (template, migração, validação)
 src/shared/analytics/    contrato de analytics (envelope, catálogo, anti-PII)
 src/server/data/         sessão sobre o ProfileStore vendorizado
+src/server/walls/        WallService: colocar/remover/upgrade, ouro, desbloqueio
 src/server/ProfileBoot.server.luau  ligação com Players + self-test no Studio
 src/server/Main.server.luau  stub de entrada do servidor (S1)
 src/world/               Baseplate/SpawnLocation da cena
@@ -67,6 +71,7 @@ luau sim/invariants.luau               # oráculo do motor (12 checagens)
 luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v2)
 luau sim/profile-contract.luau         # schema v1 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1
+luau sim/walls-contract.luau           # muralha/economia (S3)
 luau sim/poc.luau                      # benchmark e curva de balanço
 
 rojo serve                             # Studio: localhost:34872 (WSL)

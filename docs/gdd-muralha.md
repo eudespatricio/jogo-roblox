@@ -130,6 +130,7 @@ Detalhes técnicos e limitações em [`spec-motor-deterministico.md`](spec-motor
 
 **Ouro:** ganho em raids e defesas; nunca comprado diretamente com Robux.
 **Blueprint:** receita de layout; pode ser compartilhado com amigo (viral).
+> Custos, desbloqueio e eventos da P1: [`economia-muralha.md`](economia-muralha.md).
 
 ### Curva alvo (primeiros 7 dias)
 - Dia 1: primeira sessão rende 3 raids e desbloqueia a 2ª armadilha.

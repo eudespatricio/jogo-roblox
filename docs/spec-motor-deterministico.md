@@ -202,7 +202,7 @@ Tempo real simultâneo fica fora do MVP: o custo de netcode não se paga antes d
 |---|---|
 | cliente manda dano/recompensa | servidor ignora; só calcula |
 | duplicar recompensa | `battleId` como chave de idempotência no DataStore |
-| colocar armadilha sem ouro | validação server-side de ouro, slot, desbloqueio |
+| colocar armadilha sem ouro | validação server-side de ouro, N=5, célula e desbloqueio (`WallService`; ver [economia-muralha.md](economia-muralha.md)) |
 | spam de batalha | rate limit: 1 batalha a cada 3s por jogador |
 | replay adulterado | `resultHash` comparado; divergência não paga |
 | farm de conta | recompensa por cerco limitada a 3/dia + detecção de padrão |
@@ -387,6 +387,11 @@ no `BindToClose` (o lock só é liberado depois do save — reabrir sessão exig
 envelope e 31 eventos da [taxonomia](taxonomia-analytics.md) validados no CI (obrigatoriedade,
 enum, limites, UUID/hash de 32 hex, anti-PII). Mudar o catálogo exige atualizar fixture e contrato
 na mesma mudança. Na P0 `simVersion` era **1**; a S2 subiu para **2** com o loadout 5×5/N=5 (§15).
+A S3 não altera esta matemática: `simVersion 2` e hash `2489780106` continuam.
+
+**Muralha (S3)** — `src/server/walls/WallService.luau` valida célula, N=5, ouro e desbloqueio,
+muta `Profile.Data.wall.cells`/`gold` e devolve eventos; catálogo em
+[`economia-muralha.md`](economia-muralha.md).
 
 ---
 

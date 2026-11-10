@@ -16,7 +16,7 @@ echo "== stylua =="
 stylua --check sim src
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/server/data src/server/Main.server.luau
+luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/server/data src/server/walls src/server/Main.server.luau
 
 echo "== invariantes =="
 luau sim/invariants.luau
@@ -29,6 +29,9 @@ luau sim/profile-contract.luau
 
 echo "== contrato de analytics =="
 luau sim/analytics-contract.luau
+
+echo "== contrato de muralha (S3) =="
+luau sim/walls-contract.luau
 
 echo "== benchmark (poc) =="
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="

@@ -10,12 +10,13 @@ Leia nesta ordem, antes de qualquer ação:
 ## Regras duras
 
 - **P2+ não começa sem autorização explícita do diretor.** A P1 foi autorizada em 09/11/2026 e está
-  em execução (S1/S2 fechadas); o plano está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
+  em execução (S1–S3 fechadas); o plano está em `docs/p1-plano.md` (S1–S7, critérios de pronto).
 - **`src/` é produção.** O legado de moedas foi apagado na S1 (09/11/2026) e está preservado na
   tag anotada `legacy-coins` (commit `b07b4c5`). Não ressuscite `CoinService`/`DataService`/`Config`.
 - Depois de editar `src/shared/sim/core.luau`, rode `sim/invariants.luau` e `sim/acceptance.luau`.
   Se quebrar, conserte antes de seguir.
 - Mudou a matemática da simulação? Suba `simVersion` e registre em `docs/spec-motor-deterministico.md`.
+- Mudou custo/desbloqueio da muralha? Atualize `docs/economia-muralha.md` e `sim/walls-contract.luau`.
 - `bit32` só recebe `[0, 2^32)`: use `add32`/`mul32`, nunca `band` em double grande.
 - Contexto residente tem teto: ESTADO 80, MAPA 60, REJEITADOS 40 linhas. Rode `--check`.
 
@@ -30,6 +31,7 @@ luau sim/invariants.luau                # oráculo (12 checagens)
 luau sim/acceptance.luau                # P1: 1.000 seeds × 3
 luau sim/profile-contract.luau          # schema v1 + sessão do perfil
 luau sim/analytics-contract.luau        # contrato de analytics v1
+luau sim/walls-contract.luau            # muralha/economia (S3)
 luau sim/poc.luau                       # benchmark do motor
 
 python3 skills/context-recovery/scan_repo.py --root . --check   # tetos do contexto

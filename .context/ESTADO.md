@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P1 em execução (autorizada em 09/11/2026).** S1 fechada (legado de moedas apagado, tag anotada
-`legacy-coins`) e S2 fechada (motor 5×5/N=5, `simVersion 2`). Próxima fatia: S3 (muralha/economia,
-servidor). Plano e critérios em `docs/p1-plano.md`; o teste de produto de 3 semanas roda em paralelo.
+**P1 em execução (autorizada em 09/11/2026).** S1 fechada (legado apagado, tag `legacy-coins`),
+S2 fechada (motor 5×5/N=5, `simVersion 2`) e S3 fechada (muralha/economia server-side). Próxima
+fatia: S4 (cena 5×5 + build). Plano em `docs/p1-plano.md`; teste de 3 semanas em paralelo.
 
 ## Números atuais (09/11/2026)
 
@@ -23,7 +23,7 @@ servidor). Plano e critérios em `docs/p1-plano.md`; o teste de produto de 3 sem
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 2` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
+| contratos | perfil 19/19 · analytics 16/16 · muralha 11/11 (`sim/*-contract.luau`) |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
@@ -36,6 +36,8 @@ servidor). Plano e critérios em `docs/p1-plano.md`; o teste de produto de 3 sem
   `docs/pesquisa-grade-e-prototipo.md`.
 - Engenharia: `docs/padroes-engenharia.md` (regras com fonte oficial).
 - Motor: `src/shared/sim/core.luau` (v2, loadout 5×5/N=5) + harnesses em `sim/`.
+- Muralha: `src/server/walls/WallService.luau` + `sim/walls-contract.luau` (S3);
+  custos/desbloqueio em `docs/economia-muralha.md`.
 - Dados: `src/shared/data/ProfileSchema.luau` + `src/server/data/ProfileService.luau` +
   `src/server/ProfileBoot.server.luau` + `sim/profile-contract.luau`.
 - Analytics: `src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`;
@@ -46,9 +48,9 @@ servidor). Plano e critérios em `docs/p1-plano.md`; o teste de produto de 3 sem
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S3 muralha/economia → S4 cena 5×5/build → S5 drop-in → S6 raid/replay →
-  S7 telemetria. Saída: 70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- `src/server/walls/`, cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
+- **P1** (2–3 semanas): S4 cena 5×5/build → S5 drop-in → S6 raid/replay → S7 telemetria. Saída:
+  70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- Cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
@@ -61,8 +63,8 @@ servidor). Plano e critérios em `docs/p1-plano.md`; o teste de produto de 3 sem
 
 ## Próximo passo
 
-1. S3: `src/server/walls/` (colocar/remover/upgrade) com validação de célula, N=5, ouro e persistência.
-2. S4–S7: cena/build, drop-in, raid/replay e telemetria (`docs/p1-plano.md`).
+1. S4: cena 5×5 no Workspace, câmera fixa e UI de build (colocar 5 em 25) — `docs/p1-plano.md`.
+2. S5–S7: drop-in, raid/replay e telemetria.
 
 ## Como verificar o estado em 1 minuto
 

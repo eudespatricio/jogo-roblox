@@ -1,6 +1,6 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 09/11/2026 · **Status:** P1 em execução — **S1 e S2 fechadas**; próxima fatia é a S3 ·
+**Data:** 09/11/2026 · **Status:** P1 em execução — **S1, S2 e S3 fechadas**; próxima fatia é a S4 ·
 base `main`. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 ---
@@ -42,8 +42,15 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     inválido); `sim/acceptance.luau` em 1.000 seeds × 3: 1.000 hashes distintos, **68,7%** de vitória
     do defensor, ~1,4 ms/batalha; `sim/analytics-contract.luau` verde com hash e `sim_version 2`;
     `sim/profile-contract.luau` segue 19/19.
-- Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 73/80 · MAPA 58/60 ·
-  REJEITADOS 18/40**.
+- **S3 fechada — muralha/economia:**
+  - `src/server/walls/WallService.luau`: colocar/remover/upgrade com validação server-side de
+    célula, N=5, ouro e desbloqueio por liga; muta `Profile.Data.wall.cells`/`gold`.
+  - catálogo de 4 tipos (espelha o motor v2) em `docs/economia-muralha.md`; upgrade até 3 níveis;
+    remover não devolve ouro (taxonomia v1); eventos devolvidos como `{name, props}`.
+  - `sim/walls-contract.luau` **11/11**: catálogo, célula, N=5, ouro, desbloqueio, upgrade,
+    remove, `creditGold`, snapshot e eventos válidos.
+- Gate atual: `bash scripts/check.sh` passa; contexto em **ESTADO 75/80 · MAPA 59/60 ·
+  REJEITADOS 19/40**.
 
 ---
 
@@ -58,11 +65,12 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 | determinismo | hash `2489780106` (seed 42, 3 execuções) |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4 s/1.000 |
 | invariantes | **12/12** (`sim/invariants.luau`) |
-| contratos P0 | perfil 19/19 · analytics 16/16 (`sim/*-contract.luau`) |
+| contratos | perfil 19/19 · analytics 16/16 · muralha 11/11 (`sim/*-contract.luau`) |
+| muralha/economia | catálogo 4 tipos · N=5 · sem refund · `docs/economia-muralha.md` |
 | perfil | schema v1 · store `MuralhaProfile_v1` · migração 0→1 com fixture |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
 | teste de sessão | Modo A (Mock) 8/8 + Modo B (DataStore real) 8/8 · 09/11/2026 |
-| contexto | ESTADO 73/80 · MAPA 58/60 · REJEITADOS 18/40 |
+| contexto | ESTADO 75/80 · MAPA 59/60 · REJEITADOS 19/40 |
 
 ---
 
@@ -86,8 +94,8 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 |---|---|---|---|
 | S1 | Q1 — apagar o legado | tag antes; `check.sh`/CI verdes; produção intacta; docs atualizados | **feito 09/11/2026** |
 | S2 | Motor 5×5/N=5 | `simVersion 2` + hash novo + invariants/acceptance re-ancorados | **feito 09/11/2026** |
-| S3 | Muralha e economia | célula/6ª armadilha/ouro insuficiente recusados; perfil persistido; eventos válidos | **próximo** |
-| S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | pendente |
+| S3 | Muralha e economia | célula/6ª armadilha/ouro insuficiente recusados; perfil persistido; eventos válidos | **feito 09/11/2026** |
+| S4 | Cena 5×5 + build | build ≤ 30 s; 45+ FPS mobile | **próximo** |
 | S5 | Drop-in de 5 s | `dropin_pressed` ≥ 60% | pendente |
 | S6 | Raid + replay 8 s | `result_hash` igual ao servidor; recompensa idempotente por `battle_id` | pendente |
 | S7 | Telemetria | contrato v1 valida 100%; nenhum evento altera `BattleResult` | pendente |
@@ -95,9 +103,8 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
 Saída da P1 (GDD §10): **70% de primeira vitória em menos de 60 s**, medido com
 `first_win_seconds` da S7.
 
-**Próximo passo:** S3 — `src/server/walls/` (colocar/remover/upgrade) com validação server-side de
-célula, N=5, ouro e desbloqueio, persistindo em `Profile.Data.wall.cells` / `gold`. Depois S4–S7 na
-ordem do plano.
+**Próximo passo:** S4 — cena 5×5 no Workspace, câmera fixa e UI de build (colocar 5 em 25), com
+build ≤ 30 s e 45+ FPS mobile. Depois S5–S7 na ordem do plano.
 
 ---
 
@@ -144,6 +151,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 6. Contexto residente tem teto (80/60/40); `scan_repo.py --check` falha se estourar.
 7. Invariante não vira markdown: vira teste ou vira pergunta.
 8. Não reabrir `REJEITADOS.md` sem a condição objetiva listada.
+9. Custo/desbloqueio da muralha: fonte em `docs/economia-muralha.md`; mudança exige contrato.
 
 ---
 
@@ -153,7 +161,7 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
    o protótipo. Se algum dia recriar a tag, faça no HEAD **antes** de apagar qualquer arquivo.
 2. **A S2 mudou a matemática de propósito.** O hash `668061367` **não é mais o alvo**; o novo é
    `2489780106`, com `simVersion 2`. Não "ajustar" o hash antigo nem os thresholds sem registro.
-3. **Contexto tem teto.** ESTADO está em 73/80, MAPA em 58/60, REJEITADOS em 18/40. Enxugue uma
+3. **Contexto tem teto.** ESTADO está em 75/80, MAPA em 59/60, REJEITADOS em 19/40. Enxugue uma
    linha antes de acrescentar outra.
 
 ---
@@ -180,6 +188,8 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
     loadout por célula (5×5/N=5); o hash antigo e os números da P0 são histórico.
 12. **A tag `legacy-coins` pré-existente era leve e apontava para `1f241b0`.** Foi refeita como
     anotada no HEAD `b07b4c5` e publicada antes da deleção; o commit antigo continua no histórico.
+13. **Remover armadilha não devolve ouro.** A taxonomia v1 não tem source de refund;
+    `gold_earned` só aceita raid/defense/daily. Reembolso exigiria taxonomia v2.
 
 ---
 
@@ -187,10 +197,11 @@ revisto. Motor e camada de dados continuam válidos para qualquer versão.
 
 Cole na nova sessão:
 
-> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1 e S2 fechadas; S3 é a
+> Você está no repositório `jogo-roblox` (MURALHA — P1 em execução; S1, S2 e S3 fechadas; S4 é a
 > próxima). Leia `AGENTS.md`, `.context/ESTADO.md`, `.context/MAPA.md`, `CONTINUAR.md` e
 > `docs/p1-plano.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
 > `bash scripts/check.sh` (devem passar). Não edite `vendor/ProfileStore.luau`; Q2 = 5×5, N=5,
 > colocação livre; taxonomia v1 congelada. O motor está em `simVersion 2`, hash de referência
-> `2489780106` (seed 42) — o `668061367` da v1 está aposentado. O teste de produto de 3 semanas
-> roda em paralelo. Comece pela S3 (muralha/economia) e mantenha o contexto dentro do teto.
+> `2489780106` (seed 42) — o `668061367` da v1 está aposentado. A muralha/economia está em
+> `src/server/walls/WallService.luau` + `docs/economia-muralha.md` (sem refund). O teste de produto
+> de 3 semanas roda em paralelo. Comece pela S4 (cena/build) e mantenha o contexto dentro do teto.

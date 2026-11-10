@@ -7,7 +7,7 @@
 | `.context/ESTADO.md` | fase, números, congelados | **sempre, primeiro** |
 | `.context/MAPA.md` | este mapa | antes de navegar no repo |
 | `.context/REJEITADOS.md` | ideias descartadas e quando reabrem | antes de propor arquitetura |
-| `docs/gdd-muralha.md` | design: loop, drop-in, modos, economia, fases | decisão de produto |
+| `docs/gdd-muralha.md` · `docs/economia-muralha.md` | design, catálogo, custos e desbloqueio | decisão de produto/economia |
 | `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
 | `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
 | `docs/p1-plano.md` | P1: fatias S1–S7, critérios de pronto, riscos | **início da P1** |
@@ -31,8 +31,9 @@
 | `src/shared/data/ProfileSchema.luau` · `sim/profile-contract.luau` | schema v1: template, validação, migração 0→1, JSON-safe | mexer em dado de jogador |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/AnalyticsTypes.luau` · `sim/analytics-contract.luau` | contrato de analytics v1: envelope, catálogo, anti-PII | emitir/validar evento |
+| `src/server/walls/WallService.luau` · `sim/walls-contract.luau` | S3: colocar/remover/upgrade, ouro, desbloqueio + contrato | mexer em muralha/economia |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
-| `src/` | produção: `shared/{sim,data,analytics}`, `server/{data,ProfileBoot,Main stub}`, `world/` | navegar no código |
+| `src/` | produção: `shared/{sim,data,analytics}`, `server/{data,walls,ProfileBoot,Main stub}`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
 | `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
 | `default.project.json` | mapeamento Rojo (produção + vendor + world) | build do lugar |
