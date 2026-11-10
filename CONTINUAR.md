@@ -98,8 +98,9 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     `A HORDA PASSOU` + `TENTAR DE NOVO`; `BuildClient` espera `DropInDone`.
   - Funil: `[analytics] dropin_shown/dropin_pressed` como props validadas; envelope/sink é a S7.
     O clear credita **+3 ouro** (`WallService.creditGold(3, "defense")`) antes de liberar o build.
-  - Runtime 720×1280 validado: timeout (10,1 s, sem pressed/ouro) e sucesso (`pressed=true`,
-    `+3 ouro gold=3`, `OURO 3`, build em 4,0 s). Falta 375×812, FPS focado e a taxa do teste.
+  - Runtime validado: 720×1280 timeout (10,1 s, sem pressed/ouro) e sucesso (`pressed=true`,
+    `+3 ouro gold=3`, build em 4,0 s); 375×812 pós-clear com `OURO 3` e FPS 60. Falta o print do
+    DEFENDER ativo (horda/portão) e o FPS do drop-in; taxa ≥60% é do teste de produto.
 - Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 

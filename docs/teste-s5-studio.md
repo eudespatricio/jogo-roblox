@@ -128,5 +128,7 @@ rojo build default.project.json -o build/place.rbxl
   pressed=true`; `[dropin] onda limpa em 5.4s`; `[analytics] gold_earned amount=3 source=defense`;
   `[dropin] +3 ouro gold=3`; `[build] cliente pronto em 4.0s`; topo **OURO 3** e `ONDA LIMPA`.
 - O +3 do commit `5aee505` está confirmado (`WallService.creditGold(3, "defense")`, contrato 8/8).
-- **Falta:** print em 375×812 com OURO 3, FPS focado do drop-in e a taxa `dropin_pressed/
-  dropin_shown` do teste de produto (≥60%). S5 continua **aberta**.
+- **375×812 (pós-clear):** topo **OURO 3**; HUD `FPS 60 · T 346.1s · UI 4.0s`; build 5×5 e
+  painel inferiores sem sobreposição.
+- **Falta:** print do **DEFENDER ativo** (antes do press, com horda/portão) e FPS do drop-in; a
+  taxa `dropin_pressed/dropin_shown` (≥60%) é do teste de produto. S5 continua **aberta**.
