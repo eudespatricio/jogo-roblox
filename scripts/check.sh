@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gate unico do projeto: build + formato + tipos + oraculo + benchmark + contexto.
+# Gate unico do projeto: build + formato + tipos + oraculo + contratos + benchmark + contexto.
 # Uso: bash scripts/check.sh   (ou ./scripts/check.sh)
 set -euo pipefail
 
@@ -13,16 +13,22 @@ echo "== rojo build =="
 rojo build default.project.json -o build/place.rbxl
 
 echo "== stylua =="
-stylua --check sim src/shared/sim
+stylua --check sim src/shared/sim src/shared/data src/shared/analytics src/server/data src/server/ProfileBoot.server.luau
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim src/shared/sim
+luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics
 
 echo "== invariantes =="
 luau sim/invariants.luau
 
 echo "== P0 acceptance =="
 luau sim/acceptance.luau
+
+echo "== contrato de perfil (schema v1 + sessao) =="
+luau sim/profile-contract.luau
+
+echo "== contrato de analytics =="
+luau sim/analytics-contract.luau
 
 echo "== benchmark (poc) =="
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="

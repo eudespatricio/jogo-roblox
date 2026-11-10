@@ -11,6 +11,9 @@ Core.MILLI = 1000
 Core.TICK_HZ = 20
 Core.MAX_TICKS = 1200
 Core.DEFAULT_POWER_PCT = 460
+-- Versao da matematica do motor. Muda SO quando o resultado muda; replay antigo
+-- nao paga recompensa. Metadado: nao entra no hash nem no estado.
+Core.SIM_VERSION = 1
 
 -- ---------------------------------------------------------------- aritmetica segura
 local function add32(a, b)
@@ -221,6 +224,8 @@ function Battle:Result()
 		killed = self.killed,
 		leaked = self.leaked,
 		spawned = self.spawned,
+		seed = self.seed,
+		simVersion = Core.SIM_VERSION,
 		hash = self.hash,
 	}
 end
