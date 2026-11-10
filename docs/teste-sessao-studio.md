@@ -1,8 +1,8 @@
 # Teste de sessão no Studio (P0)
+
 > **Atualização (S1, 09/11/2026):** o protótipo de moedas foi apagado (tag `legacy-coins`). O lugar
 > agora tem `ProfileBoot` + o stub `Main`; as menções a `Main`/`DataService`/asset legado nas
 > evidências abaixo são **históricas** (antes da S1).
-
 
 > **Status:** **Modo A (Mock) e Modo B (DataStore real) executados e aprovados em
 > 09/11/2026 — 8/8 nas duas execuções** (evidência na §8).
