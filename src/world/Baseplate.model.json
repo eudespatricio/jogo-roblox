@@ -14,11 +14,11 @@
     "Anchored": true,
     "Locked": true,
     "Color": [
-      0.18,
-      0.19,
-      0.21
+      0.4,
+      0.39,
+      0.36
     ],
-    "Material": "Slate",
+    "Material": "SmoothPlastic",
     "TopSurface": "Smooth",
     "BottomSurface": "Smooth",
     "LeftSurface": "Smooth",

@@ -45,9 +45,9 @@ if camera == nil then
 	camera = Workspace:WaitForChild("Camera") :: Camera
 end
 camera.CameraType = Enum.CameraType.Scriptable
-local BASE_CAMERA = CFrame.lookAt(ORIGIN + Vector3.new(46, 26, 44), ORIGIN + Vector3.new(2, 3, 0))
+local BASE_CAMERA = CFrame.lookAt(ORIGIN + Vector3.new(40, 22, 40), ORIGIN + Vector3.new(2, 2, 0))
 camera.CFrame = BASE_CAMERA
-camera.FieldOfView = 40
+camera.FieldOfView = 44
 
 VisualSetup.apply()
 

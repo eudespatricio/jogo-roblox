@@ -254,8 +254,8 @@ fechados; GAP-004/005/008 abertos. **Base:** `main` pós-S8; hash `2489780106`; 
   diorama 5×5, 5 armadilhas, 3 silhuetas, UI de cartões e replay no mesmo kit. HUD de debug nasce
   oculto (F3); o `BuildGrid` do servidor ficou invisível e o cliente desenha. Contrato visual
   **8/8**. Smoke de runtime no Studio (`tools/s8-smoke.luau` via `run-in-roblox`) passou em arena/
-  traps/horda/UI/VFX/áudio; prints/FPS são o QA visual manual em
-  [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md).
+  traps/horda/UI/VFX/áudio; Play Solo desktop validou o cliente real e ajustou piso/luz/horda.
+  Faltam prints 375×812/720×1280 e FPS no roteiro [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md).
 - **Fonte da parede:** use só `WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, hp)` para
   qualquer batalha; nunca monte `wall.traps` à mão. Perfil inválido devolve `nil + erro` e não entra no
   `Battle.new`; o boot já rodou `TrapCatalog.ensureProfileContent`.

@@ -209,7 +209,14 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame): any?
 	end
 	model.Parent = parent
 	model:PivotTo(cframe)
-	model:ScaleTo(spec.scale)
+	model:ScaleTo(spec.scale * 1.8)
+	-- Garante silhueta solida: alguns caminhos de ScaleTo/PivotTo deixam partes com
+	-- transparencia herdada; o modelo e cosmetico e precisa ler no primeiro frame.
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant.Transparency = 0
+		end
+	end
 	return {
 		model = model,
 		base = cframe,

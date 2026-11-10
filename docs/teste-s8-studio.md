@@ -2,8 +2,10 @@
 
 > **Status:** **S8 implementada em 10/11/2026.** O build, o contrato visual **8/8**, o `check.sh` e o
 > **smoke de runtime no Studio** (`tools/s8-smoke.luau` via `run-in-roblox`: arena, 5 traps, 3 hordas,
-> UI, VFX e áudio) passaram. A validação **visual** (prints/FPS) é manual e ainda não foi executada por
-> um humano; este roteiro fecha essa evidência. Sem mudança de schema/content/sim/taxonomia.
+> UI, VFX e áudio) passaram. Uma inspeção **Play Solo desktop** já rodou o cliente real, encontrou
+> piso escuro/horda fantasma e aplicou os ajustes de material/luz/escala. Ainda faltam **375×812,
+> 720×1280 e FPS** no Studio; este roteiro fecha essa evidência. Sem mudança de
+> schema/content/sim/taxonomia.
 
 **Base:** `main` pós-S8 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
 Plano: [`s8-plano-visual.md`](s8-plano-visual.md).
@@ -64,6 +66,20 @@ Plano: [`s8-plano-visual.md`](s8-plano-visual.md).
 - [ ] `luau sim/analytics-contract.luau` → 34/34.
 - [ ] `bash scripts/check.sh` → RC=0.
 - [ ] Nenhuma mudança de `simVersion`/hash/schema/content; S4/S5/S6/S7 continuam passando.
+
+## 6. Inspeção Play Solo desktop (10/11/2026)
+
+O lugar foi aberto em um Studio novo e rodado com **Play Solo** (cliente real, sem run-in-roblox):
+
+- o cliente carregou a cena de abertura, a barra MURALHA, o DEFENDER e o timeout com
+  `A HORDA PASSOU`/`TENTAR DE NOVO`;
+- a primeira inspeção pegou **piso escuro**, **horda em outline fantasma** e câmera baixa demais;
+- ajustes: baseplate/chão em `SmoothPlastic` claro, luz/ambiente mais altos, horda sólida e 1,8× maior,
+  câmera mais perto do portão, lane inlays em `Neon`;
+- a segunda inspeção confirmou horda sólida e cena legível em desktop. Prints de trabalho ficam em
+  `art/renders/` (ignorados pelo git).
+
+Ainda **não** é o QA de aceite: faltam 375×812/720×1280 e medição de FPS/draw calls.
 
 ## 6. Smoke de runtime executado (Studio, 10/11/2026)
 

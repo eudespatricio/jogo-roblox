@@ -40,19 +40,19 @@
       "$properties": {
         "Technology": "ShadowMap",
         "ClockTime": 16.4,
-        "Brightness": 2.8,
+        "Brightness": 3.3,
         "GlobalShadows": true,
         "Ambient": [
-          0.27,
-          0.29,
-          0.32
+          0.42,
+          0.44,
+          0.48
         ],
         "OutdoorAmbient": [
-          0.47,
-          0.49,
-          0.52
+          0.62,
+          0.64,
+          0.68
         ],
-        "EnvironmentDiffuseScale": 0.5,
+        "EnvironmentDiffuseScale": 0.65,
         "EnvironmentSpecularScale": 0.25,
         "ShadowSoftness": 0.35
       }
