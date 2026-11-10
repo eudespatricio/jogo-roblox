@@ -72,7 +72,7 @@ local modal = Instance.new("Frame")
 modal.Name = "Modal"
 modal.AnchorPoint = Vector2.new(0.5, 0.5)
 modal.Position = UDim2.fromScale(0.5, 0.5)
-modal.Size = UDim2.fromScale(0.8, 0.66)
+modal.Size = UDim2.fromScale(0.8, 0.68)
 modal.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 modal.BackgroundTransparency = 0.06
 modal.BorderSizePixel = 0
@@ -106,22 +106,22 @@ status.Parent = modal
 
 local details = Instance.new("TextLabel")
 details.Name = "Details"
-details.Position = UDim2.fromOffset(12, 70)
-details.Size = UDim2.new(1, -24, 0, 66)
+details.Position = UDim2.fromOffset(12, 68)
+details.Size = UDim2.new(1, -24, 0, 80)
 details.BackgroundTransparency = 1
 details.Text = ""
 details.TextColor3 = Color3.fromRGB(220, 235, 220)
 details.TextXAlignment = Enum.TextXAlignment.Left
 details.TextYAlignment = Enum.TextYAlignment.Top
 details.TextWrapped = true
-details.TextSize = 12
+details.TextSize = 11
 details.Font = Enum.Font.Code
 details.Parent = modal
 
 local viewport = Instance.new("ViewportFrame")
 viewport.Name = "Replay"
-viewport.Position = UDim2.new(0.05, 0, 0.28, 0)
-viewport.Size = UDim2.new(0.9, 0, 0.32, 0)
+viewport.Position = UDim2.new(0.05, 0, 0.30, 0)
+viewport.Size = UDim2.new(0.9, 0, 0.31, 0)
 viewport.BackgroundColor3 = Color3.fromRGB(20, 28, 24)
 viewport.BorderSizePixel = 0
 viewport.Ambient = Color3.fromRGB(120, 120, 120)
@@ -133,7 +133,7 @@ corner(viewport, 8)
 
 local wallLabel = Instance.new("TextLabel")
 wallLabel.Name = "WallLabel"
-wallLabel.Position = UDim2.new(0.06, 0, 0.285, 0)
+wallLabel.Position = UDim2.new(0.06, 0, 0.305, 0)
 wallLabel.Size = UDim2.new(0.88, 0, 0, 18)
 wallLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 wallLabel.BackgroundTransparency = 0.35
@@ -251,23 +251,23 @@ local function buildScene(result: any): ()
 	scene.Parent = viewport
 
 	local camera = Instance.new("Camera")
-	camera.FieldOfView = 50
-	camera.CFrame = CFrame.lookAt(Vector3.new(58, 38, 58), Vector3.new(0, 3, 0))
+	camera.FieldOfView = 55
+	camera.CFrame = CFrame.lookAt(Vector3.new(20, 30, 50), Vector3.new(20, 2, 0))
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
 
-	makePart(scene, Vector3.new(48, 1, 22), CFrame.new(20, -0.5, 0), Color3.fromRGB(58, 92, 56))
+	makePart(scene, Vector3.new(48, 1, 22), CFrame.new(20, -0.5, 0), Color3.fromRGB(60, 100, 58))
 	for lane = 0, 4 do
 		local z = -8 + lane * 4
 		makePart(
 			scene,
-			Vector3.new(44, 0.12, 2.6),
-			CFrame.new(20, 0.06, z),
-			Color3.fromRGB(38, 50, 38)
+			Vector3.new(44, 0.14, 3.2),
+			CFrame.new(20, 0.07, z),
+			Color3.fromRGB(45, 65, 45)
 		)
 	end
-	makePart(scene, Vector3.new(3, 8, 22), CFrame.new(0, 4, 0), Color3.fromRGB(42, 62, 44))
-	makePart(scene, Vector3.new(1.2, 6, 10), CFrame.new(1.5, 3, 0), Color3.fromRGB(92, 54, 34))
+	makePart(scene, Vector3.new(3, 9, 23), CFrame.new(0, 4.5, 0), Color3.fromRGB(42, 62, 44))
+	makePart(scene, Vector3.new(1.4, 7, 11), CFrame.new(1.5, 3.5, 0), Color3.fromRGB(92, 54, 34))
 
 	local colors = {
 		archer = Color3.fromRGB(80, 190, 110),
@@ -282,7 +282,7 @@ local function buildScene(result: any): ()
 			local x = 2 + tonumber(col) * 6
 			local z = -8 + (tonumber(row) - 1) * 4
 			local color = colors[trap.type] or Color3.fromRGB(180, 180, 180)
-			makePart(scene, Vector3.new(2, 1.5, 2.5), CFrame.new(x, 0.75, z), color)
+			makePart(scene, Vector3.new(2.6, 1.8, 3.2), CFrame.new(x, 0.9, z), color)
 		end
 	end
 
@@ -290,7 +290,7 @@ local function buildScene(result: any): ()
 	for index = 1, 70 do
 		local part = makePart(
 			scene,
-			Vector3.new(1.6, 1.6, 1.6),
+			Vector3.new(2.2, 2.2, 2.2),
 			CFrame.new(40, 1.2, 0),
 			Color3.fromRGB(200, 55, 55)
 		)
@@ -408,7 +408,7 @@ attackButton.MouseButton1Click:Connect(function()
 		status.Text = "DERROTA"
 	end
 	details.Text = string.format(
-		"fantasma %s\nbattle_id %s\nhash %s\nmuralha %s HP · vazados %s · reward %s",
+		"fantasma %s\n%s\nhash %s\nHP %s · vazados %s · +%s ouro",
 		tostring(result.phantomName or "?"),
 		tostring(result.battleId),
 		tostring(result.resultHash),

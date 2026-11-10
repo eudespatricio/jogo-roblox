@@ -1,9 +1,10 @@
 # QA da S6 no Studio — raid + BattleLog + replay
 
-> **Status:** **S6.1 implementada em 10/11/2026; QA humano do replay 3D + fantasma real pendente.**
-> O núcleo (raid, hash, reward 5, `BattleLog content=v2`, OURO/archer) já foi validado; agora o
-> servidor persiste uma muralha real em `MuralhaPhantom_v1` e o cliente reproduz a batalha em um
-> `ViewportFrame` 3D por 8 s. A S6 **não fecha** sem o QA da §7. S5 fechada; S7/P2 não começaram.
+> **Status:** **S6.1 implementada; QA visual inicial feito em 10/11/2026 11:15–11:20.** O
+> `ViewportFrame` 3D renderizou, o hash local bateu com o servidor (sem `DIVERGENCIA`), o fantasma
+> passou de `traps=0` para `traps=1` após o archer e o OURO subiu. O QA achou o enquadramento
+> pequeno e os detalhes cortados; câmera/UI foram ajustadas — **re-testar** antes de fechar a S6.
+> S5 fechada; S7/P2 não começaram.
 
 **Base:** `main` pós-S6.1 · schema 2 · content 2 · `simVersion 3` · hash `2489780106`.
 Critérios do plano: [`p1-plano.md`](p1-plano.md) S6 — `battle_finished.result_hash` igual ao
@@ -166,3 +167,15 @@ O salto `gold=8 → 13 → ...` é o reward de 5 por vitória; quando o jogador 
 (upgrade), o topo cai para **OURO 13** e o archer L2 aparece. Em Mock o perfil não persiste entre
 sessões (`ProfileStore API services unavailable`); persistência real é o Modo B/DataStore, não o
 teste local. O reward 5 continua provisório.
+
+### QA visual inicial — 10/11/2026 11:15–11:20
+
+- O replay 3D renderizou no `ViewportFrame`; o cliente rodou o mesmo `Core.Battle` e **não** mostrou
+  `DIVERGENCIA` (hash local = hash do servidor).
+- `[raid] phantom owner=Eudesspatricio traps=0 ...` nas primeiras raids e `traps=1` depois do
+  archer: o fantasma real está lendo a última muralha publicada.
+- `VITORIA`/`REPLAY CONCLUIDO · 8s`, OURO 8 → 33 → 13 após o gasto; `creditou 5 ouro` e
+  `BattleLog content=v2` confirmados.
+- **Achado/correção:** o board 3D aparecia muito pequeno e a linha de reward era cortada. A câmera
+  foi para a frente (`(20,30,50)` olhando `(20,2,0)`), o FOV para 55, traps/horda/gate ficaram
+  maiores e o modal/detalhes cresceram. **Re-testar** 375×812/720×1280.

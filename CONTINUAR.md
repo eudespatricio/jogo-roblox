@@ -110,9 +110,11 @@ A P0 fechou em 09/11/2026. A **P1 foi autorizada** na mesma data; o plano está 
     DataStore em produção e Mock no Studio; `RaidController` ataca a última muralha publicada via
     `toBattleWall`; `RaidClient` roda o mesmo `Core.Battle`, confere o hash e anima 8 s em um
     `ViewportFrame` 3D (lanes, traps, horda, HP).
-  - Recompensa **5 ouro provisória**; QA do núcleo já validou vitória/derrota/hash/reward,
-    **OURO 13** com archer L2 + upgrade e `BattleLog content=v2`. **Falta o QA visual do 3D/fantasma
-    em 375×812/720×1280 para fechar a S6** (docs/teste-s6-studio.md).
+  - Recompensa **5 ouro provisória**; QA do núcleo validou vitória/derrota/hash/reward,
+    **OURO 13** com archer L2 + upgrade e `BattleLog content=v2`. QA visual inicial: o 3D
+    renderizou, hash local = servidor (sem `DIVERGENCIA`), fantasma `traps=0→1`; o board estava
+    pequeno e os detalhes cortados — câmera/UI ajustadas. **Falta re-testar 375×812/720×1280** para
+    fechar a S6 (docs/teste-s6-studio.md).
 - Gate atual: `bash scripts/check.sh` passa; CI verde no workflow `ci`; contexto em **ESTADO 80/80 ·
   MAPA 59/60 · REJEITADOS 19/40**.
 
