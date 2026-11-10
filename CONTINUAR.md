@@ -301,7 +301,7 @@ nem iniciar S5/P2.
 > de cena/UI e QA humano pendente; S5 não começou). Leia `AGENTS.md`, `.context/ESTADO.md`,
 > `.context/MAPA.md`, `CONTINUAR.md`, `docs/p1-plano.md`, `docs/teste-s4-studio.md`,
 > `docs/versoes.md` e `docs/gaps.md`. No WSL: `source scripts/env.sh`, `bash scripts/doctor.sh` e
-> `bash scripts/check.sh` (devem passar). `main` em `44f4cf8`; motor `simVersion 3`, hash
+> `bash scripts/check.sh` (devem passar). `main` em `f6230b3`; motor `simVersion 3`, hash
 > `2489780106`; schema 2/content 2; GAP-009 fechado; GAP-011 na S6. Não edite
 > `vendor/ProfileStore.luau`; Q2 = 5×5, N=5, colocação livre; taxonomia v1 congelada. Onde há
 > evidência de Studio, use `docs/teste-s4-studio.md`; onde não há, não invente.
