@@ -76,6 +76,7 @@ local service = ProfileService.new({
 
 local sessionsByPlayer: { [Player]: any } = {}
 local selfTestDone = false
+local storeStatePrinted = false
 
 local function profileKey(player: Player): string
 	return ProfileSchema.keyFor(player.UserId)
@@ -90,6 +91,27 @@ local function utcStamp(seconds: number): string
 		return formatted
 	end
 	return "epoch=" .. tostring(seconds)
+end
+
+-- Diagnostico do Modo B: sem API Services o ProfileStore usa o mock interno DELE e nada e
+-- salvo. Sem este aviso, o teste passaria com data store de mentira.
+local function printStoreState()
+	if storeStatePrinted then
+		return
+	end
+	storeStatePrinted = true
+	local state = ProfileStore.DataStoreState
+	if type(state) ~= "string" then
+		state = "NotReady"
+	end
+	print("[perfil] datastore=" .. state)
+	if not useMock and state ~= "Access" then
+		warn(
+			"[perfil] MODO B INVALIDO: API Services indisponivel (datastore="
+				.. state
+				.. "); nada sera salvo. Publique o lugar e ligue o acesso do Studio."
+		)
+	end
 end
 
 -- Teste de sessao automatico (Studio, atributo ProfileSelfTest). Imprime evidencia no Output.
@@ -204,6 +226,7 @@ local function loadPlayer(player: Player)
 	session:AddUserId(player.UserId)
 	sessionsByPlayer[player] = session
 	player:SetAttribute("ProfileSchemaVersion", session.Data.schemaVersion)
+	printStoreState()
 	maybeSelfTest(player, key)
 end
 

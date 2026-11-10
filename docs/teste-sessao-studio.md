@@ -63,25 +63,43 @@ O lugar tem dois scripts de servidor: `Main` (protótipo de moedas, **legado**) 
 > Mock guarda o perfil na memória do servidor: fechar o Play e abrir de novo **reinicia** os
 > dados. Persistência entre servidores é o Modo B.
 
-## 4. Modo B — DataStore real (persistência e dois clientes)
+## 4. Modo B — DataStore real (persistência entre servidores)
 
-Pré-requisitos: lugar **publicado** (place de teste) e *Game Settings → Security → Enable Studio
-Access to API Services* ligado. Sem isso o ProfileStore cai em `NoAccess` e o Mock é o caminho.
+Pré-requisitos (obrigatórios; sem eles o ProfileStore usa o mock interno dele e **nada é salvo**):
 
-1. `ServerStorage` → `ProfileStoreMock` (boolean) = `false`.
-2. `ProfileSelfTest` = `true` (roda o ciclo salvar/recarregar no DataStore real).
-3. **Test → Players → 2 players** (Start Server + 2 Players).
-4. No Output do servidor, esperado:
-   - dois `[perfil] carregado key=User_<idA>` e `key=User_<idB>` (chaves distintas, um perfil por
-     jogador);
-   - `[selftest] PASSOU (8/8)` para o primeiro jogador;
-   - nenhum `[perfil] ... falhou`.
-5. **Rejoin entre servidores:** com um cliente, saia e entre de novo (o teste recria o servidor).
-   Esperado no Output: mesmo `key=User_<id>`, `sessions` continuando de onde parou (não volta para
-   1), `gold` preservado e `dias_desde_ultimo_acesso` = 0 ou 1.
+1. **Publicar o lugar:** com o arquivo aberto, *Arquivo → Publicar no Roblox como…* → criar a
+   experiência de teste (ex.: `MURALHA P0 — teste`). Um `.rbxl` local tem `PlaceId = 0` e DataStore
+   não funciona nele.
+2. **Ligar o acesso do Studio:** Creator Hub → *Configurações do jogo → Segurança → Permitir acesso
+   do Studio aos Serviços de API* (Game Settings → Security → Enable Studio Access to API Services).
+3. No Explorer: `ServerStorage` → `ProfileStoreMock` (boolean) = **`false`**, `ProfileSelfTest` =
+   **`true`**. Salve (`Ctrl+S`).
 
-**Aceite:** duas chaves distintas; `sessions` incrementa em vez de reiniciar; `gold` preservado;
-nenhum perfil duplicado; `lastSeenAt` no futuro nenhum (carimbo do servidor).
+4. **Play (F5).** Esperado no Output:
+   - `[ProfileStore]: Roblox API services available - data will be saved`
+   - `[perfil] store=MuralhaProfile_v1 modo=DataStore`
+   - `[perfil] datastore=Access`
+   - `[selftest] PASSOU (8/8)`
+
+5. **Prova entre servidores:** pare e dê **Play de novo** (servidor novo). A chave continua
+   `key=User_<id>` e `sessions` continua de onde parou: a linha
+   `carregou e migrou · … sessions=3` na segunda execução prova que o `sessions=2` da primeira foi
+   gravado no DataStore. `dias_desde_ultimo_acesso=0` e `gold` igual completam a evidência.
+   (Cada execução faz **duas** sessões: a do load e a do self-test — por isso o contador sobe de 2
+   em 2.)
+
+Se aparecer `[perfil] datastore=NoAccess` (ou `NoInternet`) junto do aviso **MODO B INVÁLIDO**, o
+dado **não** foi salvo: falta publicar o lugar ou ligar o acesso do Studio.
+
+### 4.1 Duas contas × dois clientes do Studio
+
+O teste de vários clientes do Studio usa **o mesmo `UserId`** (a sua conta) em todos. As duas sessões
+disputam a mesma chave `User_<id>` e a segunda é recusada pelo session lock do ProfileStore
+(`StartSessionAsync` → "already loaded in this session"; o jogador leva kick). Isso é o
+comportamento correto de **não duplicar**, não um bug — e é a prova de que o lock funciona.
+
+Para ver duas chaves `User_*` distintas de verdade, entre no lugar **publicado** com duas contas
+(app/Web), não no Studio. Fica para o playtest; a P0 não depende disso.
 
 ## 5. Checklist para colar no handover
 
@@ -89,9 +107,9 @@ nenhum perfil duplicado; `lastSeenAt` no futuro nenhum (carimbo do servidor).
 |---|---|
 | Modo A: `[selftest] PASSOU (8/8)` | ☑ (09/11/2026, §8) |
 | Modo A: nenhuma linha `FALHA` | ☑ (09/11/2026, §8) |
-| Modo B: duas chaves `User_*` distintas | ☐ |
-| Modo B: `sessions` continuou no rejoin | ☐ |
-| Modo B: `gold` preservado no rejoin | ☐ |
+| Modo B: `datastore=Access` e `PASSOU (8/8)` | ☐ |
+| Modo B: `sessions` continuou no novo Play (servidor novo) | ☐ |
+| Modo B: `gold` preservado no novo Play | ☐ |
 | Modo B: `lastSeenAt` avançou (UTC) | ☐ |
 | Nenhum campo fora do schema no perfil | ☐ |
 
@@ -105,7 +123,7 @@ Evidência: copie as linhas `[perfil]`/`[selftest]` do Output para o handover.
 | `[perfil] StartSessionAsync lancou: ... already loaded in this session` | `EndSession` ainda estava salvando | espere 1s e tente de novo; o controller já tenta 3× com backoff |
 | `[perfil] ... schema_future` | perfil gravado por um build mais novo | use o build atual; não sobrescrever dado mais novo |
 | `[selftest] FALHA sessions incrementou` | Mock reiniciado entre as sessões | no Modo A o servidor não pode reiniciar no meio do teste |
-| `NoAccess` no DataStore | API Services desligado ou lugar não publicado | Modo A (Mock) ou publicar o lugar |
+| `[perfil] datastore=NoAccess` + aviso **MODO B INVÁLIDO** | API Services desligado ou lugar não publicado | publicar o lugar e ligar o acesso do Studio, ou voltar ao Modo A (Mock) |
 | Nenhuma linha `[selftest]` | atributo ausente ou fora do Studio | `ProfileSelfTest = true` em `ServerStorage`; self-test só roda em Studio |
 | `Main`/`DataService` lançam erro no Play | protótipo legado de moedas sem lugar publicado (`You must publish this place…`) | esperado no Modo A; morre com o legado na P1 |
 
