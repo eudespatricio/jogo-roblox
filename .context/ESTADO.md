@@ -9,9 +9,9 @@
 
 ## Fase
 
-**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 (conteúdo e versões) com
-código verde e GAP-009 pendente no Studio**. Próxima janela: S4 (cena 5×5/build); plano em
-`docs/p1-plano.md`, teste de 3 semanas em paralelo.
+**P1 em execução (autorizada em 09/11/2026).** S1–S3.3 fechadas; **S3.4 com código verde e GAP-009
+pendente no Studio**; **S4 iniciada** (cena 5×5/UI de build, scaffold sem validação no Studio). Plano
+em `docs/p1-plano.md`, teste de 3 semanas em paralelo.
 
 ## Números atuais (10/11/2026)
 
@@ -23,7 +23,7 @@ código verde e GAP-009 pendente no Studio**. Próxima janela: S4 (cena 5×5/bui
 | determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
 | invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 (`sim/*-contract.luau`) |
+| contratos | perfil 20/20 · analytics 16/16 · muralha 13/13 · conteúdo 7/7 · build 3/3 |
 | versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
 | perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
 | analytics | contrato v1 · 31 eventos · envelope + anti-PII |
@@ -50,9 +50,10 @@ código verde e GAP-009 pendente no Studio**. Próxima janela: S4 (cena 5×5/bui
 
 ## Não pronto
 
-- **P1** (2–3 semanas): S4 cena 5×5/build → S5 drop-in → S6 raid/replay → S7 telemetria. Saída:
-  70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- Cena, UI e loja ainda não existem; o sink `AnalyticsService` é S7.
+- **P1** (2–3 semanas): S4 cena 5×5/build em andamento → S5 drop-in → S6 raid/replay → S7 telemetria.
+  Saída: 70% de primeira vitória < 60s. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
+- S4: cena/UI/remote scaffold prontos; falta validar no Studio (FPS mobile, build ≤30s, feel).
+  O sink `AnalyticsService` é S7.
 - GAPs abertos: GAP-004/005/008/009/011 (001/002/003/010 fechados; 009 depende do Modo B); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
@@ -67,7 +68,7 @@ código verde e GAP-009 pendente no Studio**. Próxima janela: S4 (cena 5×5/bui
 ## Próximo passo
 
 1. GAP-009: rodar o Modo B do schema v2 no Studio e registrar a evidência.
-2. S4: cena 5×5/build; depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
+2. S4: validar cena/UI no Studio; depois S5–S7 (`docs/p1-plano.md`); GAP-011 entra na S6.
 
 ## Como verificar o estado em 1 minuto
 

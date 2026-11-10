@@ -1,8 +1,8 @@
 # executaveis locais (baixados pelo setup)
 .tools/
 
-# artefatos de build
-build/
+# artefatos de build (somente a pasta da raiz; src/shared/build e codigo)
+/build/
 *.rbxl
 *.rbxlx
 *.rbxm

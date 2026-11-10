@@ -6,11 +6,15 @@
 -- carrega, salva, recarrega e confere que nao duplicou. Roteiro: docs/teste-sessao-studio.md.
 
 local Players = game:GetService("Players")
+-- Sem avatar visivel (GDD §1): o cliente usa camera scriptable e o servidor nao spawna
+-- personagem. O build/raid acontece na muralha, nao no corpo do jogador.
+Players.CharacterAutoLoads = false
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local ProfileService = require(script.Parent:WaitForChild("data"):WaitForChild("ProfileService"))
+local ProfileRegistry = require(script.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local ProfileSchema = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("data"):WaitForChild("ProfileSchema")
 )
@@ -78,7 +82,6 @@ local service = ProfileService.new({
 	end,
 })
 
-local sessionsByPlayer: { [Player]: any } = {}
 local selfTestDone = false
 local storeStatePrinted = false
 
@@ -132,7 +135,7 @@ local function runSelfTest(player: Player, key: string)
 		print(string.format("[selftest] %s %s · %s", status, name, detail))
 	end
 
-	local session = sessionsByPlayer[player]
+	local session = ProfileRegistry.get(player)
 	if session == nil then
 		record("perfil carregado", false, "sem sessao para o jogador")
 	else
@@ -171,7 +174,7 @@ local function runSelfTest(player: Player, key: string)
 		if again == nil then
 			record("recarregou do store", false, tostring(err))
 		else
-			sessionsByPlayer[player] = again
+			ProfileRegistry.set(player, again)
 			again:AddUserId(player.UserId)
 			local after = again.Data
 			record(
@@ -249,7 +252,7 @@ local function loadPlayer(player: Player)
 	if contentChanged then
 		print(string.format("[perfil] conteudo migrado content=v%d", session.Data.contentVersion))
 	end
-	sessionsByPlayer[player] = session
+	ProfileRegistry.set(player, session)
 	player:SetAttribute("ProfileSchemaVersion", session.Data.schemaVersion)
 	player:SetAttribute("ProfileContentVersion", session.Data.contentVersion)
 	printStoreState()
@@ -261,13 +264,13 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
-	sessionsByPlayer[player] = nil
+	ProfileRegistry.clear(player)
 	service.endSession(profileKey(player))
 end)
 
 -- Shutdown: fecha as sessoes para o ProfileStore gravar e liberar o lock.
 game:BindToClose(function()
-	for player in pairs(sessionsByPlayer) do
+	for player in pairs(ProfileRegistry.all()) do
 		service.endSession(profileKey(player))
 	end
 	task.wait(2)

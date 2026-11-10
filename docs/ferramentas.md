@@ -213,6 +213,7 @@ luau sim/profile-contract.luau
 luau sim/analytics-contract.luau
 luau sim/walls-contract.luau
 luau sim/content-contract.luau                   # S3.4 (conteúdo/versões)
+luau sim/build-contract.luau                     # S4 (grid/build)
 luau tools/expansion-test/neutral-migration.luau  # GAP-010 (hash antigo x migrado)
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="
 rojo sourcemap default.project.json -o sourcemap.json

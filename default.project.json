@@ -10,6 +10,14 @@
       }
     },
 
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/client"
+      }
+    },
+
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "$path": "src/server"
