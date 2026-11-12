@@ -57,6 +57,8 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 - [`docs/pesquisa-jogadores.md`](docs/pesquisa-jogadores.md) — reclamações, pedidos, 10 regras.
 - [`docs/pesquisa-tendencias-2026.md`](docs/pesquisa-tendencias-2026.md) — mercado e gêneros.
 - [`docs/tese-produto-e-economia.md`](docs/tese-produto-e-economia.md) + [`docs/modelo-financeiro.xlsx`](docs/modelo-financeiro.xlsx) — economia unitária.
+- [`docs/pesquisa-monetizacao.md`](docs/pesquisa-monetizacao.md) — benchmark global de preços/ARPPU.
+- [`docs/pesquisa-monetizacao-regional.md`](docs/pesquisa-monetizacao-regional.md) — ticket/ARPPU fora do Brasil (GAP-013).
 
 ## Estrutura
 

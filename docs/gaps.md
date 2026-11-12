@@ -7,7 +7,7 @@
 **Linha atual:**
 
 ```text
-GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-013 · classes/taxonomia v2, live ops e ticket regional ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2/preço internacional · ver docs/gaps.md
 ```
 
 | ID | Fase | Gap | Risco | Gatilho para fechar | Status |
@@ -24,6 +24,7 @@ GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos 
 | GAP-010 | S3.2 (trial) | default de migração neutro não é garantido por teste; um default com bônus mudaria o hash sem ninguém ver | alto — migração silenciosa buffa/nerfa muralhas antigas | em toda migração de conteúdo; teste de hash antigo x migrado | fechado em 10/11/2026 · schema v2 + `sim/content-contract.luau`/`neutral-migration.luau` |
 | GAP-011 | S6 | `BattleLog` não existia/persistia `contentVersion`; replay de conteúdo futuro não tinha gate no log | médio — replay podia simular conteúdo que o servidor não conhece | na S6, junto do `BattleLog`, antes de conteúdo em produção | fechado em 10/11/2026 · `BattleLog`/`RaidController` + `contentVersion` e `isReplayable` (`sim/raid-contract.luau`) |
 | GAP-012 | S7 | `AnalyticsService` usava sink `Null`: validava e descartava; a taxa de 70% de `first_win_seconds` se perdia no leave | alto — sem persistência o gate de saída da P1 não era mensurável de verdade | antes do teste de 3 semanas / do fechamento da P1 | fechado em 10/11/2026 · `AnalyticsDataStoreSink` (`MuralhaAnalytics_v1`, DataStore/Memory) + contrato 34/34; export/retention em `teste-s7-studio.md` |
+| GAP-013 | P2 | ticket médio/ARPPU por país não medido; benchmark global e ABPDAU regional; Brasil dentro do ROW | alto — preço internacional e projeção de receita podem errar | antes de P2/loja/precificação fora do BR; Creator Analytics (ARPPU/conversão por país) + sales export + preço efetivo na telemetria | aberto |
 
 ## Como fechar um gap
 
@@ -105,3 +106,20 @@ horda, UI de cartões, VFX/SFX e replay no mesmo kit. O servidor continua autori
 schema/content/sim/taxonomia. Contrato visual **8/8**; QA em
 [`teste-s8-studio.md`](teste-s8-studio.md). Sem gap novo; áudio usa sons embutidos como placeholder
 (troca por SFX originais é polimento opcional).
+
+## Pesquisa regional — GAP-013 (12/11/2026)
+
+A pergunta “ticket médio fora do Brasil” não tinha resposta no projeto; o benchmark de monetização
+era **global por jogo**. A pesquisa [`pesquisa-monetizacao-regional.md`](pesquisa-monetizacao-regional.md)
+fechou o que dá para saber com fonte oficial:
+
+- receita 2025: EUA+Canadá **61%**, Europa **19%**, APAC **11%**, ROW **9%** — Brasil dentro do ROW,
+  sem abertura; nenhum país além dos EUA passa de 10%;
+- ABPDAU Q3 FY26: EUA+Canadá **US$ 38,52**, Europa **US$ 11,20**, APAC **US$ 5,37**, ROW
+  **US$ 5,07** — bookings por DAU, **não ARPPU**;
+- ARPPU por país e ticket por compra (AOV) continuam **não medidos**; o ARPPU global por jogo da
+  GameAnalytics (p50 US$ 0,70; p90 US$ 2,33; p95 US$ 4,80) não substitui o recorte regional;
+- o próprio Creator Analytics permite medir ARPPU/conversão por país e exportar sales data; a
+  telemetria atual só tem `locale`, não país.
+
+**GAP-013 aberto:** fechar antes de P2/loja/precificação internacional. P2 continua bloqueada.

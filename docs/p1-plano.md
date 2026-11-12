@@ -10,8 +10,8 @@
 > 375×812/720×1280); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid, fantasma real
 > e replay 3D); **S7 fechada** (telemetria: serviço, contrato 34/34 e `first_win_seconds`);
 > **S8 fechada** (apresentação visual: diorama, traps/horda 3D, UI e game feel). **GAP:**
-> GAP-004/005/008 — classe/taxonomia v2 e P2; GAP-011 fechado no `BattleLog` da S6; GAP-012
-> fechado no sink persistente da telemetria.
+> GAP-004/005/008/013 — classe/taxonomia v2, P2 e ticket regional; GAP-011 fechado no `BattleLog`
+> da S6; GAP-012 fechado no sink persistente da telemetria.
 > Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
 > [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).

@@ -10,6 +10,11 @@
 >
 > Níveis: **A** = oficial/primário · **B** = comunidade estruturada · **C** = estimativa/opinião.
 > Neste documento **R$ = Robux** (como no GDD); reais aparecem como **BRL**.
+>
+> **Atualização regional (12/11/2026):** a pesquisa de ticket/ARPPU **fora do Brasil** está em
+> [`pesquisa-monetizacao-regional.md`](pesquisa-monetizacao-regional.md). Este documento continua
+> sendo o benchmark **global por jogo**; o novo separa receita/ABPDAU por região, dados do Brasil e
+> a lacuna de ARPPU por país (GAP-013).
 
 ---
 
@@ -296,3 +301,19 @@ passe a 399 vs 499; skin a 149 vs 199; bundle vs unitário. Medir receita por DA
 | A | [rblxdb — ASTD](https://rblxdb.com/games/og-all-star-tower-defense-1720936166) | 09/11/2026 | displays 175–200 · poder 799–1.200 |
 | A | [rblxdb — Build Defense](https://rblxdb.com/games/build-defense-5678463488) | 09/11/2026 | packs 99–999 · sessão 0,6 min |
 | C | [RoWatcher — Dress to Impress](https://rowatcher.com/games/5203828273/dress-to-impress) | 09/11/2026 | receita estimada US$ 820 mil/mês |
+
+---
+
+## 9. Atualização — ticket regional (12/11/2026)
+
+A pergunta “quanto é o ticket médio fora do Brasil?” não tinha resposta no projeto. O que existe
+agora, documentado em [`pesquisa-monetizacao-regional.md`](pesquisa-monetizacao-regional.md):
+
+- receita 2025 por região: EUA+Canadá **61%**, Europa **19%**, APAC **11%**, ROW **9%** (Brasil
+  dentro do ROW, sem abertura);
+- ABPDAU Q3 FY26: EUA+Canadá **US$ 38,52**, Europa **US$ 11,20**, APAC **US$ 5,37**, ROW
+  **US$ 5,07** — bookings por DAU, não ARPPU;
+- ARPPU por país e ticket por compra (AOV) **não medidos**; o benchmark GameAnalytics (p50 US$ 0,70;
+  p90 US$ 2,33; p95 US$ 4,80) é global e por jogo;
+- GAP-013 registra a lacuna; o próprio Creator Analytics permite medir ARPPU/conversão por país e
+  exportar sales data quando o jogo tiver loja.

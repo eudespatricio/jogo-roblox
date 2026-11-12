@@ -4,14 +4,14 @@
 **S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
 **S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 34/34,
 sink persistente e `first_win_seconds`); **S8 fechada** (apresentação visual: diorama, traps/horda
-3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008 abertos · base
-`main` @ `2a50bbd`, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
+3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008/013 abertos · base
+base de código `2a50bbd`; docs de pausa/pesquisa no topo, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
 > **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
 > (`contentVersion` no `BattleLog`); **GAP-012 fechado na S7/S8** (`AnalyticsDataStoreSink` com
-> DataStore/Memory + contrato 34/34). Restam GAP-004/005/008 em `docs/gaps.md`.
+> DataStore/Memory + contrato 34/34). Restam GAP-004/005/008/013 em `docs/gaps.md`.
 
-GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2 · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-013 · classes/taxonomia v2, live ops e ticket regional ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2/preço internacional · ver docs/gaps.md
 
 > **Transição de janela:** S1–S8 fechadas em 10/11/2026. A próxima sessão mede a saída da P1 no
 > teste de 3 semanas (sink persistente pronto) e faz o QA visual do S8 no Studio. Não reabra
@@ -29,10 +29,13 @@ GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos 
 
 - S1–S8 fechadas; P1 **não fechada** porque a saída (70% de primeira vitória <60 s) ainda será
   medida no teste de 3 semanas.
-- GAP-012 fechado (sink DataStore/Memory); GAP-004/005/008 abertos; P2 bloqueada.
+- GAP-012 fechado (sink DataStore/Memory); GAP-004/005/008/013 abertos; P2 bloqueada.
 - Últimos commits: `2a50bbd` (UI mostra 30/60 no upgrade e status pelo nível), `f21c6a1` (raid
   publica a muralha antes de escolher o alvo, sem ficar uma rodada atrás), `742139e` (S8/Play Solo
-  desktop), `77f808a` (S8 + GAP-012). CI verde no run #67.
+  desktop), `77f808a` (S8 + GAP-012). CI verde no run #67 (código).
+
+**Pesquisa já feita na pausa:** ticket/ARPPU regional em
+[`docs/pesquisa-monetizacao-regional.md`](docs/pesquisa-monetizacao-regional.md) (GAP-013 aberto).
 
 **Pendências para a retomada**
 
@@ -41,7 +44,7 @@ GAP: GAP-004, GAP-005, GAP-008 · classes/taxonomia v2 e live ops ainda abertos 
 2. Rodar o **teste de 3 semanas** com o sink persistente e medir os 70% <60 s.
 3. Revisar o comportamento de raid após a correção `f21c6a1` no Studio (primeiro ataque deve
    mostrar o archer recém-colocado).
-4. Só depois discutir P2/GAP-004/005/008; P2 continua bloqueada.
+4. Só depois discutir P2/GAP-004/005/008/013; P2 continua bloqueada.
 
 **Ao retomar**
 
@@ -248,7 +251,7 @@ QA visual do S8 no Studio (prints/FPS). S7/S6.1/S5 fechadas; P2 não começa sem
 
 - Processo reproduzível: [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — três versões
   (`schemaVersion`, `CONTENT_VERSION`, `simVersion`), matriz de decisão, passo a passo, RFC e migração.
-- Registro: [`docs/gaps.md`](docs/gaps.md) — GAP-004/005/008, cada um com gatilho objetivo.
+- Registro: [`docs/gaps.md`](docs/gaps.md) — GAP-004/005/008/013, cada um com gatilho objetivo.
 - Gate de versões: [`docs/versoes.md`](docs/versoes.md) + `scripts/check-versions.py` no `check.sh`.
 - Fechamento: toda P/S termina com uma linha `GAP:`; sem linha, a fatia não fecha.
 - Trial 09/11/2026: classe/trait/raridade na branch `7d53327` (apagada); relatório em
@@ -262,7 +265,7 @@ QA visual do S8 no Studio (prints/FPS). S7/S6.1/S5 fechadas; P2 não começa sem
 runtime); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid/fantasma real/replay 3D);
 **S7 fechada** (telemetria/contrato 34/34/sink persistente/`first_win_seconds`); **S8 fechada**
 (apresentação visual). GAP-001/002/003/009/010/011/012
-fechados; GAP-004/005/008 abertos. **Base:** `main` pós-S8; hash `2489780106`; RFC em
+fechados; GAP-004/005/008/013 abertos. **Base:** `main` pós-S8; hash `2489780106`; RFC em
 [`docs/rfc-s3.4-conteudo.md`](docs/rfc-s3.4-conteudo.md).
 
 - **Modo B fechado:** [`docs/teste-sessao-studio.md`](docs/teste-sessao-studio.md) §9 registra
@@ -307,8 +310,8 @@ fechados; GAP-004/005/008 abertos. **Base:** `main` pós-S8; hash `2489780106`; 
   em células distintas e 6ª recusada; evidência na §7.
 - **Próxima janela:** fazer o QA visual do **S8** no Studio (prints 375×812/720×1280, FPS/draw
   calls) e rodar o teste de 3 semanas para medir a saída da P1 (70% de primeira vitória <60 s), agora
-  com série persistida. **Fora:** P2, GAP-004/008 (classe/taxonomia v2) e GAP-005 (P2). **Não
-  iniciar P2.** A taxa ≥60% da S5 também é medida no teste.
+  com série persistida. **Fora:** P2, GAP-004/008 (classe/taxonomia v2), GAP-005 (P2) e GAP-013 (ticket
+  regional). **Não iniciar P2.** A taxa ≥60% da S5 também é medida no teste.
 - **Saída:** `doctor.sh` + `check.sh` RC=0; docs atualizados; CI verde; uma linha `GAP:` no handoff.
 
 ---

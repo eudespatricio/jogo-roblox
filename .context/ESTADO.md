@@ -55,7 +55,7 @@ dois assuntos separados; P2 bloqueada.
 
 - **P1**: falta medir a saída (70% de primeira vitória <60s) no teste de 3 semanas; instrumento e
   série persistida prontos. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- P2 bloqueada; GAP-004/005/008 abertos; ver `docs/gaps.md`.
+- P2 bloqueada; GAP-004/005/008/013 abertos; ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
