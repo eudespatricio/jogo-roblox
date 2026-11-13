@@ -45,6 +45,7 @@ check stylua stylua required
 check selene selene required
 check luau luau required
 check luau-lsp luau-lsp required
+check asphalt asphalt required
 check lune lune optional
 check pesde pesde optional
 check rbxcloud rbxcloud optional
@@ -71,6 +72,9 @@ file_check check.sh scripts/check.sh required
 file_check env.sh scripts/env.sh required
 file_check check-versions scripts/check-versions.py required
 file_check versoes docs/versoes.md required
+file_check asphalt.toml asphalt.toml required
+file_check CREDITS.md CREDITS.md required
+file_check globalTypes .tools/globalTypes.d.luau required
 file_check vscode .vscode/settings.json optional
 if grep -q "filter=lfs" .gitattributes 2>/dev/null; then
 	printf "ok    %-12s %s\n" "lfs attrs" ".gitattributes tem filter=lfs"
@@ -118,6 +122,7 @@ printf "%-12s %s\n" "rojo" "$(rojo --version 2>/dev/null | head -1)"
 printf "%-12s %s\n" "stylua" "$(stylua --version 2>/dev/null)"
 printf "%-12s %s\n" "selene" "$(selene --version 2>/dev/null | head -1)"
 printf "%-12s %s\n" "luau-lsp" "$(luau-lsp --version 2>/dev/null | head -1)"
+printf "%-12s %s\n" "asphalt" "$(asphalt --version 2>/dev/null | head -1)"
 printf "%-12s %s\n" "git-lfs" "$(git-lfs version 2>/dev/null)"
 printf "%-12s %s\n" "ffmpeg" "$(ffmpeg -version 2>/dev/null | head -1 | cut -d' ' -f1-3)"
 printf "%-12s %s\n" "blender4.5" "$(blender4.5 --version 2>/dev/null | head -1)"

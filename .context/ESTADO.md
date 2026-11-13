@@ -1,10 +1,10 @@
 # ESTADO — jogo-roblox
 
-> Regra: este arquivo é **sobrescrito**, nunca append-only. Teto: 80 linhas. Atualizado: 10/11/2026.
+> Regra: este arquivo é **sobrescrito**, nunca append-only. Teto: 80 linhas. Atualizado: 13/11/2026.
 
 ## O que é
-**MURALHA**: tower defense invertido + autobattler assíncrono, mobile-first, sem avatar visível
-(habilita DevEx 18+ e corta custo de arte). Público 13–34, monetização cosmética.
+**MURALHA**: tower defense invertido + autobattler + co-op síncrono/assíncrono + campanha/bosses e
+física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18+). Público 13–34.
 
 ## Fase
 **P1 em pausa (10/11/2026; autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
@@ -30,11 +30,10 @@ dois assuntos separados; P2 bloqueada.
 
 ## Pronto
 
-- Conceito aprovado: `docs/gdd-muralha.md` v1.1 (decisões 1–5; Q2 na decisão 1).
-- Economia: `docs/modelo-financeiro.xlsx` + `docs/tese-produto-e-economia.md`.
-- Evidência: `docs/pesquisa-tendencias-2026.md`, `docs/pesquisa-jogadores.md`,
-  `docs/pesquisa-grade-e-prototipo.md`.
-- Engenharia: `docs/padroes-engenharia.md`; S4/S5 fechadas; S6.1 fantasma real + replay 3D (6/6).
+- Conceito/Modos: `docs/gdd-muralha.md` v1.2 + `literatura-e-universo.md` + `skills-tiers-e-modos.md` + `campanha-bosses-e-coop-sincrono.md`.
+- Economia/Catálogo/Meta: `modelo-financeiro.xlsx`, `tese-produto-e-economia.md`, `catalogo-itens-e-cosmeticos.md`, `sistemas-jogo-completo.md`.
+- Evidência/Visual/Áudio: `pesquisa-tendencias-2026/jogadores/grade`, `direcao-visual-e-silhuetas.md`, `audio-musica-e-soundscape.md`, `animacoes-fisica-real-e-vfx.md`.
+- Arquitetura/Runbooks: `padroes-engenharia.md` + `arquitetura-e-fluxos.md` + `plano-playtest-v1.md` + `rfcs-p2-e-fechamento-gaps.md` (`RFC-001..009`); S4–S6.1 fechadas.
 - Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
 - Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
   `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
@@ -54,15 +53,15 @@ dois assuntos separados; P2 bloqueada.
 ## Não pronto
 
 - **P1**: falta medir a saída (70% de primeira vitória <60s) no teste de 3 semanas; instrumento e
-  série persistida prontos. Fora: liga/meta/loja (P2), co-op (P3), 7×5.
-- P2 bloqueada; GAP-004/005/008/013 abertos; ver `docs/gaps.md`.
+  série persistida prontos. Co-op síncrono, física real híbrida e bosses desbloqueados (13/11) p/ V1.5/P2+.
+- P2 bloqueada; GAP-004/005/008/013..020 abertos (GAP-014/017 antes do teste 3 sem.); ver `docs/gaps.md`.
 - Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
 
 ## Congelado
 
 - Decisões do GDD: 5×5 → 7×5 por nível; cercos livres + 3 Grandes Saques; derrota só perde liga;
-  `A MURALHA` / `WALLBREAKER`; co-op na P3.
-- Servidor autoritativo + replay por seed + `simVersion`; hash só muda com `simVersion` novo.
+  `A MURALHA` / `WALLBREAKER` / `LA MURALLA`; co-op síncrono + física real híbrida desbloqueados (13/11).
+- Servidor autoritativo + replay determinístico (`seed + commands[]`) + `simVersion`; hash só muda com `simVersion` novo.
 - Regras dos jogadores: nenhuma unidade obrigatória; poder só por gameplay; sem loot box.
 - Schema v2 (com `contentVersion`) + taxonomia v1: mudança só aditiva, com migração/`schema_version`.
 

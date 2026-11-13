@@ -181,7 +181,7 @@ renderização no cliente — por isso pool de modelos, câmera fixa e LOD.
 | `RunService.Heartbeat` para tudo | custo por frame desnecessário | performance |
 | Conexão em `Player` sem `Disconnect` | vaza memória por sessão | performance |
 | Tabela de jogadores sem limpeza | cresce para sempre | performance |
-| Física real no gameplay | custo e não determinismo | nosso motor |
+| Física real acoplada à lógica de hit/HP | quebra determinismo do replay | usar Física Real Híbrida (`CollisionGroup` isolado + impulsos inteiros em `Core`, [`animacoes-fisica-real-e-vfx.md`](animacoes-fisica-real-e-vfx.md)) |
 | `getfenv`/`loadstring` | desoptimiza o ambiente | Luau performance |
 | Arquivo com "comentário de seção" | sinal de arquivo grande demais | style guide |
 
@@ -230,6 +230,8 @@ Wrapper nosso por cima: valida `schemaVersion`, migra, e só expõe `Profile.Dat
 ### 8.2 Pipeline de CI (15–20s por push)
 
 ```yaml
+# Referência de evolução; o gate real está em scripts/check.sh e .github/workflows/ci.yml
+# (check-versions.py, rojo build, stylua --check, luau-lsp analyze, 11 suítes CLI Luau, scan_repo.py --check)
 name: ci
 on: [push, pull_request]
 jobs:
@@ -238,23 +240,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: CompeyDev/setup-rokit@v0.1.2
-      - run: stylua --check src sim
-      - run: selene src sim
-      - run: luau-analyze src/shared/sim
-      - run: luau sim/poc.luau
+      - run: bash scripts/check.sh
 ```
 
-Observação honesta: `luau-analyze` roda limpo só no que **não** depende da API do Roblox
-(`src/shared/sim`). Módulos com `game:GetService` precisam do dump de tipos da Roblox e são
-analisados no Studio — não fingir que o CI cobre tudo.
+Observação honesta: o `scripts/check.sh` atual roda `luau-lsp analyze --platform=standard` sobre
+`src/shared`, `src/server/data`, `src/server/walls`, `src/server/analytics`, `src/server/Main.server.luau`
+e `sim`, mas exclui `src/client/**` e controllers de servidor (`GAP-017`, ver [`arquitetura-e-fluxos.md`](arquitetura-e-fluxos.md)).
+Selene 0.32 não entende `+=` e foi mantido fora do CI.
 
 Versões fixadas em `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746 (todas
 conferidas nas releases oficiais em 09/11/2026).
 
 ### 8.3 Ainda abertas
 
-1. **Analytics:** taxonomia v1 aprovada (`docs/taxonomia-analytics.md`); contrato e validador
-   entregues na P0 (`src/shared/analytics/AnalyticsTypes.luau` + `sim/analytics-contract.luau`);
-   sink (`AnalyticsService`) na P1.
-2. **Feature flags:** necessárias para testar variantes de drop-in sem republicar — provavelmente
-   um `Config` remoto via `DataStore` + cache local.
+1. **Analytics:** taxonomia v1 entregue (`src/shared/analytics/AnalyticsTypes.luau`), serviço e sink
+   DataStore/Memory entregues na S7/S8 (`AnalyticsService` + `AnalyticsDataStoreSink`, contrato `34/34`, `GAP-012` fechado);
+   pendências de ligação (`WallController`/`DropInController`) e eventos de replay/build rastreadas em `GAP-014` e `GAP-008` (v2).
+2. **Feature flags:** necessárias para testar variantes e live ops sem republicar — rastreadas em `GAP-005`
+   (provavelmente um `Config` remoto via `DataStore` + cache local).

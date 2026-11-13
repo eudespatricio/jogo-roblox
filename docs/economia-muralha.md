@@ -137,14 +137,15 @@ catálogo de loja/inventário e teste o limite `MAX_COSMETICS`. Cosmético não 
 replay; não precisa de `simVersion`.
 
 **Nova classe/trait de armadilha:** hoje `Cell = { trap, level }`; não existe campo de classe,
-raridade ou trait. Criar isso é **schema v2 + migração + extensão do motor/motor de batalha**, não
-uma entrada no `TrapCatalog`. Não simule classe só no serviço: o replay precisa do mesmo contrato.
+raridade ou trait. Criar isso é **schema v3 + migração + extensão do motor de batalha + taxonomia v2**
+(`GAP-004`/`GAP-008`), não uma entrada no `TrapCatalog`. Não simule classe só no serviço: o replay
+precisa do mesmo contrato. Ver catálogos detalhados em [`catalogo-itens-e-cosmeticos.md`](catalogo-itens-e-cosmeticos.md)
+e a calibração da curva do Dia 1 (gargalo de `0g` inicial vs `40g` da 1ª armadilha) em
+[`skills-tiers-e-modos.md`](skills-tiers-e-modos.md).
 
 **Nova fonte/sink de ouro:** primeiro estender os enums da taxonomia (v2) e o contrato; só depois
 adicionar em `TrapCatalog.GOLD_SOURCES`/`GOLD_SINKS`. O teste de contrato valida cada chave contra
 `AnalyticsTypes` e falha se o enum não existir.
 
-**Pendência para conteúdo em produção:** GAP-004/005/008/009 em [`gaps.md`](gaps.md).
-`CONTENT_VERSION` já é persistido no perfil (`contentVersion`) com reparo/recusa no boot; o
-`BattleLog` da S6 deve carregar a mesma versão antes de conteúdo em massa. O GAP-009 (ProfileStore
-real com schema v2) foi fechado no Modo B em 10/11/2026; o GAP-011 fechou no `BattleLog` da S6.
+**Pendência para conteúdo em produção e playtest:** GAP-004, GAP-005, GAP-008, GAP-013, GAP-014, GAP-015, GAP-016 e GAP-017 em [`gaps.md`](gaps.md).
+`CONTENT_VERSION` já é persistido no perfil (`contentVersion`) com reparo/recusa no boot **e no `BattleLog` da S6** (`GAP-011` fechado); o GAP-009 (ProfileStore real com schema v2) foi fechado no Modo B em 10/11/2026. Antes do playtest de 3 semanas, fechar o deadlock `0g` vs `40g` + `GAP-014` via [`plano-playtest-v1.md`](plano-playtest-v1.md).

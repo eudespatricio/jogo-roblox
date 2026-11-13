@@ -35,7 +35,8 @@ Depois:
 | StyLua | 2.6.0 | `~/.rokit/bin/stylua` | formato | sim |
 | Selene | 0.32.0 | `~/.rokit/bin/selene` | lint **bloqueado** (ver §7) | não |
 | Luau | 0.746 | `~/.rokit/bin/luau` | executar sim/oráculo | sim |
-| luau-lsp | 1.70.1 | `~/.local/bin/luau-lsp` | tipos/editor/CI | sim |
+| luau-lsp | 1.70.1 | `~/.rokit/bin/luau-lsp` + `.tools/globalTypes.d.luau` | tipos/editor/CI | sim |
+| Asphalt | 2.0.2 | `~/.rokit/bin/asphalt` | sync de `.ogg`/`.png` (`asphalt.toml`) | sim |
 | Lune | 0.11.1 | `~/.local/bin/lune` | scripts headless | não |
 | Pesde | 0.7.4 | `~/.local/bin/pesde` | pacotes Luau | não |
 | rbxcloud | 0.17.0 | `~/.local/bin/rbxcloud` | Open Cloud/publicação | não |
@@ -206,7 +207,6 @@ Se o push falhar com `refusing to allow a Personal Access Token to create or upd
 
 ## 8. O que ainda falta (não é a estação)
 
-1. ProfileStore vendorizado; wrapper + schema v1 entregues na P0. `pesde.toml` fica para a 2ª
-   dependência. Falta executar o teste de sessão no Studio (`teste-sessao-studio.md`).
-2. Primeiro asset real de armadilha (calibração já feita).
-3. Teste de produto de 3 semanas antes da P1 — ver [`revisao-direcao.md`](revisao-direcao.md).
+1. ProfileStore vendorizado; wrapper + schema v2 (`contentVersion`) + testes de sessão Modos A e B **executados e aprovados (8/8)** em 09–10/11/2026 (`teste-sessao-studio.md`). `pesde.toml` fica para a 2ª dependência.
+2. Primeiro asset real de armadilha (calibração Blender feita; S8 entregou kit 3D funcional; pipeline Blender→Studio detalhado em [`direcao-visual-e-silhuetas.md`](direcao-visual-e-silhuetas.md)).
+3. P1 autorizada em 09/11/2026 (S1–S8 concluídas); executar o runbook [`plano-playtest-v1.md`](plano-playtest-v1.md) e o teste de 3 semanas em paralelo (`revisao-direcao.md`).

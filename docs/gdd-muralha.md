@@ -1,7 +1,7 @@
 # GDD — MURALHA 2.0
 
-Versão 1.0 · novembro/2026 · decisões fechadas em 09/11/2026
-Gênero: tower defense invertido + autobattler assíncrono + co-op de dupla
+Versão 1.2 · novembro/2026 · decisões fechadas em 09/11/2026 (enriquecida em 13/11/2026 — Co-op Síncrono, Física Real Híbrida e 3 Pilares desbloqueados)
+Gênero: tower defense invertido + autobattler (assíncrono e co-op síncrono) + campanha com bosses
 Público: 13–34, com foco de monetização em 18+ verificado (DevEx US$ 0,54 / 100 R$)
 Plataforma: Roblox (mobile-first, PC parity)
 
@@ -89,14 +89,15 @@ LOGIN
 Você é o defensor e o atacante da sua própria progressão: monta muralha, ataca fantasmas de
 jogadores do seu elo, recebe relatório de quem te atacou.
 
-### 4.2 Dupla / Muralha de Clã (fase 2)
-Dois jogadores compartilham **a mesma muralha**: metade esquerda de um, direita do outro,
-ouro compartilhado com contribuição registrada. A onda de ataque é combinada.
+### 4.2 Dupla / Muralha de Clã (Assíncrono + Co-op Síncrono desbloqueado em 13/11/2026)
+Dois jogadores compartilham **a mesma muralha**: Setor A (`r1–r2`) de um, Setor B (`r4–r5`) do outro, e a Lane 3 como Portão Partilhado (`N = 8` armadilhas: `4 + 4`).
 
-- assíncrono primeiro: os dois editam quando quiserem; o servidor versão-a-versão;
-- o relatório mostra **qual lado caiu primeiro** — a fonte do "culpar o amigo";
-- raid em dupla: os dois assistem juntos e podem gastar "cartas de emergência".
-- tempo real simultâneo só depois de validar retenção (custo de netcode não se paga no MVP).
+- **Dupla Assíncrona:** os dois editam quando quiserem sob controle otimista de revisão (`rev++`), sem depender de presença simultânea;
+- **Co-op Síncrono em Tempo Real (desbloqueado pelo diretor em 13/11/2026):** ambos defendem ao vivo em servidor reservado (`TeleportService:ReserveServer`) sob *lockstep* server-authoritative de `20 Hz` (`scheduledTick = currentTick + 2`), cursor etéreo `10 Hz`, 4 Pings Táticos 3D, carteiras separadas com botão **Enviar +25 Ouro** e protocolo anti-leaver em 3 camadas (rejoin `90s` + transferência em `10s` + re-escalonamento de HP). O `BattleLog v2` grava `commands[]` para preservar 100% o replay de 8s;
+- o relatório pós-batalha mostra **qual lado caiu primeiro** — a fonte do "culpar o amigo".
+
+### 4.5 Campanha História "Crônicas do Bastião" & Bosses (Solo / Duo)
+5 Atos × 5 estágios (`25` fases + Modo Pesadelo), 100% completáveis **Solo**, em **Dupla Assíncrona** ou em **Dupla Síncrona**, culminando nos **5 Bosses de Cerco** multi-lane (`iron_ram_colossus`, `slag_juggernaut`, `rime_matriarch`, `powder_baron`, `rift_titan`) com selos de 3★ e 8 mutadores determinísticos. Ver [`campanha-bosses-e-coop-sincrono.md`](campanha-bosses-e-coop-sincrono.md).
 
 ### 4.3 Invasão Global do Dia
 Uma muralha da IA com seed pública, igual para todos, uma tentativa por dia.
@@ -162,14 +163,14 @@ bloqueando conteúdo — console/VR não suportam). Selo cosmético "verificado"
 
 ---
 
-## 7. Direção de arte e áudio
+## 7. Direção de arte, física real híbrida e áudio
 
 - **Paleta:** defensores em âmbar (#F59E0B) e ferro; atacantes em verde-água frio (#14B8A6).
 - **Silhueta:** cada unidade legível a 200px de distância (teste do thumbnail).
-- **Destruição:** partículas baratas (madeira, faísca, fumaça) + ragdoll **cosmético** no cliente.
-- **Física:** gameplay usa impulsos determinísticos (curvas), não física do Roblox.
-- **Áudio:** impacto seco, madeira rangendo, "batimento" da muralha quando HP < 30%.
-- **Vídeo de 6s:** a peça de marketing é a muralha explodindo — gravar sempre que possível.
+- **Física Real Híbrida (desbloqueada em 13/11/2026):** gameplay autoritativo usa impulsos determinísticos inteiros (`MILLI=1000` em `Core`) combinados à **física real do Roblox no cliente** (`BallSocketConstraint` ragdolls, estilhaçamento elemental, colapso de ameias `<70%`, vigas com `HingeConstraint` `<30%` e fratura do portão em 12 blocos aos `0%`) isolada em `CollisionGroups` (`CanQuery=false`) com governor mobile (`Low <=6`, `Mid <=18`, `High <=36`). Ver [`animacoes-fisica-real-e-vfx.md`](animacoes-fisica-real-e-vfx.md).
+- **Animações 60 Hz & VFX:** máquinas de estado para traps, horda e 5 Bosses com hit-squash, telégrafos no chão (`2.0s`) e `<=40` partículas/emitter.
+- **Áudio & OST Adaptativa:** `SoundGroup MuralhaMaster` + `BGM_Bus` (4 stems verticais + 5 Atos em 120/132 BPM), `wall_heartbeat` abaixo de 30% HP, 36 SFX 3D normalizados a `-14 LUFS` e stinger de finisher para o clipe de 8s. Ver [`audio-musica-e-soundscape.md`](audio-musica-e-soundscape.md).
+- **Vídeo de 6s/8s:** a peça de marketing é a muralha explodindo — gravar sempre que possível.
 
 ---
 
@@ -206,12 +207,15 @@ Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 - replay de defesa de 8s;
 - telemetria completa do funil.
 
-**Não entra:**
-- co-op em tempo real (só dupla assíncrona na fase 2);
-- grade 7×5 (entra no nível 5 da muralha);
-- clã, chat, UGC de blueprint;
-- segundo mapa, chefes, temporada paga;
-- física real de ragdoll no gameplay.
+**Não entra no núcleo P1 fechado (`S1–S8`, até o gate de 3 semanas):**
+- grade 7×5 (entra no nível 5 da muralha na P2+);
+- clã, leaderboard global, UGC de blueprint;
+- segundo mapa e temporada paga.
+
+**Desbloqueado pelo diretor em 13/11/2026 (roadmap V1.5/P2+, especificado com zero brechas):**
+- **Co-op Síncrono em tempo real** (lockstep 20 Hz + `commands[]` no replay 8s + anti-leaver 90s);
+- **Física Real Híbrida** (camada cliente isolada em S8.2/V1; impulsos `Core` na P2+);
+- **Campanha Solo/Duo *Crônicas do Bastião* + 5 Bosses** e **Sistemas Comerciais Completos** (`RFC-007..009`).
 
 ---
 
@@ -221,7 +225,7 @@ Se dois gates falharem na semana 13: **pivô ou morte**, sem apego.
 |---|---|---|---|
 | P0 | 1 | motor determinístico + testes headless | 1.000 batalhas com hash estável |
 | P1 | 2–3 | drop-in, build, raid, replay | 70% de primeira vitória < 60s |
-| P2 | 4–6 | meta, liga, telemetria, loja | D1 ≥ 15% (300–500 jogadores) |
+| P2 | 4–6 | meta, liga, sink HTTP externo (telemetria base entregue antecipadamente na P1/S7), loja | D1 ≥ 15% (300–500 jogadores) |
 | P3 | 7–9 | dupla assíncrona, loja, localização | pagantes ≥ 2% |
 | P4 | 10–12 | Invasão Global, temporada, candidatura Standout | D7 ≥ 3% e D30 ≥ 0,8% |
 
@@ -253,8 +257,8 @@ gênero e pedidos explícitos dos jogadores. As que entram no design:
 | 1 | **Grade 5×5 no MVP, com N=5 armadilhas ativas e colocação livre nas 25 células**, expandindo para 7×5 no nível 5 | N=5 é o orçamento simultâneo (não o nº de células nem de tipos); layouts salvos por índice de célula; 7×5 adiciona espaço, não N; migração de save trivial |
 | 2 | **Cercos livres**, com **3 Grandes Saques/dia** (blueprints) | sem timer duro; economia controlada pelo loot, não pela porta |
 | 3 | **Derrota perde só pontos de liga** + muralha fumegando no login + conserto grátis | nunca destrói nível de armadilha; o gatilho é emocional, não punitivo |
-| 4 | **Nome localizado**: `A MURALHA` (PT-BR) · `WALLBREAKER` (EN) | título/descrição por locale no Creator Dashboard |
-| 5 | **Co-op na P3** | MVP 100% solo + fantasma assíncrono + replay de 8s |
+| 4 | **Nome localizado**: `A MURALHA` (PT-BR) · `WALLBREAKER` (EN) · `LA MURALLA` (ES) | título/descrição por locale no Creator Dashboard + `assets/i18n/LocalizationTable.csv` |
+| 5 | **Co-op na P3 → Desbloqueado em 13/11/2026** | MVP P1 100% solo + fantasma assíncrono + replay 8s; Dupla Assíncrona e Co-op Síncrono Lockstep desbloqueados para V1.5/P2+ (`RFC-007`) |
 
 Ponto de atenção na decisão 1: a grade 5×5 fixa no código; a expansão é **dado**, não código novo
 (`gridWidth` no save). Se o jogador voltar de 7×5 para 5×5 (não previsto), células fora da grade
@@ -265,3 +269,19 @@ ativas simultâneas** no MVP, com **colocação livre entre as 25 células** —
 O modelo de “5 slots” (1 por lane) é um caso particular (N=5 com restrição), não a arquitetura de
 produção. Crescer N é progressão (P2), não reabre Q2. Fallback de playtest: se a primeira vitória
 ficar < 50% ou a 1ª colocação > 20s, testar 15 células (5×3) antes de voltar para 5 slots.
+
+---
+
+## Documentos Complementares Detalhados (13/11/2026)
+
+- [`literatura-e-universo.md`](literatura-e-universo.md) — lore diegético zero-avatar (*Ordem do Âmbar* vs *Fendas Mercenárias*), comandantes, micro-literatura e quick-chat.
+- [`catalogo-itens-e-cosmeticos.md`](catalogo-itens-e-cosmeticos.md) — catálogo P1 + backlog horizontal P2/P3, unidades da horda, plantas, cosméticos e passe regionalizado.
+- [`skills-tiers-e-modos.md`](skills-tiers-e-modos.md) — sinergias espaciais, *Gambits* determinísticos, traits horizontais, calibração do Dia 1, 7 ligas, tiers e 7 modos.
+- [`direcao-visual-e-silhuetas.md`](direcao-visual-e-silhuetas.md) — lei cromática, matriz L1–L5 × Tier Cosmético, estados de destruição da muralha, UX mobile e pipeline 3D/áudio.
+- [`arquitetura-e-fluxos.md`](arquitetura-e-fluxos.md) — topologia em 4 camadas, 5 fluxos end-to-end, arquitetura P2 de DataStores e auditoria `AUD-01..12`.
+- [`plano-playtest-v1.md`](plano-playtest-v1.md) — runbook zero-brechas para entregar o **Playtest V1** (Fatias S8.1 `GAP-014`, S8.2 `GAP-017`/client `GAP-019` e S8.3 opcional `SIM_VERSION = 4`).
+- [`rfcs-p2-e-fechamento-gaps.md`](rfcs-p2-e-fechamento-gaps.md) — compêndio completo de RFCs (`RFC-001..009`) estruturando o fechamento de `GAP-004..GAP-020`.
+- [`audio-musica-e-soundscape.md`](audio-musica-e-soundscape.md) — Pilar 1: hierarquia `SoundService`, OST adaptativa (4 stems verticais + 5 Atos), 36 SFX 3D e pipeline `-14 LUFS`.
+- [`campanha-bosses-e-coop-sincrono.md`](campanha-bosses-e-coop-sincrono.md) — Pilar 2 & Co-op Síncrono: Campanha 5 Atos (Solo/Duo), 5 Bosses multi-lane no `Core` e lockstep `20 Hz` + anti-leaver `90s`.
+- [`animacoes-fisica-real-e-vfx.md`](animacoes-fisica-real-e-vfx.md) — Pilar 3: Física Real Híbrida (`CollisionGroups` isolados, `BallSocketConstraint` ragdoll, fratura de portão, governor mobile), animações 60 Hz e VFX.
+- [`sistemas-jogo-completo.md`](sistemas-jogo-completo.md) — FTUE 30 min, Pós-Partida/DPS Meter, Contratos/Passe/12 Badges, Ordens/Blueprints, Acessibilidade/Gamepad/i18n e Loja `ProcessReceipt` + `PolicyService`.

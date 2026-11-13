@@ -11,6 +11,7 @@
 | `art/export/calibration.glb` | export glTF para o 3D Importer | LFS |
 | `art/export/calibration.fbx` | export FBX (teste alternativo) | LFS |
 | `art/scripts/make_calibration.py` | gerador da cena | normal |
+| `art/scripts/make_fractured_gate.py` | gera portão central pré-fraturado em 12 blocos (`<=1500` tris) para Física Real | normal |
 | `art/src/` | fontes `.blend` dos assets | LFS |
 | `art/export/` | `.glb`/`.fbx` exportados | LFS |
 | `art/renders/` | previews e thumbnails gerados | ignorado |
@@ -28,6 +29,7 @@
 
 ```bash
 blender4.5 -b --factory-startup --python art/scripts/make_calibration.py
+blender4.5 -b --factory-startup --python art/scripts/make_fractured_gate.py
 ```
 
 Saídas: `art/calibration.blend`, `art/export/calibration.glb`, `art/export/calibration.fbx`,

@@ -11,9 +11,9 @@
 | Camada | Ferramenta | Estado |
 |---|---|---|
 | Editor do jogo | **Roblox Studio** (Windows, `version-67c8b1dedbb74fed`) + plugin **Rojo** | ok |
-| Código | **Rokit**: Rojo 7.7.1 · StyLua 2.6.0 · Selene 0.32.0 · Luau 0.746 | ok |
+| Código | **Rokit**: Rojo 7.7.1 · StyLua 2.6.0 · Selene 0.32.0 · Luau 0.746 · **luau-lsp 1.70.1** · **Asphalt 2.0.2** | ok |
 | 3D | **Blender 4.5.15 LTS** (`blender4.5`) e 4.2.0 (`blender`) | ok; 4.5 usa libs SM/ICE extraídas sem sudo |
-| Tipos | **luau-lsp 1.70.1** | ok, em `~/.local/bin` |
+| Tipos | **luau-lsp 1.70.1** (Rokit) + `.tools/globalTypes.d.luau` (`scripts/fetch-roblox-types.sh`) | ok |
 | Scripts | **Lune 0.11.1** · **Pesde 0.7.4** · **rbxcloud 0.17.0** | ok, em `~/.local/bin` |
 | Áudio/vídeo | **ffmpeg 7.0.2 static** (já existia) | ok |
 | Imagem | **oxipng 10.2.1** | ok |
@@ -167,7 +167,8 @@ material por mesh quando possível; sem nós procedurais no export (bake para te
 |---|---|---|
 | UI/HUD, ícones, thumbnails | **Figma** (layout) + **Krita** (raster) + **Inkscape** (vetor) | exportar 1×/2×/3×; 9-slice no Studio |
 | Texturas/pintura | **Krita**; **Material Maker** (opcional, procedural) | PBR: albedo, normal, roughness, metalness |
-| SFX | **Audacity** + **jsfxr/BFXR** (8-bit) + Freesound (licença) | normalizar; OGG; SFX curtos |
+| SFX | **Audacity** + **`tools/gen-sfx.py`** (Python + FFmpeg `-14 LUFS`) + Freesound (licença) | normalizar; OGG; SFX curtos |
+| Assets Roblox | **Asphalt 2.0.2** (`asphalt.toml`) + **Git LFS** | `asphalt sync studio` / `asphalt sync cloud` |
 | Música | **LMMS**/Ardour (opcional) ou licenciada | guardar licença em `CREDITS.md` |
 | Vídeo/trailer | **FFmpeg** + **OBS** | cortes, legendas, thumbnail animada |
 | Batch de imagem | **ImageMagick** + `pngquant` | redimensionar, otimizar, gerar ícones |
@@ -186,7 +187,7 @@ ponta inclui não tomar strike.
 | Draw calls na cena | ≤ 500 | MicroProfiler |
 | Triângulos por armadilha | ≤ 1.500 | Blender / Studio |
 | Textura por armadilha | ≤ 512² | Blender / Studio |
-| Partículas por armadilha | ≤ 3 emitters · ≤ 150 partículas | Studio |
+| Partículas por armadilha | ≤ 2 emitters · ≤ 40 partículas/emitter (S8; teto absoluto ≤ 3 / ≤ 150 em finishers) | `VisualTheme` / Studio |
 | Tempo até a 1ª ação | ≤ 30 s | telemetria do funil |
 | Primeira vitória | ≤ 60 s | telemetria |
 | Join em 4G | ≤ 15 s | device real |
@@ -262,8 +263,7 @@ Decisão: reavaliar quando o Selene suportar compound assignment; até lá, o li
 - **ProfileStore vendorizado** em `vendor/ProfileStore.luau` (Apache-2.0, commit `45c9847`), com
   `vendor/SOURCE.md`; `pesde.toml` fica para quando houver uma segunda dependência. Wrapper e schema
   v1 entregues na P0 (`src/server/data/`, `src/shared/data/`).
-- Evitar framework grande no MVP (Flamework/Knit/Replica). Escolher **uma** lib de UI e **uma** de
-  networking só quando a P1 começar; trocar depois custa caro.
+- Evitar framework grande no MVP (Flamework/Knit/Replica). A P1 foi concluída (S1–S8) usando UI pura do Roblox (`UiKit`/`BuildLayout`) e `RemoteFunction`s explícitas sem dependências externas extras.
 
 ---
 

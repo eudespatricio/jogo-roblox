@@ -22,16 +22,8 @@ jobs:
       - name: Instalar ferramentas fixadas
         run: rokit install --no-trust-check
 
-      - name: Instalar luau-lsp
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -fsSL \
-            https://github.com/JohnnyMorganz/luau-lsp/releases/download/1.70.1/luau-lsp-linux-x86_64.zip \
-            -o /tmp/luau-lsp.zip
-          python3 -m zipfile -e /tmp/luau-lsp.zip /tmp/luau-lsp
-          bin="$(find /tmp/luau-lsp -type f -name luau-lsp | head -1)"
-          install -m755 "$bin" "$HOME/.local/bin/luau-lsp"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Baixar definicoes Roblox (globalTypes)
+        run: bash scripts/fetch-roblox-types.sh
 
       - name: Check
         run: bash scripts/check.sh

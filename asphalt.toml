@@ -1,0 +1,20 @@
+#:schema https://raw.githubusercontent.com/jackTabsCode/asphalt/refs/heads/main/schema.json
+# Pipeline declarativo de assets (OGG / PNG) -> modulo Luau tipado (rbxassetid://).
+# Uso local no Studio (sem API key): asphalt sync studio
+# Dry-run / inspecao local:          asphalt sync debug
+# Upload Open Cloud (producao):      ASPHALT_API_KEY=... asphalt sync cloud
+
+[creator]
+type = "user"
+id = 1 # Substituir pelo UserId/GroupId real antes de usar asphalt sync cloud
+
+[codegen]
+style = "nested"
+strip_extensions = true
+
+[inputs.assets]
+path = "assets/{audio,ui}/**/*.{ogg,png}"
+# Durante a pausa da P1, gera em build/generated (mantem src/ intocado).
+# Na retomada S8.2/P2, apontar output_path = "src/shared/assets".
+output_path = "build/generated"
+bleed = true

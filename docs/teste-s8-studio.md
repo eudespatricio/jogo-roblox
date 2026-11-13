@@ -35,12 +35,12 @@ Plano: [`s8-plano-visual.md`](s8-plano-visual.md).
       com pips de nível; a célula da UI muda de cor e mostra `L1`.
 - [ ] Upgrade muda o nível/pips; remover volta a célula ao estado vazio.
 - [ ] Sem BillboardGui “ARQUEIRO L1” flutuando sobre a peça.
-- [ ] `ATACAR` (RaidClient) fica no espaço livre abaixo da barra de seleção, sem cobrir o grid em
-      375×812/720×1280.
+- [ ] `ATACAR` (RaidClient) tem tamanho mínimo `>= 104×44` px e fica livre abaixo da seleção, sem cobrir o grid em `375×812`/`720×1280` (`GAP-017`).
+- [ ] Picking 3D via raycast nas placas `r1c1..r5c5` (após Fatia S8.2): tocar na célula seleciona/coloca sem tela coberta por 25 botões opacos.
 
 ## 3. Drop-in — primeira impressão
 
-- [ ] Entrar no jogo mostra a arena no offset (200,0,0), com horda 3D nas 5 lanes, portão e catapulta.
+- [ ] Entrar no jogo mostra a arena no offset (200,0,0), com horda 3D nas 5 lanes, portão e catapulta **apoiados sobre o piso (`Y = 0.39` / rodas `1.05`) sem afundar no chão** (`GAP-017`).
 - [ ] A câmera está baixa o suficiente para ler a muralha e a horda; não há baseplate verde no fundo.
 - [ ] O som de horn toca; a horda faz bob/movimento; a barra MURALHA está no topo.
 - [ ] DEFENDER aparece em ~1,5 s, com anel/âmbar e pulso em ~6 s.
@@ -52,16 +52,15 @@ Plano: [`s8-plano-visual.md`](s8-plano-visual.md).
 ## 4. Raid/replay
 
 - [ ] `ATACAR` abre a modal de raid com título/status e detalhes.
-- [ ] O replay 3D mostra o diorama, traps da muralha fantasma, horda em 3 silhuetas e a barra de HP por 8 s.
-- [ ] `REPLAY CONCLUIDO · 8s` e `FECHAR` aparecem; o hash local continua igual ao servidor; sem
-      `DIVERGENCIA`.
+- [ ] O replay 3D mostra o diorama, traps da muralha fantasma, horda em 3 silhuetas (`runner`/`brute`/`swarm` **sem trocar de modelo quando a da frente morre**, `GAP-017`) e a barra de HP por 8 s.
+- [ ] `REPLAY CONCLUIDO · 8s` e `FECHAR` (`>= 44 px` de altura) aparecem; o hash local continua igual ao servidor; sem `DIVERGENCIA`.
 - [ ] Vitória e derrota têm cor/som diferentes; o OURO do build atualiza.
 - [ ] Em 375×812 e 720×1280 a modal não corta o `FECHAR` nem o viewport.
 
 ## 5. Performance e regressão
 
 - [ ] FPS ≥45 no Studio focado (alvo 60) em build/drop-in/replay; registrar o número.
-- [ ] Draw calls ≤500 e sem erro recorrente no Output.
+- [ ] Draw calls ≤500 e **zero erro de áudio (`Asset type does not match` / `203785492`)** ou erro recorrente no Output (`GAP-017`).
 - [ ] `luau sim/visual-contract.luau` → 8/8.
 - [ ] `luau sim/analytics-contract.luau` → 34/34.
 - [ ] `bash scripts/check.sh` → RC=0.
@@ -81,7 +80,7 @@ O lugar foi aberto em um Studio novo e rodado com **Play Solo** (cliente real, s
 
 Ainda **não** é o QA de aceite: faltam 375×812/720×1280 e medição de FPS/draw calls.
 
-## 6. Smoke de runtime executado (Studio, 10/11/2026)
+## 7. Smoke de runtime executado (Studio, 10/11/2026)
 
 `tools/s8-smoke.luau` foi executado dentro do Studio com `run-in-roblox` sobre `build/place.rbxl`:
 
@@ -102,7 +101,7 @@ O runner emite um erro de `require` do próprio plugin **depois** do smoke e um 
 APIs/peças/Enum/propriedades usadas existem no Studio real; **não** prova render/beleza. Prints e FPS
 continuam sendo o item manual abaixo.
 
-## 7. Evidência para fechar o QA visual
+## 8. Evidência para fechar o QA visual
 
 1. Print do build 375×812 e 720×1280 com a arena, grid, cartões e OURO.
 2. Print do drop-in antes/depois do DEFENDER (horda, projéteis, ONDA LIMPA).
@@ -112,7 +111,7 @@ continuam sendo o item manual abaixo.
 
 Sem os itens 1–3 o QA visual não fecha. O contrato headless + CI não substituem o Studio.
 
-## 8. Áudio (placeholder)
+## 9. Áudio (placeholder)
 
 `AudioKit.SOUNDS` usa sons embutidos (`rbxasset://`) para o protótipo não ficar mudo:
 

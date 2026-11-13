@@ -10,13 +10,12 @@
 > 375×812/720×1280); **S5 fechada** (drop-in/funil/+3 ouro); **S6.1 fechada** (raid, fantasma real
 > e replay 3D); **S7 fechada** (telemetria: serviço, contrato 34/34 e `first_win_seconds`);
 > **S8 fechada** (apresentação visual: diorama, traps/horda 3D, UI e game feel). **GAP:**
-> GAP-004/005/008/013 — classe/taxonomia v2, P2 e ticket regional; GAP-011 fechado no `BattleLog`
+> GAP-004, GAP-005, GAP-008, GAP-013, GAP-014, GAP-015, GAP-016, GAP-017 — auditoria pré-tráfego (S8.1/S8.2 em [`plano-playtest-v1.md`](plano-playtest-v1.md)) + P2/internacional ([`rfcs-p2-e-fechamento-gaps.md`](rfcs-p2-e-fechamento-gaps.md)); GAP-011 fechado no `BattleLog`
 > da S6; GAP-012 fechado no sink persistente da telemetria.
 > Ver [`gaps.md`](gaps.md) e [`pipeline-expansao.md`](pipeline-expansao.md).
 > **Trial S3.2:** classe/trait/raridade executado e revertido; relatório em
 > [`expansion-test-2026-11-10.md`](expansion-test-2026-11-10.md).
-> **Pausa (10/11/2026):** trabalho pausado para tratar dois assuntos separados; retomar pelo QA
-> visual mobile do S8 e pelo teste de 3 semanas. P2 continua bloqueada.
+> **Pausa (10/11/2026):** trabalho pausado; retomar executando [`plano-playtest-v1.md`](plano-playtest-v1.md) (fechar `GAP-014` e `GAP-017`), depois QA visual mobile do S8 e teste de 3 semanas. P2 continua bloqueada.
 
 ---
 
@@ -41,7 +40,7 @@ persistente (sink DataStore, GAP-012 fechado) guarda a série: o número de 70% 
 | S3.4 | **Conteúdo e versões** — **feito 10/11/2026** | `contentVersion` no schema v2, `oil → tar`, `catapult` (5º tipo), `SIM_VERSION 3`, migração neutra e Modo B | contratos 20/13/7/6; GAP-001/002/003/009/010 fechados; Modo B schema v2 8/8 |
 | S4 | **Cena 5×5 + build** — **feito 10/11/2026** | grid 5×5 no Workspace, câmera fixa, UI de build (colocar 5 em 25), HUD de FPS/tempos, layout 375×812/720×1280; `GridLayout`/`BuildProtocol`/`BuildClientState`/`BuildHud`/`BuildLayout`/`BuildGrid`/`WallController`/`BuildClient`; QA em [`teste-s4-studio.md`](teste-s4-studio.md) | build ≤30 s; nenhuma armadilha fora da célula; 45+ FPS; evidência §7 (FPS 60/60, Play→UI 1,9 s) |
 | S5 | **Drop-in de 5 s** — **feito 10/11/2026** | cena de abertura com DEFENDER, derrota roteirizada e retry; `DropInState`/`DropInController`/`DropInClient`/`sim/dropin-contract.luau`; +3 ouro no clear; QA em [`teste-s5-studio.md`](teste-s5-studio.md) | `dropin_shown`/`dropin_pressed` no funil; `dropin_pressed` ≥ 60% no teste de produto |
-| S6 | **Raid assíncrona + replay** — **S6.1 fechada em 10/11/2026 (fantasma real + replay 3D)** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`, `contentVersion`), replay por seed de 8 s; `BattleLog`/`RaidReplay`/`RaidController`/`RaidClient`; QA em [`teste-s6-studio.md`](teste-s6-studio.md) | `battle_finished.result_hash` igual ao replay; recompensa idempotente por `battle_id`; divergência vira `battle_divergence`; GAP-011 fechado |
+| S6 | **Raid assíncrona + replay** — **S6.1 fechada em 10/11/2026 (fantasma real + replay 3D · pendente `GAP-014`)** | batalha contra fantasma, `BattleLog` (store separado, 1 chave por `battle_id`, `contentVersion`), replay por seed de 8 s; `BattleLog`/`RaidReplay`/`RaidController`/`RaidClient`; QA em [`teste-s6-studio.md`](teste-s6-studio.md) | `result_hash` igual ao replay; recompensa idempotente; GAP-011 fechado; **remediação de auto-raid e escrita dupla (`GAP-014`) especificada em [`plano-playtest-v1.md`](plano-playtest-v1.md)** |
 | S7 | **Telemetria** — **feito 10/11/2026** | `AnalyticsService.luau`: `emit`, lote (30 s/100), rate limit de cliente (10/min), idempotência; `AnalyticsDataStoreSink` (DataStore/Memory/Null); `AnalyticsBoot` liga a sessão/perfil e `first_win_seconds`; `traps_count=0` aditivo; QA em [`teste-s7-studio.md`](teste-s7-studio.md) | contrato v1 **34/34**; nenhum evento altera `BattleResult`; sem PII; GAP-012 fechado com série persistida |
 | S8 | **Apresentação visual** — **feito 10/11/2026** | `VisualTheme` + `ArenaVisual`/`TrapKit`/`HordeKit`/`Vfx`/`AudioKit`/`UiKit`; diorama 5×5, 5 armadilhas, 3 silhuetas, UI de cartões e replay no mesmo kit; QA em [`teste-s8-studio.md`](teste-s8-studio.md) | contrato visual **8/8**; 60 FPS alvo; sem mudança de schema/content/sim; S4/S5/S6/S7 verdes |
 
@@ -77,8 +76,8 @@ US$ 0,005 · servidor autoritativo + replay por seed.
 
 ## 5. Fora da P1
 
-Liga/meta/loja (P2), co-op (P3), grade 7×5, chat, segundo mapa, chefes, temporada paga, UGC de
-blueprint, física real de ragdoll.
+Liga/meta/loja/Passes/Badges (P2+), co-op assíncrono/síncrono, campanha/chefes, grade 7×5, segundo mapa, camada de impulsos `F1` no `Core`.
+> **Nota (13/11/2026):** Por decisão do diretor, **Co-op Síncrono**, **Física Real Híbrida** e **Campanha com Bosses** foram desbloqueados para o roadmap V1.5/P2+ (`.context/REJEITADOS.md` reaberto; `GAP-018..020` e `RFC-007..009`), mantendo o núcleo fechado da P1 (S1–S8) intacto até o teste de 3 semanas. Camada puramente cliente de áudio/animação/ragdoll isolado (`GAP-019`) pode acompanhar S8.2 sem alterar `simVersion`.
 
 ## 6. Teste de produto de 3 semanas
 

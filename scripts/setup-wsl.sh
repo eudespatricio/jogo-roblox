@@ -92,12 +92,13 @@ ok "rokit: $(rokit --version 2>/dev/null | head -1)"
 
 # ---------------------------------------------------------------- ferramentas
 info "instalando ferramentas fixadas em rokit.toml..."
-warn "trust automático apenas das 4 versões fixadas (rojo/stylua/selene/luau)"
+warn "trust automático apenas das versões fixadas em rokit.toml"
 rokit install --no-trust-check
-for tool in rojo stylua selene luau; do
+for tool in rojo stylua selene luau luau-lsp asphalt; do
 	command -v "$tool" >/dev/null 2>&1 || fail "$tool não encontrado após rokit install"
 done
-ok "rojo $(rojo --version 2>/dev/null | head -1) · luau instalado"
+bash scripts/fetch-roblox-types.sh
+ok "rojo $(rojo --version 2>/dev/null | head -1) · luau-lsp · asphalt instalados"
 
 # ---------------------------------------------------------------- verificação
 if [[ "$NO_VERIFY" -eq 0 ]]; then

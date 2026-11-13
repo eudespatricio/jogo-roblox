@@ -87,7 +87,7 @@ devolve um `BattleResult` imutável e o servidor emite — nada de sink dentro d
 | Evento | Quando | Propriedades obrigatórias |
 |---|---|---|
 | `gold_earned` | recompensa creditada | `amount`, `source` (`raid`/`defense`/`daily`), `battle_id?` |
-| `gold_spent` | gasto confirmado | `amount`, `sink` (`trap`/`upgrade`/`repair`) |
+| `gold_spent` | gasto confirmado (`WallController` pendente injeção de `emit` sob `GAP-014` / `plano-playtest-v1.md §2`) | `amount`, `sink` (`trap`/`upgrade`/`repair`) |
 | `trap_placed` | armadilha posicionada | `trap_id`, `cell`, `cost` |
 | `upgrade_bought` | upgrade confirmado | `target`, `level`, `cost` |
 | `league_changed` | elo muda | `from`, `to`, `delta` |
@@ -208,9 +208,7 @@ nenhum evento altera `result_hash`; sink persistente não quebra o fluxo e `Null
 1. **Atribuição dos 3 criativos.** Anúncio do Roblox não carrega ID do criativo no join. Opções:
    3 lugares/experiências separados, campanhas sequenciais, ou `launchData` em links de compartilhar.
    Decidir **antes da semana 2** do teste.
-2. **Limites do `AnalyticsService`** (nomes, campos, volume) precisam ser conferidos na doc oficial
-   antes do sink (P1). O contrato v1 não depende da API: ele valida no servidor e entrega o
-   evento pronto — o sink só decide para onde mandar.
+2. **Limites do `AnalyticsService` / Sink:** o `AnalyticsDataStoreSink` (`MuralhaAnalytics_v1`, DataStore em produção / Memory no Studio) **já foi entregue na S7 fechando `GAP-012`**. Restam: (a) fechar `GAP-014` (`emit` ausente em `WallController` e corrida de `dropin_shown` em `DropInController`) conforme [`plano-playtest-v1.md`](plano-playtest-v1.md), e (b) auditar endpoints/limites de sink HTTP externo antes da P2 (`RFC-003`).
 3. **DataStore como sink** só vale para o teste; a decisão do sink externo é da P2.
 4. **Feature flags/experimentos** continuam abertos em [padrões](padroes-engenharia.md) §8.3.
 5. **Nomes congelados na v1** (09/11/2026): renomear evento quebra série histórica; mudança só

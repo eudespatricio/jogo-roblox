@@ -1,0 +1,52 @@
+Key,Context,Example,Source,en,es
+game_title,UI/Header,Title,A MURALHA,WALLBREAKER,LA MURALLA
+subtitle_architect,UI/Header,Subtitle,Arquiteto-Mor da Ordem,Master Siege-Architect,Arquitecto Mayor
+lang_auto,Settings/Locale,Auto,Auto,Auto,Auto
+lang_pt,Settings/Locale,PT,PT-BR,PT-BR,PT-BR
+lang_en,Settings/Locale,EN,EN,EN,EN
+lang_es,Settings/Locale,ES,ES,ES,ES
+cta_defend,DropIn/CTA,Button,DEFENDER,DEFEND,DEFENDER
+cta_attack,Raid/CTA,Button,ATACAR,ATTACK,ATACAR
+cta_close,Modal/CTA,Button,FECHAR,CLOSE,CERRAR
+cta_revenge,Ledger/CTA,Button,VINGAR,REVENGE,VENGAR
+cta_clip_8s,Replay/CTA,Button,CLIPE 8s,8s CLIP,CLIP 8s
+mode_place,Build/Mode,Mode button,COLOCAR,PLACE,COLOCAR
+mode_upgrade,Build/Mode,Mode button,MELHORAR,UPGRADE,MEJORAR
+mode_remove,Build/Mode,Mode button,REMOVER,REMOVE,QUITAR
+trap_name_archer,Build/Trap,Card title,ARQUEIRO,ARCHER,ARQUERO
+trap_name_tar,Build/Trap,Card title,PICHE,TAR,BREA
+trap_name_frost,Build/Trap,Card title,GELO,FROST,HIELO
+trap_name_cannon,Build/Trap,Card title,CANHÃO,CANNON,CAÑÓN
+trap_name_catapult,Build/Trap,Card title,CATAPULTA,CATAPULT,CATAPULTA
+verb_archer,Build/Trap,Short verb,Disparo rápido na trilha.,Fast single-lane shot.,Disparo rápido en el carril.
+verb_tar,Build/Trap,Short verb,Retarda a horda no piso.,Slows enemies on the floor.,Ralentiza a la horda en el suelo.
+verb_frost,Build/Trap,Short verb,Congela o avanço na frente.,Chills incoming raiders.,Congela el avance en el frente.
+verb_cannon,Build/Trap,Short verb,Impacto pesado contra brutos.,Heavy blast vs brutes.,Impacto pesado contra brutos.
+verb_catapult,Build/Trap,Short verb,Dano em área em toda a trilha.,Area splash along the lane.,Daño en área por todo el carril.
+unit_runner,Horde/Unit,Unit name,Corredor,Runner,Corredor
+unit_brute,Horde/Unit,Unit name,Bruto,Brute,Bruto
+unit_swarm,Horde/Unit,Unit name,Enxame,Swarm,Enjambre
+boss_1,Campaign/Boss,Act 1 Boss,Arietão de Ferro,Iron Ram,Ariete de Hierro
+boss_2,Campaign/Boss,Act 2 Boss,Forjadora de Breu,Pitchforger,Forjadora de Brea
+boss_3,Campaign/Boss,Act 3 Boss,Colosso Glacial,Glacial Colossus,Coloso Glacial
+boss_4,Campaign/Boss,Act 4 Boss,Baronesa do Canhão,Cannoness,Baronesa del Cañón
+boss_5,Campaign/Boss,Act 5 Boss,Soberano da Fenda,Rift Sovereign,Soberano de la Grieta
+hud_gold,HUD/TopBar,Currency,%d Ouro,%d Gold,%d Oro
+hud_league,HUD/TopBar,League,Liga %d · %d pts,League %d · %d pts,Liga %d · %d pts
+hud_traps,HUD/TopBar,Active traps,%d/%d Armadilhas,%d/%d Traps,%d/%d Trampas
+toast_starter_40g,DropIn/Toast,First grant,+40 ouro · Defensor pronto!,+40 gold · Bastion ready!,+40 oro · ¡Defensor listo!
+toast_locked_league,Build/Toast,Locked trap,Desbloqueia na Liga %d,Unlocks at League %d,Desbloquea en Liga %d
+toast_no_gold,Build/Toast,Low gold,Ouro insuficiente (%dg),Not enough gold (%dg),Oro insuficiente (%dg)
+toast_max_level,Build/Toast,Upgrade cap,Nível máximo atingido,Max level reached,Nivel máximo alcanzado
+toast_victory,Raid/Toast,Defense win,Muralha intacta! +%dg,Bastion held! +%dg,¡Muralla intacta! +%dg
+toast_defeat,Raid/Toast,Defense loss,Portão rompido na trilha,Gate breached in lane,Portón roto en el carril
+toast_breach,Raid/Toast,Attacker win,Muralha rompeu! +%dg,Wall breached! +%dg,¡Muralla rota! +%dg
+toast_partner_offline,Coop/Toast,Anti-leaver,Parceiro offline: setor assumido,Partner offline: sector merged,Socio desconectado: sector unido
+replay_banner,Replay/Header,8s replay,REPLAY %ds · %s,REPLAY %ds · %s,REPETICIÓN %ds · %s
+diag_brute_lane,PostMatch/Diag,Hint,Trilha %d cedeu: use Gelo + Canhão.,Lane %d breached: use Frost + Cannon.,Carril %d roto: usa Hielo + Cañón.
+diag_swarm_lane,PostMatch/Diag,Hint,Enxame passou na %d: use Catapulta.,Swarm passed lane %d: use Catapult.,Enjambre en %d: usa Catapulta.
+diag_runner_lane,PostMatch/Diag,Hint,Corredor na %d: Arqueiro c2 + Piche.,Runner on %d: Archer c2 + Tar.,Corredor en %d: Arquero c2 + Brea.
+ping_focus,Coop/Ping,Quick ping,Foco aqui!,Focus here!,¡Foco aquí!
+ping_tar_here,Coop/Ping,Quick ping,Piche aqui!,Tar here!,¡Brea aquí!
+ping_frost_here,Coop/Ping,Quick ping,Gelo aqui!,Frost here!,¡Hielo aquí!
+ping_send_gold,Coop/Ping,Quick ping,Preciso de ouro,Need gold!,Necesito oro

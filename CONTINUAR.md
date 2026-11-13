@@ -1,17 +1,17 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 10/11/2026 · **Status:** **P1 EM PAUSA** — **S1–S3.4 fechadas** (S3.4 com Modo B real);
+**Data:** 13/11/2026 · **Status:** **P1 EM PAUSA** — **S1–S3.4 fechadas** (S3.4 com Modo B real);
 **S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
 **S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 34/34,
 sink persistente e `first_win_seconds`); **S8 fechada** (apresentação visual: diorama, traps/horda
-3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008/013 abertos · base
-base de código `2a50bbd`; docs de pausa/pesquisa no topo, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
+3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008/013..020 abertos · base
+de código `2a50bbd`; docs de pausa/pesquisa/auditoria e pacote 3 Pilares + Co-op/Física/Jogo Completo (13/11) no topo, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
 
-> **GAP (10/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
+> **GAP (13/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
 > (`contentVersion` no `BattleLog`); **GAP-012 fechado na S7/S8** (`AnalyticsDataStoreSink` com
-> DataStore/Memory + contrato 34/34). Restam GAP-004/005/008/013 em `docs/gaps.md`.
+> DataStore/Memory + contrato 34/34). Restam GAP-004/005/008/013..020 em `docs/gaps.md`.
 
-GAP: GAP-004, GAP-005, GAP-008, GAP-013 · classes/taxonomia v2, live ops e ticket regional ainda abertos · risco alto para a 1ª expansão real/P2 · fechar antes de classe/P2/preço internacional · ver docs/gaps.md
+GAP: GAP-004, GAP-005, GAP-008, GAP-013, GAP-014, GAP-015, GAP-016, GAP-017, GAP-018, GAP-019, GAP-020 · classes/taxonomia v2, live ops, ticket regional, auditoria S6.1/S7/S8, extensibilidade P2, co-op síncrono/campanha/bosses, áudio/OST/física real híbrida e sistemas de jogo completo abertos · fechar GAP-014/017 (e camada client de GAP-019) antes/durante playtest P1 e demais na P2+ · ver docs/gaps.md
 
 > **Transição de janela:** S1–S8 fechadas em 10/11/2026. A próxima sessão mede a saída da P1 no
 > teste de 3 semanas (sink persistente pronto) e faz o QA visual do S8 no Studio. Não reabra
@@ -29,22 +29,24 @@ GAP: GAP-004, GAP-005, GAP-008, GAP-013 · classes/taxonomia v2, live ops e tick
 
 - S1–S8 fechadas; P1 **não fechada** porque a saída (70% de primeira vitória <60 s) ainda será
   medida no teste de 3 semanas.
-- GAP-012 fechado (sink DataStore/Memory); GAP-004/005/008/013 abertos; P2 bloqueada.
-- Últimos commits: `2a50bbd` (UI mostra 30/60 no upgrade e status pelo nível), `f21c6a1` (raid
+- GAP-012 fechado (sink DataStore/Memory); GAP-004/005/008/013..020 abertos; P2 bloqueada. Co-op síncrono e física real híbrida desbloqueados documentalmente pelo diretor em 13/11/2026 (`.context/REJEITADOS.md`), preservando o núcleo P1 congelado.
+- Últimos commits de código: `2a50bbd` (UI mostra 30/60 no upgrade e status pelo nível), `f21c6a1` (raid
   publica a muralha antes de escolher o alvo, sem ficar uma rodada atrás), `742139e` (S8/Play Solo
   desktop), `77f808a` (S8 + GAP-012). CI verde no run #67 (código).
 
-**Pesquisa já feita na pausa:** ticket/ARPPU regional em
-[`docs/pesquisa-monetizacao-regional.md`](docs/pesquisa-monetizacao-regional.md) (GAP-013 aberto).
+**Pesquisa e auditoria já feitas na pausa:**
+
+- Ticket/ARPPU regional em [`docs/pesquisa-monetizacao-regional.md`](docs/pesquisa-monetizacao-regional.md) (`GAP-013`).
+- Suíte documental, runbook e RFCs da auditoria (13/11/2026, sem alterar código/schema/sim): [`docs/literatura-e-universo.md`](docs/literatura-e-universo.md), [`docs/catalogo-itens-e-cosmeticos.md`](docs/catalogo-itens-e-cosmeticos.md), [`docs/skills-tiers-e-modos.md`](docs/skills-tiers-e-modos.md), [`docs/direcao-visual-e-silhuetas.md`](docs/direcao-visual-e-silhuetas.md), [`docs/arquitetura-e-fluxos.md`](docs/arquitetura-e-fluxos.md), [`docs/plano-playtest-v1.md`](docs/plano-playtest-v1.md), [`docs/rfcs-p2-e-fechamento-gaps.md`](docs/rfcs-p2-e-fechamento-gaps.md) (`RFC-001..009`), [`docs/audio-musica-e-soundscape.md`](docs/audio-musica-e-soundscape.md), [`docs/campanha-bosses-e-coop-sincrono.md`](docs/campanha-bosses-e-coop-sincrono.md), [`docs/animacoes-fisica-real-e-vfx.md`](docs/animacoes-fisica-real-e-vfx.md) e [`docs/sistemas-jogo-completo.md`](docs/sistemas-jogo-completo.md).
 
 **Pendências para a retomada**
 
-1. QA visual do S8 em **375×812** e **720×1280**, com prints e FPS/draw calls
-   (roteiro em [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md)).
-2. Rodar o **teste de 3 semanas** com o sink persistente e medir os 70% <60 s.
-3. Revisar o comportamento de raid após a correção `f21c6a1` no Studio (primeiro ataque deve
-   mostrar o archer recém-colocado).
-4. Só depois discutir P2/GAP-004/005/008/013; P2 continua bloqueada.
+1. **Executar Fatias S8.1 (`GAP-014`) e S8.2 (`GAP-017` + camada client de `GAP-019`) do runbook [`docs/plano-playtest-v1.md`](docs/plano-playtest-v1.md) antes do teste de 3 semanas** (zero mudança de schema/sim; depois avaliar com o diretor a Fatia S8.3 opcional de sinergias sob `SIM_VERSION = 4`).
+2. QA visual do S8 em **375×812** e **720×1280**, com prints e FPS/draw calls
+   (roteiro atualizado em [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md)).
+3. Rodar o **teste de 3 semanas** com o sink persistente e medir os 70% <60 s.
+4. Revisar o comportamento de raid após `f21c6a1` e S8.1 (`PhantomStore` + `BotPhantoms`) no Studio.
+5. Só depois discutir P2/RFC-002..009 (`GAP-004/005/008/013/015/016/018..020`); P2 continua bloqueada.
 
 **Ao retomar**
 

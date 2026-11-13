@@ -26,6 +26,8 @@
 # Luau e docs: LF (o repo já é LF; evita ruído de CRLF)
 *.luau text eol=lf
 *.md   text eol=lf
+*.csv  text eol=lf
+*.py   text eol=lf
 *.json text eol=lf
 *.toml text eol=lf
 *.yml  text eol=lf

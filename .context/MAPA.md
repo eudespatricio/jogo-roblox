@@ -1,29 +1,29 @@
 # MAPA — onde cada responsabilidade mora
 
-> Teto: 60 linhas. Atualizado: 10/11/2026. Se um caminho não estiver aqui, procure antes de editar.
+> Teto: 60 linhas. Atualizado: 13/11/2026. Se um caminho não estiver aqui, procure antes de editar.
 
 | Caminho | O que tem | Quando carregar |
 |---|---|---|
 | `.context/ESTADO.md` | fase, números, congelados | **sempre, primeiro** |
 | `.context/MAPA.md` | este mapa | antes de navegar no repo |
 | `.context/REJEITADOS.md` | ideias descartadas e quando reabrem | antes de propor arquitetura |
-| `docs/gdd-muralha.md` · `docs/economia-muralha.md` | design, catálogo, custos e desbloqueio | decisão de produto/economia |
-| `docs/spec-motor-deterministico.md` | contrato do motor, replay, clipe, anti-cheat | mexer em `sim/` |
+| `docs/gdd-muralha.md` · `docs/economia-muralha.md` · `docs/catalogo-itens-e-cosmeticos.md` | design, catálogo P1/P2, custos, cosméticos | decisão de produto/economia |
+| `docs/spec-motor-deterministico.md` · `docs/arquitetura-e-fluxos.md` | motor, fluxos, auditoria `AUD-01..12`, anti-cheat | mexer em `sim/`/rede |
 | `docs/taxonomia-analytics.md` | eventos, envelope, funil, métricas e sink | **antes de instrumentar/P0** |
-| `docs/p1-plano.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/versoes.md` · `docs/rfc-s3.4-conteudo.md` · `docs/expansion-test-2026-11-10.md` | P1 + pipeline + gaps + gate + RFC de conteúdo + trial real | **início da P1/expansão** |
+| `docs/p1-plano.md` · `docs/plano-playtest-v1.md` · `docs/rfcs-p2-e-fechamento-gaps.md` · `docs/pipeline-expansao.md` · `docs/gaps.md` · `docs/versoes.md` · `docs/rfc-s3.4-conteudo.md` · `docs/expansion-test-2026-11-10.md` · `docs/sistemas-jogo-completo.md` | P1, runbook Playtest V1, RFCs `GAP-004..020`, sistemas completos, pipeline, gate e trial | **início da retomada/expansão** |
 | `docs/padroes-engenharia.md` | regras de engenharia com fonte oficial | escrever código de produção |
-| `docs/pesquisa-jogadores.md` | reclamações/pedidos + 10 regras | priorizar feature |
+| `docs/pesquisa-jogadores.md` · `docs/literatura-e-universo.md` · `docs/skills-tiers-e-modos.md` · `docs/campanha-bosses-e-coop-sincrono.md` | regras, lore, skills, ligas, modos, campanha/bosses e co-op síncrono | priorizar feature/design |
 | `docs/pesquisa-tendencias-2026.md` | mercado e gêneros | decidir escopo |
 | `docs/pesquisa-grade-e-prototipo.md` | evidência e decisão de Q1/Q2 (fechadas) | histórico |
 | `docs/pesquisa-monetizacao.md` | preços, benchmarks e canais de receita | **antes de decidir preço/loja** |
 | `docs/decisao-monetizacao.md` | premissas base × topo, gate bruto vs líquido | **antes de decidir preço/gate** |
 | `docs/revisao-direcao.md` | veredito de rota + teste de 3 semanas | histórico da decisão |
-| `docs/ferramentas.md` | auditoria do toolchain, pipeline Blender→Studio | **antes de produzir asset/código** |
+| `docs/ferramentas.md` · `docs/direcao-visual-e-silhuetas.md` · `docs/audio-musica-e-soundscape.md` · `docs/animacoes-fisica-real-e-vfx.md` | toolchain, Blender→Studio, visual/tiers, OST/SFX 3D, animações 60 Hz e física real | **antes de produzir asset/código** |
 | `docs/estacao-de-trabalho.md` | manual operacional: inventário, doctor, reconstrução | **ao montar/trocar de máquina** |
 | `docs/referencias-tower-defense.md` | jogos e vídeos de referência | antes de decidir game feel |
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |
-| `src/shared/sim/core.luau` | motor v2: grade 5×5, N=5, armadilha por célula, RNG/hash | qualquer mudança de simulação |
+| `src/shared/sim/core.luau` | motor v3: grade 5×5, N=5, armadilha por célula, RNG/hash | qualquer mudança de simulação |
 | `sim/poc.luau` · `sim/acceptance.luau` | benchmark/demo e acceptance P1 (1.000 seeds × 3) | medir performance/validar hash |
 | `sim/invariants.luau` | oráculo executável (12 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
@@ -36,11 +36,11 @@
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{sim,data,analytics,build,dropin,raid}`, `server/{data,walls,world,dropin,raid,ProfileBoot,Main stub}`, `client/`, `world/` | navegar no código |
 | `skills/context-recovery/` | protocolo de auditoria + scanner | início de sessão/revisão |
-| `rokit.toml` | versões fixas de ferramentas | setup do ambiente |
+| `rokit.toml` · `asphalt.toml` · `CREDITS.md` | ferramentas fixadas + sync de assets + licenças | setup/assets |
 | `default.project.json` | mapeamento Rojo (produção + vendor + world) | build do lugar |
-| `scripts/` · `tools/expansion-test/` | env/check/doctor/check-versions + kit de trial (migração neutra) | rodar/validar/expandir |
+| `scripts/` · `tools/` | env/check/doctor/fetch-types/check-roblox + trial/gen-sfx/coop-net-sim/check-i18n | rodar/validar |
 | `.github/workflows/ci.yml` | CI: check + artefato do place | após push/PR |
-| `art/` | calibração Blender + pipeline 3D | produzir asset |
+| `art/` · `assets/` | calibração/fratura Blender + OGG/UI/models Asphalt + `i18n/LocalizationTable.csv` | produzir asset/i18n |
 | `.luaurc` · `.vscode/settings.json` | strict + LSP/sourcemap | editar código |
 | `.gitattributes` | LFS de binários | commitar arte/áudio |
 

@@ -2,8 +2,7 @@
 
 [![CI](https://github.com/eudespatricio/jogo-roblox/actions/workflows/ci.yml/badge.svg)](https://github.com/eudespatricio/jogo-roblox/actions/workflows/ci.yml)
 
-Jogo de **tower defense invertido + autobattler assíncrono** para Roblox: você monta a muralha,
-outros jogadores atacam enquanto você está offline, e o replay determinístico mostra o que aconteceu.
+Jogo de **tower defense invertido + autobattler + co-op síncrono/assíncrono e campanha com chefes** para Roblox, com física real híbrida e zero avatar visível: você monta a muralha, enfrenta cercos solo ou em dupla em tempo real, assiste ao replay determinístico de 8s e revida.
 
 > **Status: P1 em pausa (10/11/2026).** P0 fechada. **S1** concluída: legado de moedas apagado,
 > tag anotada `legacy-coins` no commit `b07b4c5`, stub de 10 linhas. **S2** concluída: motor
@@ -38,8 +37,19 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 ## Documentação de produto e engenharia
 
 - [`docs/gdd-muralha.md`](docs/gdd-muralha.md) — loop, drop-in de 5s, modos, economia, fases.
+- [`docs/literatura-e-universo.md`](docs/literatura-e-universo.md) — universo (*Ordem do Âmbar* vs *Fendas Mercenárias*), lore zero-avatar, comandantes e micro-literatura.
+- [`docs/catalogo-itens-e-cosmeticos.md`](docs/catalogo-itens-e-cosmeticos.md) — catálogo P1 + backlog horizontal P2/P3, horda, plantas, cosméticos e passe.
+- [`docs/skills-tiers-e-modos.md`](docs/skills-tiers-e-modos.md) — sinergias espaciais, *Gambits* determinísticos, traits, ligas, tiers e 7 modos.
+- [`docs/direcao-visual-e-silhuetas.md`](docs/direcao-visual-e-silhuetas.md) — lei cromática, matriz L1–L5 × Tier Cosmético, estados da muralha, UX mobile e pipeline 3D.
+- [`docs/audio-musica-e-soundscape.md`](docs/audio-musica-e-soundscape.md) — Pilar 1: barramentos `SoundService`, OST adaptativa (4 stems verticais + 5 Atos), 36 SFX 3D e pipeline `-14 LUFS`.
+- [`docs/campanha-bosses-e-coop-sincrono.md`](docs/campanha-bosses-e-coop-sincrono.md) — Pilar 2 & Co-op Síncrono: Campanha *Crônicas do Bastião* (5 Atos, 3★, mutadores), 5 Bosses no `Core` e lockstep 20 Hz + anti-leaver 90s.
+- [`docs/animacoes-fisica-real-e-vfx.md`](docs/animacoes-fisica-real-e-vfx.md) — Pilar 3: Física Real Híbrida (`CollisionGroups` isolados, ragdolls, fratura do portão, governor mobile), animações 60 Hz e VFX.
+- [`docs/sistemas-jogo-completo.md`](docs/sistemas-jogo-completo.md) — FTUE 30 min, Pós-Partida/DPS Meter, Contratos/Passe/Badges, Ordens/Blueprints, Acessibilidade/Gamepad/i18n e Loja `ProcessReceipt` + `PolicyService`.
+- [`docs/arquitetura-e-fluxos.md`](docs/arquitetura-e-fluxos.md) — topologia, 5 fluxos end-to-end, arquitetura P2 de DataStores e auditoria `AUD-01..12`.
 - [`docs/spec-motor-deterministico.md`](docs/spec-motor-deterministico.md) — motor, replay, clipe, anti-cheat.
 - [`docs/p1-plano.md`](docs/p1-plano.md) — P1: fatias S1–S8, critérios de pronto e riscos.
+- [`docs/plano-playtest-v1.md`](docs/plano-playtest-v1.md) — runbook zero-brechas do Playtest V1 (S8.1 `GAP-014`, S8.2 `GAP-017`/client `GAP-019` e S8.3 opcional).
+- [`docs/rfcs-p2-e-fechamento-gaps.md`](docs/rfcs-p2-e-fechamento-gaps.md) — RFCs formais (`RFC-001..009`) estruturando o fechamento de `GAP-004..GAP-020`.
 - [`docs/pipeline-expansao.md`](docs/pipeline-expansao.md) — como expandir conteúdo/features sem quebrar.
 - [`docs/gaps.md`](docs/gaps.md) — lacunas conhecidas entre P's/S's, com gatilho para fechar.
 - [`docs/versoes.md`](docs/versoes.md) — bloco canônico de versões e gate do CI.
@@ -64,7 +74,7 @@ outros jogadores atacam enquanto você está offline, e o replay determinístico
 
 ```
 sim/                     harnesses do motor (Luau puro, roda sem Roblox)
-  poc.luau               benchmark e demo do motor v2
+  poc.luau               benchmark e demo do motor v3
   invariants.luau        oráculo executável (12 checagens)
   acceptance.luau        P1: 1.000 seeds × 3 (hash 2489780106)
   profile-contract.luau  contrato do schema v2 e da sessão do perfil
@@ -98,7 +108,13 @@ vendor/ProfileStore.luau ProfileStore oficial (Apache-2.0, não editar)
 docs/                    GDD, spec, pesquisas, economia, roteiro do Studio
 .context/                contexto residente (teto de linhas)
 skills/context-recovery/ protocolo de auditoria + scanner + templates
-tools/expansion-test/    kit de trial de expansão (branch + patch + relatório)
+rokit.toml               ferramentas fixadas (Rojo, StyLua, Selene, Luau, luau-lsp, Asphalt)
+asphalt.toml             sync declarativo de assets (.ogg/.png) -> módulo Luau tipado
+CREDITS.md               registro de licenças de bibliotecas, áudio, fontes e assets
+assets/                  áudio (-14 LUFS), UI e modelos .rbxm (Git LFS + Asphalt)
+art/                     calibração Blender, scripts procedurais (gate fraturado) e pipeline 3D
+scripts/                 env, doctor, check, fetch-roblox-types, check-roblox-full e setup-wsl
+tools/                   expansion-test (GAP-010), gen-sfx.py (-14 LUFS), coop-net-sim.luau e s8-smoke
 ```
 
 O legado de moedas (`CoinService`, `DataService`, `Config`, `Hud`) **não existe mais**; está
@@ -112,8 +128,8 @@ bash scripts/doctor.sh                 # estação completa
 bash scripts/check.sh                  # gate: versões, build, StyLua, luau-lsp, testes, contexto
 
 luau sim/invariants.luau               # oráculo do motor (12 checagens)
-luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v2)
-luau sim/profile-contract.luau         # schema v1 + sessão
+luau sim/acceptance.luau               # P1: 1.000 seeds × 3 (motor v3)
+luau sim/profile-contract.luau         # schema v2 + sessão
 luau sim/analytics-contract.luau       # contrato de analytics v1 (34 checagens)
 luau sim/visual-contract.luau          # contrato visual da S8 (8 checagens)
 luau sim/walls-contract.luau           # muralha/economia (S3; 13 checagens)
@@ -129,8 +145,8 @@ rojo serve                             # Studio: localhost:34872 (WSL)
 
 ## Tooling
 
-Versões fixadas em [`rokit.toml`](rokit.toml): Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746.
-`rokit install` reproduz o ambiente; `.tools/` não é versionado.
+Versões fixadas em [`rokit.toml`](rokit.toml): Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, Luau 0.746, `luau-lsp` 1.70.1 e **Asphalt 2.0.2** (`asphalt.toml`).
+`rokit install` reproduz o ambiente; `.tools/` (incluindo `.tools/globalTypes.d.luau` via `scripts/fetch-roblox-types.sh`) não é versionado.
 
 Auditoria completa: [`docs/ferramentas.md`](docs/ferramentas.md). Manual da máquina (inventário,
 doctor, reconstrução e troubleshooting): [`docs/estacao-de-trabalho.md`](docs/estacao-de-trabalho.md).
@@ -141,7 +157,7 @@ Ferramentas CLI extras (luau-lsp, Lune, Pesde, rbxcloud, git-lfs, oxipng, Blende
 
 ```bash
 git branch -M main                     # opcional (o repo nasceu como master)
-git remote add origin git@github.com:<usuario>/jogo-roblox.git
+git remote add origin git@github.com:eudespatricio/jogo-roblox.git
 git push -u origin main
 ```
 
@@ -152,7 +168,7 @@ existe em `.github/workflows/ci.yml` e roda `scripts/check.sh`.
 
 ```bash
 # uma vez: clonar no ext4 (não no /mnt/c)
-git clone git@github.com:<usuario>/jogo-roblox.git ~/jogo-roblox
+git clone git@github.com:eudespatricio/jogo-roblox.git ~/jogo-roblox
 cd ~/jogo-roblox
 bash scripts/setup-wsl.sh
 ```

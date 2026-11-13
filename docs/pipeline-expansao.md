@@ -12,7 +12,7 @@
 | Versão | Onde vive | Muda quando | Efeito |
 |---|---|---|---|
 | `ProfileSchema.SCHEMA_VERSION` | `src/shared/data/ProfileSchema.luau` | muda o **formato** do perfil (campo novo, tipo de célula, classe/trait) | migração `MIGRATIONS[n]`, fixture, contrato de perfil; servidor antigo recusa `schema_future` |
-| `TrapCatalog.CONTENT_VERSION` | `src/shared/data/TrapCatalog.luau` | muda **conteúdo/economia** (trap, custo, desbloqueio, nível) | catálogo + docs + contrato; hoje ainda **não persistido** (ver GAP-001) |
+| `TrapCatalog.CONTENT_VERSION` | `src/shared/data/TrapCatalog.luau` | muda **conteúdo/economia** (trap, custo, desbloqueio, nível) | catálogo + docs + contrato; persistido no perfil (`contentVersion` desde `schema v2`, `GAP-001` fechado na S3.4) e no `BattleLog` (`S6`, `GAP-011` fechado) |
 | `Core.SIM_VERSION` | `src/shared/sim/core.luau` | muda a **matemática** da batalha (stats, comportamento, RNG, escala de nível) | re-ancorar hash/acceptance/spec; replay antigo não paga recompensa |
 
 Também existe `AnalyticsTypes.SCHEMA_VERSION` (taxonomia v1, congelada). Mudar enum/evento exige
@@ -22,9 +22,7 @@ O bloco canônico de versões está em [`versoes.md`](versoes.md): `scripts/chec
 `check.sh` e falha se `SCHEMA_VERSION`, `CONTENT_VERSION`, `SIM_VERSION` ou o hash de referência
 divergirem do código (GAP-007 fechado na S3.3).
 
-**Regra de replay:** qualquer conteúdo que possa aparecer em um `BattleLog` precisa ser reproduzível
-com `(seed, simVersion, wallSpec, waveSpec)`. Enquanto `CONTENT_VERSION` não estiver persistida,
-**tipo novo de armadilha = `simVersion` nova** (mesmo que o hash da seed 42 não mude).
+**Regra de replay:** qualquer conteúdo que possa aparecer em um `BattleLog` precisa ser reproduzível com `(seed, simVersion, contentVersion, wallSpec, waveSpec)`. Mesmo com `CONTENT_VERSION` persistida no perfil (`S3.4`) e no `BattleLog` (`S6`), **tipo novo ou rebalanceamento em combate exige `simVersion` nova** (mesmo que o hash da seed 42 não mude).
 
 ---
 
@@ -91,16 +89,13 @@ Garantido hoje:
 - bloco de versões (`docs/versoes.md`) comparado ao código pelo `scripts/check-versions.py`;
 - tetos de contexto.
 
-Não garantido ainda (ver `docs/gaps.md`):
+Não garantido ainda (ver `docs/gaps.md` e especificações em [`rfcs-p2-e-fechamento-gaps.md`](rfcs-p2-e-fechamento-gaps.md) / [`plano-playtest-v1.md`](plano-playtest-v1.md)):
 
-- `CONTENT_VERSION` no `BattleLog` (S6) — hoje só o perfil carrega `contentVersion`;
+- `BattleLog` com `contentVersion` (GAP-011, **já garantido/fechado** na S6 em 10/11/2026);
 - remoção de trap sem alias/substituto: falha fechado, não apaga a célula;
 - stats do motor fora do código (data-driven) — a política atual é `SIM_VERSION++` por tipo;
-- classes/traits/raridades — exigem schema v3 + migração + taxonomia v2 (GAP-004/008);
-- flags/calendário para eventos semanais (GAP-005);
-- rollback de conteúdo em servidores antigos;
-- docs fora do bloco de versões ainda podem envelhecer sem o CI reclamar;
-- `BattleLog` com `contentVersion` (GAP-011, fechado na S6 em 10/11/2026).
+- **pendências pré-tráfego P1:** integridade de funil/auto-raid/double-write (`GAP-014`) e conformidade mobile/CI S8 (`GAP-017`) — especificados em [`plano-playtest-v1.md`](plano-playtest-v1.md);
+- **pendências bloqueadas para P2+ (RFCs prontas):** classes/traits/raridades (`GAP-004`/`GAP-008`), flags/calendário (`GAP-005`), ticket regional (`GAP-013`), sharding/GDPR (`GAP-015`), extensibilidade de replay/cosméticos/7×5 (`GAP-016`) e rollback automático em servidores antigos.
 
 ---
 

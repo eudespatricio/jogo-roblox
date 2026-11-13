@@ -18,10 +18,13 @@ echo "== rojo build =="
 rojo build default.project.json -o build/place.rbxl
 
 echo "== stylua =="
-stylua --check sim src
+stylua --check sim src tools/coop-net-sim.luau
+
+echo "== globalTypes (luau-lsp) =="
+bash scripts/fetch-roblox-types.sh
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard sim src/shared/sim src/shared/data src/shared/analytics src/shared/visual src/shared/build src/shared/dropin src/shared/raid src/server/analytics/AnalyticsService.luau src/server/analytics/AnalyticsDataStoreSink.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau
+luau-lsp analyze --platform=standard --definitions=.tools/globalTypes.d.luau sim src/shared/sim src/shared/data src/shared/analytics src/shared/visual src/shared/build src/shared/dropin src/shared/raid src/server/analytics/AnalyticsService.luau src/server/analytics/AnalyticsDataStoreSink.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau tools/coop-net-sim.luau
 
 echo "== invariantes =="
 luau sim/invariants.luau
@@ -55,6 +58,12 @@ luau sim/raid-contract.luau
 
 echo "== migracao neutra (kit GAP-010) =="
 luau tools/expansion-test/neutral-migration.luau
+
+echo "== lockstep co-op (RFC-007) =="
+luau tools/coop-net-sim.luau
+
+echo "== i18n (PT-BR / EN / ES) =="
+python3 tools/check-i18n.py
 
 echo "== benchmark (poc) =="
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="

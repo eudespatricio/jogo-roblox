@@ -117,12 +117,14 @@ trapType[t]   trapCell[t] trapX[t]  trapCd[t]   trapLevel[t]
 wallHp        gold         tick
 ```
 
-- unidades: até **300** por batalha;
+- unidades: até **300** por batalha (referência de teto de projeto; o código `SIM_VERSION = 3` não impõe cap rígido e usa `wave.count = 70` por padrão);
 - grade **5×5** (expansível para 7×5 no nível 5; `gridWidth` no save); **linha = lane** de
   caminhada e **coluna = profundidade** (c1 junto da muralha, c5 junto do spawn);
 - **N=5 ativas** e colocação livre nas 25 células; várias armadilhas na mesma lane;
-- alvo: busca na mesma lane, primeiro à frente dentro do alcance (O(1) por trap);
+- alvo: busca na mesma lane, primeiro à frente dentro do alcance (meta assintótica `O(1)` via índice por lane; implementação atual em `SIM_VERSION = 3` usa varredura linear `O(uCount)` sobre `uX`, `uHp`, `uSpeed`, `uLeak`, `uLane`, `uSlowUntil`);
 - colisão: não existe — unidades andam em linha reta por lane (é o que torna barato).
+
+> **Nota de auditoria (13/11/2026):** As extensões planejadas para P2 (`waveSpec` no `BattleLog`, status generalizados além de `uSlowUntil`, `GRID_WIDTH = 7` e `table.freeze` nas tabelas estáticas do `Core`) exigem `SIM_VERSION++` e estão detalhadas em [`arquitetura-e-fluxos.md`](arquitetura-e-fluxos.md) (`AUD-09`/`GAP-016`).
 
 ---
 

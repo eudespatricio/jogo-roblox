@@ -81,3 +81,4 @@ realista, ragdoll e captura cinematográfica.
   em [`teste-s8-studio.md`](teste-s8-studio.md).
 - **Modelos:** kit de peças, não assets Blender finais; o pipeline `art/` segue para a próxima
   janela de arte.
+- **Desvios auditados pós-S8 (`GAP-017`):** afundamento 3D de unidades/catapulta em `DropInClient`/`HordeKit`, botões `< 44 px` (`ATACAR` 34px / `FECHAR` 36px) e troca de silhuetas ao compactar unidades no replay do `RaidClient`, `runner`/`brute` com 9 partes (> `unitParts = 8`) e grade 2D opaca no centro da tela — remediação cirúrgica pronta em [`plano-playtest-v1.md`](plano-playtest-v1.md#3-fatia-s82--visual-3d-raycast-tap-to-build-áudio-replay--mobile-gap-017).
