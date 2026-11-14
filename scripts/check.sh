@@ -27,7 +27,7 @@ echo "== sourcemap =="
 rojo sourcemap default.project.json -o sourcemap.json
 
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard --definitions=.tools/globalTypes.d.luau sim src/shared/sim src/shared/data src/shared/analytics src/shared/visual src/shared/build src/shared/dropin src/shared/raid src/shared/i18n src/server/analytics/AnalyticsService.luau src/server/analytics/AnalyticsDataStoreSink.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau tools/coop-net-sim.luau
+luau-lsp analyze --platform=standard --definitions=.tools/globalTypes.d.luau sim src/shared/sim src/shared/data src/shared/analytics src/shared/visual src/shared/build src/shared/campaign src/shared/dropin src/shared/raid src/shared/i18n src/server/analytics/AnalyticsService.luau src/server/analytics/AnalyticsDataStoreSink.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau tools/coop-net-sim.luau
 
 echo "== luau-lsp roblox (src completo) =="
 luau-lsp analyze --platform=roblox --sourcemap=sourcemap.json --definitions=.tools/globalTypes.d.luau src
@@ -61,6 +61,9 @@ luau sim/dropin-contract.luau
 
 echo "== contrato de raid (S6) =="
 luau sim/raid-contract.luau
+
+echo "== contrato de campanha =="
+luau sim/campaign-contract.luau
 
 echo "== migracao neutra (kit GAP-010) =="
 luau tools/expansion-test/neutral-migration.luau

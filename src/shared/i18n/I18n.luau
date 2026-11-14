@@ -154,6 +154,33 @@ local TABLE: { [string]: Entry } = {
 		"Archer near Archer (-cooldown)",
 		"Arquero cerca de Arquero (-recarga)"
 	),
+	unit_shieldbearer = row("Escudeiro", "Shieldbearer", "Escudero"),
+	unit_pyromancer = row("Piroforjador", "Pyromancer", "Piroforjador"),
+	unit_sapper = row("Sapador", "Sapper", "Zapador"),
+	cta_story = row("HISTÓRIA", "STORY", "HISTORIA"),
+	cta_play = row("JOGAR", "PLAY", "JUGAR"),
+	cta_claim = row("RESGATAR", "CLAIM", "RECLAMAR"),
+	story_title = row("CRÔNICAS DO BASTIÃO", "BASTION CHRONICLES", "CRÓNICAS DEL BASTIÓN"),
+	story_normal = row("NORMAL", "NORMAL", "NORMAL"),
+	story_nightmare = row("PESADELO", "NIGHTMARE", "PESADILLA"),
+	story_act_fmt = row("ATO %d · %s", "ACT %d · %s", "ACTO %d · %s"),
+	story_stars_fmt = row("★ %d/%d", "★ %d/%d", "★ %d/%d"),
+	story_locked_nm = row(
+		"Vença 5-5 Normal p/ Pesadelo",
+		"Clear 5-5 Normal for Nightmare",
+		"Supera 5-5 Normal p/ Pesadilla"
+	),
+	boss_telegraph_tag = row(
+		"ALERTA: GOLPE PESADO!",
+		"WARNING: HEAVY SLAM!",
+		"¡ALERTA: GOLPE PESADO!"
+	),
+	boss_vulnerable_tag = row(
+		"ATORDADO (+30% DANO)",
+		"STAGGERED (+30% DMG)",
+		"ATURDIDO (+30% DAÑO)"
+	),
+	boss_enrage_tag = row("FÚRIA DO CHEFE", "BOSS ENRAGED", "FURIA DEL JEFE"),
 }
 
 I18n.TABLE = table.freeze(TABLE)

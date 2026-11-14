@@ -12,7 +12,7 @@
 |---|---|---|
 | Editor do jogo | **Roblox Studio** (Windows, `version-67c8b1dedbb74fed`) + plugin **Rojo** | ok |
 | Código | **Rokit**: Rojo 7.7.1 · StyLua 2.6.0 · Selene 0.32.0 · Luau 0.746 · **luau-lsp 1.70.1** · **Asphalt 2.0.2** | ok |
-| 3D | **Blender 4.5.15 LTS** (`blender4.5`) e 4.2.0 (`blender`) | ok; 4.5 usa libs SM/ICE extraídas sem sudo |
+| 3D | **Blender 4.5.15 LTS** (`blender4.5`) e 4.2.0 (`blender`) + **Forge3D 0.6.1** (`~/.local/bin/forge3d`, `spec@4`/G1–G10) | ok; 4.5 usa libs SM/ICE extraídas sem sudo |
 | Tipos | **luau-lsp 1.70.1** (Rokit) + `.tools/globalTypes.d.luau` (`scripts/fetch-roblox-types.sh`) | ok |
 | Scripts | **Lune 0.11.1** · **Pesde 0.7.4** · **rbxcloud 0.17.0** | ok, em `~/.local/bin` |
 | Áudio/vídeo | **ffmpeg 7.0.2 static** (já existia) | ok |
@@ -64,6 +64,7 @@ O 4.5.15 LTS já está instalado no WSL como `blender4.5`; o `blender` antigo co
 | rbxcloud | 0.17.0 | `~/.local/bin/rbxcloud` |
 | oxipng | 10.2.1 | `~/.local/bin/oxipng` |
 | Blender | 4.5.15 LTS | `~/.local/bin/blender4.5` (o `blender` continua 4.2) |
+| forge3d | 0.6.1 | `~/.local/bin/forge3d` (`spec@4`/`manifest@4`, gate G2 de orientação) |
 
 `git lfs install --skip-repo` já foi rodado. O `ffmpeg 7.0.2` já estava em `~/.local/bin`.
 Para scripts e agentes, use `source scripts/env.sh` — shell não-login não lê `.bashrc`.

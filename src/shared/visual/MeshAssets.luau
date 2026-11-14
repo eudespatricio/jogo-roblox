@@ -51,6 +51,17 @@ MeshAssets.HORDE = table.freeze({
 	runner = 114724683678861, -- CMD_runner (torso/capuz esculpido para rig articulado)
 	brute = 110869433426900, -- CMD_brute (tronco/elmo esculpido para rig articulado)
 	swarm = 70616350386022, -- CMD_swarm (cranio espectral esculpido para rig articulado)
+	shieldbearer = 70957271430399, -- CMD_shieldbearer (escudeiro blindado para rig articulado)
+	pyromancer = 92536084947271, -- CMD_pyromancer (piroforjador com colar runico e nucleo de brasa)
+	sapper = 99156754791667, -- CMD_sapper (zapador com oculos e mochila de polvora)
+}) :: { [string]: number }
+
+MeshAssets.BOSSES = table.freeze({
+	iron_ram_colossus = 127633338658486, -- BOSS_iron_ram_colossus (Ato 1)
+	slag_juggernaut = 82877420272532, -- BOSS_slag_juggernaut (Ato 2)
+	rime_matriarch = 98680188193024, -- BOSS_rime_matriarch (Ato 3)
+	powder_baron = 92115229115709, -- BOSS_powder_baron (Ato 4)
+	rift_titan = 111313406393848, -- BOSS_rift_titan (Ato 5)
 }) :: { [string]: number }
 
 MeshAssets.PROPS = table.freeze({
@@ -80,6 +91,10 @@ end
 
 function MeshAssets.hordeModelName(kind: string): string
 	return string.format("CMD_%s", kind)
+end
+
+function MeshAssets.bossModelName(bossId: string): string
+	return string.format("BOSS_%s", bossId)
 end
 
 function MeshAssets.propModelName(key: string): string

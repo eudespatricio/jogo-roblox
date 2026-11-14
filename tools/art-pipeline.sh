@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Esteira de arte da MURALHA: Blender (script) -> Forge3D (validate/run/verify) -> renders + lineup.
 #
-#   bash tools/art-pipeline.sh                 # todos os grupos: wall, traps, horde, portal, props, fauna
+#   bash tools/art-pipeline.sh                 # todos os grupos: wall, traps, horde, bosses, portal, props, fauna
 #   bash tools/art-pipeline.sh --only traps    # um grupo (repetivel: --only wall --only horde)
 #   bash tools/art-pipeline.sh --skip-blender  # so Forge3D + lineup sobre os GLB ja exportados
 #
@@ -16,13 +16,13 @@ BLENDER="${BLENDER:-/home/eudespatricio/.gemini/antigravity/bin/blender}"
 FORGE3D="${FORGE3D:-$HOME/.local/bin/forge3d}"
 SAIDA="$HOME/.local/state/forge3d/saida"
 LOGDIR="$ROOT/art/renders/_logs"   # art/renders/ e ignorado no git
-ALL_GROUPS=(wall traps horde portal props fauna)
+ALL_GROUPS=(wall traps horde bosses portal props fauna)
 GROUPS_SEL=()
 SKIP_BLENDER=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --only) GROUPS_SEL+=("${2:?--only exige um grupo: wall|traps|horde|portal|props|fauna}"); shift 2 ;;
+    --only) GROUPS_SEL+=("${2:?--only exige um grupo: wall|traps|horde|bosses|portal|props|fauna}"); shift 2 ;;
     --skip-blender) SKIP_BLENDER=1; shift ;;
     -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
@@ -42,6 +42,7 @@ script_of() {
     wall) echo art/scripts/make_wall_bastion.py ;;
     traps) echo art/scripts/make_traps.py ;;
     horde) echo art/scripts/make_horde.py ;;
+    bosses) echo art/scripts/make_bosses.py ;;
     portal) echo art/scripts/make_portal.py ;;
     props) echo art/scripts/make_props.py ;;
     fauna) echo art/scripts/make_fauna.py ;;
@@ -123,7 +124,8 @@ if command -v montage >/dev/null 2>&1; then
     mapfile -t pngs < <(renders_of "$g")
     [[ ${#pngs[@]} -gt 0 ]] || continue
     tile="5x"; geo="256x256+4+4"
-    [[ $g == horde ]] && tile="3x1" && geo="320x320+4+4"
+    [[ $g == horde ]] && tile="3x2" && geo="320x320+4+4"
+    [[ $g == bosses ]] && tile="5x1" && geo="320x320+4+4"
     [[ $g == portal ]] && tile="1x1" && geo="320x320+4+4"
     [[ $g == wall ]] && tile="3x" && geo="480x270+4+4"
     [[ $g == props ]] && tile="3x2" && geo="320x320+4+4"

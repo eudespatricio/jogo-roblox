@@ -495,3 +495,17 @@ migrado), `sim/profile-contract.luau` 20/20, `sim/walls-contract.luau` 13/13,
 
 1. **Área circular 360° (`def.omni = true`):** `archer` usa `{ dmg = 1400, cd = 10, range = 2500, omni = true }` e seleciona o inimigo vivo mais avançado (`self.uX[i]` mínimo) dentro do disco inteiro `dx * dx + dy * dy <= range * range` (sem float/sqrt), alcançando lanes vizinhas e inimigos que ultrapassaram a torre.
 2. **Demais tipos preservados:** `cannon`, `catapult`, `frost` e `tar` mantêm seleção direcional frontal por `LANE_REACH`.
+
+---
+
+## 19. Matemática v7 — Campanha 25 Fases, 6 Arquétipos, 8 Mutadores e 5 Bosses Multi-Lane (14/11/2026)
+
+**Versões:** `SCHEMA_VERSION 4` · `CONTENT_VERSION 3` · `SIM_VERSION 7` · `DEFAULT_POWER_PCT = 270` · hash de referência `1245379674` (seed 42, 100% preservado para ondas padrão P1).
+
+**Mudanças na simulação (`src/shared/sim/core.luau`) e dados (`CampaignCatalog.luau`, `ProfileSchema.luau`):**
+
+1. **Preservação do caminho P1/P2:** Quando `Battle.new` recebe uma onda padrão (sem `slices`, `pool`, `bossId` ou escalas de campanha), o motor executa exatamente o fluxo v6, mantendo `Core.Run(42)` com hash `1245379674`.
+2. **Seis arquétipos de horda (`Core.ALL_UNIT_NAMES`):** Mantém `Core.UNIT_NAMES` (`runner`, `brute`, `swarm`) para ondas aleatórias padrão e adiciona `shieldbearer` (`armorMilli = 250`), `pyromancer` (`armorMilli = 50`, `frostResistMilli = 350`) e `sapper` (`leak = 22000`).
+3. **Fatias determinísticas (`wave.slices`), escalas inteiras e 8 Mutadores:** Suporta `WaveSliceSpec` (`startTick`, `everyTicks`, `count`, `unit`, `laneMask`, `isElite`), `hpScaleMilli`, `armorMilli` (clamp `0..600`), `speedMilli` (cap `<= 2400`) e os 8 mutadores (`mut_iron_hide`, `mut_haste_wind`, `mut_frost_ward`, `mut_swarm_surge`, `mut_amber_tax`, `mut_cracked_gate`, `mut_volatile_oil`, `mut_echo_rift`).
+4. **Máquina de Estados de Boss Multi-Lane (`laneSpan = 3`, `20 Hz`):** Suporta os 5 Bosses (`iron_ram_colossus`, `slag_juggernaut`, `rime_matriarch`, `powder_baron`, `rift_titan`) com deduplicação estrita de AoE por `shotId` (`lastHitByShotId`), barra de postura (`staggerMilli` → `VULNERABLE` por 30 ticks com dano `* 1300 / 1000`), `TELEGRAPH` (40 ticks) → `ABILITY` → `MARCH` e `ENRAGE` abaixo de 40% HP.
+5. **Perfil v4 (`ProfileSchema.SCHEMA_VERSION = 4`):** Adiciona `campaign` (`highestUnlockedStage`, `nightmareUnlocked`, `starsNormal`, `starsNightmare`, `actMilestoneClaims` com chaves string JSON-safe `"1"`..`"5"` e `"1-1"`..`"5-5"`) e migração neutra `3 → 4`.

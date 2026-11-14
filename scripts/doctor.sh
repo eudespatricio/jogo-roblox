@@ -55,6 +55,8 @@ echo "== arte/audio =="
 check blender4.5 blender4.5 required
 check blender blender optional
 check ffmpeg ffmpeg required
+file_check audio-dsp .venv-audio/bin/python optional
+check forge3d forge3d optional
 check oxipng oxipng optional
 check krita krita optional
 check inkscape inkscape optional
@@ -128,6 +130,9 @@ printf "%-12s %s\n" "ffmpeg" "$(ffmpeg -version 2>/dev/null | head -1 | cut -d' 
 printf "%-12s %s\n" "blender4.5" "$(blender4.5 --version 2>/dev/null | head -1)"
 if command -v blender >/dev/null 2>&1; then
 	printf "%-12s %s\n" "blender" "$(blender --version 2>/dev/null | head -1)"
+fi
+if command -v forge3d >/dev/null 2>&1; then
+	printf "%-12s %s\n" "forge3d" "$(forge3d --version 2>/dev/null | head -1)"
 fi
 
 echo

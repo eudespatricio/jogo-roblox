@@ -21,8 +21,10 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -39,19 +41,27 @@ import numpy as np
 SR = 44100
 TARGET_LUFS = -14.0
 BGM_TARGET_LUFS = -15.5
-PEAK_CEIL_DB = -1.2
-MAX_DRIVE_DB = 9.0
+PEAK_CEIL_DB = -1.8
+MAX_DRIVE_DB = 6.0
 
 ROOT = Path(__file__).resolve().parents[1]
 AUDIO_ROOT = ROOT / "assets" / "audio"
 MANIFEST_PATH = AUDIO_ROOT / "manifest.json"
 LUAU_PATH = ROOT / "src" / "shared" / "visual" / "AudioAssets.luau"
 SMOKE_DIR = ROOT / "build" / "sfx-smoke"
+ELEVENLABS_CACHE_DIR = ROOT / "build" / "elevenlabs-cache"
+ELEVENLABS_SFX_URL = "https://api.elevenlabs.io/v1/sound-generation"
+ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech"
+SUNO_MASTERS_DIR = ROOT / "build" / "suno-masters"
+PROTECTED_SOURCES = {"elevenlabs", "suno", "elevenlabs_tts"}
+DARK_ENV_PATH = Path("/home/eudespatricio/dark_studio_platform/.env")
 
 KEY_PATH = Path.home() / ".config" / "forge3d" / "roblox.key"
 CREATOR_USER_ID = "11966727684"
+DEFAULT_UNIVERSE_ID = "10776438544"
 ASSETS_URL = "https://apis.roblox.com/assets/v1/assets"
 OPERATIONS_BASE = "https://apis.roblox.com/assets/v1/"
+PERMISSIONS_BATCH_URL = "https://apis.roblox.com/asset-permissions-api/v1/assets/permissions"
 
 TAU = 2.0 * np.pi
 
@@ -435,6 +445,57 @@ NOTE = {
 }
 
 
+# --------------------------------------------------------------------------- Warm DSP (piloto -> pro)
+
+
+def _warm_lp(x: np.ndarray, fc: float = 3400.0, order: int = 3, circular: bool = False) -> np.ndarray:
+    """Filtro pass-baixo zero-fase estilo Butterworth (elimina estridencia e aliasing sem atraso)."""
+    n = x.shape[0]
+    n_fft = n if circular else 2 * n
+    freqs = np.fft.rfftfreq(n_fft, 1.0 / SR)
+    resp = 1.0 / np.sqrt(1.0 + (freqs / max(fc, 60.0)) ** (2 * order))
+    if x.ndim == 1:
+        return np.fft.irfft(np.fft.rfft(x, n_fft) * resp, n_fft)[:n]
+    out = np.empty_like(x)
+    for ch in range(x.shape[1]):
+        out[:, ch] = np.fft.irfft(np.fft.rfft(x[:, ch], n_fft) * resp, n_fft)[:n]
+    return out
+
+
+def _warm_clicks(
+    ctx: Ctx, times: np.ndarray, amps: np.ndarray, lo: float, hi: float, tau: float = 0.006, amp_scale: float = 0.32
+) -> np.ndarray:
+    """Micro-impactos organicos com ataque suavizado por cosseno (sem estalos digitais)."""
+    if len(amps) == 0:
+        return np.zeros(ctx.n)
+    x = np.zeros(ctx.n)
+    length = max(16, int(tau * 8 * SR))
+    atk = min(length // 2, max(6, int(0.0025 * SR)))
+    fade = 0.5 * (1.0 - np.cos(np.pi * np.arange(atk) / atk))
+    decay = np.exp(-np.arange(length) / (tau * SR))
+    decay[:atk] *= fade
+    for when, amp in zip(times, amps):
+        i = int(when * SR)
+        if 0 <= i < ctx.n:
+            span = min(length, ctx.n - i)
+            x[i : i + span] += amp * ctx.rng.standard_normal(span) * decay[:span]
+    filtered = band(x, lo, hi)
+    return _warm_lp(filtered, fc=hi, order=2) * (amp_scale / max(float(np.max(np.abs(filtered))), 1e-6)) * float(np.max(np.abs(amps)))
+
+
+def _formant_crowd(ctx: Ctx, formants: tuple[tuple[float, float, float], ...], start: float, attack: float, tau: float, spread: float = 1.0) -> np.ndarray:
+    """Sintese coral/multidao quente via banco de formantes vocalicos (sem ruido branco cru)."""
+    raw = ctx.noise()
+    base = np.zeros(ctx.n, dtype=np.float64)
+    for fc, q, gain in formants:
+        f_mod = fc * (1.0 + 0.045 * np.sin(TAU * (1.8 * spread) * ctx.t + fc * 0.01))
+        voice = eq_biquad(raw, "bp", fc, q=q) * (1.0 + 0.15 * np.sin(TAU * (2.6 * spread) * ctx.t))
+        base += voice * gain
+    shape = env(ctx, tau, attack, start)
+    warm = _warm_lp(base * shape, fc=2400.0, order=2)
+    return np.tanh(1.15 * warm)
+
+
 # --------------------------------------------------------------------------- UI & Build SFX
 
 
@@ -466,10 +527,10 @@ def s_build_move(c: Ctx) -> np.ndarray:
 
 
 def s_build_remove(c: Ctx) -> np.ndarray:
-    unlatch = modal_impact(c, 880.0, 0.0, (1.0, 1.58, 2.3), (0.032, 0.018, 0.01), (0.55, 0.3, 0.18), 1800, 5500, 0.35, 0.003)
-    wood_lift = np.sin(glide(c, 220, 105, 0.04, 0.04)) * env(c, 0.055, 0.003, 0.04) * 0.55
-    dust = swept_band(c.noise(), c.t, 1200.0, 320.0, 0.03, 0.20, q=1.2) * 0.45
-    return reverb(unlatch + wood_lift + dust, rt60=0.35, wet=0.16)
+    unlatch = modal_impact(c, 260.0, 0.0, (1.0, 1.52, 2.15), (0.038, 0.022, 0.012), (0.75, 0.35, 0.14), 500, 1800, 0.18, 0.004)
+    wood_lift = np.sin(glide(c, 190, 92, 0.05, 0.03)) * env(c, 0.065, 0.004, 0.03) * 0.58
+    dust = eq_biquad(burst(c, 0.02, 0.09, 200, 900, 0.32, 0.006), "lp", 950.0)
+    return _warm_lp(reverb(unlatch + wood_lift + dust, rt60=0.36, wet=0.18), fc=2400.0)
 
 
 def _upgrade_chime(c: Ctx, notes: tuple[str, ...], gap: float, anvil_f: float, harmonic_decay: float) -> np.ndarray:
@@ -514,36 +575,41 @@ def s_build_invalid(c: Ctx) -> np.ndarray:
 
 
 def s_build_locked(c: Ctx) -> np.ndarray:
-    lock1 = modal_impact(c, 740.0, 0.0, (1.0, 1.73, 2.81, 4.12), (0.055, 0.038, 0.025, 0.016), (0.85, 0.55, 0.35, 0.2), 2200, 7500, 0.45, 0.002)
-    lock2 = modal_impact(c, 620.0, 0.085, (1.0, 1.82, 3.05), (0.06, 0.035, 0.02), (0.75, 0.45, 0.25), 1800, 6200, 0.35, 0.002)
-    thud = np.sin(glide(c, 130, 58, 0.03, 0.08)) * env(c, 0.07, 0.002, 0.08) * 0.55
-    return reverb(lock1 + lock2 + thud, rt60=0.40, wet=0.18)
+    bolt1 = modal_impact(c, 220.0, 0.0, (1.0, 1.54, 2.18), (0.055, 0.032, 0.018), (0.85, 0.42, 0.18), 420, 1600, 0.18, 0.004)
+    bolt2 = modal_impact(c, 165.0, 0.085, (1.0, 1.52, 2.10), (0.065, 0.036, 0.02), (0.90, 0.40, 0.16), 350, 1300, 0.16, 0.004)
+    thud = np.sin(glide(c, 118, 52, 0.04, 0.08)) * env(c, 0.08, 0.003, 0.08) * 0.60
+    return _warm_lp(reverb(bolt1 + bolt2 + thud, rt60=0.36, wet=0.16), fc=1800.0)
 
 
 def s_coin_gain(c: Ctx) -> np.ndarray:
-    out = burst(c, 0.0, 0.03, 600, 2400, 0.22, 0.004)  # toque de bolsa de couro
-    for i, f in enumerate((2350.0, 2780.0, 3120.0, 3640.0)):
-        t_i = i * 0.044
-        out += modal_impact(c, f, t_i, (1.0, 2.34, 3.82), (0.14, 0.07, 0.04), (0.7, 0.35, 0.16), 4500, 12000, 0.18, 0.001) * (0.85 + 0.06 * i)
-    return reverb(out, rt60=0.45, wet=0.20, predelay_ms=8.0)
+    pouch = np.sin(glide(c, 165, 72, 0.04)) * env(c, 0.045, 0.004) * 0.35
+    out = pouch + burst(c, 0.0, 0.025, 320, 1200, 0.14, 0.005)
+    for i, name in enumerate(("D5", "Fs5", "A5", "D6")):
+        t_i = 0.012 + i * 0.045
+        f = NOTE[name]
+        out += karplus_strong(c.n, c.rng, f, t_i, max(0.18, c.cue.duration - t_i), decay=0.996, damp=0.25, brighten=0.45, amp=0.55)
+        out += bell(c, f, t_i, (1.0, 2.0), (0.14, 0.06), (0.55, 0.18)) * (0.88 + 0.05 * i)
+    return _warm_lp(reverb(out, rt60=0.44, wet=0.20, predelay_ms=8.0), fc=3600.0)
 
 
 def s_coin_spend(c: Ctx) -> np.ndarray:
     out = np.zeros(c.n)
-    for i, f in enumerate((2650.0, 2240.0, 1880.0)):
-        out += modal_impact(c, f, i * 0.042, (1.0, 2.38, 3.9), (0.055, 0.03, 0.015), (0.75, 0.35, 0.15), 3500, 9000, 0.18, 0.001) * (1.0 - 0.12 * i)
-    chest_lid = modal_impact(c, 185.0, 0.11, (1.0, 1.9, 3.1), (0.045, 0.022, 0.01), (0.8, 0.4, 0.15), 400, 2200, 0.35, 0.003)
-    return reverb(out + chest_lid, rt60=0.32, wet=0.15)
+    for i, name in enumerate(("A4", "F4", "D4")):
+        t_i = i * 0.042
+        out += karplus_strong(c.n, c.rng, NOTE[name], t_i, 0.18, decay=0.991, damp=0.32, brighten=0.38, amp=0.55 - 0.06 * i)
+        out += bell(c, NOTE[name], t_i, (1.0, 2.0), (0.07, 0.03), (0.45, 0.12))
+    chest_lid = modal_impact(c, 165.0, 0.11, (1.0, 1.75, 2.5), (0.055, 0.028, 0.014), (0.85, 0.4, 0.15), 320, 1200, 0.22, 0.004)
+    return _warm_lp(reverb(out + chest_lid, rt60=0.32, wet=0.16), fc=2800.0)
 
 
 # --------------------------------------------------------------------------- Traps & Sinergias SFX
 
 
 def s_archer_fire(c: Ctx) -> np.ndarray:
-    wood_snap = modal_impact(c, 185.0, 0.0, (1.0, 2.1, 3.4), (0.022, 0.011, 0.006), (0.75, 0.38, 0.16), 1200, 4800, 0.45, 0.002)
-    bowstring = karplus_strong(c.n, c.rng, 196.0, 0.002, 0.19, decay=0.976, damp=0.42, brighten=0.65, amp=0.9)
-    whoosh = unit(swept_band(c.noise(), c.t, 1400.0, 4600.0, 0.008, 0.11, q=1.5)) * env(c, 0.055, 0.008, 0.008) * 0.52
-    return reverb(wood_snap + bowstring + whoosh, rt60=0.25, wet=0.14, predelay_ms=5.0)
+    wood_snap = modal_impact(c, 175.0, 0.0, (1.0, 1.9, 2.8), (0.026, 0.014, 0.008), (0.80, 0.36, 0.14), 500, 1800, 0.20, 0.003)
+    bowstring = karplus_strong(c.n, c.rng, 185.0, 0.003, 0.19, decay=0.980, damp=0.44, brighten=0.38, amp=0.95)
+    whoosh = eq_biquad(swept_band(c.noise(), c.t, 650.0, 1850.0, 0.008, 0.11, q=1.4), "lp", 2200.0) * env(c, 0.06, 0.008, 0.008) * 0.26
+    return _warm_lp(reverb(wood_snap + bowstring + whoosh, rt60=0.25, wet=0.15, predelay_ms=5.0), fc=2800.0)
 
 
 def s_archer_impact(c: Ctx) -> np.ndarray:
@@ -564,34 +630,36 @@ def s_tar_fire(c: Ctx) -> np.ndarray:
 
 
 def s_tar_ignite(c: Ctx) -> np.ndarray:
-    bloom = np.tanh(1.8 * np.sin(glide(c, 110, 42, 0.09)) * env(c, 0.16, 0.004)) * 0.7
-    flame_whoosh = unit(swept_band(c.noise(), c.t, 220.0, 2400.0, 0.02, 0.36, q=1.1)) * env(c, 0.26, 0.04, 0.02) * 0.85
-    roar = eq_biquad(burst(c, 0.02, 0.32, 70, 420, 0.55, 0.05), "lp", 380.0)
-    embers = clicks(c, scatter(c, 42, 0.08, 0.56, 1.0), c.rng.uniform(0.15, 0.45, 42), 2400, 8800, 0.002)
-    return reverb(bloom + flame_whoosh + roar + embers, rt60=0.45, wet=0.20)
+    bloom = np.tanh(1.9 * np.sin(glide(c, 115, 42, 0.10)) * env(c, 0.18, 0.005)) * 0.80
+    flame_whoosh = eq_biquad(swept_band(c.noise(), c.t, 180.0, 1150.0, 0.02, 0.34, q=1.0), "lp", 1500.0) * env(c, 0.25, 0.04, 0.02) * 0.42
+    roar = eq_biquad(burst(c, 0.02, 0.34, 65, 380, 0.65, 0.05), "lp", 360.0)
+    embers = _warm_clicks(c, scatter(c, 28, 0.08, 0.54, 1.0), c.rng.uniform(0.15, 0.40, 28), 650, 2400, 0.006, amp_scale=0.18)
+    return _warm_lp(reverb(bloom + flame_whoosh + roar + embers, rt60=0.48, wet=0.22), fc=2600.0)
 
 
 def s_frost_fire(c: Ctx) -> np.ndarray:
-    chime = bell(c, 1318.5, 0.0, (1.0, 1.50, 2.76, 4.18), (0.24, 0.16, 0.09, 0.05), (0.8, 0.45, 0.3, 0.18))
-    chime += bell(c, 1975.5, 0.045, (1.0, 1.50, 2.76), (0.22, 0.13, 0.07), (0.65, 0.35, 0.2))
-    chill = unit(swept_band(c.noise(), c.t, 3800.0, 900.0, 0.0, 0.35, q=1.4)) * env(c, 0.22, 0.02) * 0.42
-    return reverb(chime + chill, rt60=0.58, wet=0.26, predelay_ms=9.0)
+    chime = bell(c, NOTE["D5"], 0.0, (1.0, 1.50, 2.0), (0.24, 0.16, 0.09), (0.78, 0.45, 0.22))
+    chime += bell(c, NOTE["A5"], 0.045, (1.0, 1.50, 2.0), (0.22, 0.13, 0.06), (0.62, 0.32, 0.16))
+    body = np.sin(glide(c, 210, 110, 0.08)) * env(c, 0.12, 0.006) * 0.45
+    chill = eq_biquad(swept_band(c.noise(), c.t, 1600.0, 520.0, 0.0, 0.32, q=1.3), "lp", 2000.0) * env(c, 0.22, 0.025) * 0.25
+    return _warm_lp(reverb(chime + body + chill, rt60=0.58, wet=0.26, predelay_ms=9.0), fc=3200.0)
 
 
 def s_frost_impact(c: Ctx) -> np.ndarray:
-    times = scatter(c, 56, 0.01, 0.32, 1.8)
-    crackle = clicks(c, times, 0.5 * (1.0 - times / 0.38) * c.rng.uniform(0.3, 1.0, 56), 2800, 10500, 0.002)
-    ice = modal_impact(c, 740.0, 0.0, (1.0, 1.88, 3.12, 4.75), (0.09, 0.055, 0.035, 0.02), (0.65, 0.42, 0.28, 0.15), 2500, 9500, 0.45, 0.002)
-    return reverb(crackle + ice, rt60=0.42, wet=0.20)
+    thud = np.sin(glide(c, 155, 58, 0.06)) * env(c, 0.09, 0.004) * 0.62
+    times = scatter(c, 32, 0.01, 0.28, 1.6)
+    crackle = _warm_clicks(c, times, 0.4 * (1.0 - times / 0.36) * c.rng.uniform(0.35, 1.0, 32), 700, 2600, 0.006, amp_scale=0.24)
+    ice = modal_impact(c, 392.0, 0.0, (1.0, 1.50, 2.02, 2.76), (0.11, 0.07, 0.04, 0.02), (0.72, 0.42, 0.26, 0.12), 700, 2200, 0.18, 0.004)
+    return _warm_lp(reverb(thud + crackle + ice, rt60=0.44, wet=0.22), fc=3200.0)
 
 
 def s_syn_thermal_shock(c: Ctx) -> np.ndarray:
-    freeze_snap = unit(swept_band(c.noise(), c.t, 4800.0, 700.0, 0.0, 0.055, q=1.8)) * env(c, 0.04, 0.002) * 0.65
-    detonation = np.tanh(2.1 * np.sin(glide(c, 130, 36, 0.09, 0.042)) * env(c, 0.24, 0.002, 0.042)) * 0.95
-    shatter_t = scatter(c, 70, 0.045, 0.45, 1.7)
-    shards = clicks(c, shatter_t, 0.6 * c.rng.uniform(0.3, 1.0, 70) * (1.0 - shatter_t / 0.55), 2400, 11500, 0.0025)
-    crystal = bell(c, 2093.0, 0.045, (1.0, 1.76, 2.91, 4.4), (0.16, 0.10, 0.06, 0.03), (0.55, 0.35, 0.22, 0.12))
-    return reverb(freeze_snap + detonation + shards + crystal, rt60=0.62, wet=0.25, predelay_ms=8.0)
+    freeze_snap = eq_biquad(swept_band(c.noise(), c.t, 1900.0, 480.0, 0.0, 0.06, q=1.4), "lp", 2100.0) * env(c, 0.045, 0.004) * 0.35
+    detonation = np.tanh(2.1 * np.sin(glide(c, 132, 34, 0.10, 0.042)) * env(c, 0.28, 0.004, 0.042)) * 0.95
+    shatter_t = scatter(c, 36, 0.045, 0.42, 1.6)
+    shards = _warm_clicks(c, shatter_t, 0.45 * c.rng.uniform(0.35, 1.0, 36) * (1.0 - shatter_t / 0.55), 750, 2800, 0.006, amp_scale=0.24)
+    crystal = bell(c, NOTE["D5"], 0.045, (1.0, 1.50, 2.0), (0.18, 0.11, 0.06), (0.55, 0.32, 0.16))
+    return _warm_lp(reverb(freeze_snap + detonation + shards + crystal, rt60=0.64, wet=0.26, predelay_ms=8.0), fc=3400.0)
 
 
 def s_cannon_fire(c: Ctx) -> np.ndarray:
@@ -649,11 +717,11 @@ def s_horde_spawn(c: Ctx) -> np.ndarray:
 
 
 def s_death_runner(c: Ctx) -> np.ndarray:
-    # Exalacao espectral sem apito de senoide
-    whisper = unit(swept_band(c.noise(), c.t, 1850.0, 480.0, 0.0, 0.24, q=2.0)) * env(c, 0.11, 0.008) * 0.72
-    wisp = bell(c, 440.0, 0.0, (1.0, 1.49, 2.24), (0.09, 0.05, 0.03), (0.28, 0.16, 0.08))
-    thump = modal_impact(c, 130.0, 0.09, (1.0, 1.8), (0.04, 0.02), (0.45, 0.2), 300, 1500, 0.2, 0.003)
-    return reverb(whisper + wisp + thump, rt60=0.38, wet=0.20)
+    # Exalacao espectral quente sem estridencia
+    whisper = eq_biquad(swept_band(c.noise(), c.t, 920.0, 280.0, 0.0, 0.22, q=1.5), "lp", 1300.0) * env(c, 0.11, 0.008) * 0.42
+    wisp = bell(c, NOTE["D4"], 0.0, (1.0, 1.50), (0.09, 0.05), (0.35, 0.18))
+    thump = modal_impact(c, 125.0, 0.08, (1.0, 1.65), (0.05, 0.025), (0.65, 0.25), 240, 1100, 0.16, 0.004)
+    return _warm_lp(reverb(whisper + wisp + thump, rt60=0.38, wet=0.20), fc=2200.0)
 
 
 def s_death_brute(c: Ctx) -> np.ndarray:
@@ -665,9 +733,10 @@ def s_death_brute(c: Ctx) -> np.ndarray:
 
 
 def s_death_swarm(c: Ctx) -> np.ndarray:
-    orb = modal_impact(c, 1860.0, 0.0, (1.0, 1.86, 2.95), (0.045, 0.025, 0.012), (0.55, 0.32, 0.16), 3200, 10500, 0.55, 0.002)
-    fizz = unit(swept_band(c.noise(), c.t, 4200.0, 1800.0, 0.0, 0.12, q=1.6)) * env(c, 0.045, 0.002) * 0.45
-    return reverb(orb + fizz, rt60=0.30, wet=0.16)
+    orb = np.sin(glide(c, 392, 165, 0.09)) * env(c, 0.075, 0.005) * 0.65
+    chime = modal_impact(c, 392.0, 0.0, (1.0, 1.50, 2.0), (0.05, 0.03, 0.015), (0.55, 0.30, 0.14), 500, 1800, 0.18, 0.004)
+    fizz = eq_biquad(swept_band(c.noise(), c.t, 1400.0, 550.0, 0.0, 0.11, q=1.4), "lp", 1800.0) * env(c, 0.05, 0.004) * 0.22
+    return _warm_lp(reverb(orb + chime + fizz, rt60=0.30, wet=0.18), fc=2500.0)
 
 
 def s_wall_hit(c: Ctx) -> np.ndarray:
@@ -678,12 +747,12 @@ def s_wall_hit(c: Ctx) -> np.ndarray:
 
 
 def s_wall_alarm(c: Ctx) -> np.ndarray:
-    ratios = (0.5, 1.0, 1.183, 1.506, 2.0, 2.514)
-    decays = (0.48, 0.38, 0.30, 0.22, 0.14, 0.09)
-    amps = (0.42, 0.95, 0.50, 0.42, 0.25, 0.14)
-    a = modal_impact(c, NOTE["A5"], 0.0, ratios, decays, amps, 2400, 7500, 0.25, 0.002)
-    b = modal_impact(c, NOTE["E5"], 0.44, ratios, decays, amps, 2200, 7000, 0.22, 0.002)
-    return reverb(a + b, rt60=0.72, wet=0.28, predelay_ms=12.0)
+    # Sino de bronze medieval + corneta de vigia (sem apito agudo A5)
+    watch_a = brass_note(c, NOTE["D3"], 0.0, 0.26, release=0.16, attack=0.04, warmth_hz=1400.0) * 0.65
+    watch_a += modal_impact(c, NOTE["D4"], 0.0, (0.5, 1.0, 1.50, 2.0), (0.42, 0.32, 0.18, 0.09), (0.45, 0.75, 0.35, 0.15), 500, 1800, 0.14, 0.004)
+    watch_b = brass_note(c, NOTE["A2"], 0.46, 0.32, release=0.22, attack=0.04, warmth_hz=1200.0) * 0.72
+    watch_b += modal_impact(c, NOTE["A3"], 0.46, (0.5, 1.0, 1.50, 2.0), (0.45, 0.34, 0.20, 0.10), (0.50, 0.78, 0.35, 0.14), 450, 1600, 0.14, 0.004)
+    return _warm_lp(reverb(watch_a + watch_b, rt60=0.72, wet=0.28, predelay_ms=12.0), fc=2200.0)
 
 
 def s_wall_heartbeat(c: Ctx) -> np.ndarray:
@@ -736,15 +805,16 @@ def s_phys_stone_impact(c: Ctx) -> np.ndarray:
 
 
 def s_phys_iron_impact(c: Ctx) -> np.ndarray:
-    raw = modal_impact(c, 860.0, 0.0, (1.0, 1.53, 2.40, 3.62), (0.14, 0.09, 0.06, 0.03), (0.55, 0.4, 0.25, 0.12), 2000, 8200, 0.35, 0.002)
-    return reverb(raw, rt60=0.42, wet=0.18)
+    raw = modal_impact(c, 260.0, 0.0, (1.0, 1.53, 2.25, 3.05), (0.14, 0.09, 0.05, 0.025), (0.70, 0.42, 0.22, 0.10), 650, 2400, 0.22, 0.003)
+    return _warm_lp(reverb(raw, rt60=0.42, wet=0.18), fc=2800.0)
 
 
 def s_phys_ice_shatter(c: Ctx) -> np.ndarray:
-    times = scatter(c, 48, 0.0, 0.26, 1.5)
-    raw = clicks(c, times, 0.5 * c.rng.uniform(0.3, 1.0, 48), 3000, 11500, 0.0025)
-    raw += modal_impact(c, 2150.0, 0.0, (1.0, 2.76, 4.9), (0.10, 0.06, 0.03), (0.5, 0.3, 0.14), 3500, 11000, 0.25, 0.002)
-    return reverb(raw, rt60=0.45, wet=0.20)
+    crack = np.sin(glide(c, 195, 62, 0.05)) * env(c, 0.075, 0.003) * 0.65
+    times = scatter(c, 30, 0.0, 0.24, 1.5)
+    shards = _warm_clicks(c, times, 0.38 * c.rng.uniform(0.35, 1.0, 30), 700, 2600, 0.006, amp_scale=0.22)
+    marimba = modal_impact(c, 440.0, 0.0, (1.0, 1.50, 2.02), (0.11, 0.06, 0.03), (0.62, 0.35, 0.16), 800, 2600, 0.16, 0.004)
+    return _warm_lp(reverb(crack + shards + marimba, rt60=0.45, wet=0.22), fc=3000.0)
 
 
 # --------------------------------------------------------------------------- OST Stems BGM (Loops perfeitos)
@@ -952,7 +1022,192 @@ def s_bgm_danger(c: Ctx) -> np.ndarray:
     return reverb(mix, rt60=0.62, wet=0.20, predelay_ms=10.0, damp=0.35, loop=True)
 
 
+# --------------------------------------------------------------------------- Bosses, Campanha & Torcida (P2+ / M2)
+
+
+def s_boss_intro(c: Ctx) -> np.ndarray:
+    sub = np.tanh(2.1 * np.sin(glide(c, 92, 30, 0.18)) * env(c, 0.52, 0.008)) * 0.90
+    low_brass = brass_note(c, NOTE["D2"], 0.04, 1.05, release=0.45, attack=0.10, detune_cents=(-9.0, 0.0, 9.0), warmth_hz=1200.0) * 0.72
+    mid_brass = brass_note(c, NOTE["A2"], 0.10, 0.98, release=0.42, attack=0.12, detune_cents=(-6.0, 6.0), warmth_hz=1550.0) * 0.58
+    top_brass = brass_note(c, NOTE["D3"], 0.16, 0.90, release=0.40, attack=0.14, detune_cents=(-5.0, 5.0), warmth_hz=1850.0) * 0.45
+    t1 = _drum_hit(c.rng, 98.0, 38.0, 0.34, 340.0) * 0.85
+    out = sub + low_brass + mid_brass + top_brass
+    m = min(len(t1), c.n)
+    out[:m] += t1[:m]
+    i2 = int(0.32 * SR)
+    m2 = min(len(t1), c.n - i2)
+    if m2 > 0:
+        out[i2 : i2 + m2] += t1[:m2] * 0.95
+    return _warm_lp(reverb(out, rt60=0.92, wet=0.32, predelay_ms=15.0), fc=2400.0)
+
+
+def s_boss_telegraph(c: Ctx) -> np.ndarray:
+    swell = brass_note(c, NOTE["A2"], 0.0, 0.55, release=0.22, attack=0.28, bend=0.06, warmth_hz=1650.0) * 0.72
+    anvil = modal_impact(c, NOTE["D4"], 0.06, (0.5, 1.0, 1.50), (0.36, 0.24, 0.12), (0.55, 0.82, 0.32), 450, 1600, 0.16, 0.004)
+    rise = eq_biquad(swept_band(c.noise(), c.t, 160.0, 880.0, 0.0, 0.62, q=1.3), "lp", 1500.0) * env(c, 0.36, 0.15) * 0.38
+    return _warm_lp(reverb(swell + anvil + rise, rt60=0.62, wet=0.24, predelay_ms=10.0), fc=2300.0)
+
+
+def s_boss_slam(c: Ctx) -> np.ndarray:
+    seismic = np.tanh(2.3 * np.sin(glide(c, 84, 26, 0.13)) * env(c, 0.34, 0.003)) * 1.0
+    oak = modal_impact(c, 128.0, 0.0, (1.0, 1.65, 2.45), (0.14, 0.08, 0.04), (0.85, 0.45, 0.20), 280, 1500, 0.45, 0.005)
+    rubble = _warm_clicks(c, scatter(c, 28, 0.04, 0.62), 0.36 * c.rng.uniform(0.3, 1.0, 28), 320, 1800, 0.007, amp_scale=0.28)
+    return _warm_lp(reverb(seismic + oak + rubble, rt60=0.72, wet=0.26, predelay_ms=12.0), fc=2200.0)
+
+
+def s_boss_stagger(c: Ctx) -> np.ndarray:
+    groan = brass_note(c, NOTE["F3"], 0.0, 0.35, release=0.35, attack=0.04, bend=-0.18, warmth_hz=1200.0) * 0.72
+    armor = modal_impact(c, 195.0, 0.02, (1.0, 1.48, 2.05), (0.18, 0.10, 0.05), (0.75, 0.42, 0.18), 380, 1400, 0.22, 0.004)
+    chime = bell(c, NOTE["D4"], 0.10, (1.0, 1.50), (0.30, 0.15), (0.48, 0.22))
+    return _warm_lp(reverb(groan + armor + chime, rt60=0.58, wet=0.22), fc=2200.0)
+
+
+def s_boss_enrage(c: Ctx) -> np.ndarray:
+    roar_lo = brass_note(c, NOTE["D2"], 0.0, 0.65, release=0.35, attack=0.08, detune_cents=(-12.0, 0.0, 12.0), bend=0.04, warmth_hz=1400.0) * 0.75
+    roar_hi = brass_note(c, NOTE["D3"], 0.04, 0.60, release=0.32, attack=0.10, detune_cents=(-9.0, 9.0), bend=0.03, warmth_hz=1750.0) * 0.55
+    flame = eq_biquad(swept_band(c.noise(), c.t, 160.0, 1280.0, 0.04, 0.55, q=1.1), "lp", 1700.0) * env(c, 0.42, 0.06) * 0.42
+    return _warm_lp(reverb(np.tanh(1.3 * (roar_lo + roar_hi + flame)), rt60=0.78, wet=0.28, predelay_ms=12.0), fc=2500.0)
+
+
+def s_boss_death(c: Ctx) -> np.ndarray:
+    collapse = np.tanh(2.2 * np.sin(glide(c, 74, 24, 0.22)) * env(c, 0.56, 0.005)) * 0.95
+    plates = modal_impact(c, 155.0, 0.02, (1.0, 1.58, 2.22), (0.28, 0.16, 0.09), (0.78, 0.42, 0.20), 320, 1500, 0.28, 0.005)
+    debris = _warm_clicks(c, scatter(c, 36, 0.06, 0.95, 1.7), 0.35 * c.rng.uniform(0.3, 1.0, 36), 280, 1750, 0.008, amp_scale=0.24)
+    triumph = (
+        brass_note(c, NOTE["D4"], 0.42, 0.65, release=0.45, attack=0.12, warmth_hz=2000.0) * 0.50
+        + brass_note(c, NOTE["A4"], 0.48, 0.60, release=0.45, attack=0.12, warmth_hz=2200.0) * 0.40
+    )
+    return _warm_lp(reverb(collapse + plates + debris + triumph, rt60=0.95, wet=0.32, predelay_ms=15.0), fc=2600.0)
+
+
+def s_bgm_boss(c: Ctx) -> np.ndarray:
+    # 8 compassos 4/4 sincronizados a bgm_siege / bgm_danger (14.55s): marcha de chefe epica em D Frigio/Menor
+    n = c.n
+    buf = np.zeros((2 * n, 2), dtype=np.float64)
+    beat_sec = c.cue.duration / 32.0
+
+    taiko = _drum_hit(c.rng, 92.0, 34.0, 0.34, 340.0) * 0.85
+    anvil = _drum_hit(c.rng, 240.0, 145.0, 0.15, 950.0) * 0.36
+    roots = ("D2", "Eb2" if "Eb2" in NOTE else "C2", "F2", "D2", "Bb1", "C2", "G2", "A2")
+    motifs = (
+        ("D3", "Eb4", "D4", "A3"),
+        ("C3", "G3", "Eb4", "D4"),
+        ("F3", "C4", "A3", "F3"),
+        ("D3", "A3", "Bb3", "A3"),
+        ("Bb2", "F3", "D4", "C4"),
+        ("C3", "G3", "Bb3", "A3"),
+        ("G2", "D3", "Bb3", "A3"),
+        ("A2", "E3", "F3", "E3"),
+    )
+
+    for bar in range(8):
+        for b in range(4):
+            i_b = int(round((bar * 4 + b) * beat_sec * SR))
+            if b in (0, 2):
+                _place_loop_event(buf, taiko, taiko, i_b, n)
+            if b == 3:
+                _place_loop_event(buf, anvil * 0.9, anvil * 1.1, i_b, n)
+        root_f = NOTE[roots[bar]]
+        for e_idx in range(8):
+            t_e = (bar * 4 + e_idx * 0.5) * beat_sec
+            note_name = motifs[bar][e_idx % 4] if e_idx % 2 == 1 else roots[bar]
+            f_use = NOTE[note_name] if e_idx % 2 == 1 else root_f
+            m = int(0.28 * SR)
+            tt = np.arange(m, dtype=np.float64) / SR
+            accent = 0.58 if e_idx % 2 == 0 else 0.36
+            bow = (np.sin(TAU * f_use * tt) + 0.42 * np.sin(2 * TAU * f_use * tt) + 0.16 * np.sin(3 * TAU * f_use * tt)) * np.exp(-tt / 0.09) * np.clip(tt / 0.008, 0, 1) * accent
+            pan = 0.42 if e_idx % 2 == 0 else 0.58
+            _place_loop_event(buf, bow * (1.0 - pan) * 1.4, bow * pan * 1.4, int(round(t_e * SR)), n)
+        if bar % 2 == 0:
+            t_h = (bar * 4) * beat_sec
+            m_h = int(0.85 * SR)
+            tt_h = np.arange(m_h, dtype=np.float64) / SR
+            f_b = NOTE[motifs[bar][0]]
+            env_b = np.clip(tt_h / 0.08, 0, 1) * np.exp(-tt_h / 0.42)
+            horn_pad = (np.sin(TAU * f_b * tt_h) + 0.5 * np.sin(1.5 * TAU * f_b * tt_h)) * env_b * 0.34
+            _place_loop_event(buf, horn_pad, horn_pad * 0.96, int(round(t_h * SR)), n)
+
+    drone = _loop_drone(n, ((0, 2, ("D2", "A2")), (2, 4, ("F2", "C3")), (4, 6, ("Bb1", "F2")), (6, 8, ("A2", "E3"))), cutoff=620.0) * 0.42
+    mix = _warm_lp(drone + buf[n : 2 * n], fc=2400.0, order=2, circular=True)
+    return reverb(mix, rt60=0.80, wet=0.25, predelay_ms=12.0, damp=0.40, loop=True)
+
+
+def s_campaign_select(c: Ctx) -> np.ndarray:
+    parchment = eq_biquad(swept_band(c.noise(), c.t, 380.0, 960.0, 0.0, 0.12, q=1.2), "lp", 1500.0) * env(c, 0.07, 0.01) * 0.25
+    lute_a = karplus_strong(c.n, c.rng, NOTE["D4"], 0.01, 0.22, decay=0.992, damp=0.30, brighten=0.45, amp=0.62)
+    lute_b = karplus_strong(c.n, c.rng, NOTE["A4"], 0.055, 0.18, decay=0.992, damp=0.30, brighten=0.45, amp=0.58)
+    return _warm_lp(reverb(parchment + lute_a + lute_b, rt60=0.36, wet=0.18), fc=2800.0)
+
+
+def s_campaign_star(c: Ctx) -> np.ndarray:
+    out = np.zeros(c.n)
+    for idx, name in enumerate(("D5", "Fs5", "A5")):
+        t_i = idx * 0.055
+        out += karplus_strong(c.n, c.rng, NOTE[name], t_i, max(0.18, c.cue.duration - t_i), decay=0.995, damp=0.26, brighten=0.42, amp=0.55)
+        out += bell(c, NOTE[name], t_i, (1.0, 1.50, 2.0), (0.22, 0.11, 0.05), (0.55, 0.24, 0.10))
+    return _warm_lp(reverb(out, rt60=0.56, wet=0.24, predelay_ms=9.0), fc=3200.0)
+
+
+def s_campaign_act_clear(c: Ctx) -> np.ndarray:
+    out = np.zeros(c.n)
+    for i, name in enumerate(("D4", "A4", "D5", "Fs5")):
+        out += brass_note(c, NOTE[name], i * 0.10, 0.14, release=0.14, attack=0.03, warmth_hz=2400.0) * 0.52
+    for name, amp in (("D3", 0.62), ("A3", 0.54), ("D4", 0.68), ("Fs4", 0.52), ("A4", 0.58)):
+        out += brass_note(c, NOTE[name], 0.42, 0.85, release=0.52, attack=0.05, vibrato=0.006, warmth_hz=2300.0) * amp
+    out += np.tanh(1.6 * np.sin(glide(c, 128, 73.42, 0.08, 0.42)) * env(c, 0.36, 0.004, 0.42)) * 0.72
+    out += bell(c, NOTE["D5"], 0.42, (1.0, 1.50, 2.0), (0.70, 0.36, 0.16), (0.35, 0.15, 0.06))
+    return _warm_lp(reverb(out, rt60=0.90, wet=0.30, predelay_ms=14.0), fc=2800.0)
+
+
+def s_crowd_murmur(c: Ctx) -> np.ndarray:
+    formants = ((280.0, 3.2, 0.65), (520.0, 3.8, 0.55), (960.0, 4.2, 0.38))
+    vox = _formant_crowd(c, formants, start=0.02, attack=0.24, tau=0.65, spread=0.9)
+    drum_bed = np.sin(TAU * 73.42 * c.t) * env(c, 0.55, 0.18, 0.02) * 0.18
+    return _warm_lp(reverb(vox + drum_bed, rt60=0.72, wet=0.28), fc=2000.0)
+
+
+def s_crowd_cheer(c: Ctx) -> np.ndarray:
+    formants = ((340.0, 2.8, 0.72), (720.0, 3.4, 0.68), (1240.0, 3.8, 0.44))
+    roar = _formant_crowd(c, formants, start=0.0, attack=0.14, tau=0.62, spread=1.35)
+    claps = _warm_clicks(c, scatter(c, 26, 0.06, 0.92, 1.15), c.rng.uniform(0.35, 0.85, 26), 420, 1700, 0.009, amp_scale=0.30)
+    horn_accent = brass_note(c, NOTE["D4"], 0.04, 0.42, release=0.26, attack=0.06, warmth_hz=1700.0) * 0.32
+    return _warm_lp(reverb(roar + claps + horn_accent, rt60=0.80, wet=0.30, predelay_ms=12.0), fc=2300.0)
+
+
+def s_crowd_gasp(c: Ctx) -> np.ndarray:
+    formants = ((460.0, 3.0, 0.72), (880.0, 3.5, 0.54), (1380.0, 4.0, 0.30))
+    gasp = _formant_crowd(c, formants, start=0.0, attack=0.045, tau=0.34, spread=1.2)
+    low_thud = np.sin(glide(c, 110, 48, 0.08)) * env(c, 0.14, 0.008) * 0.42
+    return _warm_lp(reverb(gasp + low_thud, rt60=0.60, wet=0.24), fc=2100.0)
+
+
+def s_crowd_victory(c: Ctx) -> np.ndarray:
+    formants = ((320.0, 2.6, 0.75), (690.0, 3.2, 0.72), (1220.0, 3.6, 0.48))
+    ovation = _formant_crowd(c, formants, start=0.02, attack=0.18, tau=0.95, spread=1.45)
+    claps = _warm_clicks(c, scatter(c, 42, 0.08, 1.38, 1.1), c.rng.uniform(0.4, 0.9, 42), 400, 1800, 0.009, amp_scale=0.32)
+    chorus = brass_note(c, NOTE["D3"], 0.08, 0.85, release=0.45, attack=0.14, warmth_hz=1500.0) * 0.36
+    chorus += brass_note(c, NOTE["A3"], 0.10, 0.82, release=0.45, attack=0.14, warmth_hz=1700.0) * 0.28
+    return _warm_lp(reverb(ovation + claps + chorus, rt60=0.92, wet=0.32, predelay_ms=14.0), fc=2400.0)
+
+
 # --------------------------------------------------------------------------- Catalogo CUES & SYNTH
+
+_BOSS_VO_BASE: tuple[tuple[str, float], ...] = (
+    ("vo_boss_iron_ram_intro", 2.80),
+    ("vo_boss_iron_ram_enrage", 2.20),
+    ("vo_boss_slag_intro", 2.60),
+    ("vo_boss_slag_enrage", 2.10),
+    ("vo_boss_rime_intro", 2.80),
+    ("vo_boss_rime_enrage", 2.10),
+    ("vo_boss_powder_intro", 2.70),
+    ("vo_boss_powder_enrage", 2.10),
+    ("vo_boss_rift_intro", 3.00),
+    ("vo_boss_rift_enrage", 2.20),
+)
+_VO_LOCALE_SUFFIXES: tuple[str, ...] = ("", "_en", "_es")
+_BOSS_VO_NAMES: tuple[str, ...] = tuple(
+    f"{base}{suf}" for suf in _VO_LOCALE_SUFFIXES for base, _ in _BOSS_VO_BASE
+)
 
 CUES: tuple[Cue, ...] = (
     # Traps & sinergias
@@ -999,10 +1254,28 @@ CUES: tuple[Cue, ...] = (
     Cue("phys_stone_impact", "sfx", 0.38, "physics"),
     Cue("phys_iron_impact", "sfx", 0.34, "physics"),
     Cue("phys_ice_shatter", "sfx", 0.40, "physics"),
+    # Bosses, Campanha & Torcida
+    Cue("boss_intro", "sfx", 1.85, "battle"),
+    Cue("boss_telegraph", "sfx", 0.85, "battle"),
+    Cue("boss_slam", "sfx", 1.05, "battle"),
+    Cue("boss_stagger", "sfx", 0.95, "battle"),
+    Cue("boss_enrage", "sfx", 1.20, "battle"),
+    Cue("boss_death", "sfx", 1.80, "battle"),
+    Cue("campaign_select", "sfx", 0.24, "ui"),
+    Cue("campaign_star", "sfx", 0.48, "ui"),
+    Cue("campaign_act_clear", "stingers", 2.20, "battle"),
+    Cue("crowd_murmur", "sfx", 1.40, "battle"),
+    Cue("crowd_cheer", "sfx", 1.35, "battle"),
+    Cue("crowd_gasp", "sfx", 0.90, "battle"),
+    Cue("crowd_victory", "sfx", 1.90, "battle"),
+    # Falas dos Bosses da Campanha (ElevenLabs TTS + DSP, trilingue PT/EN/ES)
+    *(Cue(f"{base}{suf}", "vo", dur, "voice") for suf in _VO_LOCALE_SUFFIXES for base, dur in _BOSS_VO_BASE),
     # Stems BGM seamless publicados (estereo)
     Cue("bgm_bastion", "bgm", 16.00, "music", publish=True, stereo=True, loop=True),
     Cue("bgm_siege", "bgm", 14.55, "music", publish=True, stereo=True, loop=True),
+    Cue("bgm_siege_2", "bgm", 14.55, "music", publish=True, stereo=True, loop=True),
     Cue("bgm_danger", "bgm", 14.55, "music", publish=True, stereo=True, loop=True),
+    Cue("bgm_boss", "bgm", 14.55, "music", publish=True, stereo=True, loop=True),
 )
 
 SYNTH: dict[str, Callable[[Ctx], np.ndarray]] = {
@@ -1045,9 +1318,25 @@ SYNTH: dict[str, Callable[[Ctx], np.ndarray]] = {
     "phys_stone_impact": s_phys_stone_impact,
     "phys_iron_impact": s_phys_iron_impact,
     "phys_ice_shatter": s_phys_ice_shatter,
+    "boss_intro": s_boss_intro,
+    "boss_telegraph": s_boss_telegraph,
+    "boss_slam": s_boss_slam,
+    "boss_stagger": s_boss_stagger,
+    "boss_enrage": s_boss_enrage,
+    "boss_death": s_boss_death,
+    **{name: (s_boss_enrage if "_enrage" in name else s_boss_intro) for name in _BOSS_VO_NAMES},
+    "campaign_select": s_campaign_select,
+    "campaign_star": s_campaign_star,
+    "campaign_act_clear": s_campaign_act_clear,
+    "crowd_murmur": s_crowd_murmur,
+    "crowd_cheer": s_crowd_cheer,
+    "crowd_gasp": s_crowd_gasp,
+    "crowd_victory": s_crowd_victory,
     "bgm_bastion": s_bgm_bastion,
     "bgm_siege": s_bgm_siege,
+    "bgm_siege_2": s_bgm_siege,
     "bgm_danger": s_bgm_danger,
+    "bgm_boss": s_bgm_boss,
 }
 
 SMOKE_ENCODE = (
@@ -1056,13 +1345,40 @@ SMOKE_ENCODE = (
     "cannon_fire",
     "syn_thermal_shock",
     "victory_sting",
+    "boss_slam",
+    "crowd_cheer",
     "bgm_bastion",
+    "bgm_boss",
 )
 
 PUBLISH_PRIORITY = (
     "bgm_bastion",
     "bgm_siege",
+    "bgm_siege_2",
     "bgm_danger",
+    "bgm_boss",
+    *_BOSS_VO_NAMES,
+    "boss_intro",
+    "boss_telegraph",
+    "boss_slam",
+    "boss_stagger",
+    "boss_enrage",
+    "boss_death",
+    "campaign_act_clear",
+    "campaign_star",
+    "campaign_select",
+    "crowd_cheer",
+    "crowd_gasp",
+    "crowd_victory",
+    "crowd_murmur",
+    "coin_gain",
+    "coin_spend",
+    "archer_fire",
+    "phys_ice_shatter",
+    "death_swarm",
+    "frost_fire",
+    "frost_impact",
+    "wall_alarm",
     "victory_sting",
     "defeat_sting",
     "horn",
@@ -1071,6 +1387,40 @@ PUBLISH_PRIORITY = (
     "build_upgrade_5",
     "build_move",
 )
+
+# Se um cue novo/re-gerado ainda estiver em 'Reviewing' na Open Cloud, cai num asset 'Approved' quente (nunca uuhhh/ping).
+APPROVED_FAMILY_FALLBACK: dict[str, str] = {
+    "coin_gain": "build_upgrade_2",
+    "coin_spend": "build_move",
+    "phys_ice_shatter": "phys_stone_impact",
+    "phys_iron_impact": "phys_stone_impact",
+    "death_swarm": "death_brute",
+    "death_runner": "death_brute",
+    "frost_fire": "tar_fire",
+    "frost_impact": "archer_impact",
+    "syn_thermal_shock": "catapult_impact",
+    "archer_fire": "archer_impact",
+    "tar_ignite": "tar_fire",
+    "wall_alarm": "horn",
+    "build_remove": "build_move",
+    "build_locked": "build_invalid",
+    "boss_intro": "horn",
+    "boss_telegraph": "horde_spawn",
+    "boss_slam": "catapult_impact",
+    "boss_stagger": "phys_stone_impact",
+    "boss_enrage": "gate_fracture",
+    "boss_death": "gate_fracture",
+    "bgm_siege_2": "bgm_siege",
+    "bgm_boss": "bgm_siege",
+    **{name: ("boss_enrage" if "_enrage" in name else "boss_intro") for name in _BOSS_VO_NAMES},
+    "campaign_select": "ui_toggle",
+    "campaign_star": "build_upgrade_2",
+    "campaign_act_clear": "victory_sting",
+    "crowd_murmur": "phys_wood_impact",
+    "crowd_cheer": "horn",
+    "crowd_gasp": "wall_hit",
+    "crowd_victory": "victory_sting",
+}
 
 # --------------------------------------------------------------------------- loudness
 
@@ -1200,7 +1550,22 @@ def save_manifest(manifest: dict) -> None:
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def generate_all() -> dict:
+def _merge_prev_ids(entry: dict, prev: dict, digest: str) -> None:
+    if prev.get("assetId") and prev.get("sha256") == digest:
+        for key in ("assetId", "moderationState", "publishedAt"):
+            if key in prev:
+                entry[key] = prev[key]
+    elif prev.get("assetId"):
+        entry["staleAssetId"] = prev["assetId"]
+        if prev.get("moderationState") == "Approved":
+            entry["approvedFallbackAssetId"] = prev["assetId"]
+    elif prev.get("staleAssetId"):
+        entry["staleAssetId"] = prev["staleAssetId"]
+    if "approvedFallbackAssetId" not in entry and prev.get("approvedFallbackAssetId"):
+        entry["approvedFallbackAssetId"] = prev["approvedFallbackAssetId"]
+
+
+def generate_all(force_synth: bool = False) -> dict:
     manifest = load_manifest()
     manifest.update(
         {
@@ -1215,9 +1580,13 @@ def generate_all() -> dict:
     cues: dict[str, dict] = {}
     with tempfile.TemporaryDirectory() as tmp:
         for cue in CUES:
-            samples, level, peak = render(cue)
             rel = Path(cue.folder) / f"{cue.name}.ogg"
             dest = AUDIO_ROOT / rel
+            prev = old.get(cue.name, {})
+            if not force_synth and prev.get("source") in PROTECTED_SOURCES and dest.exists() and dest.stat().st_size > 512:
+                cues[cue.name] = prev
+                continue
+            samples, level, peak = render(cue)
             write_ogg(cue, samples, dest, Path(tmp))
             digest = sha256(dest)
             entry = {
@@ -1232,16 +1601,569 @@ def generate_all() -> dict:
                 "bytes": dest.stat().st_size,
                 "publish": cue.publish,
             }
-            prev = old.get(cue.name, {})
-            if prev.get("assetId") and prev.get("sha256") == digest:
-                for key in ("assetId", "moderationState", "publishedAt"):
-                    if key in prev:
-                        entry[key] = prev[key]
-            elif prev.get("assetId"):
-                entry["staleAssetId"] = prev["assetId"]
+            _merge_prev_ids(entry, prev, digest)
             cues[cue.name] = entry
     manifest["cues"] = cues
     save_manifest(manifest)
+    return manifest
+
+
+def _load_elevenlabs_key() -> str:
+    env_key = os.environ.get("ELEVENLABS_API_KEY", "").strip().strip('"').strip("'")
+    if env_key:
+        return env_key
+    if DARK_ENV_PATH.exists():
+        for raw_line in DARK_ENV_PATH.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            if k.strip() == "ELEVENLABS_API_KEY":
+                val = v.strip().strip('"').strip("'")
+                if val:
+                    return val
+    raise SystemExit("ERRO: ELEVENLABS_API_KEY nao encontrada no ambiente nem em dark_studio_platform/.env")
+
+
+def _decode_mp3_pcm(mp3_path: Path, stereo: bool) -> np.ndarray:
+    ch = 2 if stereo else 1
+    cmd = [
+        "ffmpeg", "-v", "error", "-i", str(mp3_path),
+        "-f", "f32le", "-ac", str(ch), "-ar", str(SR), "-",
+    ]
+    res = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
+    pcm = np.frombuffer(res.stdout, dtype="<f4").astype(np.float64)
+    if stereo:
+        n_frames = len(pcm) // 2
+        return pcm[: n_frames * 2].reshape(n_frames, 2)
+    return pcm
+
+
+def _trim_oneshot_elevenlabs(raw: np.ndarray, max_duration: float) -> np.ndarray:
+    x = eq_biquad(raw, "hp", 28.0)
+    env_raw = np.abs(x) if x.ndim == 1 else np.max(np.abs(x), axis=1)
+    if len(env_raw) == 0:
+        raise RuntimeError("audio decodificado vazio")
+    kernel = np.ones(88, dtype=np.float64) / 88.0
+    env_smooth = np.convolve(env_raw, kernel, mode="same")
+    peak = max(float(np.max(env_smooth)), float(np.max(env_raw)), 1e-9)
+
+    onset_hits = np.flatnonzero(np.maximum(env_raw, env_smooth) >= peak * 0.03)
+    start = max(0, int(onset_hits[0]) - 88) if len(onset_hits) else 0
+
+    tail_hits = np.flatnonzero(np.maximum(env_raw, env_smooth) >= peak * 0.006)
+    end_raw = (int(tail_hits[-1]) + int(0.03 * SR)) if len(tail_hits) else len(x)
+
+    min_len = min(len(x) - start, int(0.08 * SR))
+    max_len = max(min_len, int(round(max_duration * SR)))
+    end = min(len(x), start + min(max(end_raw - start, min_len), max_len))
+    trimmed = x[start:end].copy()
+
+    n = len(trimmed)
+    fi = min(n, int(0.002 * SR))
+    fo = min(n, min(int(0.035 * SR), max(64, n // 5)))
+    if fi > 0:
+        w_in = 0.5 - 0.5 * np.cos(np.pi * np.linspace(0.0, 1.0, fi, endpoint=False))
+        trimmed[:fi] *= w_in if trimmed.ndim == 1 else w_in[:, None]
+    if fo > 0:
+        w_out = 0.5 + 0.5 * np.cos(np.pi * np.linspace(0.0, 1.0, fo, endpoint=True))
+        trimmed[n - fo :] *= w_out if trimmed.ndim == 1 else w_out[:, None]
+    return trimmed
+
+
+def _loop_crossfade_elevenlabs(raw: np.ndarray, target_duration: float) -> np.ndarray:
+    x = eq_biquad(raw, "hp", 28.0)
+    n_target = int(round(target_duration * SR))
+    n_xf = int(round(0.50 * SR))
+    need = n_target + n_xf
+    if len(x) < need:
+        reps = int(np.ceil(need / max(len(x), 1)))
+        x = np.tile(x, (reps, 1) if x.ndim == 2 else reps)
+    body = x[:n_target].copy()
+    tail = x[n_target:need]
+    theta = (0.5 * np.pi) * np.linspace(0.0, 1.0, n_xf, endpoint=True)
+    if body.ndim == 2:
+        theta = theta[:, None]
+    body[:n_xf] = body[:n_xf] * np.sin(theta) + tail * np.cos(theta)
+    return body
+
+
+class ElevenLabsQuotaError(RuntimeError):
+    pass
+
+
+def generate_elevenlabs(only: set[str] | None = None) -> dict:
+    tools_dir = str(Path(__file__).resolve().parent)
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from elevenlabs_prompts import ELEVENLABS_MODEL_ID, ELEVENLABS_PROMPTS
+
+    sfx_cue_names = {c.name for c in CUES if c.folder != "vo"}
+    if set(ELEVENLABS_PROMPTS) != sfx_cue_names:
+        raise SystemExit("ERRO: ELEVENLABS_PROMPTS e CUES nao-voz divergem")
+
+    api_key = _load_elevenlabs_key()
+    ELEVENLABS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    manifest = load_manifest()
+    manifest.update(
+        {
+            "schema": "muralha/sfx-manifest@1",
+            "generator": "tools/gen-sfx.py",
+            "sampleRate": SR,
+            "targetLufs": TARGET_LUFS,
+            "peakCeilDb": PEAK_CEIL_DB,
+        }
+    )
+    old = manifest.get("cues", {})
+    if only:
+        selected = [c for c in CUES if c.name in only and c.folder != "vo"]
+    else:
+        selected = [c for c in CUES if c.folder != "vo" and old.get(c.name, {}).get("source") != "suno"]
+    ordered = sorted(selected, key=lambda c: (1 if c.loop else 0, c.name))
+
+    def process_cue(cue: Cue, tmp_dir: str) -> dict:
+        import requests
+
+        spec = ELEVENLABS_PROMPTS[cue.name]
+        payload = {
+            "text": str(spec["prompt"]),
+            "duration_seconds": float(spec["api_duration"]),
+            "prompt_influence": float(spec["prompt_influence"]),
+            "loop": bool(cue.loop),
+            "model_id": ELEVENLABS_MODEL_ID,
+        }
+        cache_key = hashlib.sha256(
+            json.dumps(
+                {
+                    "model": ELEVENLABS_MODEL_ID,
+                    "prompt": payload["text"],
+                    "dur": payload["duration_seconds"],
+                    "inf": payload["prompt_influence"],
+                    "loop": payload["loop"],
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()[:12]
+        mp3_path = ELEVENLABS_CACHE_DIR / f"{cue.name}__{cache_key}.mp3"
+
+        credits = 0
+        from_cache = mp3_path.exists() and mp3_path.stat().st_size >= 256
+        if not from_cache:
+            use_fmt = True
+            last_err = ""
+            for attempt in range(5):
+                url = f"{ELEVENLABS_SFX_URL}?output_format=mp3_44100_128" if use_fmt else ELEVENLABS_SFX_URL
+                resp = requests.post(
+                    url,
+                    headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+                    json=payload,
+                    timeout=90,
+                )
+                if resp.status_code == 200 and len(resp.content) >= 256:
+                    mp3_path.write_bytes(resp.content)
+                    raw_cost = resp.headers.get("x-character-count") or resp.headers.get("character-cost") or "0"
+                    credits = int(raw_cost) if str(raw_cost).isdigit() else 0
+                    break
+                body_lower = resp.text.lower()
+                if use_fmt and resp.status_code in (400, 403) and "output_format" in body_lower:
+                    use_fmt = False
+                    continue
+                if resp.status_code in (401, 402) or "quota" in body_lower or "insufficient" in body_lower:
+                    raise ElevenLabsQuotaError(f"{cue.name}: HTTP{resp.status_code} {_short(resp.text)}")
+                if resp.status_code == 429 or resp.status_code >= 500:
+                    wait = 2.0 * (2**attempt)
+                    last_err = f"HTTP{resp.status_code} {_short(resp.text)}"
+                    time.sleep(wait)
+                    continue
+                raise RuntimeError(f"{cue.name}: HTTP{resp.status_code} {_short(resp.text)}")
+            if not mp3_path.exists() or mp3_path.stat().st_size < 256:
+                raise RuntimeError(f"{cue.name}: falha apos retries ({last_err})")
+
+        raw = _decode_mp3_pcm(mp3_path, cue.stereo)
+        if cue.loop:
+            shaped = _loop_crossfade_elevenlabs(raw, cue.duration)
+            samples, level, peak = normalize(shaped, target_lufs=BGM_TARGET_LUFS)
+            seam = float(np.max(np.abs(samples[0] - samples[-1])))
+            if seam >= 0.12:
+                raise RuntimeError(f"{cue.name}: costura loop alta ({seam:.4f} >= 0.12)")
+            actual_dur = cue.duration
+        else:
+            shaped = _trim_oneshot_elevenlabs(raw, float(spec["max_duration"]))
+            samples, level, peak = normalize(shaped, target_lufs=TARGET_LUFS)
+            actual_dur = round(float(samples.shape[0]) / SR, 2)
+
+        rel = Path(cue.folder) / f"{cue.name}.ogg"
+        dest = AUDIO_ROOT / rel
+        cue_out = Cue(cue.name, cue.folder, actual_dur, cue.group, cue.publish, cue.stereo, cue.loop)
+        write_ogg(cue_out, samples, dest, Path(tmp_dir))
+        digest = sha256(dest)
+        entry = {
+            "file": rel.as_posix(),
+            "group": cue.group,
+            "duration": actual_dur,
+            "channels": 2 if cue.stereo else 1,
+            "loop": cue.loop,
+            "lufs": round(level, 2),
+            "peakDb": round(peak, 2),
+            "sha256": digest,
+            "bytes": dest.stat().st_size,
+            "publish": cue.publish,
+            "source": "elevenlabs",
+            "elevenlabsCache": mp3_path.name,
+        }
+        return {
+            "cue": cue.name,
+            "entry": entry,
+            "credits": credits,
+            "cached": from_cache,
+            "duration": actual_dur,
+            "lufs": level,
+            "peak": peak,
+        }
+
+    total_credits = 0
+    done_count = 0
+    failures = 0
+    quota_aborted = False
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            futs = {pool.submit(process_cue, cue, tmp_dir): cue for cue in ordered}
+            for fut in concurrent.futures.as_completed(futs):
+                cue = futs[fut]
+                try:
+                    res = fut.result()
+                except ElevenLabsQuotaError as exc:
+                    print(f"ELEVENLABS_QUOTA_STOP: {exc}")
+                    quota_aborted = True
+                    failures += 1
+                    for pending in futs:
+                        pending.cancel()
+                    break
+                except Exception as exc:
+                    print(f"ELEVENLABS_FAIL {cue.name}: {exc}")
+                    failures += 1
+                    continue
+                prev = old.get(cue.name, {})
+                _merge_prev_ids(res["entry"], prev, res["entry"]["sha256"])
+                manifest.setdefault("cues", {})[cue.name] = res["entry"]
+                old[cue.name] = res["entry"]
+                save_manifest(manifest)
+                total_credits += res["credits"]
+                done_count += 1
+                tag = "cache" if res["cached"] else f"credits={res['credits']}"
+                print(
+                    f"  EL_OK {cue.name:<22} dur={res['duration']:>5.2f}s lufs={res['lufs']:>6.2f} "
+                    f"peak={res['peak']:>6.2f} {tag}"
+                )
+    print(
+        f"ELEVENLABS_SUMMARY done={done_count}/{len(ordered)} failures={failures} "
+        f"quota_aborted={quota_aborted} credits_billed={total_credits}"
+    )
+    if failures > 0:
+        raise SystemExit(1)
+    return manifest
+
+
+def _atempo_chain(tempo: float) -> str:
+    factors: list[float] = []
+    t = tempo
+    while t > 2.0:
+        factors.append(2.0)
+        t /= 2.0
+    while t < 0.5:
+        factors.append(0.5)
+        t /= 0.5
+    factors.append(t)
+    return ",".join(f"atempo={f:.6f}" for f in factors)
+
+
+def _decode_audio_pcm(audio_path: Path, stereo: bool, pitch_st: float = 0.0) -> np.ndarray:
+    ch = 2 if stereo else 1
+    cmd = ["ffmpeg", "-v", "error", "-i", str(audio_path)]
+    if abs(pitch_st) > 1e-4:
+        ratio = 2.0 ** (pitch_st / 12.0)
+        af = f"asetrate={SR}*{ratio:.6f},aresample={SR},{_atempo_chain(1.0 / ratio)}"
+        cmd.extend(["-af", af])
+    cmd.extend(["-f", "f32le", "-ac", str(ch), "-ar", str(SR), "-"])
+    res = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
+    pcm = np.frombuffer(res.stdout, dtype="<f4").astype(np.float64)
+    if stereo:
+        n_frames = len(pcm) // 2
+        return pcm[: n_frames * 2].reshape(n_frames, 2)
+    return pcm
+
+
+def import_suno_tracks(manifest: dict | None = None) -> dict:
+    tracks = (
+        ("bgm_siege", SUNO_MASTERS_DIR / "Cerco_dos_Bastioes.wav"),
+        ("bgm_siege_2", SUNO_MASTERS_DIR / "Invasao_da_Fenda.wav"),
+    )
+    if manifest is None:
+        manifest = load_manifest()
+    manifest.update(
+        {
+            "schema": "muralha/sfx-manifest@1",
+            "generator": "tools/gen-sfx.py",
+            "sampleRate": SR,
+            "targetLufs": TARGET_LUFS,
+            "peakCeilDb": PEAK_CEIL_DB,
+        }
+    )
+    old = manifest.get("cues", {})
+    cue_map = {c.name: c for c in CUES}
+    n_xf = int(round((240.0 / 110.0) * SR))
+    hop = 256
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        for cue_name, wav_path in tracks:
+            if not wav_path.exists():
+                raise SystemExit(f"ERRO: master Suno ausente: {wav_path}")
+            cue = cue_map[cue_name]
+            raw = _decode_audio_pcm(wav_path, stereo=True)
+            env_raw = np.max(np.abs(raw), axis=1)
+            onset_hits = np.flatnonzero(env_raw > 0.012)
+            start = max(0, int(onset_hits[0]) - 88) if len(onset_hits) else 0
+            x = raw[start:]
+
+            win = int(0.025 * SR)
+            blocks = np.mean(np.mean(x[: (len(x) // win) * win].reshape(-1, win, 2) ** 2, axis=2), axis=1)
+            rms_blocks = np.sqrt(np.maximum(blocks, 1e-12))
+            med_rms = float(np.median(rms_blocks[: max(1, int(len(rms_blocks) * 0.8))]))
+            active_blocks = np.flatnonzero(rms_blocks >= med_rms * 0.10)
+            active_end = min(len(x), (int(active_blocks[-1]) + 1) * win) if len(active_blocks) else len(x)
+
+            mono_lp = eq_biquad(0.5 * (x[:, 0] + x[:, 1]), "lp", 220.0)
+            n_frames = len(mono_lp) // hop
+            env_ds = np.sqrt(
+                np.mean(mono_lp[: n_frames * hop].reshape(n_frames, hop) ** 2, axis=1) + 1e-12
+            )
+            n_xf_ds = max(8, n_xf // hop)
+            min_l_ds = max(int(20.0 * SR) // hop, int(active_end - 7.5 * SR) // hop)
+            max_l_ds = min(n_frames - n_xf_ds - 2, int(active_end - max(2.4 * SR, n_xf + 0.1 * SR)) // hop)
+
+            if max_l_ds <= min_l_ds:
+                loop_len = max(n_xf + SR, min(len(x) - n_xf, active_end - n_xf))
+            else:
+                ref = env_ds[:n_xf_ds]
+                ref_n = float(np.linalg.norm(ref)) + 1e-12
+                best_k = max_l_ds
+                best_corr = -1.0
+                for k in range(min_l_ds, max_l_ds + 1):
+                    cand = env_ds[k : k + n_xf_ds]
+                    corr = float(np.dot(ref, cand)) / (ref_n * (float(np.linalg.norm(cand)) + 1e-12))
+                    if corr > best_corr:
+                        best_corr = corr
+                        best_k = k
+                loop_len = best_k * hop
+
+            body = x[:loop_len].copy()
+            tail = x[loop_len : loop_len + n_xf]
+            theta = (0.5 * np.pi) * np.linspace(0.0, 1.0, n_xf, endpoint=True)[:, None]
+            body[:n_xf] = body[:n_xf] * np.sin(theta) + tail * np.cos(theta)
+            samples, level, peak = normalize(body, target_lufs=BGM_TARGET_LUFS)
+            seam = float(np.max(np.abs(samples[0] - samples[-1])))
+            if seam >= 0.12:
+                raise RuntimeError(f"{cue_name}: costura Suno loop alta ({seam:.4f} >= 0.12)")
+
+            actual_dur = round(float(samples.shape[0]) / SR, 2)
+            rel = Path(cue.folder) / f"{cue.name}.ogg"
+            dest = AUDIO_ROOT / rel
+            cue_out = Cue(cue.name, cue.folder, actual_dur, cue.group, cue.publish, True, True)
+            write_ogg(cue_out, samples, dest, Path(tmp_dir))
+            digest = sha256(dest)
+            entry = {
+                "file": rel.as_posix(),
+                "group": cue.group,
+                "duration": actual_dur,
+                "channels": 2,
+                "loop": True,
+                "lufs": round(level, 2),
+                "peakDb": round(peak, 2),
+                "sha256": digest,
+                "bytes": dest.stat().st_size,
+                "publish": cue.publish,
+                "source": "suno",
+                "masterFile": wav_path.name,
+            }
+            _merge_prev_ids(entry, old.get(cue.name, {}), digest)
+            manifest.setdefault("cues", {})[cue.name] = entry
+            save_manifest(manifest)
+            print(
+                f"  SUNO_OK {cue_name:<22} dur={actual_dur:>6.2f}s lufs={level:>6.2f} "
+                f"peak={peak:>6.2f} seam={seam:.5f} bytes={entry['bytes']}"
+            )
+    return manifest
+
+
+def generate_boss_voices(only: set[str] | None = None, manifest: dict | None = None) -> dict:
+    import requests
+
+    tools_dir = str(Path(__file__).resolve().parent)
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    from elevenlabs_prompts import BOSS_VOICE_LINES, ELEVENLABS_TTS_MODEL_ID
+
+    vo_cues = [c for c in CUES if c.folder == "vo"]
+    if set(BOSS_VOICE_LINES) != {c.name for c in vo_cues}:
+        raise SystemExit("ERRO: BOSS_VOICE_LINES e CUES de voz divergem")
+
+    api_key = _load_elevenlabs_key()
+    ELEVENLABS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    if manifest is None:
+        manifest = load_manifest()
+    manifest.update(
+        {
+            "schema": "muralha/sfx-manifest@1",
+            "generator": "tools/gen-sfx.py",
+            "sampleRate": SR,
+            "targetLufs": TARGET_LUFS,
+            "peakCeilDb": PEAK_CEIL_DB,
+        }
+    )
+    old = manifest.get("cues", {})
+    selected = [c for c in vo_cues if not only or c.name in only]
+    voice_settings = {
+        "stability": 0.38,
+        "similarity_boost": 0.82,
+        "style": 0.65,
+        "use_speaker_boost": True,
+    }
+    total_chars = 0
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        for cue in selected:
+            spec = BOSS_VOICE_LINES[cue.name]
+            voice_id = str(spec["voice_id"])
+            text = str(spec["text"])
+            cache_key = hashlib.sha256(
+                json.dumps(
+                    {
+                        "model": ELEVENLABS_TTS_MODEL_ID,
+                        "voice_id": voice_id,
+                        "text": text,
+                        "settings": voice_settings,
+                    },
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ).encode("utf-8")
+            ).hexdigest()[:12]
+            mp3_path = ELEVENLABS_CACHE_DIR / f"{cue.name}__{cache_key}.mp3"
+
+            chars = 0
+            from_cache = mp3_path.exists() and mp3_path.stat().st_size >= 256
+            if not from_cache:
+                last_err = ""
+                for attempt in range(5):
+                    resp = requests.post(
+                        f"{ELEVENLABS_TTS_URL}/{voice_id}?output_format=mp3_44100_128",
+                        headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+                        json={
+                            "text": text,
+                            "model_id": ELEVENLABS_TTS_MODEL_ID,
+                            "voice_settings": voice_settings,
+                        },
+                        timeout=60,
+                    )
+                    if resp.status_code == 200 and len(resp.content) >= 256:
+                        mp3_path.write_bytes(resp.content)
+                        raw_cost = resp.headers.get("x-character-count") or resp.headers.get("character-cost") or "0"
+                        chars = int(raw_cost) if str(raw_cost).isdigit() else len(text)
+                        break
+                    if resp.status_code in (401, 402):
+                        raise SystemExit(f"ERRO TTS {cue.name}: HTTP{resp.status_code} {_short(resp.text)}")
+                    if resp.status_code == 429 or resp.status_code >= 500:
+                        last_err = f"HTTP{resp.status_code} {_short(resp.text)}"
+                        time.sleep(2.0 * (2**attempt))
+                        continue
+                    raise RuntimeError(f"{cue.name}: HTTP{resp.status_code} {_short(resp.text)}")
+                if not mp3_path.exists() or mp3_path.stat().st_size < 256:
+                    raise RuntimeError(f"{cue.name}: TTS falhou ({last_err})")
+
+            pitch_st = float(spec.get("pitch_st", 0.0))
+            main = _decode_audio_pcm(mp3_path, stereo=False, pitch_st=pitch_st)
+            main = eq_biquad(main, "hp", 45.0)
+
+            sub_db = spec.get("sub_db")
+            if isinstance(sub_db, (int, float)):
+                sub = _decode_audio_pcm(mp3_path, stereo=False, pitch_st=pitch_st - 12.0)
+                sub = eq_biquad(sub, "lp", 260.0)
+                m = min(len(main), len(sub))
+                if m > 0:
+                    main_rms = float(np.sqrt(np.mean(main[:m] ** 2))) + 1e-9
+                    sub_rms = float(np.sqrt(np.mean(sub[:m] ** 2))) + 1e-9
+                    main[:m] = main[:m] + sub[:m] * (main_rms / sub_rms) * (10.0 ** (float(sub_db) / 20.0))
+
+            drive_db = spec.get("drive_db")
+            if isinstance(drive_db, (int, float)) and float(drive_db) > 0:
+                k = 10.0 ** (float(drive_db) / 20.0)
+                main = 0.65 * (np.tanh(main * k) / np.tanh(k)) + 0.35 * main
+
+            low_db = spec.get("low_boost_db")
+            if isinstance(low_db, (int, float)) and float(low_db) != 0:
+                main = eq_biquad(main, "peaking", 160.0, q=0.9, gain_db=float(low_db))
+            mid_db = spec.get("mid_boost_db")
+            if isinstance(mid_db, (int, float)) and float(mid_db) != 0:
+                main = eq_biquad(main, "peaking", 1800.0, q=1.0, gain_db=float(mid_db))
+            air_db = spec.get("air_boost_db")
+            if isinstance(air_db, (int, float)) and float(air_db) != 0:
+                main = eq_biquad(main, "peaking", 4500.0, q=0.9, gain_db=float(air_db))
+
+            echo_ms = float(spec.get("echo_ms", 0.0))
+            echo_db = float(spec.get("echo_db", -99.0))
+            if echo_ms > 0 and echo_db > -60.0:
+                delay = int(round(echo_ms * SR / 1000.0))
+                padded = np.zeros(len(main) + delay, dtype=np.float64)
+                padded[: len(main)] = main
+                padded[delay:] += main * (10.0 ** (echo_db / 20.0))
+                main = padded
+
+            env_raw = np.abs(main)
+            peak_env = max(float(np.max(env_raw)), 1e-9)
+            hits = np.flatnonzero(env_raw >= peak_env * 0.015)
+            s_idx = max(0, int(hits[0]) - 88) if len(hits) else 0
+            e_idx = min(len(main), int(hits[-1]) + int(0.06 * SR)) if len(hits) else len(main)
+            trimmed = main[s_idx:e_idx].copy()
+            n_out = len(trimmed)
+            fi = min(n_out, int(0.002 * SR))
+            fo = min(n_out, min(int(0.035 * SR), max(64, n_out // 5)))
+            if fi > 0:
+                trimmed[:fi] *= 0.5 - 0.5 * np.cos(np.pi * np.linspace(0.0, 1.0, fi, endpoint=False))
+            if fo > 0:
+                trimmed[n_out - fo :] *= 0.5 + 0.5 * np.cos(np.pi * np.linspace(0.0, 1.0, fo, endpoint=True))
+
+            samples, level, peak = normalize(trimmed, target_lufs=-13.5)
+            actual_dur = round(float(samples.shape[0]) / SR, 2)
+            rel = Path(cue.folder) / f"{cue.name}.ogg"
+            dest = AUDIO_ROOT / rel
+            cue_out = Cue(cue.name, cue.folder, actual_dur, cue.group, cue.publish, False, False)
+            write_ogg(cue_out, samples, dest, Path(tmp_dir))
+            digest = sha256(dest)
+            entry = {
+                "file": rel.as_posix(),
+                "group": cue.group,
+                "duration": actual_dur,
+                "channels": 1,
+                "loop": False,
+                "lufs": round(level, 2),
+                "peakDb": round(peak, 2),
+                "sha256": digest,
+                "bytes": dest.stat().st_size,
+                "publish": cue.publish,
+                "source": "elevenlabs_tts",
+                "locale": str(spec.get("locale", "pt")),
+                "voiceId": voice_id,
+                "text": text,
+                "elevenlabsCache": mp3_path.name,
+            }
+            _merge_prev_ids(entry, old.get(cue.name, {}), digest)
+            manifest.setdefault("cues", {})[cue.name] = entry
+            save_manifest(manifest)
+            total_chars += chars
+            tag = "cache" if from_cache else f"chars={chars}"
+            print(f"  VO_OK {cue.name:<25} dur={actual_dur:>5.2f}s lufs={level:>6.2f} peak={peak:>6.2f} {tag}")
+
+    print(f"BOSS_VOICES_SUMMARY count={len(selected)} chars_billed={total_chars}")
     return manifest
 
 
@@ -1297,6 +2219,12 @@ def publish(manifest: dict, only: set[str] | None) -> int:
                     },
                     timeout=120,
                 )
+            if resp.status_code == 429 and ("limit" in resp.text.lower() or "quota" in resp.text.lower()):
+                entry["lastError"] = f"HTTP{resp.status_code} {_short(resp.text)}"
+                print(f"PUBLISH_QUOTA_STOP {name}: {entry['lastError']}")
+                failures += 1
+                save_manifest(manifest)
+                return failures
             if resp.status_code == 429 or resp.status_code >= 500:
                 wait = 2.0 * (2**attempt)
                 print(f"  {name}: HTTP{resp.status_code} retry em {wait:.0f}s")
@@ -1309,6 +2237,10 @@ def publish(manifest: dict, only: set[str] | None) -> int:
                 save_manifest(manifest)
                 if resp.status_code in (401, 403):
                     return failures + 1000
+                body_low = resp.text.lower()
+                if "limit" in body_low or "quota" in body_low or "exceeded" in body_low:
+                    print(f"PUBLISH_QUOTA_STOP {name}: {entry['lastError']}")
+                    return failures
                 break
             op = resp.json()
             break
@@ -1357,24 +2289,96 @@ def refresh_moderation(manifest: dict) -> None:
     save_manifest(manifest)
 
 
+def grant_universe(manifest: dict, universe_id: str) -> int:
+    sess = _session()
+    asset_ids: list[str] = []
+    seen: set[str] = set()
+    for entry in manifest.get("cues", {}).values():
+        for field in ("assetId", "approvedFallbackAssetId", "staleAssetId"):
+            val = entry.get(field)
+            if val is not None:
+                s = str(val).strip()
+                if s.isdigit() and s not in seen:
+                    seen.add(s)
+                    asset_ids.append(s)
+    if not asset_ids:
+        print("GRANT_SKIP: nenhum assetId encontrado no manifest")
+        return 0
+    failures = 0
+    granted = 0
+    for i in range(0, len(asset_ids), 20):
+        chunk = asset_ids[i : i + 20]
+        payload = {
+            "subjectType": "Universe",
+            "subjectId": str(universe_id),
+            "action": "Use",
+            "requests": [{"assetId": aid} for aid in chunk],
+        }
+        resp = sess.patch(PERMISSIONS_BATCH_URL, json=payload, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            ok_ids = data.get("successAssetIds") or []
+            errs = data.get("errors") or []
+            granted += len(ok_ids)
+            failures += len(errs)
+            print(
+                f"GRANT_OK batch={i // 20 + 1} ok={len(ok_ids)} errs={len(errs)} universe={universe_id}"
+            )
+            for err in errs:
+                print(f"  GRANT_ITEM_ERR {err}")
+        else:
+            failures += len(chunk)
+            print(f"GRANT_FAIL batch={i // 20 + 1}: HTTP{resp.status_code} {_short(resp.text)}")
+            if resp.status_code in (401, 403):
+                break
+    print(f"GRANT_SUMMARY universe={universe_id} granted={granted} failures={failures}")
+    return failures
+
+
+def _resolve_approved_fallback(name: str, entry: dict, cues_map: dict[str, dict]) -> str | None:
+    if entry.get("moderationState") == "Approved" and entry.get("assetId"):
+        return str(entry["assetId"])
+    fam = APPROVED_FAMILY_FALLBACK.get(name)
+    if fam and fam in cues_map:
+        fam_entry = cues_map[fam]
+        if fam_entry.get("moderationState") == "Approved" and fam_entry.get("assetId"):
+            return str(fam_entry["assetId"])
+        if fam_entry.get("approvedFallbackAssetId"):
+            return str(fam_entry["approvedFallbackAssetId"])
+    if entry.get("approvedFallbackAssetId"):
+        return str(entry["approvedFallbackAssetId"])
+    for cand in cues_map.values():
+        if cand.get("moderationState") == "Approved" and cand.get("assetId") and cand.get("group") == entry.get("group"):
+            return str(cand["assetId"])
+    return None
+
+
 def emit_luau(manifest: dict) -> Path:
-    ids, durations = [], []
-    for name, entry in sorted(manifest["cues"].items()):
+    ids, durations, fallbacks = [], [], []
+    cues_map = manifest["cues"]
+    for name, entry in sorted(cues_map.items()):
         durations.append(f"\t{name} = {entry['duration']},")
         state = str(entry.get("moderationState", ""))
-        asset_id = entry.get("assetId") or entry.get("staleAssetId")
+        fb_id = _resolve_approved_fallback(name, entry, cues_map)
+        asset_id = entry.get("assetId") or entry.get("staleAssetId") or fb_id
         if asset_id and state not in ("Rejected",) and not state.startswith("HTTP"):
             ids.append(f'\t{name} = "rbxassetid://{asset_id}",')
+        if fb_id:
+            fallbacks.append(f'\t{name} = "rbxassetid://{fb_id}",')
     lines = [
         "--!strict",
         "-- GERADO por tools/gen-sfx.py --emit-luau a partir de assets/audio/manifest.json. Nao edite a mao.",
-        "-- cue -> rbxassetid (Open Cloud, creator userId " + CREATOR_USER_ID + "). Cue sem id (ou cujo",
-        "-- carregamento falhar) cai no placeholder offline rbxasset://sounds do AudioKit.",
+        "-- cue -> rbxassetid (Open Cloud, creator userId " + CREATOR_USER_ID + "). Cue em moderacao cai em APPROVED_FALLBACKS.",
         "",
         "local AudioAssets = {}",
         "",
         "AudioAssets.IDS = {",
         *ids,
+        "} :: { [string]: string }",
+        "",
+        "-- Fallbacks 100% Approved na Open Cloud (evita ruido de placeholders padrao enquanto novos ativos moderam).",
+        "AudioAssets.APPROVED_FALLBACKS = {",
+        *fallbacks,
         "} :: { [string]: string }",
         "",
         "-- Duracao em segundos (orcamento de vozes do pool e stems BGM).",
@@ -1418,6 +2422,20 @@ def smoke() -> int:
             write_ogg(cue, render(cue)[0], dest, Path(tmp))
             if sha256(dest) != first or dest.stat().st_size < 512:
                 problems.append(f"{cue.name}: OGG nao bitexact ou vazio")
+    if MANIFEST_PATH.exists():
+        manifest = load_manifest()
+        cues_map = manifest.get("cues", {})
+        for cue in CUES:
+            entry = cues_map.get(cue.name)
+            if not isinstance(entry, dict):
+                problems.append(f"manifest.json: cue ausente {cue.name}")
+                continue
+            ogg_path = AUDIO_ROOT / str(entry.get("file", ""))
+            if not ogg_path.exists() or ogg_path.stat().st_size <= 512:
+                problems.append(f"manifest.json: arquivo ausente ou vazio {cue.name}")
+                continue
+            if sha256(ogg_path) != entry.get("sha256"):
+                problems.append(f"manifest.json: sha256 divergente em {cue.name}")
     if LUAU_PATH.exists():
         text = LUAU_PATH.read_text(encoding="utf-8")
         names = {c.name for c in CUES}
@@ -1439,11 +2457,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="SFX/OST deterministicos da MURALHA (-14 LUFS, OGG) + Open Cloud.")
     parser.add_argument("--list", action="store_true", help="lista os cues")
     parser.add_argument("--smoke", action="store_true", help="sintetiza tudo, checa determinismo/loudness, codifica amostra")
+    parser.add_argument("--elevenlabs", action="store_true", help="gera cues via ElevenLabs Sound Effects v2 com cache e pos-DSP")
+    parser.add_argument("--suno", action="store_true", help="importa faixas master Suno (build/suno-masters/*.wav) em loop seamless")
+    parser.add_argument("--boss-voices", action="store_true", help="gera falas PT-BR/EN/ES dos 5 bosses via ElevenLabs TTS + DSP")
+    parser.add_argument("--force-synth", action="store_true", help="forca re-sintese procedural sobre cues existentes")
     parser.add_argument("--publish", action="store_true", help="sobe OGGs sem assetId (Assets API, Audio)")
-    parser.add_argument("--only", default="", help="lista de cues separada por virgula para --publish")
+    parser.add_argument("--only", default="", help="lista de cues separada por virgula para --elevenlabs / --boss-voices / --publish")
     parser.add_argument("--refresh-moderation", action="store_true", help="relê moderationState")
     parser.add_argument("--emit-luau", action="store_true", help="regenera src/shared/visual/AudioAssets.luau")
     parser.add_argument("--no-generate", action="store_true", help="nao re-sintetiza antes de publicar/emitir")
+    parser.add_argument(
+        "--grant-universe",
+        default="",
+        help=f"concede permissao Use para uma experiencia Roblox (ex: {DEFAULT_UNIVERSE_ID})",
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -1455,20 +2482,36 @@ def main() -> int:
     if args.smoke:
         return smoke()
 
-    only_actions = args.publish or args.refresh_moderation or args.emit_luau
-    if args.no_generate or (only_actions and MANIFEST_PATH.exists() and not args.publish):
+    only = {s.strip() for s in args.only.split(",") if s.strip()} or None
+    only_actions = args.publish or args.refresh_moderation or args.emit_luau or bool(args.grant_universe)
+    any_gen = args.elevenlabs or args.suno or args.boss_voices or args.force_synth
+    if any_gen:
+        manifest = load_manifest()
+        if args.force_synth:
+            manifest = generate_all(force_synth=True)
+            print(f"SFX_GEN_OK count={len(manifest['cues'])} dir={AUDIO_ROOT.relative_to(ROOT)}")
+        if args.elevenlabs:
+            manifest = generate_elevenlabs(only)
+        if args.suno:
+            manifest = import_suno_tracks(manifest)
+        if args.boss_voices:
+            manifest = generate_boss_voices(only, manifest)
+    elif args.no_generate or (only_actions and MANIFEST_PATH.exists()):
         manifest = load_manifest()
     else:
-        manifest = generate_all()
+        manifest = generate_all(force_synth=False)
         print(f"SFX_GEN_OK count={len(manifest['cues'])} dir={AUDIO_ROOT.relative_to(ROOT)}")
     rc = 0
     if args.publish:
-        only = {s.strip() for s in args.only.split(",") if s.strip()} or None
         rc = publish(manifest, only)
     if args.refresh_moderation:
         refresh_moderation(manifest)
     if args.publish or args.emit_luau or args.refresh_moderation:
         print(f"LUAU_OK {emit_luau(manifest).relative_to(ROOT)}")
+    if args.grant_universe:
+        grant_rc = grant_universe(manifest, args.grant_universe.strip())
+        if rc == 0 and grant_rc != 0:
+            rc = grant_rc
     return 0 if rc == 0 else 1
 
 

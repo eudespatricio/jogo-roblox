@@ -1,7 +1,8 @@
 --!nonstrict
--- S6/S8.1: raid assincrona contra fantasma shardado por liga + BotPhantoms + BattleLog em
--- escrita unica + replay deterministico + lock busy durante RaidReplay.SECONDS.
--- A parede fantasma passa por WallService.toBattleWall (unica ponte perfil->motor).
+-- S6/S8.1 + Campanha ("Cronicas do Bastiao"): raid assincrona contra fantasma shardado por liga +
+-- BotPhantoms + Campanha 25 fases (Normal/Pesadelo + 5 Bosses Multi-Lane + marcos por Ato) +
+-- BattleLog em escrita unica + replay deterministico + lock busy durante RaidReplay.SECONDS.
+-- A parede passa por WallService.toBattleWall (unica ponte perfil->motor).
 -- O replay roda o MESMO seed/muralha/wave e compara o hash antes de creditar; divergencia
 -- vira battle_divergence e nao paga.
 
@@ -11,6 +12,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
+local bit32 = bit32
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local raidModules = Shared:WaitForChild("raid")
@@ -18,6 +20,7 @@ local BattleLog = require(raidModules:WaitForChild("BattleLog"))
 local BotPhantoms = require(raidModules:WaitForChild("BotPhantoms"))
 local RaidReplay = require(raidModules:WaitForChild("RaidReplay"))
 local RaidTelemetry = require(raidModules:WaitForChild("RaidTelemetry"))
+local CampaignCatalog = require(Shared:WaitForChild("campaign"):WaitForChild("CampaignCatalog"))
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
 local ProfileSchema = require(Shared:WaitForChild("data"):WaitForChild("ProfileSchema"))
 local TrapCatalog = require(Shared:WaitForChild("data"):WaitForChild("TrapCatalog"))
@@ -43,16 +46,24 @@ local function ensureRemotes(): Folder
 	return folder
 end
 
-local remotes = ensureRemotes()
-local raidStart = remotes:FindFirstChild("RaidStart")
-if raidStart == nil or raidStart.ClassName ~= "RemoteFunction" then
-	if raidStart ~= nil then
-		raidStart:Destroy()
+local function ensureRemoteFunction(parent: Folder, name: string): RemoteFunction
+	local existing = parent:FindFirstChild(name)
+	if existing == nil or existing.ClassName ~= "RemoteFunction" then
+		if existing ~= nil then
+			existing:Destroy()
+		end
+		local rf = Instance.new("RemoteFunction")
+		rf.Name = name
+		rf.Parent = parent
+		return rf
 	end
-	raidStart = Instance.new("RemoteFunction")
-	raidStart.Name = "RaidStart"
-	raidStart.Parent = remotes
+	return existing :: RemoteFunction
 end
+
+local remotes = ensureRemotes()
+local raidStart = ensureRemoteFunction(remotes, "RaidStart")
+local campaignStateRemote = ensureRemoteFunction(remotes, "CampaignState")
+local campaignClaimRemote = ensureRemoteFunction(remotes, "CampaignClaim")
 
 local raidEvent = remotes:FindFirstChild("RaidEvent")
 if raidEvent == nil or raidEvent.ClassName ~= "RemoteEvent" then
@@ -126,6 +137,17 @@ local busy: { [Player]: boolean } = {}
 local activeRaid: { [Player]: ActiveRaid } = {}
 local raidToken = 0
 
+local function cloneTable(value: any): any
+	if type(value) ~= "table" then
+		return value
+	end
+	local out = {}
+	for k, v in pairs(value) do
+		out[k] = cloneTable(v)
+	end
+	return out
+end
+
 -- Snapshot real sem PII: a muralha do perfil passa por toBattleWall e guarda apenas
 -- ownerHash (8 hex), league, level, hp e traps.
 local function snapshotFromProfile(profile: any, ownerHash: string, league: number): (any?, string?)
@@ -169,7 +191,83 @@ local function wallFromSnapshot(snapshot: any): any
 	return { level = snapshot.level, hp = snapshot.hp, traps = traps }
 end
 
-local function runBattle(seed: number, wall: any, waveSpec: BotPhantoms.WaveSpec): any
+local function wallTrapLimit(wallLevel: number): number
+	local lvl = math.clamp(math.floor(wallLevel), 1, TrapCatalog.MAX_WALL_LEVEL)
+	local def = TrapCatalog.WALL_LEVELS[lvl] or TrapCatalog.WALL_LEVELS[1]
+	return def.trapLimit
+end
+
+local function summarizeTraps(traps: { any }?): { { type: string, level: number, count: number } }
+	if type(traps) ~= "table" then
+		return {}
+	end
+	local counts: { [string]: { type: string, level: number, count: number } } = {}
+	local order: { { type: string, level: number, count: number } } = {}
+	for _, trap in ipairs(traps) do
+		if type(trap) == "table" and type(trap.type) == "string" then
+			local lvl = math.max(1, tonumber(trap.level) or 1)
+			local key = trap.type .. ":" .. tostring(lvl)
+			local entry = counts[key]
+			if entry == nil then
+				entry = { type = trap.type, level = lvl, count = 0 }
+				counts[key] = entry
+				order[#order + 1] = entry
+			end
+			entry.count += 1
+		end
+	end
+	table.sort(order, function(a, b)
+		if a.level ~= b.level then
+			return a.level > b.level
+		end
+		if a.count ~= b.count then
+			return a.count > b.count
+		end
+		return a.type < b.type
+	end)
+	local out = {}
+	for i = 1, math.min(4, #order) do
+		out[i] = order[i]
+	end
+	return out
+end
+
+local function summarizeWaveClasses(waveSpec: any): { string }
+	local seen: { [string]: boolean } = {}
+	local out: { string } = {}
+	local function addKind(kind: any)
+		if type(kind) == "string" and kind ~= "" and not seen[kind] and #out < 4 then
+			seen[kind] = true
+			out[#out + 1] = kind
+		end
+	end
+	if type(waveSpec) == "table" then
+		if type(waveSpec.slices) == "table" and #waveSpec.slices > 0 then
+			for _, slice in ipairs(waveSpec.slices) do
+				if type(slice) == "table" then
+					addKind(slice.unit)
+				end
+			end
+		elseif type(waveSpec.pool) == "table" and #waveSpec.pool > 0 then
+			for _, kind in ipairs(waveSpec.pool) do
+				addKind(kind)
+			end
+		end
+	end
+	if #out == 0 then
+		return { "runner", "brute", "swarm" }
+	end
+	return out
+end
+
+local function playerDisplayName(player: Player): string
+	if type(player.DisplayName) == "string" and player.DisplayName ~= "" then
+		return player.DisplayName
+	end
+	return player.Name
+end
+
+local function runBattle(seed: number, wall: any, waveSpec: any): any
 	local battle = Core.Battle.new({
 		seed = seed,
 		simVersion = Core.SIM_VERSION,
@@ -177,6 +275,50 @@ local function runBattle(seed: number, wall: any, waveSpec: BotPhantoms.WaveSpec
 		wave = waveSpec,
 	})
 	return battle:Run()
+end
+
+local function runBattleWithTimeline(seed: number, wall: any, waveSpec: any): (any, { any })
+	local battle = Core.Battle.new({
+		seed = seed,
+		simVersion = Core.SIM_VERSION,
+		wall = wall,
+		wave = waveSpec,
+	})
+	local timeline = {}
+	local function captureSnapshot()
+		local units = {}
+		for index = 1, battle.uCount do
+			if battle.uHp[index] > 0 then
+				units[#units + 1] = {
+					id = index,
+					kind = battle.uType[index] or "runner",
+					lane = battle.uLane[index],
+					x = battle.uX[index],
+					y = battle.uY[index],
+					hp = battle.uHp[index],
+					isElite = battle.uIsElite[index] == true,
+				}
+			end
+		end
+		local frame: { [string]: any } = {
+			tick = battle.tick,
+			wallHp = math.floor(math.max(0, battle.wallHp) / Core.MILLI),
+			wallPct = math.clamp(battle.wallHp / battle.wallMax, 0, 1),
+			units = units,
+		}
+		if battle.boss ~= nil then
+			frame.boss = battle:BossSnapshot()
+		end
+		timeline[#timeline + 1] = frame
+	end
+	captureSnapshot()
+	while not battle:Finished() do
+		battle:Step()
+		if battle.tick % 2 == 0 or battle:Finished() then
+			captureSnapshot()
+		end
+	end
+	return battle:Result(), timeline
 end
 
 local function logEvent(player: Player, name: string, props: any): ()
@@ -230,9 +372,285 @@ local function creditRaid(
 	return true, result.gold
 end
 
+local function ensureProfileCampaign(profile: any): any
+	if type(profile.campaign) ~= "table" then
+		profile.campaign = ProfileSchema.template().campaign
+	end
+	if type(profile.campaign.starsNormal) ~= "table" then
+		profile.campaign.starsNormal = {}
+	end
+	if type(profile.campaign.starsNightmare) ~= "table" then
+		profile.campaign.starsNightmare = {}
+	end
+	if type(profile.campaign.actMilestoneClaims) ~= "table" then
+		profile.campaign.actMilestoneClaims = {
+			["1"] = 0,
+			["2"] = 0,
+			["3"] = 0,
+			["4"] = 0,
+			["5"] = 0,
+		}
+	end
+	return profile.campaign
+end
+
+local function buildCampaignSnapshot(profile: any): any
+	local campaign = ensureProfileCampaign(profile)
+	local actStarsNormal = {}
+	local actStarsNightmare = {}
+	local totalStarsNormal = 0
+	local totalStarsNightmare = 0
+	for act = 1, CampaignCatalog.ACT_COUNT do
+		local nStars = CampaignCatalog.actStarCount(campaign, act, "normal")
+		local nmStars = CampaignCatalog.actStarCount(campaign, act, "nightmare")
+		actStarsNormal[act] = nStars
+		actStarsNightmare[act] = nmStars
+		totalStarsNormal += nStars
+		totalStarsNightmare += nmStars
+	end
+	return {
+		ok = true,
+		campaign = cloneTable(campaign),
+		actStarsNormal = actStarsNormal,
+		actStarsNightmare = actStarsNightmare,
+		totalStarsNormal = totalStarsNormal,
+		totalStarsNightmare = totalStarsNightmare,
+		gold = profile.gold,
+	}
+end
+
 local function clearBusy(player: Player): ()
 	activeRaid[player] = nil
 	busy[player] = nil
+end
+
+local function startCampaignBattle(
+	player: Player,
+	profile: any,
+	battleId: string,
+	rawOpts: any
+): any
+	local stageId = if type(rawOpts.stageId) == "string" then rawOpts.stageId else "1-1"
+	local difficulty: CampaignCatalog.DifficultyMode = if rawOpts.difficulty == "nightmare"
+		then "nightmare"
+		else "normal"
+	local campaign = ensureProfileCampaign(profile)
+	local stageSpec = CampaignCatalog.getStage(stageId)
+	if stageSpec == nil then
+		return { ok = false, err = "invalid_stage" }
+	end
+	local unlocked, unlockErr = CampaignCatalog.isUnlocked(campaign, stageId, difficulty)
+	if not unlocked then
+		return { ok = false, err = unlockErr or "stage_locked" }
+	end
+
+	local wall, wallErr = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog)
+	if wall == nil then
+		return { ok = false, err = "wall: " .. tostring(wallErr) }
+	end
+	local stageWallHp = math.max(1, math.floor(stageSpec.wallMaxHpMilli / Core.MILLI))
+	wall.hp = math.max(wall.hp or stageWallHp, stageWallHp)
+
+	local waveSpec = CampaignCatalog.toWaveSpec(stageSpec, difficulty)
+	local seed = stageSpec.seedFixed + (if difficulty == "nightmare" then 10007 else 0)
+
+	local startedProps =
+		RaidTelemetry.startedProps(battleId, seed, Core.SIM_VERSION, Core.GRID_WIDTH, #wall.traps)
+	logEvent(player, "battle_started", startedProps)
+	logEvent(player, "raid_start", {
+		battle_id = battleId,
+		mode = "defense",
+		speed = RAID_SPEED,
+	})
+
+	local result, timeline = runBattleWithTimeline(seed, cloneTable(wall), cloneTable(waveSpec))
+	local replay = runBattle(seed, cloneTable(wall), cloneTable(waveSpec))
+	local replayOk, replayErr, expectedHash, actualHash = RaidReplay.verify(result, replay)
+	if not replayOk then
+		local divergence = RaidTelemetry.divergenceProps(battleId, expectedHash, actualHash)
+		logEvent(player, "battle_divergence", divergence)
+		return {
+			ok = false,
+			err = replayErr or "divergence",
+			battleId = battleId,
+			expectedHash = expectedHash,
+			actualHash = actualHash,
+		}
+	end
+
+	local finishedProps = RaidTelemetry.finishedProps(battleId, result)
+	logEvent(player, "battle_finished", finishedProps)
+	logEvent(
+		player,
+		"raid_end",
+		{ battle_id = battleId, result = result.winner, duration_s = result.ticks * 0.05 }
+	)
+
+	local playerWon = result.winner == "defender"
+	if playerWon then
+		local firstWin, firstWinErr = AnalyticsService.emitFirstWin(player, battleId)
+		if firstWin == nil and firstWinErr ~= "already_won" and firstWinErr ~= "not_started" then
+			warn("[raid] first_win recusado: " .. tostring(firstWinErr))
+		end
+	end
+
+	local earnedMask, starsEarned = CampaignCatalog.evaluateStars(stageSpec, result)
+	local starsTable = if difficulty == "nightmare"
+		then campaign.starsNightmare
+		else campaign.starsNormal
+	local prevMask = tonumber(starsTable[stageId]) or 0
+	local isFirstClear = (prevMask == 0) and playerWon
+	local newMask = bit32.bor(prevMask, earnedMask)
+	if playerWon then
+		starsTable[stageId] = newMask
+		local nextStage = CampaignCatalog.nextStageId(stageId)
+		if nextStage ~= nil then
+			local curIdx = CampaignCatalog.stageOrderIndex(campaign.highestUnlockedStage) or 1
+			local nextIdx = CampaignCatalog.stageOrderIndex(nextStage) or 1
+			if nextIdx > curIdx then
+				campaign.highestUnlockedStage = nextStage
+			end
+		end
+		if stageId == "5-5" then
+			campaign.nightmareUnlocked = true
+		end
+	end
+
+	profile.stats.defenses += 1
+	local rewardGold = 0
+	if playerWon then
+		profile.stats.wins += 1
+		rewardGold = if isFirstClear then stageSpec.rewardGoldFirst else stageSpec.rewardGoldRepeat
+		if difficulty == "nightmare" then
+			rewardGold = math.floor(rewardGold * 1500 / 1000)
+		end
+	end
+
+	local rewarded = true
+	local creditedGold = 0
+	local goldAfter: number? = nil
+	if rewardGold > 0 then
+		rewarded, goldAfter = creditRaid(player, battleId, rewardGold, "defense")
+		if rewarded then
+			creditedGold = rewardGold
+		end
+	end
+
+	local record, recordErr = BattleLog.fromBattle(
+		battleId,
+		result,
+		TrapCatalog.CONTENT_VERSION,
+		Core.GRID_WIDTH,
+		#wall.traps,
+		wall,
+		os.time()
+	)
+	if record == nil then
+		return { ok = false, err = "battlelog: " .. tostring(recordErr) }
+	end
+	if rewarded then
+		local markedRecord, markErr = BattleLog.markRewarded(record, creditedGold)
+		if markedRecord ~= nil then
+			record = markedRecord
+		else
+			warn("[raid] nao montou reward no BattleLog: " .. tostring(markErr))
+		end
+	end
+	local stored, created, putErr = logStore.put(record)
+	if stored == nil then
+		return { ok = false, err = "battlelog: " .. tostring(putErr) }
+	end
+	if not created then
+		return {
+			ok = true,
+			duplicate = true,
+			battleId = battleId,
+			record = stored,
+			replaySeconds = RaidReplay.SECONDS,
+			rewardGold = stored.rewardGold,
+		}
+	end
+
+	if goldAfter ~= nil then
+		player:SetAttribute("MuralhaGold", goldAfter)
+	end
+
+	local campaignSnap = cloneTable(campaign)
+	local myLeague = TrapCatalog.leagueOf(profile.league.points)
+	local myWallLvl = tonumber(wall.level) or 1
+	local responsePayload = {
+		ok = true,
+		mode = "campaign",
+		stageId = stageId,
+		difficulty = difficulty,
+		bossId = stageSpec.bossId,
+		playerWon = playerWon,
+		battleId = battleId,
+		seed = seed,
+		resultHash = result.hash,
+		winner = result.winner,
+		wallHp = result.wallHp,
+		leaked = result.leaked,
+		ticks = result.ticks,
+		durationMs = result.ticks * BattleLog.TICK_MS,
+		rewardGold = creditedGold,
+		starsEarned = starsEarned,
+		starsMask = newMask,
+		campaign = campaignSnap,
+		timeline = timeline,
+		waveSpec = waveSpec,
+		replaySeconds = RaidReplay.SECONDS,
+		wall = wall,
+		phantomName = stageSpec.name,
+		waveCount = waveSpec.count,
+		spawnEveryTicks = waveSpec.spawnEveryTicks,
+		simVersion = Core.SIM_VERSION,
+		record = stored,
+		matchup = {
+			card1 = {
+				side = "left",
+				role = "defender",
+				faction = "bastion",
+				name = playerDisplayName(player),
+				league = myLeague,
+				points = tonumber(profile.league.points) or 0,
+				wallLevel = myWallLvl,
+				wallHp = tonumber(wall.hp) or 500,
+				trapCount = #wall.traps,
+				trapLimit = wallTrapLimit(myWallLvl),
+				wins = tonumber(profile.stats.wins) or 0,
+				traps = summarizeTraps(wall.traps),
+			},
+			card2 = {
+				side = "right",
+				role = if stageSpec.bossId ~= nil then "boss" else "attacker",
+				faction = "horde",
+				isBot = true,
+				name = stageSpec.name,
+				stageId = stageId,
+				act = stageSpec.act,
+				difficulty = difficulty,
+				bossId = stageSpec.bossId,
+				waveCount = waveSpec.count,
+				unitClasses = summarizeWaveClasses(waveSpec),
+			},
+		},
+	}
+
+	pcall(function()
+		(raidEvent :: RemoteEvent):FireClient(player, "campaign_result", {
+			battleId = battleId,
+			stageId = stageId,
+			difficulty = difficulty,
+			bossId = stageSpec.bossId,
+			starsEarned = starsEarned,
+			starsMask = newMask,
+			campaign = campaignSnap,
+			timeline = timeline,
+		})
+	end)
+
+	return responsePayload
 end
 
 local function startRaid(player: Player, rawOpts: any): any
@@ -240,6 +658,7 @@ local function startRaid(player: Player, rawOpts: any): any
 		return { ok = false, err = "busy" }
 	end
 	busy[player] = true
+	local isCampaign = type(rawOpts) == "table" and rawOpts.mode == "campaign"
 	local isDefend = type(rawOpts) == "table" and rawOpts.mode == "defend"
 	local ok, response = pcall(function()
 		local battleId = string.lower(HttpService:GenerateGUID(false))
@@ -253,6 +672,10 @@ local function startRaid(player: Player, rawOpts: any): any
 			return { ok = false, err = "profile" }
 		end
 		local profile = profileSession.Data
+		if isCampaign then
+			return startCampaignBattle(player, profile, battleId, rawOpts)
+		end
+
 		local myLeague = TrapCatalog.leagueOf(profile.league.points)
 		local shardLeague = math.clamp(myLeague, PhantomStore.MIN_LEAGUE, PhantomStore.MAX_LEAGUE)
 		local myHash = PhantomStore.hashOwner(player.UserId)
@@ -485,6 +908,65 @@ local function startRaid(player: Player, rawOpts: any): any
 			player:SetAttribute("MuralhaGold", goldAfter)
 		end
 
+		local matchup = if isDefend
+			then {
+				card1 = {
+					side = "left",
+					role = "defender",
+					faction = "bastion",
+					name = playerDisplayName(player),
+					league = shardLeague,
+					points = newPoints,
+					wallLevel = myWallLevel,
+					wallHp = tonumber(currentSnapshot.hp) or 500,
+					trapCount = myTrapCount,
+					trapLimit = wallTrapLimit(myWallLevel),
+					wins = profile.stats.wins,
+					traps = summarizeTraps(currentSnapshot.traps),
+				},
+				card2 = {
+					side = "right",
+					role = "attacker",
+					faction = "horde",
+					isBot = true,
+					name = string.format("Horda L%d", targetLeague),
+					league = targetLeague,
+					waveCount = waveSpec.count,
+					unitClasses = summarizeWaveClasses(waveSpec),
+				},
+			}
+			else {
+				card1 = {
+					side = "left",
+					role = "attacker",
+					faction = "raider",
+					name = playerDisplayName(player),
+					league = shardLeague,
+					points = newPoints,
+					wallLevel = myWallLevel,
+					wallHp = tonumber(currentSnapshot.hp) or 500,
+					trapCount = myTrapCount,
+					trapLimit = wallTrapLimit(myWallLevel),
+					waveCount = waveSpec.count,
+					wins = profile.stats.wins,
+					unitClasses = summarizeWaveClasses(waveSpec),
+					traps = summarizeTraps(currentSnapshot.traps),
+				},
+				card2 = {
+					side = "right",
+					role = "defender",
+					faction = "bastion",
+					isBot = isBot,
+					name = phantomLabel,
+					league = targetLeague,
+					wallLevel = tonumber(wall.level) or 1,
+					wallHp = tonumber(wall.hp) or 500,
+					trapCount = #wall.traps,
+					trapLimit = wallTrapLimit(tonumber(wall.level) or 1),
+					traps = summarizeTraps(wall.traps),
+				},
+			}
+
 		return {
 			ok = true,
 			mode = if isDefend then "defend" else "raid",
@@ -503,8 +985,10 @@ local function startRaid(player: Player, rawOpts: any): any
 			phantomName = phantomLabel,
 			waveCount = waveSpec.count,
 			spawnEveryTicks = waveSpec.spawnEveryTicks,
+			waveSpec = waveSpec,
 			simVersion = Core.SIM_VERSION,
 			record = stored,
+			matchup = matchup,
 		}
 	end)
 
@@ -536,6 +1020,78 @@ end
 
 raidStart.OnServerInvoke = function(player: Player, opts: any)
 	return startRaid(player, opts)
+end
+
+campaignStateRemote.OnServerInvoke = function(player: Player)
+	local profileSession = ProfileRegistry.get(player)
+	if profileSession == nil or type(profileSession.Data) ~= "table" then
+		return { ok = false, err = "profile" }
+	end
+	return buildCampaignSnapshot(profileSession.Data)
+end
+
+campaignClaimRemote.OnServerInvoke = function(player: Player, rawAct: any, rawTierBit: any)
+	local profileSession = ProfileRegistry.get(player)
+	if profileSession == nil or type(profileSession.Data) ~= "table" then
+		return { ok = false, err = "profile" }
+	end
+	local profile = profileSession.Data
+	local campaign = ensureProfileCampaign(profile)
+	local act = rawAct
+	local tierBit = rawTierBit
+	if type(rawAct) == "table" then
+		act = rawAct.act
+		tierBit = rawAct.tierBit or rawAct.bit
+	end
+	act = tonumber(act)
+	if act == nil or act % 1 ~= 0 or act < 1 or act > CampaignCatalog.ACT_COUNT then
+		return { ok = false, err = "invalid_act" }
+	end
+	local actKey = tostring(act)
+	local currentMask = tonumber(campaign.actMilestoneClaims[actKey]) or 0
+	local actStars = CampaignCatalog.actStarCount(campaign, act, "normal")
+		+ CampaignCatalog.actStarCount(campaign, act, "nightmare")
+
+	local bitsToClaim = 0
+	local goldToCredit = 0
+	for _, m in ipairs(CampaignCatalog.ACT_MILESTONES) do
+		if tierBit == nil or tonumber(tierBit) == m.bit then
+			if actStars >= m.threshold and bit32.band(currentMask, m.bit) == 0 then
+				bitsToClaim = bit32.bor(bitsToClaim, m.bit)
+				goldToCredit += m.gold
+			end
+		end
+	end
+	if bitsToClaim == 0 then
+		return {
+			ok = false,
+			err = "nothing_to_claim",
+			claimedMask = currentMask,
+			campaign = cloneTable(campaign),
+		}
+	end
+
+	local newMask = bit32.bor(currentMask, bitsToClaim)
+	campaign.actMilestoneClaims[actKey] = newMask
+
+	local claimId = string.lower(HttpService:GenerateGUID(false))
+	local rewarded, goldAfter = creditRaid(player, claimId, goldToCredit, "defense")
+	if not rewarded then
+		campaign.actMilestoneClaims[actKey] = currentMask
+		return { ok = false, err = "credit_failed" }
+	end
+	if goldAfter ~= nil then
+		player:SetAttribute("MuralhaGold", goldAfter)
+	end
+
+	return {
+		ok = true,
+		act = act,
+		claimedMask = newMask,
+		rewardGold = goldToCredit,
+		gold = profile.gold,
+		campaign = cloneTable(campaign),
+	}
 end
 
 (raidEvent :: RemoteEvent).OnServerEvent:Connect(function(player: Player, action: any, payload: any)

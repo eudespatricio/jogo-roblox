@@ -1,15 +1,15 @@
 --!strict
--- Schema v3 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
+-- Schema v4 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
 -- Puro Luau (nenhuma API do Roblox): roda no CLI em sim/profile-contract.luau e no servidor.
 -- Regras: campo novo entra em newProfile E em sanitizeCurrent; campo desconhecido nunca e salvo
 -- (a whitelist roda em todo load); a chave do perfil e UserId, nunca nome; nada de PII no Data.
 
 local ProfileSchema = {}
 
-ProfileSchema.SCHEMA_VERSION = 3
+ProfileSchema.SCHEMA_VERSION = 4
 ProfileSchema.STORE_NAME = "MuralhaProfile_v1"
 ProfileSchema.SECONDS_PER_DAY = 86400
--- Versao de conteudo padrao do schema v3. O catalogo atual (TrapCatalog.CONTENT_VERSION)
+-- Versao de conteudo padrao do schema v4. O catalogo atual (TrapCatalog.CONTENT_VERSION)
 -- manda no gate de conteudo; o schema valida a faixa >= 1.
 ProfileSchema.DEFAULT_CONTENT_VERSION = 3
 
@@ -28,6 +28,9 @@ ProfileSchema.MAX_COSMETICS = 200
 ProfileSchema.MAX_GOLD = 1000000000
 ProfileSchema.MAX_COUNTER = 9007199254740991
 ProfileSchema.MAX_ID_LENGTH = 48
+ProfileSchema.CAMPAIGN_ACTS = 5
+ProfileSchema.CAMPAIGN_STAGES_PER_ACT = 5
+ProfileSchema.MAX_STAR_MASK = 7
 
 ProfileSchema.ARENA = table.freeze({
 	xMin = 1000,
@@ -63,6 +66,14 @@ export type Equipped = {
 	commander: string,
 }
 
+export type CampaignProgress = {
+	highestUnlockedStage: string,
+	nightmareUnlocked: boolean,
+	starsNormal: { [string]: number },
+	starsNightmare: { [string]: number },
+	actMilestoneClaims: { [string]: number },
+}
+
 export type League = { points: number, season: number }
 
 export type Stats = {
@@ -83,6 +94,7 @@ export type Profile = {
 	league: League,
 	cosmetics: { [string]: boolean },
 	equipped: Equipped,
+	campaign: CampaignProgress,
 	stats: Stats,
 }
 
@@ -120,11 +132,19 @@ local TOP_FIELDS = {
 	"league",
 	"cosmetics",
 	"equipped",
+	"campaign",
 	"stats",
 }
 local WALL_FIELDS = { "level", "gridWidth", "activeTrapLimit", "cells" }
 local CELL_FIELDS = { "trap", "level", "x", "y" }
 local EQUIPPED_FIELDS = { "theme", "hordeSkin", "finisher", "commander" }
+local CAMPAIGN_FIELDS = {
+	"highestUnlockedStage",
+	"nightmareUnlocked",
+	"starsNormal",
+	"starsNightmare",
+	"actMilestoneClaims",
+}
 local LEAGUE_FIELDS = { "points", "season" }
 local STATS_FIELDS = {
 	"raids",
@@ -148,6 +168,7 @@ local TOP_SET = fieldSet(TOP_FIELDS)
 local WALL_SET = fieldSet(WALL_FIELDS)
 local CELL_SET = fieldSet(CELL_FIELDS)
 local EQUIPPED_SET = fieldSet(EQUIPPED_FIELDS)
+local CAMPAIGN_SET = fieldSet(CAMPAIGN_FIELDS)
 local LEAGUE_SET = fieldSet(LEAGUE_FIELDS)
 local STATS_SET = fieldSet(STATS_FIELDS)
 
@@ -157,6 +178,22 @@ local function newEquipped(): Equipped
 		hordeSkin = ProfileSchema.EQUIPPED_DEFAULTS.hordeSkin,
 		finisher = ProfileSchema.EQUIPPED_DEFAULTS.finisher,
 		commander = ProfileSchema.EQUIPPED_DEFAULTS.commander,
+	}
+end
+
+local function newCampaign(): CampaignProgress
+	return {
+		highestUnlockedStage = "1-1",
+		nightmareUnlocked = false,
+		starsNormal = {},
+		starsNightmare = {},
+		actMilestoneClaims = {
+			["1"] = 0,
+			["2"] = 0,
+			["3"] = 0,
+			["4"] = 0,
+			["5"] = 0,
+		},
 	}
 end
 
@@ -174,6 +211,7 @@ local function newProfile(): Profile
 		league = { points = 0, season = 1 },
 		cosmetics = {},
 		equipped = newEquipped(),
+		campaign = newCampaign(),
 		stats = {
 			raids = 0,
 			defenses = 0,
@@ -220,6 +258,40 @@ local function isIdString(value: any, maxLen: number): boolean
 		return false
 	end
 	return string.match(s, "^[%w_%.%-]+$") ~= nil
+end
+
+function ProfileSchema.isValidStageId(stageId: any): boolean
+	if type(stageId) ~= "string" then
+		return false
+	end
+	local text = stageId :: string
+	local actText, idxText = string.match(text, "^(%d+)%-(%d+)$")
+	if actText == nil or idxText == nil then
+		return false
+	end
+	local act = tonumber(actText) :: number
+	local idx = tonumber(idxText) :: number
+	if
+		act < 1
+		or act > ProfileSchema.CAMPAIGN_ACTS
+		or idx < 1
+		or idx > ProfileSchema.CAMPAIGN_STAGES_PER_ACT
+	then
+		return false
+	end
+	return string.format("%d-%d", act, idx) == text
+end
+
+function ProfileSchema.isValidActKey(actKey: any): boolean
+	if type(actKey) ~= "string" then
+		return false
+	end
+	local text = actKey :: string
+	local act = tonumber(text)
+	if act == nil or act % 1 ~= 0 or act < 1 or act > ProfileSchema.CAMPAIGN_ACTS then
+		return false
+	end
+	return tostring(act) == text
 end
 
 function ProfileSchema.isValidSlot(slot: any): boolean
@@ -434,6 +506,65 @@ local function validateEquipped(equipped: any): (boolean, string?)
 	return true, nil
 end
 
+local function validateStarsMap(map: any, label: string): (boolean, string?)
+	if type(map) ~= "table" then
+		return false, label .. " ausente"
+	end
+	for key, mask in pairs(map) do
+		if not ProfileSchema.isValidStageId(key) then
+			return false, label .. ": stageId invalido (" .. tostring(key) .. ")"
+		end
+		if not isFiniteInteger(mask) then
+			return false, label .. "." .. tostring(key) .. " nao e inteiro"
+		end
+		local m = mask :: number
+		if m < 0 or m > ProfileSchema.MAX_STAR_MASK then
+			return false, label .. "." .. tostring(key) .. " fora de [0,7]"
+		end
+	end
+	return true, nil
+end
+
+local function validateCampaign(campaign: any): (boolean, string?)
+	if type(campaign) ~= "table" then
+		return false, "campaign ausente"
+	end
+	local okKeys, errKeys = checkForeignKeys(campaign, CAMPAIGN_SET, "campaign")
+	if not okKeys then
+		return false, errKeys
+	end
+	if not ProfileSchema.isValidStageId(campaign.highestUnlockedStage) then
+		return false, "campaign.highestUnlockedStage invalido"
+	end
+	if type(campaign.nightmareUnlocked) ~= "boolean" then
+		return false, "campaign.nightmareUnlocked nao e boolean"
+	end
+	local okNorm, errNorm = validateStarsMap(campaign.starsNormal, "campaign.starsNormal")
+	if not okNorm then
+		return false, errNorm
+	end
+	local okNight, errNight = validateStarsMap(campaign.starsNightmare, "campaign.starsNightmare")
+	if not okNight then
+		return false, errNight
+	end
+	if type(campaign.actMilestoneClaims) ~= "table" then
+		return false, "campaign.actMilestoneClaims ausente"
+	end
+	for key, mask in pairs(campaign.actMilestoneClaims) do
+		if not ProfileSchema.isValidActKey(key) then
+			return false, "campaign.actMilestoneClaims: chave invalida (" .. tostring(key) .. ")"
+		end
+		if not isFiniteInteger(mask) then
+			return false, "campaign.actMilestoneClaims." .. tostring(key) .. " nao e inteiro"
+		end
+		local m = mask :: number
+		if m < 0 or m > ProfileSchema.MAX_STAR_MASK then
+			return false, "campaign.actMilestoneClaims." .. tostring(key) .. " fora de [0,7]"
+		end
+	end
+	return true, nil
+end
+
 local function validateLeague(league: any): (boolean, string?)
 	if type(league) ~= "table" then
 		return false, "league ausente"
@@ -491,7 +622,7 @@ local function validateStats(stats: any): (boolean, string?)
 	return true, nil
 end
 
--- Valida o perfil inteiro contra o schema v3. Retorna (ok, erro) em vez de lancar: o chamador
+-- Valida o perfil inteiro contra o schema v4. Retorna (ok, erro) em vez de lancar: o chamador
 -- decide entre migrar, descartar ou recusar a sessao.
 function ProfileSchema.validate(data: any): (boolean, string?)
 	if type(data) ~= "table" then
@@ -537,6 +668,10 @@ function ProfileSchema.validate(data: any): (boolean, string?)
 	local okEquipped, errEquipped = validateEquipped(data.equipped)
 	if not okEquipped then
 		return false, errEquipped
+	end
+	local okCampaign, errCampaign = validateCampaign(data.campaign)
+	if not okCampaign then
+		return false, errCampaign
 	end
 	local okStats, errStats = validateStats(data.stats)
 	if not okStats then
@@ -638,7 +773,20 @@ local function sanitizeCommonScalars(profile: any, data: any): ()
 	end
 end
 
--- Reconstroi um perfil v3 valido a partir de qualquer tabela: so entra o que o schema
+local function sanitizeStarsMap(raw: any): { [string]: number }
+	local out: { [string]: number } = {}
+	if type(raw) ~= "table" then
+		return out
+	end
+	for key, mask in pairs(raw) do
+		if ProfileSchema.isValidStageId(key) and isFiniteInteger(mask) then
+			out[key :: string] = clampInt(mask :: number, 0, ProfileSchema.MAX_STAR_MASK)
+		end
+	end
+	return out
+end
+
+-- Reconstroi um perfil v4 valido a partir de qualquer tabela: so entra o que o schema
 -- reconhece e cabe na faixa. E o que roda em todo load, entao lixo/PII nunca e persistido.
 local function sanitizeCurrent(data: any): Profile
 	local profile = newProfile()
@@ -653,6 +801,32 @@ local function sanitizeCurrent(data: any): Profile
 		for _, field in ipairs(EQUIPPED_FIELDS) do
 			if isIdString(equipped[field], ProfileSchema.MAX_ID_LENGTH) then
 				(profile.equipped :: any)[field] = equipped[field] :: string
+			end
+		end
+	end
+
+	local rawCampaign = data.campaign
+	if type(rawCampaign) == "table" then
+		if ProfileSchema.isValidStageId(rawCampaign.highestUnlockedStage) then
+			profile.campaign.highestUnlockedStage = rawCampaign.highestUnlockedStage :: string
+		end
+		if type(rawCampaign.nightmareUnlocked) == "boolean" then
+			profile.campaign.nightmareUnlocked = rawCampaign.nightmareUnlocked
+		end
+		profile.campaign.starsNormal = sanitizeStarsMap(rawCampaign.starsNormal)
+		profile.campaign.starsNightmare = sanitizeStarsMap(rawCampaign.starsNightmare)
+		local rawClaims = rawCampaign.actMilestoneClaims
+		if type(rawClaims) == "table" then
+			for act = 1, ProfileSchema.CAMPAIGN_ACTS do
+				local strKey = tostring(act)
+				local val = rawClaims[strKey]
+				if val == nil then
+					val = rawClaims[act]
+				end
+				if isFiniteInteger(val) then
+					profile.campaign.actMilestoneClaims[strKey] =
+						clampInt(val :: number, 0, ProfileSchema.MAX_STAR_MASK)
+				end
 			end
 		end
 	end
@@ -726,6 +900,7 @@ local function sanitizeV1(data: any): any
 	profile.schemaVersion = 1
 	profile.contentVersion = nil
 	profile.equipped = nil
+	profile.campaign = nil
 	profile.wall = {
 		gridWidth = ProfileSchema.GRID_WIDTH,
 		activeTrapLimit = ProfileSchema.ACTIVE_TRAP_LIMIT,
@@ -864,7 +1039,9 @@ MIGRATIONS[2] = function(data: any): any
 		else ProfileSchema.GRID_WIDTH
 
 	copy.wall = {
-		level = 1,
+		level = if isFiniteInteger(oldWall.level)
+			then clampInt(oldWall.level :: number, 1, ProfileSchema.MAX_WALL_LEVEL)
+			else 1,
 		gridWidth = gridWidth,
 		activeTrapLimit = limit,
 		cells = newCells,
@@ -877,7 +1054,23 @@ MIGRATIONS[2] = function(data: any): any
 	return copy
 end
 
--- Migra e devolve um perfil v3 valido. Versao futura (build mais novo) e recusada: nao
+-- 3 -> 4: adiciona progresso de campanha ("Cronicas do Bastiao") de forma neutra e aditiva.
+-- Preserva 100% wall, gold, league, cosmetics, equipped e stats sem alterar o hash da muralha.
+MIGRATIONS[3] = function(data: any): any
+	local copy: any = {}
+	if type(data) == "table" then
+		for key, value in pairs(data) do
+			copy[key] = value
+		end
+	end
+	if type(copy.campaign) ~= "table" then
+		copy.campaign = newCampaign()
+	end
+	copy.schemaVersion = 4
+	return copy
+end
+
+-- Migra e devolve um perfil v4 valido. Versao futura (build mais novo) e recusada: nao
 -- sobrescrever dado que este servidor nao entende. Nunca muta a tabela recebida.
 function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, string?)
 	local version: number

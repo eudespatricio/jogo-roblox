@@ -1,5 +1,6 @@
 --!nonstrict
--- Invariantes executaveis da Muralha (matematica v5: posicoes livres, Nv1..Nv5, L1..L5, disparo real e sinergias).
+-- Invariantes executaveis da Muralha (matematica v7: posicoes livres, Nv1..Nv5, L1..L5,
+-- disparo real, sinergias, 6 tipos de horda, 8 mutadores e 5 Bosses Multi-Lane FSM).
 -- Roda no Luau CLI e falha o processo se qualquer regra de negocio for violada:
 --   luau sim/invariants.luau
 local Core = require("../src/shared/sim/core")
@@ -95,7 +96,7 @@ check("I5 resultado consistente", function()
 		assert(r.ticks > 0 and r.ticks <= Core.MAX_TICKS, "ticks fora do cap")
 		assert(r.spawned <= 70, "spawnou mais que a onda")
 		assert(r.traps == 5, "loadout padrao deveria ter 5 ativas")
-		assert(r.simVersion == 6, "simVersion deveria ser 6")
+		assert(r.simVersion == 7, "simVersion deveria ser 7")
 		assert(r.hash == math.floor(r.hash), "hash fracionario")
 	end
 end)
@@ -404,6 +405,7 @@ end)
 check("I13 tabelas congeladas e Core.setTuning", function()
 	assert(table.isfrozen(Core.UNIT), "Core.UNIT nao congelada")
 	assert(table.isfrozen(Core.UNIT.runner), "Core.UNIT.runner nao congelada")
+	assert(table.isfrozen(Core.ALL_UNIT_NAMES), "Core.ALL_UNIT_NAMES nao congelada")
 	assert(table.isfrozen(Core.TRAP), "Core.TRAP nao congelada")
 	assert(table.isfrozen(Core.TRAP.archer), "Core.TRAP.archer nao congelada")
 	assert(table.isfrozen(Core.TRAP_NAMES), "Core.TRAP_NAMES nao congelada")
@@ -600,6 +602,154 @@ check("I16 muralha Nv1..Nv5 e armadilhas L4/L5", function()
 	assert(pct[4] > pct[3] and pct[5] > pct[4], "L4/L5 nao escalam")
 	assert(Core.validateWall(Core.defaultWall()), "validateWall recusou defaultWall")
 	assert(not Core.validateWall({ level = 1, traps = traps(6) }), "validateWall aceitou 6 no Nv1")
+end)
+
+-- I17 (v7): 6 arquetipos de unidade, armorMilli, frostResistMilli e WaveSliceSpec
+check("I17 6 arquetipos de unidade, mitigacao de armadura e WaveSliceSpec", function()
+	assert(#Core.UNIT_NAMES == 3, "UNIT_NAMES padrao P1 deve continuar com 3 tipos")
+	assert(#Core.ALL_UNIT_NAMES == 6, "ALL_UNIT_NAMES deve ter 6 tipos")
+	assert(Core.UNIT.shieldbearer.armorMilli == 250, "shieldbearer armor != 250")
+	assert(Core.UNIT.pyromancer.frostResistMilli == 350, "pyromancer frostResist != 350")
+	assert(Core.UNIT.sapper.leak == 22000, "sapper leak != 22000")
+
+	local b = Core.Battle.new({
+		seed = 101,
+		simVersion = Core.SIM_VERSION,
+		wall = {
+			traps = {
+				{ cell = "r3c4", type = "frost", level = 1 },
+				{ cell = "r3c3", type = "cannon", level = 1 },
+			},
+		},
+		wave = {
+			slices = {
+				{
+					startTick = 1,
+					everyTicks = 5,
+					count = 1,
+					unit = "shieldbearer",
+					laneMask = 4,
+					isElite = false,
+				},
+				{
+					startTick = 2,
+					everyTicks = 5,
+					count = 1,
+					unit = "pyromancer",
+					laneMask = 4,
+					isElite = false,
+				},
+				{
+					startTick = 3,
+					everyTicks = 5,
+					count = 1,
+					unit = "sapper",
+					laneMask = 4,
+					isElite = true,
+				},
+			},
+		},
+	})
+	b:Step() -- tick 1: spawna shieldbearer e frost atira
+	assert(b.uType[1] == "shieldbearer", "uType[1] != shieldbearer")
+	assert(b.uArmorMilli[1] == 250, "uArmorMilli[1] != 250")
+	b:Step() -- tick 2: spawna pyromancer
+	assert(b.uType[2] == "pyromancer", "uType[2] != pyromancer")
+	assert(b.uFrostResistMilli[2] == 350, "uFrostResistMilli[2] != 350")
+	b:Step() -- tick 3: spawna sapper elite
+	assert(b.uType[3] == "sapper" and b.uIsElite[3] == true, "sapper elite")
+	local ok = b:CheckIntegers()
+	assert(ok, "CheckIntegers falhou em WaveSliceSpec")
+end)
+
+-- I18 (v7): Boss Multi-Lane (laneSpan=3), AoE shotId dedup, Stagger -> VULNERABLE e ENRAGE
+check("I18 Boss Multi-Lane, shotId dedup estrito, Stagger/VULNERABLE e ENRAGE", function()
+	local b = Core.Battle.new({
+		seed = 55,
+		simVersion = Core.SIM_VERSION,
+		wall = {
+			traps = {
+				{ cell = "r3c3", type = "catapult", level = 1 },
+				{ cell = "r2c3", type = "cannon", level = 1 },
+			},
+		},
+		wave = {
+			count = 0,
+			bossId = "iron_ram_colossus",
+			bossSpawnTick = 1,
+		},
+	})
+	assert(b.boss ~= nil and b.boss.laneSpan == 3 and b.boss.laneCenter == 3, "boss init")
+	b.boss.x = 6500
+	local startHp = b.boss.hp
+
+	-- Disparo de catapult c/ shotId=777: mesmo cobrindo multiplas lanes, so aplica dano 1 vez
+	local hit1 = b:applyTrap(b.traps[2], 777) -- catapult em r3c3
+	assert(hit1 == true, "catapult nao acertou o boss")
+	local dmgOnce = startHp - b.boss.hp
+	assert(dmgOnce > 0, "catapult causou 0 de dano no boss")
+	local hitDuplicate = b:applyTrap(b.traps[2], 777) -- mesmo shotId deve ser ignorado
+	assert(hitDuplicate == false and b.boss.hp == startHp - dmgOnce, "shotId duplicou dano no boss")
+
+	-- Acumula stagger ate quebrar postura -> VULNERABLE (30 ticks, dano * 1300 / 1000)
+	local preVulnHp = b.boss.hp
+	b:applyTrap(b.traps[1], 778) -- cannon em r2c3 (alcanca lane 2 do boss laneCenter=3)
+	local normalCannonDmg = preVulnHp - b.boss.hp
+	assert(normalCannonDmg > 0, "cannon em lane adjacente nao atingiu boss laneSpan=3")
+
+	while b.boss.state ~= "VULNERABLE" do
+		b.nextShotId += 1
+		b:applyTrap(b.traps[1], b.nextShotId)
+	end
+	assert(b.boss.state == "VULNERABLE" and b.boss.stateTicksLeft == 30, "nao entrou em VULNERABLE")
+
+	local hpBeforeVulnHit = b.boss.hp
+	b.nextShotId += 1
+	b:applyTrap(b.traps[1], b.nextShotId)
+	local vulnCannonDmg = hpBeforeVulnHit - b.boss.hp
+	assert(
+		vulnCannonDmg == math.floor(normalCannonDmg * 1300 / 1000),
+		"dano em VULNERABLE != *1300/1000"
+	)
+
+	-- ENRAGE abaixo de 40% HP
+	b.boss.hp = math.floor(b.boss.maxHp * 390 / 1000)
+	b:Step()
+	assert(b.boss.enraged == true, "boss nao entrou em ENRAGE abaixo de 40% HP")
+end)
+
+-- I19 (v7): determinismo dos 5 Bosses e 8 Mutadores
+check("I19 determinismo dos 5 Bosses e 8 Mutadores", function()
+	assert(#Core.BOSS_IDS == 5 and #Core.MUTATOR_IDS == 8, "contagem de bosses/mutators")
+	for idx, bossId in ipairs(Core.BOSS_IDS) do
+		local mutA = Core.MUTATOR_IDS[((idx - 1) * 2 % #Core.MUTATOR_IDS) + 1]
+		local mutB = Core.MUTATOR_IDS[((idx * 2) % #Core.MUTATOR_IDS) + 1]
+		local function runBossSim()
+			local b = Core.Battle.new({
+				seed = 900 + idx,
+				simVersion = Core.SIM_VERSION,
+				wall = Core.defaultWall(),
+				wave = {
+					count = 12,
+					spawnEveryTicks = 20,
+					pool = Core.ALL_UNIT_NAMES,
+					bossId = bossId,
+					bossHpScaleMilli = 200,
+					bossSpawnTick = 10,
+					mutatorIds = { mutA, mutB },
+				},
+			})
+			while not b:Finished() do
+				b:Step()
+				local okInt = b:CheckIntegers()
+				assert(okInt, "float detectado em boss " .. bossId)
+			end
+			return b:Result()
+		end
+		local r1 = runBossSim()
+		local r2 = runBossSim()
+		assert(r1.hash == r2.hash and r1.ticks == r2.ticks, "divergencia em boss " .. bossId)
+	end
 end)
 
 print(string.format("invariantes: %d checagens, %d falhas", checks, #failures))

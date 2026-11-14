@@ -1,10 +1,10 @@
-# Cenario de fundo (alem da muralha) — Forge3D 0.6.0, rota mesh: concept SD1.5 -> TripoSR -> bake.
+# Cenario de fundo (alem da muralha) — Forge3D 0.6.1, rota mesh: concept SD1.5 -> TripoSR -> bake.
 # Puramente visual, visto de longe: malha grosseira e aceitavel. Saida no sandbox do Forge3D.
 # Rodar:
 #   FORGE3D_I23D_REMOVER_FUNDO=1 FORGE3D_CONCEPT_NEGATIVO="$(cat art/forge/backdrop_negativo.txt)" \
 #     ~/.local/bin/forge3d run art/forge/lote_backdrop.yaml --json
 # v2: sem "diorama" (gerava chao/base e cena cortada -> malha deitada).
-schema: forge3d/spec@1
+schema: forge3d/spec@4
 
 projeto: muralha
 perfil: roblox-r15

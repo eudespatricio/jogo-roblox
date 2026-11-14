@@ -13,19 +13,13 @@ local VisualTheme = require(
 
 local AmbientLife = {}
 
--- TODO(Torcida): implementar futuramente arquibancada/torcida ao redor do perimetro da arena
--- com personagens do jogo (arqueiros, engenheiros e aldeoes do bastiao) reagindo em tempo real
--- a abates da horda, combos de sinergia, dano na muralha e vitoria/derrota.
--- Requisitos quando entrar: puramente client-side, CanCollide/CanQuery/CanTouch = false,
--- animacao em lote no Heartbeat e dentro do orcamento mobile de partes (VisualTheme.BUDGET).
-
 local FOLDER_NAME = "AmbientLife"
 local ASSETS_FOLDER = "MuralhaAssets"
 local FAUNA_PREFIX = "FAUNA_"
 local LATE_WAIT_S = 90
 local DEFAULT_GROUND_Y = -0.20
 
-local ROT_GLTF_TO_LOCAL = CFrame.Angles(0, math.rad(180), 0)
+local ROT_GLTF_TO_LOCAL = CFrame.identity
 
 type Piece = {
 	part: BasePart,
@@ -762,7 +756,6 @@ local function wrapAndNormalizeMesh(
 		wrapper:ScaleTo(wrapper:GetScale() * (targetSize / denom))
 	end
 
-	wrapper:PivotTo(ROT_GLTF_TO_LOCAL)
 	local bbCf, bbSize = wrapper:GetBoundingBox()
 
 	local anchor: Vector3
@@ -775,6 +768,7 @@ local function wrapAndNormalizeMesh(
 		local minX = bbCf.Position.X - bbSize.X * 0.5
 		local maxX = bbCf.Position.X + bbSize.X * 0.5
 		local shoulderX: number
+		-- Sem Ry(180), ombro em minX estende a ponta para +X (dir = 1); ombro em maxX estende para -X (dir = -1).
 		if math.abs(math.abs(minX) - math.abs(maxX)) > 0.01 then
 			if math.abs(minX) <= math.abs(maxX) then
 				shoulderX = minX
@@ -784,22 +778,22 @@ local function wrapAndNormalizeMesh(
 				dir = -1
 			end
 		elseif isLeftWing then
-			shoulderX = minX
-			dir = 1
-		else
 			shoulderX = maxX
 			dir = -1
+		else
+			shoulderX = minX
+			dir = 1
 		end
 		anchor = Vector3.new(shoulderX, bbCf.Position.Y, bbCf.Position.Z)
 	end
 
-	local shift = CFrame.new(-anchor)
+	local toLocal = ROT_GLTF_TO_LOCAL * CFrame.new(-anchor)
 	local pieces: { Piece } = {}
 	for _, desc in ipairs(wrapper:GetDescendants()) do
 		if desc:IsA("BasePart") then
 			pieces[#pieces + 1] = {
 				part = desc,
-				localCF = shift * desc.CFrame,
+				localCF = toLocal * desc.CFrame,
 			}
 		end
 	end

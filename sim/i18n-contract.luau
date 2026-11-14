@@ -1,5 +1,5 @@
 --!nonstrict
--- Contrato de i18n (S8.2.6): paridade byte-a-byte com assets/i18n/LocalizationTable.csv (51 chaves),
+-- Contrato de i18n (S8.2.6): paridade byte-a-byte com assets/i18n/LocalizationTable.csv (77 chaves),
 -- resolveLocale, toAnalyticsLocale, placeholders e helpers de armadilha/unidade.
 -- Roda no Luau CLI: luau sim/i18n-contract.luau
 local I18n = require("../src/shared/i18n/I18n")
@@ -16,7 +16,7 @@ local function check(name, fn)
 	end
 end
 
--- Espelho exato das 51 linhas de assets/i18n/LocalizationTable.csv (Source=pt, en, es).
+-- Espelho exato das 77 linhas de assets/i18n/LocalizationTable.csv (Source=pt, en, es).
 local EXPECTED_CSV = {
 	game_title = { "A MURALHA", "WALLBREAKER", "LA MURALLA" },
 	subtitle_architect = {
@@ -156,6 +156,37 @@ local EXPECTED_CSV = {
 		"Archer near Archer (-cooldown)",
 		"Arquero cerca de Arquero (-recarga)",
 	},
+	unit_shieldbearer = { "Escudeiro", "Shieldbearer", "Escudero" },
+	unit_pyromancer = { "Piroforjador", "Pyromancer", "Piroforjador" },
+	unit_sapper = { "Sapador", "Sapper", "Zapador" },
+	cta_story = { "HISTÓRIA", "STORY", "HISTORIA" },
+	cta_play = { "JOGAR", "PLAY", "JUGAR" },
+	cta_claim = { "RESGATAR", "CLAIM", "RECLAMAR" },
+	story_title = {
+		"CRÔNICAS DO BASTIÃO",
+		"BASTION CHRONICLES",
+		"CRÓNICAS DEL BASTIÓN",
+	},
+	story_normal = { "NORMAL", "NORMAL", "NORMAL" },
+	story_nightmare = { "PESADELO", "NIGHTMARE", "PESADILLA" },
+	story_act_fmt = { "ATO %d · %s", "ACT %d · %s", "ACTO %d · %s" },
+	story_stars_fmt = { "★ %d/%d", "★ %d/%d", "★ %d/%d" },
+	story_locked_nm = {
+		"Vença 5-5 Normal p/ Pesadelo",
+		"Clear 5-5 Normal for Nightmare",
+		"Supera 5-5 Normal p/ Pesadilla",
+	},
+	boss_telegraph_tag = {
+		"ALERTA: GOLPE PESADO!",
+		"WARNING: HEAVY SLAM!",
+		"¡ALERTA: GOLPE PESADO!",
+	},
+	boss_vulnerable_tag = {
+		"ATORDADO (+30% DANO)",
+		"STAGGERED (+30% DMG)",
+		"ATURDIDO (+30% DAÑO)",
+	},
+	boss_enrage_tag = { "FÚRIA DO CHEFE", "BOSS ENRAGED", "FURIA DEL JEFE" },
 }
 
 local function extractPlaceholders(text)
@@ -175,7 +206,7 @@ check("LOCALES e DEFAULT_LOCALE definidos", function()
 	assert(I18n.DEFAULT_LOCALE == "pt", "DEFAULT_LOCALE")
 end)
 
-check("todas as 62 chaves existem e batem byte-a-byte com o CSV", function()
+check("todas as 77 chaves existem e batem byte-a-byte com o CSV", function()
 	local expectedCount = 0
 	for key, cols in pairs(EXPECTED_CSV) do
 		expectedCount += 1
@@ -194,14 +225,14 @@ check("todas as 62 chaves existem e batem byte-a-byte com o CSV", function()
 			string.format("%s [es]: '%s' != '%s'", key, tostring(entry.es), cols[3])
 		)
 	end
-	assert(expectedCount == 62, "esperava 62 chaves esperadas, achei " .. tostring(expectedCount))
+	assert(expectedCount == 77, "esperava 77 chaves esperadas, achei " .. tostring(expectedCount))
 
 	local actualCount = 0
 	for key in pairs(I18n.TABLE) do
 		actualCount += 1
 		assert(EXPECTED_CSV[key] ~= nil, "chave extra em I18n.TABLE: " .. key)
 	end
-	assert(actualCount == 62, "esperava 62 chaves em I18n.TABLE, achei " .. tostring(actualCount))
+	assert(actualCount == 77, "esperava 77 chaves em I18n.TABLE, achei " .. tostring(actualCount))
 end)
 
 check("placeholders identicos entre pt, en e es", function()
@@ -341,11 +372,11 @@ check("trapName, trapVerb e unitName cobrem todo o catalogo", function()
 			)
 		end
 	end
-	for _, unitId in ipairs({ "runner", "brute", "swarm" }) do
+	for _, unitId in ipairs({ "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }) do
 		for _, locale in ipairs(I18n.LOCALES) do
 			local name = I18n.unitName(locale, unitId)
 			assert(
-				type(name) == "string" and #name > 0,
+				type(name) == "string" and #name > 0 and name ~= unitId,
 				"unitName falhou: " .. unitId .. " " .. locale
 			)
 		end

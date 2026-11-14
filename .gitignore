@@ -30,6 +30,8 @@ roblox.yml
 art/renders/
 .asphalt-debug/
 
-# ambiente Python local de audio/DSP
+# ambiente Python local de audio/DSP e bytecode
 .venv-audio/
+__pycache__/
+*.py[cod]
 

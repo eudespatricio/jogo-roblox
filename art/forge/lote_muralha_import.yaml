@@ -1,8 +1,8 @@
-# Forge3D 0.6.0 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)
+# Forge3D 0.6.1 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)
 # entra no mesmo QC (escala, pivo, LOD, colisao, manifesto, indice). Saida no sandbox.
 #   forge3d run art/forge/lote_muralha_import.yaml --json   (ou: bash tools/art-pipeline.sh --only wall)
 # GERADO pelo script: altura_metros = altura medida em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@1
+schema: forge3d/spec@4
 
 projeto: muralha
 perfil: roblox-r15

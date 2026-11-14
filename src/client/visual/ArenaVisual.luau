@@ -821,8 +821,6 @@ local PROP_SLOTS: { PropSlotSpec } = {
 	},
 }
 
--- TODO(Torcida): reservar faixas externas do perimetro (lados N/S e tras do bastiao) para
--- arquibancada/torcida animada de personagens do jogo reagindo a batalha (ver AmbientLife.luau).
 local function buildPerimeterProps(folder: Folder, origin: Vector3): ()
 	local wallX = GridLayout.WALL_X
 	local spawnX = 25

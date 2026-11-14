@@ -50,6 +50,21 @@ local RIG_METRICS: { [string]: RigMetrics } = {
 		torsoMountY = 0.92,
 		torsoHeight = 2.05,
 	},
+	shieldbearer = {
+		hipY = 1.68,
+		torsoMountY = 0.92,
+		torsoHeight = 4.25,
+	},
+	pyromancer = {
+		hipY = 1.52,
+		torsoMountY = 0.82,
+		torsoHeight = 3.85,
+	},
+	sapper = {
+		hipY = 1.42,
+		torsoMountY = 0.74,
+		torsoHeight = 3.45,
+	},
 }
 
 type TorsoPiece = {
@@ -82,8 +97,11 @@ export type HordeUnit = {
 }
 
 local EYE_NEON_COLOR = Color3.fromRGB(220, 255, 245)
+local EMBER_NEON_COLOR = Color3.fromRGB(255, 199, 64)
 local TEAL_SWARM_COLOR = Color3.fromRGB(45, 212, 191)
 local CLEAVER_STEEL_COLOR = Color3.fromRGB(140, 145, 158)
+local SHIELD_STEEL_COLOR = Color3.fromRGB(110, 122, 138)
+local BLAST_PACK_COLOR = Color3.fromRGB(139, 90, 43)
 
 local function rgb(value: { number }): Color3
 	return Color3.fromRGB(value[1], value[2], value[3])
@@ -296,6 +314,108 @@ local function buildSwarmFallbackTorso(parent: Instance, spec: EnemySpec): { Tor
 	return list
 end
 
+-- Shieldbearer offline fallback (2 partes torso + 5 membros + RootPart = 8).
+local function buildShieldbearerFallbackTorso(parent: Instance, spec: EnemySpec): { TorsoPiece }
+	local torso = makeEllipsoid(
+		parent,
+		"Torso",
+		Vector3.new(2.10, 2.35, 1.45),
+		rgb(spec.color),
+		Enum.Material.Metal
+	)
+	torso.CFrame = CFrame.new(0, 1.45, 0)
+
+	local head = makePart(
+		parent,
+		"Head",
+		Vector3.new(1.22, 1.24, 1.24),
+		Vector3.new(0, 3.05, -0.10),
+		rgb(spec.dark),
+		Enum.Material.Metal,
+		Enum.PartType.Ball
+	)
+	head.CFrame = CFrame.new(0, 3.05, -0.10)
+
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(parent, list)
+	return list
+end
+
+-- Pyromancer offline fallback (3 partes torso + 4 membros + RootPart = 8).
+local function buildPyromancerFallbackTorso(parent: Instance, spec: EnemySpec): { TorsoPiece }
+	local torso = makeEllipsoid(
+		parent,
+		"Torso",
+		Vector3.new(1.48, 2.15, 1.16),
+		rgb(spec.color),
+		Enum.Material.SmoothPlastic
+	)
+	torso.CFrame = CFrame.new(0, 1.38, 0)
+
+	local emberCore = makePart(
+		parent,
+		"EmberCore",
+		Vector3.new(0.56, 0.56, 0.34),
+		Vector3.new(0, 1.50, -0.50),
+		EMBER_NEON_COLOR,
+		Enum.Material.Neon,
+		Enum.PartType.Ball
+	)
+	emberCore.CFrame = CFrame.new(0, 1.50, -0.50)
+
+	local hood = makePart(
+		parent,
+		"Head",
+		Vector3.new(1.12, 1.24, 1.12),
+		Vector3.new(0, 2.72, -0.02),
+		rgb(spec.dark),
+		Enum.Material.SmoothPlastic,
+		Enum.PartType.Ball
+	)
+	hood.CFrame = CFrame.new(0, 2.72, -0.02)
+
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(parent, list)
+	return list
+end
+
+-- Sapper offline fallback (3 partes torso + 4 membros + RootPart = 8).
+local function buildSapperFallbackTorso(parent: Instance, spec: EnemySpec): { TorsoPiece }
+	local torso = makeEllipsoid(
+		parent,
+		"Torso",
+		Vector3.new(1.36, 1.88, 1.08),
+		rgb(spec.color),
+		Enum.Material.SmoothPlastic
+	)
+	torso.CFrame = CFrame.new(0, 1.24, 0)
+
+	local blastPack = makePart(
+		parent,
+		"BlastPack",
+		Vector3.new(0.92, 1.12, 0.72),
+		Vector3.new(0, 1.32, 0.68),
+		BLAST_PACK_COLOR,
+		Enum.Material.WoodPlanks
+	)
+	blastPack.CFrame = CFrame.new(0, 1.32, 0.68)
+
+	local head = makePart(
+		parent,
+		"Head",
+		Vector3.new(1.06, 1.10, 1.08),
+		Vector3.new(0, 2.46, -0.04),
+		rgb(spec.dark),
+		Enum.Material.SmoothPlastic,
+		Enum.PartType.Ball
+	)
+	head.CFrame = CFrame.new(0, 2.46, -0.04)
+
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(parent, list)
+	return list
+end
+
 local function createLimbs(model: Instance, kind: string, spec: EnemySpec): { [string]: LimbSpec }
 	local limbs: { [string]: LimbSpec } = {}
 	local function add(name: string, p: BasePart): ()
@@ -330,6 +450,60 @@ local function createLimbs(model: Instance, kind: string, spec: EnemySpec): { [s
 		)
 		attachGhostTrail(cleaver, 0.95, TEAL_SWARM_COLOR)
 		add("Cleaver", cleaver)
+	elseif kind == "shieldbearer" then
+		local legSize = Vector3.new(0.62, 1.76, 0.68)
+		local armSize = Vector3.new(0.50, 1.70, 0.54)
+		add("LegL", makeEllipsoid(model, "LegL", legSize, rgb(spec.dark), Enum.Material.Metal))
+		add("LegR", makeEllipsoid(model, "LegR", legSize, rgb(spec.dark), Enum.Material.Metal))
+		add("ArmL", makeEllipsoid(model, "ArmL", armSize, rgb(spec.color), Enum.Material.Metal))
+		add("ArmR", makeEllipsoid(model, "ArmR", armSize, rgb(spec.color), Enum.Material.Metal))
+		local shield = makePart(
+			model,
+			"TowerShield",
+			Vector3.new(1.85, 2.65, 0.28),
+			Vector3.zero,
+			SHIELD_STEEL_COLOR,
+			Enum.Material.Metal
+		)
+		add("TowerShield", shield)
+	elseif kind == "pyromancer" then
+		local legSize = Vector3.new(0.42, 1.58, 0.48)
+		local armSize = Vector3.new(0.34, 1.52, 0.42)
+		add(
+			"LegL",
+			makeEllipsoid(model, "LegL", legSize, rgb(spec.dark), Enum.Material.SmoothPlastic)
+		)
+		add(
+			"LegR",
+			makeEllipsoid(model, "LegR", legSize, rgb(spec.dark), Enum.Material.SmoothPlastic)
+		)
+		local armL =
+			makeEllipsoid(model, "ArmL", armSize, rgb(spec.color), Enum.Material.SmoothPlastic)
+		local armR =
+			makeEllipsoid(model, "ArmR", armSize, rgb(spec.color), Enum.Material.SmoothPlastic)
+		attachGhostTrail(armL, 0.48, EMBER_NEON_COLOR)
+		attachGhostTrail(armR, 0.48, EMBER_NEON_COLOR)
+		add("ArmL", armL)
+		add("ArmR", armR)
+	elseif kind == "sapper" then
+		local legSize = Vector3.new(0.40, 1.48, 0.46)
+		local armSize = Vector3.new(0.32, 1.38, 0.40)
+		add(
+			"LegL",
+			makeEllipsoid(model, "LegL", legSize, rgb(spec.dark), Enum.Material.SmoothPlastic)
+		)
+		add(
+			"LegR",
+			makeEllipsoid(model, "LegR", legSize, rgb(spec.dark), Enum.Material.SmoothPlastic)
+		)
+		add(
+			"ArmL",
+			makeEllipsoid(model, "ArmL", armSize, rgb(spec.color), Enum.Material.SmoothPlastic)
+		)
+		add(
+			"ArmR",
+			makeEllipsoid(model, "ArmR", armSize, rgb(spec.color), Enum.Material.SmoothPlastic)
+		)
 	elseif kind == "swarm" then
 		local orbSize = Vector3.new(0.62, 0.62, 0.62)
 		local tailSize = Vector3.new(0.28, 1.08, 0.30)
@@ -387,7 +561,34 @@ local function createLimbs(model: Instance, kind: string, spec: EnemySpec): { [s
 	return limbs
 end
 
+type BossSpec = {
+	label: string,
+	color: { number },
+	accent: { number },
+	scale: number,
+	height: number,
+}
+
+export type BossUnit = {
+	model: Model,
+	rootPart: BasePart,
+	base: CFrame,
+	bossId: string,
+	height: number,
+	color: Color3,
+	accent: Color3,
+	squashUntil: number,
+	squashSeq: number,
+	squashed: boolean,
+	lastState: string,
+	lastEnraged: boolean,
+	lastNow: number,
+	visualParts: { TorsoPiece },
+	stateHighlight: Highlight,
+}
+
 local pendingHordeUnits: { [Model]: HordeUnit } = {}
+local pendingBossUnits: { [Model]: BossUnit } = {}
 local assetsFolderConn: RBXScriptConnection? = nil
 local repAddedConn: RBXScriptConnection? = nil
 
@@ -400,12 +601,11 @@ local function configureHordeMeshPart(part: BasePart, hidden: boolean): ()
 	part.Transparency = if hidden then 1 else 0
 end
 
-local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
+local function tryMountScaledMesh(model: Model, assetName: string, targetH: number): { TorsoPiece }?
 	local assetsFolder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
 	if assetsFolder == nil then
 		return nil
 	end
-	local assetName = MeshAssets.hordeModelName(kind)
 	local template = assetsFolder:FindFirstChild(assetName)
 	if template == nil then
 		return nil
@@ -421,13 +621,8 @@ local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
 	end
 
 	local hidden = model:GetAttribute("Hidden") == true
-	local metrics = RIG_METRICS[kind] or RIG_METRICS.runner
-	local targetH = metrics.torsoHeight
 	local clone = template:Clone()
 	clone.Name = "MeshVisual"
-
-	-- glTF esportado tem frente em +Z; girar +180 deg em Y coloca a frente no eixo local -Z.
-	local rotFlip = CFrame.Angles(0, math.rad(180), 0)
 	local pieces: { TorsoPiece } = {}
 
 	if clone:IsA("Model") then
@@ -441,13 +636,14 @@ local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
 		if rawSize.Y > 0.05 then
 			clone:ScaleTo(clone:GetScale() * (targetH / rawSize.Y))
 		end
-		clone:PivotTo(rotFlip)
+		-- Importador glTF do Roblox ja entrega a frente da malha em -Z; apenas ancorar na base inferior.
 		local bbCf, bbSize = clone:GetBoundingBox()
-		local baseOffset =
-			Vector3.new(-bbCf.Position.X, -(bbCf.Position.Y - bbSize.Y * 0.5), -bbCf.Position.Z)
+		local bottomCenter =
+			Vector3.new(bbCf.Position.X, bbCf.Position.Y - bbSize.Y * 0.5, bbCf.Position.Z)
+		local toRigLocal = CFrame.new(-bottomCenter)
 		for _, desc in ipairs(clone:GetDescendants()) do
 			if desc:IsA("BasePart") then
-				local localCF = CFrame.new(baseOffset) * desc.CFrame
+				local localCF = toRigLocal * desc.CFrame
 				pieces[#pieces + 1] = {
 					part = desc,
 					size = desc.Size,
@@ -461,7 +657,7 @@ local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
 		if rawY > 0.05 then
 			clone.Size = clone.Size * (targetH / rawY)
 		end
-		clone.CFrame = CFrame.new(0, clone.Size.Y * 0.5, 0) * rotFlip
+		clone.CFrame = CFrame.new(0, clone.Size.Y * 0.5, 0) * clone.CFrame.Rotation
 		clone.Parent = model
 		pieces[#pieces + 1] = {
 			part = clone,
@@ -485,6 +681,15 @@ local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
 
 	model:SetAttribute("HasMeshVisual", true)
 	return pieces
+end
+
+local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
+	local metrics = RIG_METRICS[kind] or RIG_METRICS.runner
+	return tryMountScaledMesh(model, MeshAssets.hordeModelName(kind), metrics.torsoHeight)
+end
+
+local function tryMountBossMesh(model: Model, bossId: string, targetHeight: number): { TorsoPiece }?
+	return tryMountScaledMesh(model, MeshAssets.bossModelName(bossId), targetHeight)
 end
 
 local function placeScaled(
@@ -660,12 +865,127 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 				* CFrame.new(0, -0.45, 0)
 			placeScaled(rigCF, tailR.part, tailR.size, tRCF, sxz, sy)
 		end
+	elseif unit.kind == "shieldbearer" then
+		local omega = 8.4 + atkWeight * 2.4
+		local p = now * omega + unit.phase
+		local swing = math.sin(p) * walkWeight
+		local stompBounce = math.abs(math.cos(p)) * 0.16 * walkWeight
+		local braceLean = -(8 * DEG_TO_RAD) * walkWeight
+			+ math.sin(p * 1.1) * (12 * DEG_TO_RAD) * atkWeight
+
+		torsoCF = rigCF
+			* CFrame.new(0, metrics.torsoMountY + stompBounce, 0)
+			* CFrame.Angles(
+				braceLean,
+				math.sin(p) * 0.06 * walkWeight,
+				math.sin(p) * (5 * DEG_TO_RAD) * walkWeight
+			)
+
+		local legL = unit.limbs.LegL
+		local legR = unit.limbs.LegR
+		if legL ~= nil then
+			local lCF = rigCF
+				* CFrame.new(-0.48, metrics.hipY + stompBounce * 0.4, 0)
+				* CFrame.Angles(swing * 0.52, 0, 0)
+				* CFrame.new(0, -0.82, 0)
+			placeScaled(rigCF, legL.part, legL.size, lCF, sxz, sy)
+		end
+		if legR ~= nil then
+			local rCF = rigCF
+				* CFrame.new(0.48, metrics.hipY + stompBounce * 0.4, 0)
+				* CFrame.Angles(-swing * 0.52, 0, 0)
+				* CFrame.new(0, -0.82, 0)
+			placeScaled(rigCF, legR.part, legR.size, rCF, sxz, sy)
+		end
+
+		local armL = unit.limbs.ArmL
+		local armR = unit.limbs.ArmR
+		local shield = unit.limbs.TowerShield
+		if armL ~= nil then
+			local lJointCF = torsoCF
+				* CFrame.new(-1.08, 2.24, -0.18)
+				* CFrame.Angles(
+					0.52 + atkWeight * 0.42 * math.sin(p * 1.1),
+					math.rad(16),
+					math.rad(-8)
+				)
+			placeScaled(rigCF, armL.part, armL.size, lJointCF * CFrame.new(0, -0.75, 0), sxz, sy)
+			if shield ~= nil then
+				local sCF = torsoCF
+					* CFrame.new(
+						-0.28,
+						1.55,
+						-0.96 - atkWeight * 0.35 * math.max(0, math.sin(p * 1.1))
+					)
+					* CFrame.Angles(math.rad(6), math.rad(-10), 0)
+				placeScaled(rigCF, shield.part, shield.size, sCF, sxz, sy)
+			end
+		end
+		if armR ~= nil then
+			local rPitch = swing * 0.60 + atkWeight * (0.75 + math.sin(p) * 0.62)
+			local aRCF = torsoCF
+				* CFrame.new(1.08, 2.24, -0.06)
+				* CFrame.Angles(rPitch, 0, math.rad(10))
+				* CFrame.new(0, -0.75, 0)
+			placeScaled(rigCF, armR.part, armR.size, aRCF, sxz, sy)
+		end
+	elseif unit.kind == "pyromancer" then
+		local omega = 10.8 + atkWeight * 3.2
+		local p = now * omega + unit.phase
+		local swing = math.sin(p) * walkWeight
+		local hoverBounce = math.abs(math.sin(p)) * 0.18 * walkWeight
+			+ math.sin(p * 1.5) * 0.08 * atkWeight
+
+		torsoCF = rigCF
+			* CFrame.new(0, metrics.torsoMountY + hoverBounce, 0)
+			* CFrame.Angles(
+				-(10 * DEG_TO_RAD) * walkWeight,
+				math.sin(p) * 0.08,
+				math.cos(p) * (4 * DEG_TO_RAD) * walkWeight
+			)
+
+		local legL = unit.limbs.LegL
+		local legR = unit.limbs.LegR
+		if legL ~= nil then
+			local lCF = rigCF
+				* CFrame.new(-0.36, metrics.hipY + hoverBounce * 0.4, 0)
+				* CFrame.Angles(swing * 0.62, 0, 0)
+				* CFrame.new(0, -0.76, 0)
+			placeScaled(rigCF, legL.part, legL.size, lCF, sxz, sy)
+		end
+		if legR ~= nil then
+			local rCF = rigCF
+				* CFrame.new(0.36, metrics.hipY + hoverBounce * 0.4, 0)
+				* CFrame.Angles(-swing * 0.62, 0, 0)
+				* CFrame.new(0, -0.76, 0)
+			placeScaled(rigCF, legR.part, legR.size, rCF, sxz, sy)
+		end
+
+		local armL = unit.limbs.ArmL
+		local armR = unit.limbs.ArmR
+		if armL ~= nil then
+			local castPitch = 0.65 + math.sin(p) * 0.55 + atkWeight * 0.75
+			local aLCF = torsoCF
+				* CFrame.new(-0.82, 1.86, -0.06)
+				* CFrame.Angles(castPitch, 0, math.rad(-18))
+				* CFrame.new(0, -0.68, 0)
+			placeScaled(rigCF, armL.part, armL.size, aLCF, sxz, sy)
+		end
+		if armR ~= nil then
+			local castPitch = 0.65 - math.sin(p) * 0.55 + atkWeight * 0.75
+			local aRCF = torsoCF
+				* CFrame.new(0.82, 1.86, -0.06)
+				* CFrame.Angles(castPitch, 0, math.rad(18))
+				* CFrame.new(0, -0.68, 0)
+			placeScaled(rigCF, armR.part, armR.size, aRCF, sxz, sy)
+		end
 	else
-		local omega = 13.5 + atkWeight * 3.5
+		local omega = (if unit.kind == "sapper" then 15.2 else 13.5) + atkWeight * 3.5
 		local p = now * omega + unit.phase
 		local swing = math.sin(p) * walkWeight
 		local strideBounce = math.abs(math.sin(p)) * 0.22 * walkWeight
-		local forwardLean = -(16 * DEG_TO_RAD) * walkWeight - (24 * DEG_TO_RAD) * atkWeight
+		local forwardLean = -(if unit.kind == "sapper" then 22 else 16) * DEG_TO_RAD * walkWeight
+			- (24 * DEG_TO_RAD) * atkWeight
 		local yawTwist = math.sin(p) * (9 * DEG_TO_RAD) * walkWeight
 		local atkBob = math.abs(math.cos(p)) * 0.14 * atkWeight
 
@@ -715,6 +1035,94 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 	end
 end
 
+local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: boolean?): ()
+	local resolvedState = state or "MARCH"
+	local isEnraged = enraged == true
+	unit.lastState = resolvedState
+	unit.lastEnraged = isEnraged
+	unit.lastNow = now
+
+	local sxz = 1
+	local sy = 1
+	if now < unit.squashUntil then
+		local alpha = math.clamp(1 - (unit.squashUntil - now) / HIT_SQUASH_DURATION, 0, 1)
+		sxz = 1.09 + (1 - 1.09) * alpha
+		sy = 0.91 + (1 - 0.91) * alpha
+		unit.squashed = true
+	elseif unit.squashed then
+		unit.squashed = false
+	end
+
+	local bobY = 0
+	local pitch = 0
+	local roll = 0
+	local lungeZ = 0
+	local jitterX = 0
+
+	if resolvedState == "TELEGRAPH" then
+		local vib = math.sin(now * 28)
+		jitterX = vib * 0.22
+		bobY = 0.28 + math.abs(math.sin(now * 6)) * 0.24
+		pitch = math.rad(12)
+		unit.stateHighlight.Enabled = true
+		unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.amberBright)
+		unit.stateHighlight.OutlineColor = rgb(VisualTheme.PALETTE.danger)
+		unit.stateHighlight.FillTransparency = 0.55 + math.sin(now * 16) * 0.20
+		unit.stateHighlight.OutlineTransparency = 0
+	elseif resolvedState == "ABILITY" then
+		lungeZ = -1.15
+		bobY = -0.18
+		pitch = math.rad(-16)
+		unit.stateHighlight.Enabled = true
+		unit.stateHighlight.FillColor = unit.accent
+		unit.stateHighlight.OutlineColor = Color3.new(1, 1, 1)
+		unit.stateHighlight.FillTransparency = 0.45
+		unit.stateHighlight.OutlineTransparency = 0
+	elseif resolvedState == "VULNERABLE" then
+		bobY = -0.78 + math.sin(now * 5) * 0.08
+		pitch = math.rad(14)
+		roll = math.sin(now * 7) * math.rad(7)
+		unit.stateHighlight.Enabled = true
+		unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.teal)
+		unit.stateHighlight.OutlineColor = Color3.new(1, 1, 1)
+		unit.stateHighlight.FillTransparency = 0.50 + math.sin(now * 12) * 0.18
+		unit.stateHighlight.OutlineTransparency = 0
+	else
+		local omega = if isEnraged then 6.8 else 4.6
+		local p = now * omega
+		bobY = math.abs(math.sin(p)) * 0.34
+		pitch = math.rad(-5)
+		roll = math.sin(p * 0.5) * math.rad(5)
+		if isEnraged then
+			unit.stateHighlight.Enabled = true
+			unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.danger)
+			unit.stateHighlight.OutlineColor = rgb(VisualTheme.PALETTE.amberBright)
+			unit.stateHighlight.FillTransparency = 0.72 + math.sin(now * 10) * 0.12
+			unit.stateHighlight.OutlineTransparency = 0.15
+		else
+			unit.stateHighlight.Enabled = false
+		end
+	end
+
+	local rigCF = CFrame.new(unit.base.Position)
+		* unit.base.Rotation
+		* CFrame.Angles(0, math.rad(90), 0)
+	local animCF = rigCF * CFrame.new(jitterX, bobY, lungeZ) * CFrame.Angles(pitch, 0, roll)
+	unit.rootPart.CFrame = animCF
+
+	local enrageScale = if isEnraged then 1.04 else 1.0
+	for _, entry in ipairs(unit.visualParts) do
+		placeScaled(
+			animCF,
+			entry.part,
+			entry.size,
+			animCF * entry.localCF,
+			sxz * enrageScale,
+			sy * enrageScale
+		)
+	end
+end
+
 local function flushPendingHordeMeshes(): ()
 	for model, unit in pairs(pendingHordeUnits) do
 		if model.Parent == nil then
@@ -725,6 +1133,23 @@ local function flushPendingHordeMeshes(): ()
 				unit.torsoParts = meshPieces
 				pendingHordeUnits[model] = nil
 				poseUnit(unit, if unit.lastNow > 0 then unit.lastNow else time(), unit.lastMoving)
+			end
+		end
+	end
+	for model, bossUnit in pairs(pendingBossUnits) do
+		if model.Parent == nil then
+			pendingBossUnits[model] = nil
+		else
+			local meshPieces = tryMountBossMesh(model, bossUnit.bossId, bossUnit.height)
+			if meshPieces ~= nil then
+				bossUnit.visualParts = meshPieces
+				pendingBossUnits[model] = nil
+				poseBoss(
+					bossUnit,
+					if bossUnit.lastNow > 0 then bossUnit.lastNow else time(),
+					bossUnit.lastState,
+					bossUnit.lastEnraged
+				)
 			end
 		end
 	end
@@ -786,6 +1211,12 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId:
 			torsoParts = buildBruteFallbackTorso(proc, spec)
 		elseif kind == "swarm" then
 			torsoParts = buildSwarmFallbackTorso(proc, spec)
+		elseif kind == "shieldbearer" then
+			torsoParts = buildShieldbearerFallbackTorso(proc, spec)
+		elseif kind == "pyromancer" then
+			torsoParts = buildPyromancerFallbackTorso(proc, spec)
+		elseif kind == "sapper" then
+			torsoParts = buildSapperFallbackTorso(proc, spec)
 		else
 			torsoParts = buildRunnerFallbackTorso(proc, spec)
 		end
@@ -886,6 +1317,208 @@ function HordeKit.setVisible(unit: HordeUnit, visible: boolean): ()
 				descendant:Clear()
 			end
 			descendant.Enabled = visible
+		end
+	end
+end
+
+local function buildBossFallbackVisual(parent: Instance, spec: BossSpec): { TorsoPiece }
+	local h = spec.height
+	local k = h / 12.0
+	local primary = rgb(spec.color)
+	local accent = rgb(spec.accent)
+	local dark = Color3.fromRGB(28, 32, 38)
+
+	local legs = makePart(
+		parent,
+		"BossLegs",
+		Vector3.new(4.2 * k, 3.6 * k, 2.8 * k),
+		Vector3.new(0, 1.8 * k, 0),
+		dark,
+		Enum.Material.Metal
+	)
+	legs.CFrame = CFrame.new(0, 1.8 * k, 0)
+
+	local torso = makeEllipsoid(
+		parent,
+		"BossTorso",
+		Vector3.new(6.8 * k, 5.4 * k, 4.4 * k),
+		primary,
+		Enum.Material.Metal
+	)
+	torso.CFrame = CFrame.new(0, 5.8 * k, 0)
+
+	local core = makePart(
+		parent,
+		"BossCore",
+		Vector3.new(2.2 * k, 2.2 * k, 1.2 * k),
+		Vector3.new(0, 6.0 * k, -2.0 * k),
+		accent,
+		Enum.Material.Neon,
+		Enum.PartType.Ball
+	)
+	core.CFrame = CFrame.new(0, 6.0 * k, -2.0 * k)
+
+	for _, sx in ipairs({ -1, 1 }) do
+		local shoulder = makePart(
+			parent,
+			if sx < 0 then "BossShoulderL" else "BossShoulderR",
+			Vector3.new(2.8 * k, 2.8 * k, 2.8 * k),
+			Vector3.new(sx * 4.2 * k, 7.6 * k, 0),
+			primary,
+			Enum.Material.Metal,
+			Enum.PartType.Ball
+		)
+		shoulder.CFrame = CFrame.new(sx * 4.2 * k, 7.6 * k, 0)
+	end
+
+	local head = makePart(
+		parent,
+		"BossHead",
+		Vector3.new(2.8 * k, 2.8 * k, 2.8 * k),
+		Vector3.new(0, 9.6 * k, -0.4 * k),
+		dark,
+		Enum.Material.Metal,
+		Enum.PartType.Ball
+	)
+	head.CFrame = CFrame.new(0, 9.6 * k, -0.4 * k)
+
+	local visor = makeEllipsoid(
+		parent,
+		"BossVisor",
+		Vector3.new(1.8 * k, 0.55 * k, 0.7 * k),
+		accent,
+		Enum.Material.Neon
+	)
+	visor.CFrame = CFrame.new(0, 9.7 * k, -1.65 * k)
+
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(parent, list)
+	return list
+end
+
+function HordeKit.createBoss(bossId: string, parent: Instance, cframe: CFrame): BossUnit
+	local bosses = VisualTheme.BOSSES :: { [string]: BossSpec }
+	local spec = bosses[bossId] or bosses.iron_ram_colossus
+	local model = Instance.new("Model")
+	model.Name = "Boss_" .. bossId
+	model:SetAttribute("BossId", bossId)
+
+	local rootPart = makePart(
+		model,
+		"RootPart",
+		Vector3.new(0.2, 0.2, 0.2),
+		Vector3.new(0, 0, 0),
+		Color3.new(0, 0, 0)
+	)
+	rootPart.Transparency = 1
+	rootPart.CastShadow = false
+	model.PrimaryPart = rootPart
+
+	model.Parent = parent
+	model:PivotTo(cframe)
+
+	local stateHighlight = Instance.new("Highlight")
+	stateHighlight.Name = "StateHighlight"
+	stateHighlight.Adornee = model
+	stateHighlight.Enabled = false
+	stateHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	stateHighlight.Parent = model
+
+	local visualParts = tryMountBossMesh(model, bossId, spec.height)
+	local hasMesh = visualParts ~= nil
+	if visualParts == nil then
+		local proc = Instance.new("Folder")
+		proc.Name = "ProceduralVisual"
+		proc.Parent = model
+		visualParts = buildBossFallbackVisual(proc, spec)
+	end
+
+	local now = time()
+	local bossUnit: BossUnit = {
+		model = model,
+		rootPart = rootPart,
+		base = cframe,
+		bossId = bossId,
+		height = spec.height,
+		color = rgb(spec.color),
+		accent = rgb(spec.accent),
+		squashUntil = 0,
+		squashSeq = 0,
+		squashed = false,
+		lastState = "MARCH",
+		lastEnraged = false,
+		lastNow = now,
+		visualParts = visualParts :: { TorsoPiece },
+		stateHighlight = stateHighlight,
+	}
+
+	poseBoss(bossUnit, now, "MARCH", false)
+
+	if not hasMesh then
+		pendingBossUnits[model] = bossUnit
+		ensureHordeMeshWatcher()
+	end
+
+	return bossUnit
+end
+
+function HordeKit.setBossBase(bossUnit: BossUnit, cframe: CFrame): ()
+	bossUnit.base = cframe
+end
+
+function HordeKit.stepBoss(bossUnit: BossUnit, now: number, state: string?, enraged: boolean?): ()
+	if bossUnit.model.Parent == nil then
+		return
+	end
+	poseBoss(bossUnit, now, state, enraged)
+end
+
+function HordeKit.hitSquashBoss(bossUnit: BossUnit): ()
+	if bossUnit.model.Parent == nil then
+		return
+	end
+	local now = time()
+	bossUnit.squashUntil = now + HIT_SQUASH_DURATION
+	bossUnit.squashSeq += 1
+	local seq = bossUnit.squashSeq
+	bossUnit.squashed = true
+	poseBoss(bossUnit, now, bossUnit.lastState, bossUnit.lastEnraged)
+
+	local existing = bossUnit.model:FindFirstChild("HitFlash")
+	if existing ~= nil then
+		existing:Destroy()
+	end
+	local flash = Instance.new("Highlight")
+	flash.Name = "HitFlash"
+	flash.Adornee = bossUnit.model
+	flash.FillColor = Color3.new(1, 1, 1)
+	flash.FillTransparency = 0.3
+	flash.OutlineTransparency = 1
+	flash.Parent = bossUnit.model
+	task.delay(VisualTheme.MOTION.hitFlash, function()
+		if flash.Parent ~= nil then
+			flash:Destroy()
+		end
+	end)
+
+	task.delay(HIT_SQUASH_DURATION + 0.01, function()
+		local parent: Instance? = bossUnit.model.Parent
+		if bossUnit.squashSeq == seq and bossUnit.squashed and parent ~= nil then
+			bossUnit.squashed = false
+			poseBoss(bossUnit, time(), bossUnit.lastState, bossUnit.lastEnraged)
+		end
+	end)
+end
+
+function HordeKit.setBossVisible(bossUnit: BossUnit, visible: boolean): ()
+	bossUnit.model:SetAttribute("Hidden", not visible)
+	for _, descendant in ipairs(bossUnit.model:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			if descendant.Name == "RootPart" then
+				descendant.Transparency = 1
+			else
+				descendant.Transparency = if visible then 0 else 1
+			end
 		end
 	end
 end

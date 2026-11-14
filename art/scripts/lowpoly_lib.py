@@ -432,10 +432,10 @@ def export_glb(obj, filename):
 def write_lote(group, items, header_note):
     """Gera art/forge/lote_<group>_import.yaml com altura MEDIDA (G2: studs x 0,28)."""
     lines = [
-        f"# Forge3D 0.6.0 — rota `import`: {header_note}",
+        f"# Forge3D 0.6.1 — rota `import`: {header_note}",
         "# GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:",
         "# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).",
-        "schema: forge3d/spec@1",
+        "schema: forge3d/spec@4",
         "",
         "projeto: muralha",
         "perfil: roblox-r15",

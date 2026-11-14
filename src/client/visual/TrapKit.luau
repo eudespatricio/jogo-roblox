@@ -625,7 +625,7 @@ local function tryMountTrapMesh(model: Model, trapId: string, level: number): bo
 
 	local clone = template:Clone()
 	clone.Name = "MeshVisual"
-	local orient = primary.CFrame.Rotation * CFrame.Angles(0, math.rad(90), 0)
+	local orient = primary.CFrame.Rotation * CFrame.Angles(0, math.rad(-90), 0)
 	local targetBottomY = primary.Position.Y - primary.Size.Y * 0.5
 
 	if clone:IsA("Model") then

@@ -44,6 +44,8 @@ Depois:
 | oxipng | 10.2.1 | `~/.local/bin/oxipng` | otimizar PNG | não |
 | Blender | 4.5.15 LTS | `~/.local/bin/blender4.5` | 3D/render | sim |
 | Blender legado | 4.2.0 | `~/.local/bin/blender` | compatibilidade | não |
+| Forge3D | 0.6.1 | `~/.local/bin/forge3d` | esteira/QC 3D (`spec@4`, G1–G10, G2 orientação) | não |
+| audio-dsp | venv Python | `.venv-audio/bin/python` | síntese/masterização SFX/BGM (`gen-sfx.py`) | não |
 | Krita | 6.0.1 | `/usr/bin/krita` | textura/UI raster | não |
 | Inkscape | 1.4.3 | `/usr/bin/inkscape` | vetor/ícones | não |
 | Audacity | 3.7.7 | `/usr/bin/audacity` | edição de áudio | não |

@@ -39,10 +39,12 @@ export type HudLayout = {
 	trapCardW: number,
 	trapCardH: number,
 	trapCardGap: number,
+	storyBtn: Rect,
 	defendBtn: Rect,
 	attackBtn: Rect,
 	toastBanner: Rect,
 	combatTopPill: Rect,
+	combatBossPill: Rect,
 	combatCamBtn: Rect,
 	combatSpeedBtn: Rect,
 	combatCloseBtn: Rect,
@@ -251,7 +253,8 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	local localeBtn = rect(comboBtn.x + comboW + uGap, utilY, localeW, pillH)
 
 	local goldDesiredW = clamp(round(w * 0.13), 88, 120)
-	local wallDesiredW = clamp(round(w * 0.27), 156, 260)
+	local wallDesiredW =
+		clamp(round(w * (if h <= 420 then 0.23 else 0.27)), 148, if h <= 420 then 200 else 260)
 	local wallMinW = 140
 	local row1LeftFree = math.max(0, (utilX - gap) - row1MinX)
 
@@ -277,28 +280,29 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		math.max(wallPill.y + wallPill.h, utilityCluster.y + utilityCluster.h)
 	)
 
-	-- Bottom Build HUD: left tools (3x44), center trap dock (5 cards), right CTAs (Defend + Attack)
+	-- Bottom Build HUD: left tools (3x44), center trap dock (5 cards), right CTAs (Story + Defend + Attack)
 	local toolCount = 3
 	local toolBtn = 44
 	local toolsW = toolBtn * toolCount + uGap * (toolCount - 1)
 	local cardGap = 4
 	local dockPadX = 4
-	local cardH = if h <= 420 then 54 else 58
+	local cardH = if h <= 420 then 50 else 58
 
 	local toolsDock: Rect
 	local trapDock: Rect
+	local storyBtn: Rect
 	local defendBtn: Rect
 	local attackBtn: Rect
 	local cardW: number
 
 	if usableW >= 600 then
 		-- Single peripheral bottom band (Landscape phones + tablets + desktop)
-		local ctaW = clamp(round(w * 0.155), 108, 138)
+		local ctaW = clamp(round(w * 0.135), 96, 128)
 		local ctaH = 44
-		local ctaTotalH = ctaH * 2 + gap
+		local ctaGap = 5
 		local maxDockCenterW = usableW - toolsW - ctaW - gap * 2
 		local rawCardW = math.floor((maxDockCenterW - dockPadX * 2 - cardGap * 4) / 5)
-		cardW = clamp(rawCardW, 48, 72)
+		cardW = clamp(rawCardW, 48, if h <= 420 then 62 else 72)
 		local dockW = cardW * 5 + cardGap * 4 + dockPadX * 2
 		local dockY = maxY - cardH
 		local dockCenterSpace = (maxX - ctaW - gap) - (minX + toolsW + gap)
@@ -306,10 +310,11 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 
 		toolsDock = rect(minX, maxY - toolBtn, toolsW, toolBtn)
 		trapDock = rect(dockX, dockY, dockW, cardH)
-		defendBtn = rect(maxX - ctaW, maxY - ctaTotalH, ctaW, ctaH)
+		storyBtn = rect(maxX - ctaW, maxY - (ctaH * 3 + ctaGap * 2), ctaW, ctaH)
+		defendBtn = rect(maxX - ctaW, maxY - (ctaH * 2 + ctaGap), ctaW, ctaH)
 		attackBtn = rect(maxX - ctaW, maxY - ctaH, ctaW, ctaH)
 	else
-		-- Narrow portrait stack: bottom trap row + compact action row just above
+		-- Narrow portrait stack: bottom trap row + compact action row + story row just above
 		local maxCardW = math.floor((usableW - dockPadX * 2 - cardGap * 4) / 5)
 		cardW = clamp(maxCardW, 46, 68)
 		local dockW = cardW * 5 + cardGap * 4 + dockPadX * 2
@@ -323,12 +328,15 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		local ctasLeft = maxX - (ctaW * 2 + ctaGap)
 
 		toolsDock = rect(minX, actionRowY, toolsW, toolBtn)
+		storyBtn = rect(ctasLeft, actionRowY - gap - 44, ctaW * 2 + ctaGap, 44)
 		defendBtn = rect(ctasLeft, actionRowY, ctaW, 44)
 		attackBtn = rect(ctasLeft + ctaW + ctaGap, actionRowY, ctaW, 44)
 		trapDock = rect(dockX, dockY, dockW, cardH)
 	end
 
-	local bottomCenterTop = if usableW >= 600 then trapDock.y else math.min(trapDock.y, defendBtn.y)
+	local bottomCenterTop = if usableW >= 600
+		then trapDock.y
+		else math.min(trapDock.y, math.min(defendBtn.y, storyBtn.y))
 	local clearCenterHeight = math.max(0, bottomCenterTop - topChromeBottom)
 
 	local toastW = clamp(usableW - 40, 220, 420)
@@ -354,6 +362,8 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		local pillY = math.max(minY + pillH + gap, safeTop + unibarH + 4)
 		combatTopPill = rect(minX + math.floor((usableW - fitW) * 0.5), pillY, fitW, pillH)
 	end
+	local combatBossPill =
+		rect(combatTopPill.x, combatTopPill.y + combatTopPill.h + 4, combatTopPill.w, 44)
 
 	local closeW = if w < 420 then 84 else 96
 	local speedW = 54
@@ -371,6 +381,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		+ utilityCluster.w * utilityCluster.h
 		+ toolsDock.w * toolsDock.h
 		+ trapDock.w * trapDock.h
+		+ storyBtn.w * storyBtn.h
 		+ defendBtn.w * defendBtn.h
 		+ attackBtn.w * attackBtn.h
 	local clearArenaRatio = clamp(1 - (hudArea / (w * h)), 0, 1)
@@ -393,10 +404,12 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		trapCardW = cardW,
 		trapCardH = cardH,
 		trapCardGap = cardGap,
+		storyBtn = storyBtn,
 		defendBtn = defendBtn,
 		attackBtn = attackBtn,
 		toastBanner = toastBanner,
 		combatTopPill = combatTopPill,
+		combatBossPill = combatBossPill,
 		combatCamBtn = combatCamBtn,
 		combatSpeedBtn = combatSpeedBtn,
 		combatCloseBtn = combatCloseBtn,

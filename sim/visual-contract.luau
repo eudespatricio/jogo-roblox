@@ -1,6 +1,6 @@
 --!nonstrict
--- Contrato visual da S8: paleta do GDD, paridade com GridLayout, cobertura das 5 traps e dos
--- 3 tipos cosmeticos de horda, orcamentos de pecas/VFX e layout mobile. Puro Luau, roda no CLI:
+-- Contrato visual da S8: paleta do GDD, paridade com GridLayout, cobertura das 5 traps, dos
+-- 6 tipos cosmeticos de horda e dos 5 bosses, orcamentos de pecas/VFX e layout mobile. Puro Luau, roda no CLI:
 -- luau sim/visual-contract.luau
 local VisualTheme = require("../src/shared/visual/VisualTheme")
 local GridLayout = require("../src/shared/build/GridLayout")
@@ -8,6 +8,8 @@ local BuildLayout = require("../src/shared/build/BuildLayout")
 local WallAssets = require("../src/shared/visual/WallAssets")
 local MeshAssets = require("../src/shared/visual/MeshAssets")
 local BackdropAssets = require("../src/shared/visual/BackdropAssets")
+local UiAssets = require("../src/shared/visual/UiAssets")
+local AudioAssets = require("../src/shared/visual/AudioAssets")
 
 local failures = {}
 local checks = 0
@@ -67,9 +69,9 @@ check("trap: 5 tipos com paridade de cor e rotulo com GridLayout", function()
 	end
 end)
 
-check("horda: 3 silhuetas cosmeticas distintas", function()
+check("horda: 6 silhuetas cosmeticas distintas", function()
 	local ids = VisualTheme.enemyIds()
-	assert(#ids == 3, "esperava 3 tipos de horda, achei " .. tostring(#ids))
+	assert(#ids == 6, "esperava 6 tipos de horda, achei " .. tostring(#ids))
 	local labels = {}
 	for _, id in ipairs(ids) do
 		local spec = VisualTheme.ENEMIES[id]
@@ -254,6 +256,81 @@ check("open cloud: muralha L1..L5, 6 props, 9 fauna e vale continuo publicados",
 	assert(#BackdropAssets.LAYOUT >= 35, "layout de cenario reduzido")
 	assert(BackdropAssets.anyPublished() == true, "BackdropAssets nao publicado")
 end)
+
+check("open cloud: 6 classes de horda e 5 bosses publicados com specs no VisualTheme", function()
+	local requiredHorde = { "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }
+	for _, kind in ipairs(requiredHorde) do
+		local id = MeshAssets.HORDE[kind]
+		assert(type(id) == "number" and id > 0, "horda nao publicada: " .. kind)
+		assert(
+			MeshAssets.hordeModelName(kind) == "CMD_" .. kind,
+			"hordeModelName invalido: " .. kind
+		)
+	end
+
+	local requiredBosses = {
+		"iron_ram_colossus",
+		"slag_juggernaut",
+		"rime_matriarch",
+		"powder_baron",
+		"rift_titan",
+	}
+	local bossLabels = {}
+	local bossIds = VisualTheme.bossIds()
+	assert(#bossIds == 5, "esperava 5 bosses no VisualTheme.BOSSES, achei " .. tostring(#bossIds))
+	for _, bossId in ipairs(requiredBosses) do
+		local id = MeshAssets.BOSSES[bossId]
+		assert(type(id) == "number" and id > 0, "boss nao publicado: " .. bossId)
+		assert(
+			MeshAssets.bossModelName(bossId) == "BOSS_" .. bossId,
+			"bossModelName invalido: " .. bossId
+		)
+		local spec = VisualTheme.BOSSES[bossId]
+		assert(spec ~= nil, "VisualTheme.BOSSES sem spec: " .. bossId)
+		assert(type(spec.label) == "string" and #spec.label > 0, "boss sem label: " .. bossId)
+		assert(not bossLabels[spec.label], "label de boss duplicado: " .. spec.label)
+		bossLabels[spec.label] = true
+		assert(spec.scale > 0 and spec.height > 0, "dimensoes invalidas no boss: " .. bossId)
+		assert(#spec.color == 3 and #spec.accent == 3, "cores invalidas no boss: " .. bossId)
+	end
+end)
+
+check("open cloud: UI thumbnail, icone e backdrop de transicao publicados", function()
+	local assets = {
+		{ name = "TRANSITION_BG", id = UiAssets.TRANSITION_BG_ID, url = UiAssets.TRANSITION_BG },
+		{ name = "GAME_THUMBNAIL", id = UiAssets.GAME_THUMBNAIL_ID, url = UiAssets.GAME_THUMBNAIL },
+		{ name = "GAME_ICON", id = UiAssets.GAME_ICON_ID, url = UiAssets.GAME_ICON },
+	}
+	for _, item in ipairs(assets) do
+		assert(type(item.id) == "number" and item.id > 0, "UiAssets id invalido: " .. item.name)
+		assert(
+			type(item.url) == "string" and string.match(item.url, "^rbxassetid://%d+$") ~= nil,
+			"UiAssets contentId invalido: " .. item.name
+		)
+	end
+end)
+
+check(
+	"open cloud: AudioAssets cobre todos os cues com IDS, APPROVED_FALLBACKS e DURATION",
+	function()
+		local count = 0
+		for cue, dur in pairs(AudioAssets.DURATION) do
+			count += 1
+			assert(type(dur) == "number" and dur > 0, "duracao invalida: " .. cue)
+			local id = AudioAssets.IDS[cue]
+			assert(
+				type(id) == "string" and string.match(id, "^rbxassetid://%d+$") ~= nil,
+				"AudioAssets.IDS invalido: " .. cue
+			)
+			local fb = AudioAssets.APPROVED_FALLBACKS[cue]
+			assert(
+				type(fb) == "string" and string.match(fb, "^rbxassetid://%d+$") ~= nil,
+				"AudioAssets.APPROVED_FALLBACKS invalido: " .. cue
+			)
+		end
+		assert(count == 87, "esperava 87 cues em AudioAssets, achei " .. tostring(count))
+	end
+)
 
 check("hud periferico mobile: minTouch >= 44, arena livre e combatTopPill compacto", function()
 	local viewports = {

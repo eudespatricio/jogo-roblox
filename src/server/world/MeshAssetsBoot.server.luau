@@ -71,6 +71,10 @@ for kind, assetId in pairs(MeshAssets.HORDE) do
 	loadMesh(MeshAssets.hordeModelName(kind), assetId)
 end
 
+for bossId, assetId in pairs(MeshAssets.BOSSES) do
+	loadMesh(MeshAssets.bossModelName(bossId), assetId)
+end
+
 for key, assetId in pairs(MeshAssets.PROPS) do
 	loadMesh(MeshAssets.propModelName(key), assetId)
 end

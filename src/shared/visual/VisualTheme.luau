@@ -109,6 +109,65 @@ VisualTheme.ENEMIES = table.freeze({
 		scale = 0.65,
 		parts = 8,
 	},
+	shieldbearer = {
+		label = "ESCUDEIRO",
+		color = { 74, 96, 114 },
+		dark = { 16, 48, 52 },
+		scale = 1.12,
+		parts = 8,
+	},
+	pyromancer = {
+		label = "PIROFORJADOR",
+		color = { 58, 72, 84 },
+		dark = { 20, 32, 38 },
+		scale = 0.95,
+		parts = 8,
+	},
+	sapper = {
+		label = "ZAPADOR",
+		color = { 46, 138, 132 },
+		dark = { 26, 42, 46 },
+		scale = 0.88,
+		parts = 8,
+	},
+})
+
+VisualTheme.BOSSES = table.freeze({
+	iron_ram_colossus = {
+		label = "COLOSSO ARIETE",
+		color = { 82, 88, 96 },
+		accent = { 245, 158, 11 },
+		scale = 2.4,
+		height = 11.5,
+	},
+	slag_juggernaut = {
+		label = "JUGGERNAUT ESCORIA",
+		color = { 64, 58, 62 },
+		accent = { 228, 87, 46 },
+		scale = 2.5,
+		height = 12.0,
+	},
+	rime_matriarch = {
+		label = "MATRIARCA BOREAL",
+		color = { 89, 166, 230 },
+		accent = { 200, 240, 255 },
+		scale = 2.45,
+		height = 12.4,
+	},
+	powder_baron = {
+		label = "BARONESA POLVORA",
+		color = { 136, 98, 52 },
+		accent = { 255, 199, 64 },
+		scale = 2.4,
+		height = 11.8,
+	},
+	rift_titan = {
+		label = "TITA DA FENDA",
+		color = { 20, 184, 166 },
+		accent = { 220, 255, 245 },
+		scale = 2.75,
+		height = 13.6,
+	},
 })
 
 VisualTheme.MOTION = table.freeze({
@@ -225,6 +284,15 @@ end
 function VisualTheme.enemyIds(): { string }
 	local ids = {}
 	for id in pairs(VisualTheme.ENEMIES) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	return ids
+end
+
+function VisualTheme.bossIds(): { string }
+	local ids = {}
+	for id in pairs(VisualTheme.BOSSES) do
 		ids[#ids + 1] = id
 	end
 	table.sort(ids)

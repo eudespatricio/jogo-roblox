@@ -1,7 +1,7 @@
-# Teste Forge3D 0.6.0 — muralha do bastiao (rota mesh: concept SD1.5 -> TripoSR -> bake).
+# Teste Forge3D 0.6.1 — muralha do bastiao (rota mesh: concept SD1.5 -> TripoSR -> bake).
 # Saida no sandbox do Forge3D (nao toca no repo). Rodar:
 #   FORGE3D_I23D_REMOVER_FUNDO=1 forge3d run art/forge/lote_muralha_teste.yaml --json
-schema: forge3d/spec@1
+schema: forge3d/spec@4
 
 projeto: muralha
 perfil: roblox-r15

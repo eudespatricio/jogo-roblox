@@ -7,9 +7,9 @@
 ## Bloco de versões
 
 <!-- VERSOES:INICIO -->
-schema=3
+schema=4
 content=3
-sim=6
+sim=7
 hash=1245379674
 analytics=2
 <!-- VERSOES:FIM -->

@@ -15,7 +15,10 @@ local playerGui = player:WaitForChild("PlayerGui")
 local remotes = ReplicatedStorage:WaitForChild("MuralhaRemotes")
 local raidStart = remotes:WaitForChild("RaidStart") :: RemoteFunction
 local raidEvent = remotes:WaitForChild("RaidEvent") :: RemoteEvent
+local campaignStateRemote = remotes:WaitForChild("CampaignState") :: RemoteFunction
+local campaignClaimRemote = remotes:WaitForChild("CampaignClaim") :: RemoteFunction
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CampaignCatalog = require(Shared:WaitForChild("campaign"):WaitForChild("CampaignCatalog"))
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
 local BuildLayout = require(Shared:WaitForChild("build"):WaitForChild("BuildLayout"))
 local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
@@ -25,10 +28,13 @@ local visual = script.Parent:WaitForChild("visual")
 local UiKit = require(visual:WaitForChild("UiKit"))
 local VisualSetup = require(visual:WaitForChild("VisualSetup"))
 local ArenaVisual = require(visual:WaitForChild("ArenaVisual"))
+local CrowdKit = require(visual:WaitForChild("CrowdKit"))
 local TrapKit = require(visual:WaitForChild("TrapKit"))
 local HordeKit = require(visual:WaitForChild("HordeKit"))
 local Vfx = require(visual:WaitForChild("Vfx"))
 local AudioKit = require(visual:WaitForChild("AudioKit"))
+local CampaignUi = require(visual:WaitForChild("CampaignUi"))
+local TransitionKit = require(visual:WaitForChild("TransitionKit"))
 
 for _ = 1, 50 do
 	if ReplicatedStorage:GetAttribute("RaidEnabled") ~= nil then
@@ -413,6 +419,26 @@ resultCloseCap.MaxTextSize = 14
 resultCloseCap.MinTextSize = 10
 resultCloseCap.Parent = resultCloseButton
 
+local startBattle: (mode: string, extraOpts: { [string]: any }?) -> ()
+
+local campaignUi = CampaignUi.create(root, {
+	fetchState = function()
+		local ok, res = pcall(function()
+			return campaignStateRemote:InvokeServer()
+		end)
+		return if ok then res else { ok = false, err = "server_down" }
+	end,
+	claimMilestone = function(act: number)
+		local ok, res = pcall(function()
+			return campaignClaimRemote:InvokeServer(act)
+		end)
+		return if ok then res else { ok = false, err = "server_down" }
+	end,
+	onLaunchStage = function(stageId: string, difficulty: CampaignCatalog.DifficultyMode)
+		startBattle("campaign", { stageId = stageId, difficulty = difficulty })
+	end,
+})
+
 local function applyRect(obj: GuiObject, r: BuildLayout.Rect): ()
 	obj.Position = UDim2.fromOffset(r.x, r.y)
 	obj.Size = UDim2.fromOffset(r.w, r.h)
@@ -431,6 +457,7 @@ local function applyRaidLayout(): ()
 	applyRect(speedButton, hudRects.combatSpeedBtn)
 	applyRect(closeButton, hudRects.combatCloseBtn)
 	applyRect(resultCard, hudRects.combatResultCard)
+	campaignUi.applyLayout(hudRects)
 end
 
 root:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyRaidLayout)
@@ -490,6 +517,7 @@ local function refreshStaticLocale(): ()
 	resultCloseButton.Text = I18n.t(loc, "cta_close")
 	replayButton.Text = rmsg("replay_btn")
 	title.Text = I18n.t(loc, "game_title") .. " · RAID"
+	campaignUi.refreshLocale()
 end
 
 refreshStaticLocale()
@@ -499,6 +527,15 @@ end)
 
 local busy = false
 local scene: Folder? = nil
+local raidCrowd: CrowdKit.CrowdHandle? = nil
+local bossVisual: HordeKit.BossUnit? = nil
+local bossSpawned = false
+local prevBossHp: number? = nil
+local prevBossState: string? = nil
+local prevBossEnraged = false
+local prevBossAlive = false
+local lastBossPos: Vector3? = nil
+local lastCrowdComboAt = 0
 local unitVisuals: { [number]: any } = {}
 local unitVisible: { [number]: boolean } = {}
 local prevUnitHp: { [number]: number } = {}
@@ -556,14 +593,29 @@ local function setBusy(value: boolean): ()
 	local visible = not value and not topHud.Visible
 	defendButton.Visible = visible
 	attackButton.Visible = visible
+	campaignUi.setButtonsVisible(visible)
 end
 
 local function clearScene(): ()
 	replayToken += 1
+	if raidCrowd ~= nil then
+		raidCrowd:destroy()
+		raidCrowd = nil
+	end
 	if scene ~= nil then
 		scene:Destroy()
 		scene = nil
 	end
+	bossVisual = nil
+	bossSpawned = false
+	prevBossHp = nil
+	prevBossState = nil
+	prevBossEnraged = false
+	prevBossAlive = false
+	lastBossPos = nil
+	lastCrowdComboAt = 0
+	campaignUi.hideBossHud()
+	AudioKit.setBossActive(false)
 	unitVisuals = {}
 	unitVisible = {}
 	prevUnitHp = {}
@@ -586,14 +638,17 @@ end
 
 -- Roda o MESMO Battle do servidor e captura quadros. O hash final tem que bater.
 local function buildFrames(result: any): (any, any)
+	local waveArg = if type(result.waveSpec) == "table"
+		then result.waveSpec
+		else {
+			count = result.waveCount or 70,
+			spawnEveryTicks = result.spawnEveryTicks or 14,
+		}
 	local battle = Core.Battle.new({
 		seed = result.seed,
 		simVersion = result.simVersion,
 		wall = result.wall,
-		wave = {
-			count = result.waveCount or 70,
-			spawnEveryTicks = result.spawnEveryTicks or 14,
-		},
+		wave = waveArg,
 	})
 	local frames = {}
 	local function snapshot()
@@ -602,7 +657,7 @@ local function buildFrames(result: any): (any, any)
 			if battle.uHp[index] > 0 then
 				unitsFrame[#unitsFrame + 1] = {
 					id = index,
-					kind = kindFromSpeed(battle.uBaseSpeed[index]),
+					kind = battle.uType[index] or kindFromSpeed(battle.uBaseSpeed[index]),
 					lane = battle.uLane[index],
 					x = battle.uX[index],
 					y = battle.uY[index],
@@ -610,9 +665,13 @@ local function buildFrames(result: any): (any, any)
 				}
 			end
 		end
+		local bossSnap = if battle.boss ~= nil and battle.tick >= battle.boss.spawnTick
+			then battle:BossSnapshot()
+			else nil
 		frames[#frames + 1] = {
 			wallPct = math.clamp(battle.wallHp / battle.wallMax, 0, 1),
 			units = unitsFrame,
+			boss = bossSnap,
 		}
 	end
 	snapshot()
@@ -637,6 +696,7 @@ local function buildScene(result: any, frames: { any }): ()
 		then result.wall.level
 		else 1
 	ArenaVisual.build(newScene, RAID_ORIGIN, { dropIn = false, wallTier = wallTier })
+	raidCrowd = CrowdKit.build(newScene, RAID_ORIGIN)
 
 	local cells: { [string]: TrapKit.TrapData } = {}
 	local wallTraps = if type(result.wall) == "table"
@@ -653,6 +713,25 @@ local function buildScene(result: any, frames: { any }): ()
 		}
 	end
 	TrapKit.sync(newScene, cells, RAID_ORIGIN, { floorTopY = FLOOR_TOP_Y })
+
+	local bossId: string? = if type(result.bossId) == "string" then result.bossId else nil
+	if bossId == nil then
+		for _, frame in ipairs(frames) do
+			if type(frame.boss) == "table" and type(frame.boss.bossId) == "string" then
+				bossId = frame.boss.bossId
+				break
+			end
+		end
+	end
+	if bossId ~= nil then
+		local createdBoss = HordeKit.createBoss(
+			bossId,
+			newScene,
+			CFrame.new(RAID_ORIGIN + Vector3.new(24, FLOOR_TOP_Y, 0))
+		)
+		HordeKit.setBossVisible(createdBoss, false)
+		bossVisual = createdBoss
+	end
 
 	local kindById: { [number]: string } = {}
 	for _, frame in ipairs(frames) do
@@ -779,6 +858,13 @@ local function fireTrapsForLane(
 			local targetPos = hitPos or (originPos + Vector3.new(6, -1.0, 0))
 			Vfx.trapEffect(activeScene, trapId, originPos, targetPos, synergyKind)
 			AudioKit.trapFire(trapId, originPos, synergyKind)
+			if synergyKind ~= nil and raidCrowd ~= nil then
+				local nowClk = os.clock()
+				if (nowClk - lastCrowdComboAt) > 1.2 then
+					lastCrowdComboAt = nowClk
+					raidCrowd:react("combo")
+				end
+			end
 		end
 	end
 	if hitPos ~= nil and #fired > 0 then
@@ -801,10 +887,15 @@ local function applyDiscreteFrame(frame: any): ()
 	if activeScene == nil then
 		return
 	end
+	local activeToken = replayToken
 	local pct = frame.wallPct or 0
 	if math.abs(pct - lastWallPct) > 0.005 then
 		if pct < lastWallPct then
 			AudioKit.playAt("wall_hit", RAID_ORIGIN + Vector3.new(-22, 1.5, 0))
+			if (lastWallPct - pct) >= 0.04 and raidCrowd ~= nil then
+				raidCrowd:react("gasp")
+				AudioKit.play("crowd_gasp", 0.55)
+			end
 		end
 		lastWallPct = pct
 		Vfx.dust(activeScene, RAID_ORIGIN + Vector3.new(-22, 1.5, 0), 5)
@@ -877,6 +968,98 @@ local function applyDiscreteFrame(frame: any): ()
 			unitVisible[id] = false
 		end
 	end
+
+	local boss = frame.boss
+	if bossVisual ~= nil and type(boss) == "table" then
+		local bossLane = math.clamp(math.round(boss.laneCenter or 3), 1, 5)
+		local bossPos = unitWorldPos(boss.laneCenter or 3, boss.x or 10000)
+		lastBossPos = bossPos
+		if boss.alive == true then
+			if not bossSpawned then
+				bossSpawned = true
+				prevBossAlive = true
+				HordeKit.setBossVisible(bossVisual, true)
+				AudioKit.play("boss_intro")
+				AudioKit.setBossActive(true)
+				local spawnedBossId = bossVisual.bossId
+				local activeLocale = UiKit.getLocale()
+				campaignUi.showBossQuote(spawnedBossId, "intro")
+				task.delay(0.30, function()
+					if replayToken == activeToken then
+						AudioKit.playBossVoice(spawnedBossId, "intro", activeLocale)
+					end
+				end)
+				if raidCrowd ~= nil then
+					raidCrowd:react("boss")
+				end
+			end
+			if prevBossHp ~= nil and boss.hp < prevBossHp then
+				HordeKit.hitSquashBoss(bossVisual)
+				fireTrapsForLane(
+					activeScene,
+					bossLane,
+					boss.x or 5000,
+					Core.laneY(bossLane),
+					bossPos,
+					-1
+				)
+			end
+			prevBossHp = boss.hp
+			local bState = tostring(boss.state or "MARCH")
+			if bState ~= prevBossState then
+				prevBossState = bState
+				if bState == "TELEGRAPH" then
+					AudioKit.play("boss_telegraph")
+					if raidCrowd ~= nil then
+						raidCrowd:react("gasp")
+					end
+				elseif bState == "ABILITY" then
+					AudioKit.playAt("boss_slam", bossPos)
+					shakeUntil = math.max(shakeUntil, time() + 0.25)
+					Vfx.dust(activeScene, bossPos, 8)
+				elseif bState == "VULNERABLE" then
+					AudioKit.play("boss_stagger")
+					if raidCrowd ~= nil then
+						raidCrowd:react("cheer")
+					end
+				end
+			end
+			if boss.enraged == true and not prevBossEnraged then
+				prevBossEnraged = true
+				AudioKit.play("boss_enrage")
+				local enragedBossId = bossVisual.bossId
+				local activeLocale = UiKit.getLocale()
+				campaignUi.showBossQuote(enragedBossId, "enrage")
+				task.delay(0.22, function()
+					if replayToken == activeToken then
+						AudioKit.playBossVoice(enragedBossId, "enrage", activeLocale)
+					end
+				end)
+			end
+			campaignUi.updateBossHud(boss)
+		elseif prevBossAlive then
+			prevBossAlive = false
+			HordeKit.setBossVisible(bossVisual, false)
+			AudioKit.play("boss_death")
+			AudioKit.setBossActive(false)
+			Vfx.ring(activeScene, bossPos, UiKit.color(VisualTheme.PALETTE.amberBright))
+			if raidCrowd ~= nil then
+				raidCrowd:react("cheer")
+			end
+			campaignUi.hideBossHud()
+		end
+	elseif prevBossAlive then
+		prevBossAlive = false
+		if bossVisual ~= nil then
+			HordeKit.setBossVisible(bossVisual, false)
+		end
+		AudioKit.play("boss_death")
+		AudioKit.setBossActive(false)
+		if lastBossPos ~= nil then
+			Vfx.ring(activeScene, lastBossPos, UiKit.color(VisualTheme.PALETTE.amberBright))
+		end
+		campaignUi.hideBossHud()
+	end
 end
 
 local function stepVisualFrame(frameA: any, frameB: any, alpha: number): ()
@@ -924,9 +1107,27 @@ local function stepVisualFrame(frameA: any, frameB: any, alpha: number): ()
 			end
 		end
 	end
+
+	if bossVisual ~= nil and type(frameA.boss) == "table" and frameA.boss.alive == true then
+		local bA = frameA.boss
+		local bB = if frameB ~= nil
+				and frameB ~= frameA
+				and type(frameB.boss) == "table"
+			then frameB.boss
+			else nil
+		local xVal = bA.x or 10000
+		if bB ~= nil and type(bB.x) == "number" then
+			xVal = xVal + (bB.x - xVal) * alpha
+		end
+		local pos = unitWorldPos(bA.laneCenter or 3, xVal)
+		lastBossPos = pos
+		HordeKit.setBossBase(bossVisual, CFrame.new(pos))
+		HordeKit.stepBoss(bossVisual, now, bA.state, bA.enraged == true)
+	end
 end
 
 local function showError(message: string): ()
+	TransitionKit.fadeOut(0.18)
 	status.Text = rmsg("failed")
 	resultTitle.Text = rmsg("failed")
 	resultTitle.TextColor3 = UiKit.color(VisualTheme.PALETTE.danger)
@@ -983,6 +1184,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 		speedButton.Visible = false
 		closeButton.Visible = false
 		resultCard.Visible = true
+		TransitionKit.fadeOut(0.18)
 		setBusy(false)
 		return
 	end
@@ -992,23 +1194,35 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 		showError("3D: " .. tostring(sceneErr))
 		return
 	end
+	local isCampaign = result.mode == "campaign"
 	local isDefend = result.mode == "defend"
-	title.Text = (if isDefend then rmsg("defend_title") else "RAID")
-		.. " · "
-		.. tostring(result.phantomName or "?")
+	local headerPrefix = if isCampaign
+		then I18n.t(UiKit.getLocale(), "cta_story")
+		elseif isDefend then rmsg("defend_title")
+		else "RAID"
+	title.Text = headerPrefix .. " · " .. tostring(result.phantomName or "?")
 	status.TextColor3 = UiKit.color(VisualTheme.PALETTE.parchment)
 	if isQuickReplay == true then
 		status.Text = rmsg("replay_live")
-	elseif isDefend then
+	elseif isDefend or isCampaign then
 		status.Text = rmsg("defending")
 	else
 		status.Text = rmsg("attacking")
 	end
-	details.Text = string.format(rmsg("live_info"), speedMult)
+	local liveFmt = string.format(rmsg("live_info"), speedMult)
+	details.Text = (string.gsub(liveFmt, "70", tostring(tonumber(result.waveCount) or 70)))
 
-	AudioKit.play("horn")
 	pcall(applyDiscreteFrame, frames[1])
 	pcall(stepVisualFrame, frames[1], frames[2], 0)
+	if isQuickReplay ~= true then
+		TransitionKit.revealMatchupAndWait(
+			result.matchup,
+			if type(result.mode) == "string" then result.mode else "raid",
+			2.8
+		)
+		TransitionKit.fadeOut(0.26)
+	end
+	AudioKit.play("horn")
 	local baseSeconds = if isQuickReplay == true
 		then 20
 		else math.max(3, (tonumber(result.ticks) or Core.MAX_TICKS) / Core.TICK_HZ)
@@ -1056,13 +1270,27 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 				if playerWon then VisualTheme.PALETTE.amberBright else VisualTheme.PALETTE.danger
 			)
 			status.TextColor3 = outcomeColor
+			if type(result.campaign) == "table" then
+				campaignUi.ingestCampaignSnapshot(result.campaign)
+			end
 			if isQuickReplay == true then
 				local wallSec = math.max(1, math.floor(time() - started + 0.5))
 				status.Text = I18n.t(loc, "replay_banner", wallSec, outcomeText)
 			else
 				status.Text = outcomeText
 			end
-			resultTitle.Text = outcomeText
+			local starsEarned = if result.mode == "campaign"
+				then (tonumber(result.starsEarned) or 0)
+				else 0
+			if result.mode == "campaign" and playerWon and starsEarned > 0 then
+				local s = math.clamp(starsEarned, 1, 3)
+				resultTitle.Text = outcomeText
+					.. "  "
+					.. string.rep("★", s)
+					.. string.rep("☆", 3 - s)
+			else
+				resultTitle.Text = outcomeText
+			end
 			resultTitle.TextColor3 = outcomeColor
 			resultCoin.Visible = true
 			details.Text = string.format(
@@ -1077,6 +1305,18 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 			speedButton.Visible = false
 			closeButton.Visible = false
 			AudioKit.play(playerWon and "victory" or "defeat", 0.85)
+			if raidCrowd ~= nil then
+				raidCrowd:react(if playerWon then "victory" else "defeat")
+			end
+			if playerWon then
+				AudioKit.play("crowd_victory", 0.75)
+			end
+			if result.mode == "campaign" and playerWon and starsEarned > 0 then
+				AudioKit.play("campaign_star")
+				if result.bossId ~= nil then
+					AudioKit.play("campaign_act_clear")
+				end
+			end
 		else
 			status.Text = rmsg("replay_failed")
 			resultTitle.Text = rmsg("replay_failed")
@@ -1095,6 +1335,7 @@ end
 
 local function showModal(): ()
 	player:SetAttribute("MuralhaInRaid", true)
+	campaignUi.closeModal()
 	topHud.Visible = true
 	combatCamButton.Text = UiKit.cameraButtonLabel(nil, true)
 	combatCamButton.Visible = true
@@ -1103,39 +1344,56 @@ local function showModal(): ()
 	resultCard.Visible = false
 	defendButton.Visible = false
 	attackButton.Visible = false
+	campaignUi.setButtonsVisible(false)
 	focusRaidCamera()
 end
 
 local function hideModal(): ()
-	clearScene()
-	topHud.Visible = false
-	combatCamButton.Visible = false
-	speedButton.Visible = false
-	closeButton.Visible = false
-	resultCard.Visible = false
-	replayButton.Visible = false
-	status.Text = rmsg("ready")
-	details.Text = ""
-	hashLabel.Text = ""
-	if activeBattleId ~= nil then
-		raidEvent:FireServer("close", { battleId = activeBattleId })
-		activeBattleId = nil
-	end
-	AudioKit.setMode("build")
-	AudioKit.setWallPct(1)
-	player:SetAttribute("MuralhaInRaid", false)
-	setBusy(false)
+	TransitionKit.quickCurtain(function()
+		clearScene()
+		topHud.Visible = false
+		campaignUi.hideBossHud()
+		combatCamButton.Visible = false
+		speedButton.Visible = false
+		closeButton.Visible = false
+		resultCard.Visible = false
+		replayButton.Visible = false
+		status.Text = rmsg("ready")
+		details.Text = ""
+		hashLabel.Text = ""
+		if activeBattleId ~= nil then
+			raidEvent:FireServer("close", { battleId = activeBattleId })
+			activeBattleId = nil
+		end
+		AudioKit.setBossActive(false)
+		AudioKit.setMode("build")
+		AudioKit.setWallPct(1)
+		player:SetAttribute("MuralhaInRaid", false)
+		setBusy(false)
+	end, 0.18)
 end
 
-local function startBattle(mode: string): ()
+startBattle = function(mode: string, extraOpts: { [string]: any }?): ()
 	if busy then
 		return
 	end
 	setBusy(true)
+	AudioKit.play("ui_click")
+	TransitionKit.beginBattleTransition(
+		mode,
+		if type(player.DisplayName) == "string" and player.DisplayName ~= ""
+			then player.DisplayName
+			else player.Name,
+		extraOpts
+	)
 	showModal()
 	local isDefend = mode == "defend"
-	title.Text = if isDefend then rmsg("defend_title") else "RAID"
-	status.Text = if isDefend then rmsg("defending") else rmsg("attacking")
+	local isCampaign = mode == "campaign"
+	title.Text = if isCampaign
+		then I18n.t(UiKit.getLocale(), "cta_story")
+		elseif isDefend then rmsg("defend_title")
+		else "RAID"
+	status.Text = if isDefend or isCampaign then rmsg("defending") else rmsg("attacking")
 	status.TextColor3 = UiKit.color(VisualTheme.PALETTE.parchment)
 	details.Text = ""
 	hashLabel.Text = ""
@@ -1150,8 +1408,15 @@ local function startBattle(mode: string): ()
 	AudioKit.setMode("raid")
 	AudioKit.setWallPct(1)
 
+	local payload: { [string]: any } = { mode = mode }
+	if type(extraOpts) == "table" then
+		for k, v in pairs(extraOpts) do
+			payload[k] = v
+		end
+	end
+
 	local ok, result = pcall(function()
-		return raidStart:InvokeServer({ mode = mode })
+		return raidStart:InvokeServer(payload)
 	end)
 	if not ok or type(result) ~= "table" or result.ok ~= true then
 		local reason = rmsg("server_down")

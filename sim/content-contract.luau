@@ -21,14 +21,14 @@ end
 local function migrated()
 	local profile, err = ProfileSchema.migrate(fixtureV1)
 	assert(profile ~= nil, "migracao de schema falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 3, "schemaVersion != 3")
+	assert(profile.schemaVersion == 4, "schemaVersion != 4")
 	profile.contentVersion = 1
 	return profile
 end
 
 check("catalogo v3, 5 tipos, WALL_LEVELS e politica de simVersion", function()
 	assert(TrapCatalog.CONTENT_VERSION == 3, "CONTENT_VERSION != 3")
-	assert(Core.SIM_VERSION == 6, "SIM_VERSION != 6")
+	assert(Core.SIM_VERSION == 7, "SIM_VERSION != 7")
 	assert(TrapCatalog.MAX_LEVEL == 5, "MAX_LEVEL != 5")
 	assert(TrapCatalog.MAX_WALL_LEVEL == 5, "MAX_WALL_LEVEL != 5")
 	assert(#TrapCatalog.TRAP_IDS == 5, "esperava 5 tipos: " .. #TrapCatalog.TRAP_IDS)

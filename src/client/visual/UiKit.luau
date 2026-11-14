@@ -959,13 +959,13 @@ function UiKit.computeArenaCamera(
 		end
 	elseif resolvedAngle == "wall" then
 		if mode == "combat" or mode == "raid" or mode == "dropin" then
-			eyeOffset = Vector3.new(-27, 29, 0)
-			lookOffset = Vector3.new(4, 1.5, 0)
+			eyeOffset = Vector3.new(-40, 32, 0)
+			lookOffset = Vector3.new(1, 1.2, 0)
 			baseFov = 46
 		else
-			eyeOffset = Vector3.new(-28, 33, 0)
-			lookOffset = Vector3.new(3, 1.0, 0)
-			baseFov = 45
+			eyeOffset = Vector3.new(-42, 36, 0)
+			lookOffset = Vector3.new(0, 1.0, 0)
+			baseFov = 46
 		end
 	else
 		if mode == "combat" or mode == "raid" then

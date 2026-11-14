@@ -1,7 +1,7 @@
-# Forge3D 0.6.0 — rota `import`: portal da fenda gotico-arcano esculpido (art/scripts/make_portal.py)
+# Forge3D 0.6.1 — rota `import`: portal da fenda gotico-arcano esculpido (art/scripts/make_portal.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@1
+schema: forge3d/spec@4
 
 projeto: muralha
 perfil: roblox-r15

@@ -337,12 +337,12 @@ check("lote: validateAll aponta o indice do invalido", function()
 end)
 
 -- ---------------------------------------------------------------- motor
-check("BattleResult expoe seed e simVersion 6 com o hash de referencia", function()
+check("BattleResult expoe seed e simVersion 7 com o hash de referencia", function()
 	local result = Core.Run(42)
 	assert(result.hash == 1245379674, "hash mudou: " .. tostring(result.hash))
 	assert(result.seed == 42, "seed ausente no resultado: " .. tostring(result.seed))
 	assert(result.simVersion == Core.SIM_VERSION, "simVersion divergente")
-	assert(Core.SIM_VERSION == 6, "simVersion deveria ser 6")
+	assert(Core.SIM_VERSION == 7, "simVersion deveria ser 7")
 
 	local event, err = Analytics.battleFinished(CTX, BATTLE_ID, result)
 	assert(event ~= nil, "evento de batalha invalido: " .. tostring(err))

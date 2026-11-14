@@ -22,6 +22,7 @@ export type BotWall = {
 export type WaveSpec = {
 	count: number,
 	spawnEveryTicks: number,
+	pool: { string }?,
 }
 
 BotPhantoms.MIN_LEAGUE = 1
@@ -174,6 +175,13 @@ function BotPhantoms.matchLeague(
 	)
 end
 
+local HORDE_POOLS_BY_LEAGUE: { [number]: { string } } = {
+	[2] = { "runner", "brute", "swarm", "shieldbearer" },
+	[3] = { "runner", "brute", "swarm", "shieldbearer", "pyromancer" },
+	[4] = { "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" },
+	[5] = { "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" },
+}
+
 function BotPhantoms.waveFor(
 	league: number,
 	isDefend: boolean?,
@@ -183,16 +191,21 @@ function BotPhantoms.waveFor(
 	if isDefend == true then
 		local traps = math.max(0, math.floor(trapCount or 0))
 		local lvl = math.clamp(math.floor(wallLevel or 1), 1, 5)
+		local defendPool = HORDE_POOLS_BY_LEAGUE[lvl]
 		if traps <= 0 then
 			return { count = 56, spawnEveryTicks = 13 }
 		end
 		local count = math.clamp(26 + traps * 7 + (lvl - 1) * 12, 32, 120)
 		local spawnEvery = math.clamp(15 - lvl - math.floor(traps / 3), 8, 14)
-		return { count = count, spawnEveryTicks = spawnEvery }
+		return { count = count, spawnEveryTicks = spawnEvery, pool = defendPool }
 	end
 	local clamped = math.clamp(math.floor(league), BotPhantoms.MIN_LEAGUE, BotPhantoms.MAX_LEAGUE)
 	local spec = RAID_WAVES[clamped]
-	return { count = spec.count, spawnEveryTicks = spec.spawnEveryTicks }
+	return {
+		count = spec.count,
+		spawnEveryTicks = spec.spawnEveryTicks,
+		pool = HORDE_POOLS_BY_LEAGUE[clamped],
+	}
 end
 
 local function copyWall(template: BotWall): BotWall

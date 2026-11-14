@@ -241,3 +241,15 @@ export type AudioMixerApi = {
 | `victory`, `defeat`, `horn` | `stinger_match_finisher`, `horde_spawn_horn` | `SFX_Stinger` / `MuralhaSFX` | `victory`/`defeat` acionam ducking `-4.5 dB` e stingers quantizados. |
 
 > **Verificação P1:** `AudioMixer` e `SoundCatalog` são camadas puramente client-side adicionadas na P2+. Nenhuma chave de `VisualTheme.AUDIO` é removida ou renomeada, garantindo `sim/visual-contract.luau` (`8/8`) sem alterações.
+
+---
+
+## 9. Backlog de Polimento de Áudio (Pós-Playtest / Registrado em 14/11/2026)
+
+Melhorias planejadas para futuras iterações no `AudioKit` (a maioria em DSP/Luau local, sem consumir cota extra de upload na Open Cloud):
+
+1. **Oclusão e Abafamento Dinâmico (Low-Pass Muffler — 0 uploads):** fechar dinamicamente as altas frequências via `EqualizerSoundEffect` quando a muralha cair abaixo de `15% HP` (efeito concussão/tensão crítica), quando modais pesados estiverem abertos, ou para unidades atrás de obstáculos altos.
+2. **Espacialização de Projéteis Pesados em Movimento (Pass-by 3D — 0–1 upload):** acoplar um som posicional curto aos projéteis de catapulta e barris dos bosses para gerar cruzamento estéreo e Doppler sutil nas câmeras `corridor` e `wall` antes do impacto.
+3. **Ducking Inteligente Estendido para Alertas Críticos (0 uploads):** ampliar o ducking atual (`triggerDucking` / `triggerVoiceDucking` já ativos em hits pesados e falas de boss) para atenuar a massa de `MuralhaSFX` também durante `wall_alarm` (`<30% HP`), `boss_telegraph` e stingers críticos de onda.
+4. **Combo / Kill-Streak Pitch Ramp (0 uploads):** escalar progressivamente `+0.03` de pitch por abate rápido em janela curta (`~1.2 s`, teto `+0.18`) em `death_*` e `coin_gain` para amplificar a sensação de impacto e recompensa em hordas densas.
+5. **Camada Ambiente do Vale na Preparação (1 upload):** loop sutil de vento do cânion e tochas em `build`, cortado em silêncio seco milissegundos antes do `horn` abrir a raid.

@@ -27,10 +27,12 @@ local visual = script.Parent:WaitForChild("visual")
 local UiKit = require(visual:WaitForChild("UiKit"))
 local VisualSetup = require(visual:WaitForChild("VisualSetup"))
 local ArenaVisual = require(visual:WaitForChild("ArenaVisual"))
+local CrowdKit = require(visual:WaitForChild("CrowdKit"))
 local TrapKit = require(visual:WaitForChild("TrapKit"))
 local HordeKit = require(visual:WaitForChild("HordeKit"))
 local Vfx = require(visual:WaitForChild("Vfx"))
 local AudioKit = require(visual:WaitForChild("AudioKit"))
+local TransitionKit = require(visual:WaitForChild("TransitionKit"))
 
 for _ = 1, 50 do
 	if ReplicatedStorage:GetAttribute("DropInEnabled") ~= nil then
@@ -84,6 +86,7 @@ local scene = Instance.new("Folder")
 scene.Name = "DropInLocalScene"
 scene.Parent = Workspace
 ArenaVisual.build(scene, ORIGIN, { dropIn = true, wallTier = 1 })
+local crowd = CrowdKit.build(scene, ORIGIN)
 
 local FLOOR_TOP_Y = 0.39
 
@@ -97,7 +100,7 @@ local PREBUILT = {
 TrapKit.sync(scene, PREBUILT, ORIGIN, { floorTopY = FLOOR_TOP_Y })
 
 local horde = {}
-local kinds = { "runner", "brute", "swarm" }
+local kinds = { "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }
 local unitSeq = 0
 for lane = 1, 5 do
 	local z = (lane - 3) * 8
@@ -311,6 +314,8 @@ local lastWallPct = 1
 local function setWall(pct: number): ()
 	if pct < lastWallPct - 0.005 and pct > 0 then
 		AudioKit.playAt("wall_hit", ORIGIN + Vector3.new(-22, 1.5, 0))
+		crowd:react("gasp")
+		AudioKit.play("crowd_gasp", 0.6)
 	end
 	lastWallPct = pct
 	wallProgress.set(pct)
@@ -343,6 +348,7 @@ local function showDefeat(): ()
 	setWall(0)
 	AudioKit.playAt("gate_fracture", ORIGIN + Vector3.new(-24, 2, 0))
 	AudioKit.play("defeat")
+	crowd:react("defeat")
 	Vfx.shake(camera, BASE_CAMERA, 0.35, 0.35)
 	Vfx.dust(scene, ORIGIN + Vector3.new(-24, 0.5, 0), 10)
 end
@@ -352,6 +358,7 @@ local function cleanup(): ()
 		localeConn:Disconnect()
 		localeConn = nil
 	end
+	crowd:destroy()
 	AudioKit.setMode("build")
 	AudioKit.setWallPct(1)
 	if scene.Parent ~= nil then
@@ -389,8 +396,12 @@ local function finishClear(): ()
 	end
 	setHordeVisible(false)
 	AudioKit.play("victory")
+	crowd:react("victory")
+	AudioKit.play("crowd_victory", 0.75)
 	Vfx.ring(scene, ORIGIN + Vector3.new(-4, 0, 0), UiKit.color(VisualTheme.PALETTE.amberBright))
-	task.delay(0.9, cleanup)
+	task.delay(0.9, function()
+		TransitionKit.quickCurtain(cleanup, 0.22)
+	end)
 end
 
 local function applySnapshot(snapshot: any): ()
@@ -451,6 +462,8 @@ local function press(): ()
 	end
 	AudioKit.playAt("catapult_fire", ORIGIN + Vector3.new(-4, 5, 0))
 	AudioKit.playAt("wall_hit", ORIGIN + Vector3.new(-6, 2, 0), 0.6)
+	crowd:react("cheer")
+	AudioKit.play("crowd_cheer", 0.65)
 	TweenService:Create(camera, TweenInfo.new(0.18, Enum.EasingStyle.Quad), { FieldOfView = 30 })
 		:Play()
 	Vfx.shake(camera, BASE_CAMERA, 0.18, 0.25)

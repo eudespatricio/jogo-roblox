@@ -24,6 +24,7 @@ local visual = script.Parent:WaitForChild("visual")
 local UiKit = require(visual:WaitForChild("UiKit"))
 local VisualSetup = require(visual:WaitForChild("VisualSetup"))
 local ArenaVisual = require(visual:WaitForChild("ArenaVisual"))
+local CrowdKit = require(visual:WaitForChild("CrowdKit"))
 local TrapKit = require(visual:WaitForChild("TrapKit"))
 local AudioKit = require(visual:WaitForChild("AudioKit"))
 local Vfx = require(visual:WaitForChild("Vfx"))
@@ -88,6 +89,7 @@ player.CharacterAdded:Connect(hideCharacter)
 
 VisualSetup.apply()
 ArenaVisual.build(Workspace, Vector3.new(0, 0, 0), { wallTier = 1 })
+local buildCrowd = CrowdKit.build(Workspace, Vector3.zero)
 AudioKit.setMode("build")
 
 local state = BuildClientState.new()
@@ -947,6 +949,16 @@ local function refreshHeaderLabels(snapshot: any): ()
 		Players.LocalPlayer:SetAttribute("MuralhaWallTier", wallTier)
 		ArenaVisual.setWallTier(Workspace, wallTier)
 	end
+	Players.LocalPlayer:SetAttribute("MuralhaLeague", tonumber(snapshot.league) or 1)
+	Players.LocalPlayer:SetAttribute("MuralhaWallHp", tonumber(snapshot.wallHp) or 500)
+	local trapCount = 0
+	if type(snapshot.cells) == "table" then
+		for _ in pairs(snapshot.cells) do
+			trapCount += 1
+		end
+	end
+	Players.LocalPlayer:SetAttribute("MuralhaTrapCount", trapCount)
+	Players.LocalPlayer:SetAttribute("MuralhaTrapLimit", tonumber(snapshot.activeTrapLimit) or 5)
 end
 
 local lastGold: number? = nil
@@ -1050,6 +1062,7 @@ send = function(action: string, trapId: string, slot: string, x: number?, y: num
 	if result.ok then
 		if action == "place" then
 			AudioKit.play("build_place")
+			buildCrowd:react("cheer")
 			local position = positionOfPlacement(slot, x, y)
 			if position ~= nil then
 				Vfx.dust(Workspace, position, 5)
@@ -1067,11 +1080,13 @@ send = function(action: string, trapId: string, slot: string, x: number?, y: num
 				then result.snapshot.wallLevel
 				else nil
 			AudioKit.upgrade(if type(newLvl) == "number" then newLvl else nil)
+			buildCrowd:react("cheer")
 			Vfx.dust(Workspace, Vector3.new(GridLayout.WALL_X, 1, 0), 6)
 		else
 			local cells = result.snapshot and result.snapshot.cells
 			local data = if type(cells) == "table" then cells[slot] else nil
 			AudioKit.upgrade(if type(data) == "table" then data.level else nil)
+			buildCrowd:react("cheer")
 		end
 		if result.snapshot ~= nil then
 			playGoldDelta(result.snapshot)
