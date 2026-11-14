@@ -7,7 +7,7 @@
 física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18+). Público 13–34.
 
 ## Fase
-**P2 + Playtest v1.2 entregue (14/11/2026).** `Core v7` (6 classes de horda + 5 Bosses + 8 mutadores), `CampaignCatalog`, `ProfileSchema v4`, `CrowdKit`, `HordeKit` (`-X` corrigido s/ `Ry180` extra), `BootLoading` (`ReplicatedFirst`), `TransitionKit` (`Card 1 VS Card 2`), Thumbnail/Icon/Loading Open Cloud e `56 SFX` + `4 stems BGM`.
+**P2 + Playtest v1.2 entregue (14/11/2026).** `Core v7` (6 classes de horda + 5 Bosses + 8 mutadores), `CampaignCatalog`, `ProfileSchema v4`, `CrowdKit`, `HordeKit` (`-X` corrigido s/ `Ry180` extra), `BootLoading` (`ReplicatedFirst`), `TransitionKit` (`Card 1 VS Card 2`), Thumbnail/Icon/Loading Open Cloud e 87 cues Open Cloud (5 BGM + 30 VO PT/EN/ES + 52 SFX/stingers).
 ## Números atuais (13/11/2026)
 | Métrica | Valor |
 |---|---|
@@ -17,7 +17,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 | determinismo | hash `1245379674` (seed 42, 3 execuções) · `simVersion 7` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 62,6% defensor · ~1,6s/1.000 |
 | invariantes | 19/19 (`sim/invariants.luau`) |
-| contratos | perfil 23/23 · analytics 35/35 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 16/16 · drop-in 11/11 · raid 15/15 · campanha 6/6 · i18n 7/7 |
+| contratos | perfil 23/23 · analytics 35/35 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 18/18 · drop-in 11/11 · raid 15/15 · campanha 6/6 · i18n 7/7 |
 | versões | schema 4 · content 3 · sim 7 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
 | perfil | schema v4 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0/1/2/3→4 |
 | analytics | contrato v2 · `trap_moved`/`wall_upgraded`/`cosmetic_equipped` · sink DataStore/Memory |
@@ -33,7 +33,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 - Muralha: `TrapCatalog.luau` (v3, `MAX_LEVEL=5`, `WALL_LEVELS`) + `WallService.luau` (`placeAt`/`move`/`upgradeWall`/`equipCosmetic`/`toBattleWall`) + `WallController`.
 - Dados: `ProfileSchema.luau` (v4/campanha Normal+Nightmare/3★/marcos) + `ProfileService.luau` + `ProfileBoot.server.luau` (`23/23`).
 - Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `35/35`) + `I18n.luau` (`77` chaves, `7/7`).
-- Visual P2/Open Cloud: `VisualTheme`/`UiAssets` (Thumbnail `1920x1080`, Icon `512x512`, Backdrop `Transition`), `BootLoading` (`ReplicatedFirst`), `TransitionKit` (`Card 1 VS Card 2`), `HordeKit`/`CrowdKit`/`AmbientLife` (`-X` corrigido), `CampaignUi`, `56 SFX` + `4 stems BGM`.
+- Visual P2/Open Cloud: `VisualTheme`/`UiAssets` (Thumbnail `1920x1080`, Icon `512x512`, Backdrop `Transition`), `BootLoading` (`ReplicatedFirst`), `TransitionKit` (`Card 1 VS Card 2`), `HordeKit`/`CrowdKit`/`AmbientLife` (`-X` corrigido), `CampaignUi`, 87 cues Open Cloud (5 BGM + 30 VO PT/EN/ES + 52 SFX/stingers).
 - Tooling: Rokit + CLI/GUI + Forge3D 0.6.1; CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil) + `BotPhantoms`/`PhantomStore` 8-slots.

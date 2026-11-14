@@ -5,7 +5,7 @@
 
 local BackdropAssets = {}
 
-export type Asset = { key: string, assetId: number }
+export type Asset = { key: string, assetId: number, textureId: number }
 export type Placement = { key: string, x: number, z: number, height: number, yawJitter: number }
 export type RoadWaypoint = { x: number, z: number }
 
@@ -27,13 +27,13 @@ BackdropAssets.ROAD_WAYPOINTS = table.freeze({
 } :: { RoadWaypoint })
 
 BackdropAssets.ASSETS = table.freeze({
-	table.freeze({ key = "castle01", assetId = 106693105904074 }),
-	table.freeze({ key = "house01", assetId = 116579470879926 }),
-	table.freeze({ key = "house02", assetId = 121109739722294 }),
-	table.freeze({ key = "tower01", assetId = 82625222995163 }),
-	table.freeze({ key = "windmill01", assetId = 113466205934167 }),
-	table.freeze({ key = "keep01", assetId = 0 }),
-	table.freeze({ key = "tree01", assetId = 79361534255880 }),
+	table.freeze({ key = "castle01", assetId = 106693105904074, textureId = 111593348314769 }),
+	table.freeze({ key = "house01", assetId = 116579470879926, textureId = 70964650673901 }),
+	table.freeze({ key = "house02", assetId = 121109739722294, textureId = 82299972598403 }),
+	table.freeze({ key = "tower01", assetId = 82625222995163, textureId = 75828725228493 }),
+	table.freeze({ key = "windmill01", assetId = 113466205934167, textureId = 128918177128589 }),
+	table.freeze({ key = "keep01", assetId = 0, textureId = 0 }),
+	table.freeze({ key = "tree01", assetId = 79361534255880, textureId = 96125919678314 }),
 } :: { Asset })
 
 -- 41 entradas em 3 setores: colina da Cidadela/vila (-X), crista norte/direita (-Z) e borda
@@ -95,6 +95,15 @@ function BackdropAssets.assetId(key: string): number
 	for _, asset in ipairs(BackdropAssets.ASSETS) do
 		if asset.key == key then
 			return asset.assetId
+		end
+	end
+	return 0
+end
+
+function BackdropAssets.textureId(key: string): number
+	for _, asset in ipairs(BackdropAssets.ASSETS) do
+		if asset.key == key then
+			return asset.textureId
 		end
 	end
 	return 0

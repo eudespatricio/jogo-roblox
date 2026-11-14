@@ -255,6 +255,14 @@ check("open cloud: muralha L1..L5, 6 props, 9 fauna e vale continuo publicados",
 	assert(#BackdropAssets.ROAD_WAYPOINTS >= 4, "estrada da cidadela incompleta")
 	assert(#BackdropAssets.LAYOUT >= 35, "layout de cenario reduzido")
 	assert(BackdropAssets.anyPublished() == true, "BackdropAssets nao publicado")
+	for _, asset in ipairs(BackdropAssets.ASSETS) do
+		if asset.assetId > 0 then
+			assert(
+				type(asset.textureId) == "number" and asset.textureId > 0,
+				"textura de backdrop nao publicada: " .. asset.key
+			)
+		end
+	end
 end)
 
 check("open cloud: 6 classes de horda e 5 bosses publicados com specs no VisualTheme", function()

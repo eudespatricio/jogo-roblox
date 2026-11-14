@@ -20,14 +20,20 @@ if folder == nil then
 end
 assert(folder ~= nil)
 
-local function prepare(model: Model): ()
+local function prepare(model: Model, textureId: number): ()
+	local texContentId = if textureId > 0 then "rbxassetid://" .. tostring(textureId) else ""
 	for _, descendant in ipairs(model:GetDescendants()) do
-		if descendant:IsA("BasePart") then
+		if descendant:IsA("SurfaceAppearance") then
+			descendant:Destroy()
+		elseif descendant:IsA("BasePart") then
 			descendant.Anchored = true
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.CanQuery = false
 			descendant.CastShadow = false
+			if descendant:IsA("MeshPart") and texContentId ~= "" then
+				descendant.TextureID = texContentId
+			end
 		end
 	end
 end
@@ -58,7 +64,7 @@ for _, asset in ipairs(BackdropAssets.ASSETS) do
 			child.Parent = model
 		end
 		container:Destroy()
-		prepare(model)
+		prepare(model, asset.textureId)
 		model.Parent = folder
 		print(string.format("[backdrop] malha %s carregada (%d)", asset.key, asset.assetId))
 	end)
