@@ -11,6 +11,9 @@ local VisualTheme = require(
 local MeshAssets = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
 )
+local PortalThemes = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PortalThemes")
+)
 
 local HordeKit = {}
 
@@ -24,8 +27,10 @@ type EnemySpec = {
 	label: string,
 	color: { number },
 	dark: { number },
+	accent: { number }?,
 	scale: number,
 	parts: number,
+	flying: boolean?,
 }
 
 type RigMetrics = {
@@ -65,6 +70,16 @@ local RIG_METRICS: { [string]: RigMetrics } = {
 		torsoMountY = 0.74,
 		torsoHeight = 3.45,
 	},
+	wisp = {
+		hipY = 1.15,
+		torsoMountY = 1.05,
+		torsoHeight = 2.45,
+	},
+	drake = {
+		hipY = 1.55,
+		torsoMountY = 1.10,
+		torsoHeight = 3.90,
+	},
 }
 
 type TorsoPiece = {
@@ -84,6 +99,8 @@ export type HordeUnit = {
 	base: CFrame,
 	phase: number,
 	kind: string,
+	flying: boolean,
+	isChampion: boolean,
 	approachScale: number,
 	squashUntil: number,
 	squashSeq: number,
@@ -95,11 +112,14 @@ export type HordeUnit = {
 	attackBlend: number,
 	torsoParts: { TorsoPiece },
 	limbs: { [string]: LimbSpec },
+	championCrest: BasePart?,
 }
 
 local EYE_NEON_COLOR = Color3.fromRGB(220, 255, 245)
 local EMBER_NEON_COLOR = Color3.fromRGB(255, 199, 64)
 local TEAL_SWARM_COLOR = Color3.fromRGB(45, 212, 191)
+local WISP_CYAN_COLOR = Color3.fromRGB(165, 243, 252)
+local DRAKE_GOLD_COLOR = Color3.fromRGB(245, 190, 48)
 local CLEAVER_STEEL_COLOR = Color3.fromRGB(140, 145, 158)
 local SHIELD_STEEL_COLOR = Color3.fromRGB(110, 122, 138)
 local BLAST_PACK_COLOR = Color3.fromRGB(139, 90, 43)
@@ -417,6 +437,139 @@ local function buildSapperFallbackTorso(parent: Instance, spec: EnemySpec): { To
 	return list
 end
 
+-- Wisp offline fallback (3 partes torso + 3 membros + RootPart = 7 <= 8).
+local function buildWispFallbackTorso(parent: Instance, spec: EnemySpec): { TorsoPiece }
+	local accentColor = if spec.accent ~= nil then rgb(spec.accent) else WISP_CYAN_COLOR
+	local core = makePart(
+		parent,
+		"Core",
+		Vector3.new(1.08, 1.08, 1.08),
+		Vector3.new(0, 1.05, 0),
+		accentColor,
+		Enum.Material.Neon,
+		Enum.PartType.Ball
+	)
+	core.CFrame = CFrame.new(0, 1.05, 0)
+
+	local cowl = makeEllipsoid(
+		parent,
+		"Cowl",
+		Vector3.new(1.38, 1.56, 1.24),
+		rgb(spec.dark),
+		Enum.Material.SmoothPlastic
+	)
+	cowl.CFrame = CFrame.new(0, 1.32, 0.16)
+
+	local visor = makeEllipsoid(
+		parent,
+		"Visor",
+		Vector3.new(0.56, 0.22, 0.28),
+		EYE_NEON_COLOR,
+		Enum.Material.Neon
+	)
+	visor.CFrame = CFrame.new(0, 1.16, -0.52)
+
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(parent, list)
+	return list
+end
+
+-- Drake offline fallback (4 partes torso + 5 membros + RootPart = 10 <= 12).
+local function buildDrakeFallbackTorso(parent: Instance, spec: EnemySpec): { TorsoPiece }
+	local goldColor = if spec.accent ~= nil then rgb(spec.accent) else DRAKE_GOLD_COLOR
+	local torso = makeEllipsoid(
+		parent,
+		"Torso",
+		Vector3.new(1.88, 1.45, 2.85),
+		rgb(spec.color),
+		Enum.Material.Metal
+	)
+	torso.CFrame = CFrame.new(0, 1.32, 0.08)
+
+	local breastplate = makeEllipsoid(
+		parent,
+		"Breastplate",
+		Vector3.new(1.36, 0.92, 1.85),
+		goldColor,
+		Enum.Material.Metal
+	)
+	breastplate.CFrame = CFrame.new(0, 1.08, -0.32)
+
+	local head = makeEllipsoid(
+		parent,
+		"Head",
+		Vector3.new(1.08, 0.92, 1.48),
+		rgb(spec.dark),
+		Enum.Material.Metal
+	)
+	head.CFrame = CFrame.new(0, 1.98, -1.56)
+
+	local visor = makeEllipsoid(
+		parent,
+		"Visor",
+		Vector3.new(0.76, 0.22, 0.36),
+		EMBER_NEON_COLOR,
+		Enum.Material.Neon
+	)
+	visor.CFrame = CFrame.new(0, 2.06, -2.14)
+
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(parent, list)
+	return list
+end
+
+local function buildChampionCrest(model: Model): BasePart
+	local haloColor = rgb(VisualTheme.CHAMPION.haloColor)
+	local accentColor = rgb(VisualTheme.CHAMPION.accentColor)
+	local crest = makePart(
+		model,
+		"ChampionCrest",
+		Vector3.new(0.20, 1.72, 1.72),
+		Vector3.zero,
+		haloColor,
+		Enum.Material.Neon,
+		Enum.PartType.Cylinder
+	)
+	crest.CastShadow = false
+
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "ChampionTag"
+	tag.Size = UDim2.fromOffset(38, 18)
+	tag.StudsOffset = Vector3.new(0, 1.25, 0)
+	tag.AlwaysOnTop = false
+	tag.MaxDistance = 110
+	tag.Parent = crest
+
+	local pill = Instance.new("Frame")
+	pill.Name = "Pill"
+	pill.Size = UDim2.fromScale(1, 1)
+	pill.BackgroundColor3 = rgb(VisualTheme.PALETTE.ink)
+	pill.BackgroundTransparency = 0.12
+	pill.BorderSizePixel = 0
+	pill.Parent = tag
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = pill
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = accentColor
+	stroke.Thickness = 1.5
+	stroke.Parent = pill
+
+	local star = Instance.new("TextLabel")
+	star.Name = "Star"
+	star.Size = UDim2.fromScale(1, 1)
+	star.BackgroundTransparency = 1
+	star.Text = "★"
+	star.TextColor3 = haloColor
+	star.Font = Enum.Font.GothamBlack
+	star.TextScaled = true
+	star.Parent = pill
+
+	return crest
+end
+
 local function createLimbs(model: Instance, kind: string, spec: EnemySpec): { [string]: LimbSpec }
 	local limbs: { [string]: LimbSpec } = {}
 	local function add(name: string, p: BasePart): ()
@@ -537,6 +690,80 @@ local function createLimbs(model: Instance, kind: string, spec: EnemySpec): { [s
 		add(
 			"TailR",
 			makeEllipsoid(model, "TailR", tailSize, rgb(spec.dark), Enum.Material.SmoothPlastic)
+		)
+	elseif kind == "wisp" then
+		local accentColor = if spec.accent ~= nil then rgb(spec.accent) else WISP_CYAN_COLOR
+		local wispSize = Vector3.new(0.48, 0.48, 0.48)
+		local wispL = makePart(
+			model,
+			"WispL",
+			wispSize,
+			Vector3.zero,
+			rgb(spec.color),
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		local wispR = makePart(
+			model,
+			"WispR",
+			wispSize,
+			Vector3.zero,
+			accentColor,
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		attachGhostTrail(wispL, 0.22, accentColor)
+		attachGhostTrail(wispR, 0.22, rgb(spec.color))
+		add("WispL", wispL)
+		add("WispR", wispR)
+		add(
+			"TailWisp",
+			makeEllipsoid(
+				model,
+				"TailWisp",
+				Vector3.new(0.44, 1.35, 0.44),
+				rgb(spec.color),
+				Enum.Material.Neon
+			)
+		)
+	elseif kind == "drake" then
+		local goldColor = if spec.accent ~= nil then rgb(spec.accent) else DRAKE_GOLD_COLOR
+		local wingSize = Vector3.new(2.65, 0.16, 1.58)
+		local wingL = makeWedge(model, "WingL", wingSize, rgb(spec.dark), Enum.Material.Metal)
+		local wingR = makeWedge(model, "WingR", wingSize, rgb(spec.dark), Enum.Material.Metal)
+		attachGhostTrail(wingL, 0.12, goldColor)
+		attachGhostTrail(wingR, 0.12, goldColor)
+		add("WingL", wingL)
+		add("WingR", wingR)
+		add(
+			"Tail",
+			makeEllipsoid(
+				model,
+				"Tail",
+				Vector3.new(0.52, 0.52, 2.15),
+				goldColor,
+				Enum.Material.Metal
+			)
+		)
+		add(
+			"LegL",
+			makeEllipsoid(
+				model,
+				"LegL",
+				Vector3.new(0.44, 1.05, 0.48),
+				rgb(spec.dark),
+				Enum.Material.Metal
+			)
+		)
+		add(
+			"LegR",
+			makeEllipsoid(
+				model,
+				"LegR",
+				Vector3.new(0.44, 1.05, 0.48),
+				rgb(spec.dark),
+				Enum.Material.Metal
+			)
 		)
 	else
 		local legSize = Vector3.new(0.38, 1.56, 0.44)
@@ -716,13 +943,26 @@ end
 
 -- Poses a 60 Hz: +X direita, +Y cima, -Z frente em rigCF (rotacionado +90 deg -> encara muralha em -X).
 local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
-	local rigCF = CFrame.new(unit.base.Position)
+	local metrics = RIG_METRICS[unit.kind] or RIG_METRICS.runner
+	local approach = math.clamp(unit.approachScale, 0.45, 1.25)
+	local hoverY = 0
+	if unit.flying then
+		local hoverRamp = math.clamp(
+			(approach - PortalThemes.MIN_SCALE) / (PortalThemes.MAX_SCALE - PortalThemes.MIN_SCALE),
+			0,
+			1
+		)
+		local hoverBob = math.sin(now * VisualTheme.AERIAL.bobSpeed + unit.phase)
+			* VisualTheme.AERIAL.bobAmplitude
+		hoverY = (VisualTheme.AERIAL.hoverY + hoverBob) * hoverRamp
+	end
+
+	local rigCF = CFrame.new(unit.base.Position + Vector3.new(0, hoverY, 0))
 		* unit.base.Rotation
 		* CFrame.Angles(0, math.rad(90), 0)
 	unit.rootPart.CFrame = rigCF
 
-	local metrics = RIG_METRICS[unit.kind] or RIG_METRICS.runner
-	local approach = math.clamp(unit.approachScale, 0.45, 1.25)
+	local champScale = if unit.isChampion then VisualTheme.CHAMPION.scale else 1
 	local sxz = 1
 	local sy = 1
 	if now < unit.squashUntil then
@@ -733,8 +973,8 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 	elseif unit.squashed then
 		unit.squashed = false
 	end
-	sxz *= approach
-	sy *= approach
+	sxz *= approach * champScale
+	sy *= approach * champScale
 
 	local posX = unit.base.Position.X
 	if unit.lastNow > 0 then
@@ -823,13 +1063,13 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 	elseif unit.kind == "swarm" then
 		local omega = 14.5 + atkWeight * 4.5
 		local p = now * omega + unit.phase
-		local hoverY = math.sin(p * 0.65) * 0.32
+		local swarmHoverY = math.sin(p * 0.65) * 0.32
 		local weaveX = math.cos(p * 0.45) * 0.24
 		local lungeZ = -math.max(0, math.sin(p * 1.1)) * 0.65 * atkWeight
 		local bank = math.sin(p * 0.45) * (14 * DEG_TO_RAD)
 
 		torsoCF = rigCF
-			* CFrame.new(weaveX, metrics.torsoMountY + hoverY, lungeZ)
+			* CFrame.new(weaveX, metrics.torsoMountY + swarmHoverY, lungeZ)
 			* CFrame.Angles(-(10 * DEG_TO_RAD) * (walkWeight + atkWeight), 0, bank)
 
 		local radius = 1.28 + atkWeight * 0.25
@@ -984,6 +1224,109 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 				* CFrame.new(0, -0.68, 0)
 			placeScaled(rigCF, armR.part, armR.size, aRCF, sxz, sy)
 		end
+	elseif unit.kind == "wisp" then
+		local omega = 8.4 + atkWeight * 3.2
+		local p = now * omega + unit.phase
+		local driftX = math.cos(p * 0.55) * 0.20
+		local driftY = math.sin(p * 0.75) * 0.16
+		local lungeZ = -math.max(0, math.sin(p * 1.15)) * 0.50 * atkWeight
+
+		torsoCF = rigCF
+			* CFrame.new(driftX, metrics.torsoMountY + driftY, lungeZ)
+			* CFrame.Angles(
+				-(12 * DEG_TO_RAD) * (walkWeight + atkWeight),
+				0,
+				math.sin(p * 0.5) * (8 * DEG_TO_RAD)
+			)
+
+		local radius = 1.24 + atkWeight * 0.25
+		local wispL = unit.limbs.WispL
+		local wispR = unit.limbs.WispR
+		if wispL ~= nil then
+			local lCF = torsoCF
+				* CFrame.new(
+					math.cos(p) * radius,
+					1.05 + math.sin(p * 2) * 0.34,
+					math.sin(p) * (radius * 0.85)
+				)
+			placeScaled(rigCF, wispL.part, wispL.size, lCF, sxz, sy)
+		end
+		if wispR ~= nil then
+			local rCF = torsoCF
+				* CFrame.new(
+					math.cos(p + math.pi) * radius,
+					1.05 + math.sin((p + math.pi) * 2) * 0.34,
+					math.sin(p + math.pi) * (radius * 0.85)
+				)
+			placeScaled(rigCF, wispR.part, wispR.size, rCF, sxz, sy)
+		end
+
+		local tailWisp = unit.limbs.TailWisp
+		if tailWisp ~= nil then
+			local tCF = torsoCF
+				* CFrame.new(0, 0.35, 0.42)
+				* CFrame.Angles(math.rad(34) + math.sin(p * 1.4) * 0.24, 0, math.cos(p) * 0.16)
+				* CFrame.new(0, -0.55, 0)
+			placeScaled(rigCF, tailWisp.part, tailWisp.size, tCF, sxz, sy)
+		end
+	elseif unit.kind == "drake" then
+		local omega = VisualTheme.AERIAL.wingSpeed + atkWeight * 3.0
+		local p = now * omega + unit.phase
+		local flap = math.sin(p) * (VisualTheme.AERIAL.wingAmplitudeDeg * DEG_TO_RAD)
+		local counterBob = -math.sin(p) * 0.18
+		local divePitch = -(8 * DEG_TO_RAD) * walkWeight
+			+ math.sin(p * 1.2) * (14 * DEG_TO_RAD) * atkWeight
+
+		torsoCF = rigCF
+			* CFrame.new(0, metrics.torsoMountY + counterBob, 0)
+			* CFrame.Angles(
+				divePitch,
+				math.sin(p * 0.5) * 0.06,
+				math.cos(p * 0.5) * (4 * DEG_TO_RAD)
+			)
+
+		local wingL = unit.limbs.WingL
+		local wingR = unit.limbs.WingR
+		if wingL ~= nil then
+			local wLCF = torsoCF
+				* CFrame.new(-0.88, 1.65, -0.15)
+				* CFrame.Angles(0, math.rad(12), flap)
+				* CFrame.new(-1.32, 0, 0.18)
+			placeScaled(rigCF, wingL.part, wingL.size, wLCF, sxz, sy)
+		end
+		if wingR ~= nil then
+			local wRCF = torsoCF
+				* CFrame.new(0.88, 1.65, -0.15)
+				* CFrame.Angles(0, math.rad(-12), -flap)
+				* CFrame.new(1.32, 0, 0.18)
+			placeScaled(rigCF, wingR.part, wingR.size, wRCF, sxz, sy)
+		end
+
+		local tail = unit.limbs.Tail
+		if tail ~= nil then
+			local tailCF = torsoCF
+				* CFrame.new(0, 1.15, 1.35)
+				* CFrame.Angles(-0.18 + math.sin(p) * 0.14, math.cos(p * 0.5) * 0.18, 0)
+				* CFrame.new(0, 0, 0.95)
+			placeScaled(rigCF, tail.part, tail.size, tailCF, sxz, sy)
+		end
+
+		local legL = unit.limbs.LegL
+		local legR = unit.limbs.LegR
+		if legL ~= nil then
+			local lCF = torsoCF
+				* CFrame.new(-0.54, 0.78, 0.18)
+				* CFrame.Angles(math.rad(-24) + math.sin(p) * 0.12, 0, 0)
+				* CFrame.new(0, -0.45, 0)
+			placeScaled(rigCF, legL.part, legL.size, lCF, sxz, sy)
+		end
+		if legR ~= nil then
+			local rCF = torsoCF
+				* CFrame.new(0.54, 0.78, 0.18)
+				* CFrame.Angles(math.rad(-24) - math.sin(p) * 0.12, 0, 0)
+				* CFrame.new(0, -0.45, 0)
+			placeScaled(rigCF, legR.part, legR.size, rCF, sxz, sy)
+		end
 	else
 		local omega = (if unit.kind == "sapper" then 15.2 else 13.5) + atkWeight * 3.5
 		local p = now * omega + unit.phase
@@ -1037,6 +1380,17 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 
 	for _, entry in ipairs(unit.torsoParts) do
 		placeScaled(rigCF, entry.part, entry.size, torsoCF * entry.localCF, sxz, sy)
+	end
+
+	if unit.championCrest ~= nil then
+		local crestY = metrics.torsoMountY
+			+ metrics.torsoHeight * 0.78
+			+ 0.85
+			+ math.sin(now * 4.0 + unit.phase) * 0.10
+		local crestCF = rigCF
+			* CFrame.new(0, crestY, 0)
+			* CFrame.Angles(math.rad(8), now * 1.8 + unit.phase, math.rad(90))
+		placeScaled(rigCF, unit.championCrest, Vector3.new(0.20, 1.72, 1.72), crestCF, sxz, sy)
 	end
 end
 
@@ -1189,12 +1543,22 @@ local function ensureHordeMeshWatcher(): ()
 	end
 end
 
-function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId: number?): HordeUnit
-	local enemies = VisualTheme.ENEMIES :: { [string]: EnemySpec }
+function HordeKit.create(
+	kind: string,
+	parent: Instance,
+	cframe: CFrame,
+	unitId: number?,
+	isChampion: boolean?
+): HordeUnit
+	local enemies = (VisualTheme.ENEMIES :: any) :: { [string]: EnemySpec }
 	local spec = enemies[kind] or enemies.runner
+	local flying = spec.flying == true
+	local champion = isChampion == true
 	local model = Instance.new("Model")
 	model.Name = "Horde_" .. kind
 	model:SetAttribute("Kind", kind)
+	model:SetAttribute("Flying", flying)
+	model:SetAttribute("IsChampion", champion)
 
 	local rootPart = makePart(
 		model,
@@ -1227,10 +1591,16 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId:
 			torsoParts = buildPyromancerFallbackTorso(proc, spec)
 		elseif kind == "sapper" then
 			torsoParts = buildSapperFallbackTorso(proc, spec)
+		elseif kind == "wisp" then
+			torsoParts = buildWispFallbackTorso(proc, spec)
+		elseif kind == "drake" then
+			torsoParts = buildDrakeFallbackTorso(proc, spec)
 		else
 			torsoParts = buildRunnerFallbackTorso(proc, spec)
 		end
 	end
+
+	local championCrest: BasePart? = if champion then buildChampionCrest(model) else nil
 
 	local phase = if unitId ~= nil
 		then ((unitId * GOLDEN_RATIO) % 1) * math.pi * 2
@@ -1243,6 +1613,8 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId:
 		base = cframe,
 		phase = phase,
 		kind = kind,
+		flying = flying,
+		isChampion = champion,
 		approachScale = 1.0,
 		squashUntil = 0,
 		squashSeq = 0,
@@ -1254,6 +1626,7 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId:
 		attackBlend = 0,
 		torsoParts = torsoParts :: { TorsoPiece },
 		limbs = limbs,
+		championCrest = championCrest,
 	}
 
 	poseUnit(unit, now, false)
@@ -1264,6 +1637,36 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId:
 	end
 
 	return unit
+end
+
+function HordeKit.setChampion(unit: HordeUnit, isChampion: boolean): ()
+	local champion = isChampion == true
+	if unit.isChampion == champion then
+		return
+	end
+	unit.isChampion = champion
+	unit.model:SetAttribute("IsChampion", champion)
+	local existingCrest = unit.championCrest
+	if champion then
+		if existingCrest == nil then
+			local createdCrest = buildChampionCrest(unit.model)
+			unit.championCrest = createdCrest
+			local hidden = unit.model:GetAttribute("Hidden") == true
+			if hidden then
+				createdCrest.Transparency = 1
+				local tag = createdCrest:FindFirstChildOfClass("BillboardGui")
+				if tag ~= nil then
+					tag.Enabled = false
+				end
+			end
+		end
+	else
+		if existingCrest ~= nil then
+			existingCrest:Destroy()
+			unit.championCrest = nil
+		end
+	end
+	poseUnit(unit, if unit.lastNow > 0 then unit.lastNow else time(), unit.lastMoving)
 end
 
 function HordeKit.setBase(unit: HordeUnit, cframe: CFrame): ()
@@ -1331,6 +1734,8 @@ function HordeKit.setVisible(unit: HordeUnit, visible: boolean): ()
 			if not visible then
 				descendant:Clear()
 			end
+			descendant.Enabled = visible
+		elseif descendant:IsA("BillboardGui") then
 			descendant.Enabled = visible
 		end
 	end

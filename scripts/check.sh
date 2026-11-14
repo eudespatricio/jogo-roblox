@@ -65,6 +65,9 @@ luau sim/raid-contract.luau
 echo "== contrato de campanha =="
 luau sim/campaign-contract.luau
 
+echo "== contrato de deck/horda (v1.4) =="
+luau sim/deck-contract.luau
+
 echo "== migracao neutra (kit GAP-010) =="
 luau tools/expansion-test/neutral-migration.luau
 

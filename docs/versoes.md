@@ -7,9 +7,9 @@
 ## Bloco de versões
 
 <!-- VERSOES:INICIO -->
-schema=4
+schema=5
 content=3
-sim=7
+sim=8
 hash=1245379674
 analytics=2
 <!-- VERSOES:FIM -->
@@ -44,3 +44,9 @@ analytics=2
 7. **Motor v6 (13/11/2026).** `archer` passa a mirar em área circular 360° (`omni = true`,
    `range = 2500`, `dmg = 1400`, `cd = 10`) em vez de corredor único frontal; hash de referência
    re-ancorado em `1245379674` (seed 42, `62,6%` vitória do defensor em 1.000 seeds).
+8. **Playtest v1.4 (14/11/2026).** `schema=5` (customização de Horda com 5 facções, 13 cartas,
+   slots de esquadrão, apostas de campeão e persistência de estilhaços/núcleos no perfil),
+   `content=3`, `sim=8` (Core v8 com unidades aéreas espectro/draconato imunes a armadilhas de piso
+   de piche/canhão/catapulta, arqueiro com bônus de +25% contra voadores, flag `isChampion` em fatias
+   com multiplicadores e contabilidade de campeão no resultado da batalha, preservando o hash de
+   referência `1245379674` na seed 42) e `analytics=2`.

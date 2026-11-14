@@ -1,15 +1,15 @@
 --!strict
--- Schema v4 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
+-- Schema v5 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
 -- Puro Luau (nenhuma API do Roblox): roda no CLI em sim/profile-contract.luau e no servidor.
 -- Regras: campo novo entra em newProfile E em sanitizeCurrent; campo desconhecido nunca e salvo
 -- (a whitelist roda em todo load); a chave do perfil e UserId, nunca nome; nada de PII no Data.
 
 local ProfileSchema = {}
 
-ProfileSchema.SCHEMA_VERSION = 4
+ProfileSchema.SCHEMA_VERSION = 5
 ProfileSchema.STORE_NAME = "MuralhaProfile_v1"
 ProfileSchema.SECONDS_PER_DAY = 86400
--- Versao de conteudo padrao do schema v4. O catalogo atual (TrapCatalog.CONTENT_VERSION)
+-- Versao de conteudo padrao do schema v5. O catalogo atual (TrapCatalog.CONTENT_VERSION)
 -- manda no gate de conteudo; o schema valida a faixa >= 1.
 ProfileSchema.DEFAULT_CONTENT_VERSION = 3
 
@@ -31,6 +31,9 @@ ProfileSchema.MAX_ID_LENGTH = 48
 ProfileSchema.CAMPAIGN_ACTS = 5
 ProfileSchema.CAMPAIGN_STAGES_PER_ACT = 5
 ProfileSchema.MAX_STAR_MASK = 7
+ProfileSchema.MAX_HORDE_CARDS = 64
+ProfileSchema.MAX_DECK_SQUADS = 8
+ProfileSchema.MAX_SQUAD_UNITS = 200
 
 ProfileSchema.ARENA = table.freeze({
 	xMin = 1000,
@@ -74,6 +77,33 @@ export type CampaignProgress = {
 	actMilestoneClaims: { [string]: number },
 }
 
+export type DeckSquad = {
+	cardId: string,
+	count: number,
+	laneMode: string,
+}
+
+export type BossCores = {
+	act1: boolean,
+	act2: boolean,
+	act3: boolean,
+	act4: boolean,
+	act5: boolean,
+}
+
+export type HordeProgress = {
+	starterChosen: boolean,
+	faction: string,
+	unlockedCards: { [string]: boolean },
+	shards: number,
+	bossCores: BossCores,
+	dailyPlunderDayId: number,
+	dailyPlunderCount: number,
+	squads: { DeckSquad },
+	championCardId: string?,
+	championLaneMode: string,
+}
+
 export type League = { points: number, season: number }
 
 export type Stats = {
@@ -95,6 +125,7 @@ export type Profile = {
 	cosmetics: { [string]: boolean },
 	equipped: Equipped,
 	campaign: CampaignProgress,
+	horde: HordeProgress,
 	stats: Stats,
 }
 
@@ -133,6 +164,7 @@ local TOP_FIELDS = {
 	"cosmetics",
 	"equipped",
 	"campaign",
+	"horde",
 	"stats",
 }
 local WALL_FIELDS = { "level", "gridWidth", "activeTrapLimit", "cells" }
@@ -145,6 +177,20 @@ local CAMPAIGN_FIELDS = {
 	"starsNightmare",
 	"actMilestoneClaims",
 }
+local HORDE_FIELDS = {
+	"starterChosen",
+	"faction",
+	"unlockedCards",
+	"shards",
+	"bossCores",
+	"dailyPlunderDayId",
+	"dailyPlunderCount",
+	"squads",
+	"championCardId",
+	"championLaneMode",
+}
+local BOSS_CORE_FIELDS = { "act1", "act2", "act3", "act4", "act5" }
+local SQUAD_FIELDS = { "cardId", "count", "laneMode" }
 local LEAGUE_FIELDS = { "points", "season" }
 local STATS_FIELDS = {
 	"raids",
@@ -169,8 +215,38 @@ local WALL_SET = fieldSet(WALL_FIELDS)
 local CELL_SET = fieldSet(CELL_FIELDS)
 local EQUIPPED_SET = fieldSet(EQUIPPED_FIELDS)
 local CAMPAIGN_SET = fieldSet(CAMPAIGN_FIELDS)
+local HORDE_SET = fieldSet(HORDE_FIELDS)
+local BOSS_CORE_SET = fieldSet(BOSS_CORE_FIELDS)
+local SQUAD_SET = fieldSet(SQUAD_FIELDS)
 local LEAGUE_SET = fieldSet(LEAGUE_FIELDS)
 local STATS_SET = fieldSet(STATS_FIELDS)
+
+local HORDE_FACTIONS: { [string]: boolean } = {
+	iron = true,
+	slag = true,
+	frost = true,
+	powder = true,
+	rift = true,
+}
+
+local LANE_MODES: { [string]: boolean } = {
+	center = true,
+	flanks = true,
+	split = true,
+	all = true,
+}
+
+local IRON_STARTER_UNLOCKED: { string } = {
+	"squad_runner_pack",
+	"squad_brute_guards",
+	"squad_iron_vanguard",
+}
+
+local IRON_STARTER_SQUADS: { DeckSquad } = {
+	{ cardId = "squad_iron_vanguard", count = 2, laneMode = "center" },
+	{ cardId = "squad_runner_pack", count = 2, laneMode = "flanks" },
+	{ cardId = "squad_brute_guards", count = 2, laneMode = "split" },
+}
 
 local function newEquipped(): Equipped
 	return {
@@ -197,6 +273,39 @@ local function newCampaign(): CampaignProgress
 	}
 end
 
+local function newHorde(): HordeProgress
+	local unlockedCards: { [string]: boolean } = {}
+	for _, cardId in ipairs(IRON_STARTER_UNLOCKED) do
+		unlockedCards[cardId] = true
+	end
+	local squads: { DeckSquad } = {}
+	for index, sq in ipairs(IRON_STARTER_SQUADS) do
+		squads[index] = {
+			cardId = sq.cardId,
+			count = sq.count,
+			laneMode = sq.laneMode,
+		}
+	end
+	return {
+		starterChosen = false,
+		faction = "iron",
+		unlockedCards = unlockedCards,
+		shards = 0,
+		bossCores = {
+			act1 = false,
+			act2 = false,
+			act3 = false,
+			act4 = false,
+			act5 = false,
+		},
+		dailyPlunderDayId = 0,
+		dailyPlunderCount = 0,
+		squads = squads,
+		championCardId = nil,
+		championLaneMode = "center",
+	}
+end
+
 local function newProfile(): Profile
 	return {
 		schemaVersion = ProfileSchema.SCHEMA_VERSION,
@@ -212,6 +321,7 @@ local function newProfile(): Profile
 		cosmetics = {},
 		equipped = newEquipped(),
 		campaign = newCampaign(),
+		horde = newHorde(),
 		stats = {
 			raids = 0,
 			defenses = 0,
@@ -565,6 +675,105 @@ local function validateCampaign(campaign: any): (boolean, string?)
 	return true, nil
 end
 
+local function validateHorde(horde: any): (boolean, string?)
+	if type(horde) ~= "table" then
+		return false, "horde ausente"
+	end
+	local okKeys, errKeys = checkForeignKeys(horde, HORDE_SET, "horde")
+	if not okKeys then
+		return false, errKeys
+	end
+	if type(horde.starterChosen) ~= "boolean" then
+		return false, "horde.starterChosen nao e boolean"
+	end
+	if type(horde.faction) ~= "string" or HORDE_FACTIONS[horde.faction] ~= true then
+		return false, "horde.faction invalido"
+	end
+	if type(horde.unlockedCards) ~= "table" then
+		return false, "horde.unlockedCards ausente"
+	end
+	local cardCount = 0
+	for cardId, unlocked in pairs(horde.unlockedCards) do
+		cardCount += 1
+		if cardCount > ProfileSchema.MAX_HORDE_CARDS then
+			return false, "horde.unlockedCards acima de " .. tostring(ProfileSchema.MAX_HORDE_CARDS)
+		end
+		if not isIdString(cardId, ProfileSchema.MAX_ID_LENGTH) then
+			return false, "horde.unlockedCards: chave invalida (" .. tostring(cardId) .. ")"
+		end
+		if type(unlocked) ~= "boolean" then
+			return false, "horde.unlockedCards." .. tostring(cardId) .. " nao e boolean"
+		end
+	end
+	if not isFiniteInteger(horde.shards) or (horde.shards :: number) < 0 then
+		return false, "horde.shards invalido"
+	end
+	if type(horde.bossCores) ~= "table" then
+		return false, "horde.bossCores ausente"
+	end
+	local okCores, errCores = checkForeignKeys(horde.bossCores, BOSS_CORE_SET, "horde.bossCores")
+	if not okCores then
+		return false, errCores
+	end
+	for _, coreKey in ipairs(BOSS_CORE_FIELDS) do
+		if type(horde.bossCores[coreKey]) ~= "boolean" then
+			return false, "horde.bossCores." .. coreKey .. " nao e boolean"
+		end
+	end
+	if not isFiniteInteger(horde.dailyPlunderDayId) or (horde.dailyPlunderDayId :: number) < 0 then
+		return false, "horde.dailyPlunderDayId invalido"
+	end
+	if not isFiniteInteger(horde.dailyPlunderCount) or (horde.dailyPlunderCount :: number) < 0 then
+		return false, "horde.dailyPlunderCount invalido"
+	end
+	if type(horde.squads) ~= "table" then
+		return false, "horde.squads ausente"
+	end
+	local rawSquadCount = 0
+	for k in pairs(horde.squads) do
+		rawSquadCount += 1
+		if not isFiniteInteger(k) or (k :: number) < 1 then
+			return false, "horde.squads: chave invalida"
+		end
+	end
+	if rawSquadCount ~= #horde.squads or #horde.squads > ProfileSchema.MAX_DECK_SQUADS then
+		return false, "horde.squads formato ou tamanho invalido"
+	end
+	for index, squad in ipairs(horde.squads) do
+		if type(squad) ~= "table" then
+			return false, "horde.squads[" .. tostring(index) .. "] nao e tabela"
+		end
+		local okSquad, errSquad =
+			checkForeignKeys(squad, SQUAD_SET, "horde.squads[" .. tostring(index) .. "]")
+		if not okSquad then
+			return false, errSquad
+		end
+		if not isIdString(squad.cardId, ProfileSchema.MAX_ID_LENGTH) then
+			return false, "horde.squads[" .. tostring(index) .. "].cardId invalido"
+		end
+		if
+			not isFiniteInteger(squad.count)
+			or (squad.count :: number) < 0
+			or (squad.count :: number) > ProfileSchema.MAX_SQUAD_UNITS
+		then
+			return false, "horde.squads[" .. tostring(index) .. "].count invalido"
+		end
+		if type(squad.laneMode) ~= "string" or LANE_MODES[squad.laneMode] ~= true then
+			return false, "horde.squads[" .. tostring(index) .. "].laneMode invalido"
+		end
+	end
+	if
+		horde.championCardId ~= nil
+		and not isIdString(horde.championCardId, ProfileSchema.MAX_ID_LENGTH)
+	then
+		return false, "horde.championCardId invalido"
+	end
+	if type(horde.championLaneMode) ~= "string" or LANE_MODES[horde.championLaneMode] ~= true then
+		return false, "horde.championLaneMode invalido"
+	end
+	return true, nil
+end
+
 local function validateLeague(league: any): (boolean, string?)
 	if type(league) ~= "table" then
 		return false, "league ausente"
@@ -622,7 +831,7 @@ local function validateStats(stats: any): (boolean, string?)
 	return true, nil
 end
 
--- Valida o perfil inteiro contra o schema v4. Retorna (ok, erro) em vez de lancar: o chamador
+-- Valida o perfil inteiro contra o schema v5. Retorna (ok, erro) em vez de lancar: o chamador
 -- decide entre migrar, descartar ou recusar a sessao.
 function ProfileSchema.validate(data: any): (boolean, string?)
 	if type(data) ~= "table" then
@@ -672,6 +881,10 @@ function ProfileSchema.validate(data: any): (boolean, string?)
 	local okCampaign, errCampaign = validateCampaign(data.campaign)
 	if not okCampaign then
 		return false, errCampaign
+	end
+	local okHorde, errHorde = validateHorde(data.horde)
+	if not okHorde then
+		return false, errHorde
 	end
 	local okStats, errStats = validateStats(data.stats)
 	if not okStats then
@@ -786,7 +999,7 @@ local function sanitizeStarsMap(raw: any): { [string]: number }
 	return out
 end
 
--- Reconstroi um perfil v4 valido a partir de qualquer tabela: so entra o que o schema
+-- Reconstroi um perfil v5 valido a partir de qualquer tabela: so entra o que o schema
 -- reconhece e cabe na faixa. E o que roda em todo load, entao lixo/PII nunca e persistido.
 local function sanitizeCurrent(data: any): Profile
 	local profile = newProfile()
@@ -828,6 +1041,93 @@ local function sanitizeCurrent(data: any): Profile
 						clampInt(val :: number, 0, ProfileSchema.MAX_STAR_MASK)
 				end
 			end
+		end
+	end
+
+	local rawHorde = data.horde
+	if type(rawHorde) == "table" then
+		if type(rawHorde.starterChosen) == "boolean" then
+			profile.horde.starterChosen = rawHorde.starterChosen
+		end
+		if type(rawHorde.faction) == "string" and HORDE_FACTIONS[rawHorde.faction] == true then
+			profile.horde.faction = rawHorde.faction
+		end
+		if type(rawHorde.unlockedCards) == "table" then
+			local cardKeys: { string } = {}
+			for key in pairs(rawHorde.unlockedCards) do
+				if type(key) == "string" then
+					table.insert(cardKeys, key :: string)
+				end
+			end
+			table.sort(cardKeys)
+			local nextUnlocked: { [string]: boolean } = {}
+			local copiedCards = 0
+			for _, cardId in ipairs(cardKeys) do
+				if copiedCards >= ProfileSchema.MAX_HORDE_CARDS then
+					break
+				end
+				if
+					isIdString(cardId, ProfileSchema.MAX_ID_LENGTH)
+					and type(rawHorde.unlockedCards[cardId]) == "boolean"
+				then
+					nextUnlocked[cardId] = rawHorde.unlockedCards[cardId] :: boolean
+					copiedCards += 1
+				end
+			end
+			profile.horde.unlockedCards = nextUnlocked
+		end
+		if isFiniteInteger(rawHorde.shards) then
+			profile.horde.shards = clampInt(rawHorde.shards :: number, 0, ProfileSchema.MAX_COUNTER)
+		end
+		if type(rawHorde.bossCores) == "table" then
+			for _, coreKey in ipairs(BOSS_CORE_FIELDS) do
+				if type(rawHorde.bossCores[coreKey]) == "boolean" then
+					(profile.horde.bossCores :: any)[coreKey] =
+						rawHorde.bossCores[coreKey] :: boolean
+				end
+			end
+		end
+		if isFiniteInteger(rawHorde.dailyPlunderDayId) then
+			profile.horde.dailyPlunderDayId =
+				clampInt(rawHorde.dailyPlunderDayId :: number, 0, ProfileSchema.MAX_COUNTER)
+		end
+		if isFiniteInteger(rawHorde.dailyPlunderCount) then
+			profile.horde.dailyPlunderCount =
+				clampInt(rawHorde.dailyPlunderCount :: number, 0, ProfileSchema.MAX_COUNTER)
+		end
+		if type(rawHorde.squads) == "table" then
+			local sanitizedSquads: { DeckSquad } = {}
+			for _, sq in ipairs(rawHorde.squads) do
+				if #sanitizedSquads >= ProfileSchema.MAX_DECK_SQUADS then
+					break
+				end
+				if
+					type(sq) == "table"
+					and isIdString(sq.cardId, ProfileSchema.MAX_ID_LENGTH)
+					and isFiniteInteger(sq.count)
+					and type(sq.laneMode) == "string"
+					and LANE_MODES[sq.laneMode] == true
+				then
+					table.insert(sanitizedSquads, {
+						cardId = sq.cardId :: string,
+						count = clampInt(sq.count :: number, 0, ProfileSchema.MAX_SQUAD_UNITS),
+						laneMode = sq.laneMode :: string,
+					})
+				end
+			end
+			profile.horde.squads = sanitizedSquads
+		end
+		if
+			rawHorde.championCardId ~= nil
+			and isIdString(rawHorde.championCardId, ProfileSchema.MAX_ID_LENGTH)
+		then
+			profile.horde.championCardId = rawHorde.championCardId :: string
+		end
+		if
+			type(rawHorde.championLaneMode) == "string"
+			and LANE_MODES[rawHorde.championLaneMode] == true
+		then
+			profile.horde.championLaneMode = rawHorde.championLaneMode :: string
 		end
 	end
 
@@ -901,6 +1201,7 @@ local function sanitizeV1(data: any): any
 	profile.contentVersion = nil
 	profile.equipped = nil
 	profile.campaign = nil
+	profile.horde = nil
 	profile.wall = {
 		gridWidth = ProfileSchema.GRID_WIDTH,
 		activeTrapLimit = ProfileSchema.ACTIVE_TRAP_LIMIT,
@@ -1070,7 +1371,23 @@ MIGRATIONS[3] = function(data: any): any
 	return copy
 end
 
--- Migra e devolve um perfil v4 valido. Versao futura (build mais novo) e recusada: nao
+-- 4 -> 5: adiciona progresso de horda e deck ("5 Hordas") de forma neutra e aditiva.
+-- Preserva 100% wall, gold, league, cosmetics, equipped, campaign e stats sem alterar o hash da muralha.
+MIGRATIONS[4] = function(data: any): any
+	local copy: any = {}
+	if type(data) == "table" then
+		for key, value in pairs(data) do
+			copy[key] = value
+		end
+	end
+	if type(copy.horde) ~= "table" then
+		copy.horde = newHorde()
+	end
+	copy.schemaVersion = 5
+	return copy
+end
+
+-- Migra e devolve um perfil v5 valido. Versao futura (build mais novo) e recusada: nao
 -- sobrescrever dado que este servidor nao entende. Nunca muta a tabela recebida.
 function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, string?)
 	local version: number

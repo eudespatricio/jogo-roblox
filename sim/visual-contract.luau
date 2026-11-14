@@ -71,15 +71,15 @@ check("trap: 5 tipos com paridade de cor e rotulo com GridLayout", function()
 	end
 end)
 
-check("horda: 6 silhuetas cosmeticas distintas", function()
+check("horda: 8 silhuetas cosmeticas distintas (6 terrestres + wisp + drake)", function()
 	local ids = VisualTheme.enemyIds()
-	assert(#ids == 6, "esperava 6 tipos de horda, achei " .. tostring(#ids))
+	assert(#ids == 8, "esperava 8 tipos de horda, achei " .. tostring(#ids))
 	local labels = {}
 	for _, id in ipairs(ids) do
 		local spec = VisualTheme.ENEMIES[id]
 		assert(spec ~= nil, "enemy sem spec: " .. id)
 		assert(spec.label ~= nil and #spec.label > 0, "rotulo ausente: " .. id)
-		assert(spec.parts >= 4 and spec.parts <= 10, "pecas: " .. id)
+		assert(spec.parts >= 4 and spec.parts <= 12, "pecas: " .. id)
 		assert(spec.scale > 0, "escala: " .. id)
 		assert(not labels[spec.label], "rotulo duplicado: " .. spec.label)
 		labels[spec.label] = true
@@ -109,6 +109,7 @@ end)
 check("orcamentos: traps/unidades/arena/VFX", function()
 	assert(VisualTheme.BUDGET.trapParts <= 12, "trapParts")
 	assert(VisualTheme.BUDGET.unitParts <= 8, "unitParts")
+	assert(VisualTheme.BUDGET.flyingUnitParts <= 12, "flyingUnitParts")
 	assert(VisualTheme.BUDGET.arenaParts <= 185, "arenaParts")
 	assert(VisualTheme.BUDGET.maxUnits <= 150, "maxUnits")
 	assert(VisualTheme.BUDGET.drawCalls <= 500, "drawCalls")
@@ -141,18 +142,84 @@ check("materiais e tons: shade nao estoura a faixa", function()
 	end
 end)
 
-check("horda: orcamento unitParts <= 8 em todas as silhuetas", function()
+check("horda: orcamento unitParts <= 8 (terrestres/wisp) e <= 12 (drake voador)", function()
 	for id, spec in pairs(VisualTheme.ENEMIES) do
+		local maxParts = if id == "drake"
+			then VisualTheme.BUDGET.flyingUnitParts
+			else VisualTheme.BUDGET.unitParts
 		assert(
-			spec.parts <= VisualTheme.BUDGET.unitParts,
-			string.format(
-				"%s excede unitParts: %d > %d",
-				id,
-				spec.parts,
-				VisualTheme.BUDGET.unitParts
-			)
+			spec.parts <= maxParts,
+			string.format("%s excede orcamento de partes: %d > %d", id, spec.parts, maxParts)
 		)
 	end
+end)
+
+check("horda aerea e campeao: wisp/drake flying, hover +3.2 studs e crista 1.28x", function()
+	local wisp = VisualTheme.ENEMIES.wisp
+	local drake = VisualTheme.ENEMIES.drake
+	assert(wisp ~= nil and wisp.flying == true, "wisp deve ter flying=true")
+	assert(drake ~= nil and drake.flying == true, "drake deve ter flying=true")
+	assert(wisp.parts <= VisualTheme.AERIAL.wispMaxParts, "wisp acima de 8 partes")
+	assert(drake.parts <= VisualTheme.AERIAL.drakeMaxParts, "drake acima de 12 partes")
+
+	for _, groundId in ipairs({ "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }) do
+		local spec = VisualTheme.ENEMIES[groundId]
+		assert(spec ~= nil and spec.flying ~= true, groundId .. " nao deveria voar")
+	end
+
+	assert(close(VisualTheme.AERIAL.hoverY, 3.2), "hoverY esperado 3.2")
+	assert(
+		close(
+			VisualTheme.aerialHoverOffset(false, 0, PortalThemes.THROAT_X, PortalThemes.ENTRY_X),
+			0
+		),
+		"terrestre nao deve ter hover"
+	)
+	assert(
+		close(
+			VisualTheme.aerialHoverOffset(
+				true,
+				PortalThemes.THROAT_X,
+				PortalThemes.THROAT_X,
+				PortalThemes.ENTRY_X
+			),
+			0
+		),
+		"hover na garganta do portal deve ser 0"
+	)
+	assert(
+		close(
+			VisualTheme.aerialHoverOffset(
+				true,
+				PortalThemes.ENTRY_X,
+				PortalThemes.THROAT_X,
+				PortalThemes.ENTRY_X
+			),
+			3.2
+		),
+		"hover em ENTRY_X deve ser +3.2"
+	)
+	assert(
+		close(
+			VisualTheme.aerialHoverOffset(true, -10, PortalThemes.THROAT_X, PortalThemes.ENTRY_X),
+			3.2
+		),
+		"hover na arena deve permanecer +3.2"
+	)
+	local prevHover = 0
+	for step = 1, 10 do
+		local x = PortalThemes.THROAT_X
+			+ (PortalThemes.ENTRY_X - PortalThemes.THROAT_X) * (step / 10)
+		local h =
+			VisualTheme.aerialHoverOffset(true, x, PortalThemes.THROAT_X, PortalThemes.ENTRY_X)
+		assert(h >= prevHover, "rampa de hover nao monotona")
+		prevHover = h
+	end
+
+	assert(close(VisualTheme.CHAMPION.scale, 1.28), "escala de Campeao esperada 1.28")
+	assert(VisualTheme.CHAMPION.crestParts >= 1, "Champion crestParts ausente")
+	assert(#VisualTheme.CHAMPION.haloColor == 3, "haloColor RGB")
+	assert(#VisualTheme.CHAMPION.accentColor == 3, "accentColor RGB")
 end)
 
 check("tiles 3D e chevron: 25 tiles e chevron >= 0.6", function()

@@ -1,5 +1,5 @@
 --!nonstrict
--- Contrato de i18n (S8.2.6): paridade byte-a-byte com assets/i18n/LocalizationTable.csv (77 chaves),
+-- Contrato de i18n (S8.2.6): paridade byte-a-byte com assets/i18n/LocalizationTable.csv (133 chaves),
 -- resolveLocale, toAnalyticsLocale, placeholders e helpers de armadilha/unidade.
 -- Roda no Luau CLI: luau sim/i18n-contract.luau
 local I18n = require("../src/shared/i18n/I18n")
@@ -16,7 +16,7 @@ local function check(name, fn)
 	end
 end
 
--- Espelho exato das 77 linhas de assets/i18n/LocalizationTable.csv (Source=pt, en, es).
+-- Espelho exato das 133 linhas de assets/i18n/LocalizationTable.csv (Source=pt, en, es).
 local EXPECTED_CSV = {
 	game_title = { "A MURALHA", "WALLBREAKER", "LA MURALLA" },
 	subtitle_architect = {
@@ -187,6 +187,130 @@ local EXPECTED_CSV = {
 		"ATURDIDO (+30% DAÑO)",
 	},
 	boss_enrage_tag = { "FÚRIA DO CHEFE", "BOSS ENRAGED", "FURIA DEL JEFE" },
+	cta_horde = { "HORDA", "HORDE", "HORDA" },
+	unit_wisp = { "ESPECTRO", "WISP", "ESPECTRO" },
+	unit_drake = { "DRACONATO", "DRAKE", "DRACO" },
+	deck_faction_iron = { "Ferro", "Iron", "Hierro" },
+	deck_faction_slag = { "Escória", "Slag", "Escoria" },
+	deck_faction_frost = { "Gelo", "Frost", "Hielo" },
+	deck_faction_powder = { "Pólvora", "Powder", "Pólvora" },
+	deck_faction_rift = { "Fenda", "Rift", "Grieta" },
+	deck_rarity_common = { "Comum", "Common", "Común" },
+	deck_rarity_rare = { "Rara", "Rare", "Rara" },
+	deck_rarity_epic = { "Épica", "Epic", "Épica" },
+	deck_rarity_legendary = { "Lendária", "Legendary", "Legendaria" },
+	deck_rarity_mythic = { "Mítica", "Mythic", "Mítica" },
+	deck_card_squad_runner_pack = {
+		"Bando de Corredores",
+		"Runner Pack",
+		"Manada de Corredores",
+	},
+	deck_card_squad_swarm_brood = {
+		"Ninhada do Enxame",
+		"Swarm Brood",
+		"Camada de Enjambre",
+	},
+	deck_card_squad_brute_guards = {
+		"Guardas Brutos",
+		"Brute Guards",
+		"Guardias Brutos",
+	},
+	deck_card_squad_iron_vanguard = {
+		"Vanguarda de Ferro",
+		"Iron Vanguard",
+		"Vanguardia de Hierro",
+	},
+	deck_card_squad_slag_pyros = {
+		"Piroclastas de Escória",
+		"Slag Pyros",
+		"Piros de Escoria",
+	},
+	deck_card_squad_sapper_team = {
+		"Equipe de Sapadores",
+		"Sapper Team",
+		"Equipo de Zapadores",
+	},
+	deck_card_squad_rift_wisps = {
+		"Espectros da Fenda",
+		"Rift Wisps",
+		"Espectros de la Grieta",
+	},
+	deck_card_squad_sky_drakes = {
+		"Dracos Celestes",
+		"Sky Drakes",
+		"Dracos Celestes",
+	},
+	deck_card_champ_iron_ram = {
+		"Arietão Blindado",
+		"Armored Iron Ram",
+		"Ariete Blindado",
+	},
+	deck_card_champ_slag_lord = {
+		"Lorde de Escória",
+		"Slag Juggernaut",
+		"Señor de Escoria",
+	},
+	deck_card_champ_frost_matriarch = {
+		"Matriarca Glacial",
+		"Rime Matriarch",
+		"Matriarca Glacial",
+	},
+	deck_card_champ_powder_baron = {
+		"Barão da Pólvora",
+		"Powder Baron",
+		"Barón de la Pólvora",
+	},
+	deck_card_champ_rift_archon = {
+		"Arconte da Fenda",
+		"Rift Titan",
+		"Titán de la Grieta",
+	},
+	deck_lane_center = { "Centro", "Center", "Centro" },
+	deck_lane_flanks = { "Flancos", "Flanks", "Flancos" },
+	deck_lane_split = { "Divisão", "Split", "División" },
+	deck_lane_all = { "Todas", "All Lanes", "Todos" },
+	deck_stat_ground = { "Solo", "Ground", "Tierra" },
+	deck_stat_air = { "Aéreo", "Air", "Aéreo" },
+	deck_stat_armor = { "Armadura", "Armor", "Armadura" },
+	deck_stat_speed = { "Velocidade", "Speed", "Velocidad" },
+	deck_champ_survived = {
+		"Campeão Sobreviveu (+25% Ouro)",
+		"Champion Survived (+25% Gold)",
+		"Campeón Sobrevivió (+25% Oro)",
+	},
+	deck_champ_hunted = { "Campeão Abatido", "Champion Hunted", "Campeón Abatido" },
+	deck_reward_shard = { "+%d Estilhaços", "+%d Shards", "+%d Fragmentos" },
+	deck_reward_core = { "+%d Núcleo de Chefe", "+%d Boss Core", "+%d Núcleo de Jefe" },
+	deck_title = { "FORJA DA HORDA", "HORDE FORGE", "FORJA DE LA HORDA" },
+	deck_choose_faction = { "ESCOLHA SUA FACÇÃO", "CHOOSE YOUR FACTION", "ELIGE TU FACCIÓN" },
+	deck_confirm_faction = { "CONFIRMAR FACÇÃO", "CONFIRM FACTION", "CONFIRMAR FACCIÓN" },
+	deck_squads_title = { "ESQUADRÕES", "SQUADS", "ESCUADRONES" },
+	deck_forge_vault = { "COFRE DE RELÍQUIAS", "RELIC VAULT", "CÁMARA DE RELIQUIAS" },
+	deck_supply_label = { "Suprimento: %d/%d", "Supply: %d/%d", "Suministro: %d/%d" },
+	deck_shards_label = { "%d Estilhaços", "%d Shards", "%d Fragmentos" },
+	deck_champion_row = { "CAMPEÃO MÍTICO", "MYTHIC CHAMPION", "CAMPEÓN MÍTICO" },
+	deck_champion_hint = {
+		"Aposta: +25% Ouro e Estilhaço se sobreviver",
+		"Bet: +25% Gold & Shard if survived",
+		"Apuesta: +25% Oro y Fragmento si sobrevive",
+	},
+	deck_unlock_btn = { "DESBLOQUEAR", "UNLOCK", "DESBLOQUEAR" },
+	deck_unlocked_badge = { "DESBLOQUEADA", "UNLOCKED", "DESBLOQUEADA" },
+	deck_save_btn = { "SALVAR HORDA", "SAVE HORDE", "GUARDAR HORDA" },
+	deck_saved_toast = {
+		"Horda salva com sucesso!",
+		"Horde saved successfully!",
+		"¡Horda guardada con éxito!",
+	},
+	deck_cost_fmt = { "%dg + %d Estilhaços", "%dg + %d Shards", "%dg + %d Fragmentos" },
+	deck_requires_core = {
+		"Requer Núcleo do Ato %d",
+		"Requires Act %d Core",
+		"Requiere Núcleo del Acto %d",
+	},
+	deck_squad_vanguard = { "Vanguarda", "Vanguard", "Vanguardia" },
+	deck_squad_pressure = { "Pressão", "Pressure", "Presión" },
+	deck_squad_assault = { "Assalto", "Assault", "Asalto" },
 }
 
 local function extractPlaceholders(text)
@@ -225,14 +349,14 @@ check("todas as 77 chaves existem e batem byte-a-byte com o CSV", function()
 			string.format("%s [es]: '%s' != '%s'", key, tostring(entry.es), cols[3])
 		)
 	end
-	assert(expectedCount == 77, "esperava 77 chaves esperadas, achei " .. tostring(expectedCount))
+	assert(expectedCount == 133, "esperava 133 chaves esperadas, achei " .. tostring(expectedCount))
 
 	local actualCount = 0
 	for key in pairs(I18n.TABLE) do
 		actualCount += 1
 		assert(EXPECTED_CSV[key] ~= nil, "chave extra em I18n.TABLE: " .. key)
 	end
-	assert(actualCount == 77, "esperava 77 chaves em I18n.TABLE, achei " .. tostring(actualCount))
+	assert(actualCount == 133, "esperava 133 chaves em I18n.TABLE, achei " .. tostring(actualCount))
 end)
 
 check("placeholders identicos entre pt, en e es", function()
@@ -354,6 +478,9 @@ check("I18n.t formata placeholders e resolve locale bruto", function()
 		I18n.t("pt", "diag_runner_lane", 1) == "Corredor na 1: Arqueiro c2 + Piche.",
 		"pt diag_runner"
 	)
+	assert(I18n.t("pt", "cta_horde") == "HORDA", "pt cta_horde")
+	assert(I18n.t("en", "cta_horde") == "HORDE", "en cta_horde")
+	assert(I18n.t("es", "cta_horde") == "HORDA", "es cta_horde")
 	assert(I18n.t("pt", "chave_inexistente") == "chave_inexistente", "fallback chave desconhecida")
 end)
 
@@ -372,7 +499,16 @@ check("trapName, trapVerb e unitName cobrem todo o catalogo", function()
 			)
 		end
 	end
-	for _, unitId in ipairs({ "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }) do
+	for _, unitId in ipairs({
+		"runner",
+		"brute",
+		"swarm",
+		"shieldbearer",
+		"pyromancer",
+		"sapper",
+		"wisp",
+		"drake",
+	}) do
 		for _, locale in ipairs(I18n.LOCALES) do
 			local name = I18n.unitName(locale, unitId)
 			assert(
@@ -384,6 +520,8 @@ check("trapName, trapVerb e unitName cobrem todo o catalogo", function()
 	assert(I18n.trapName("en", "cannon") == "CANNON", "trapName cannon")
 	assert(I18n.trapName("es", "tar") == "BREA", "trapName tar es")
 	assert(I18n.unitName("es", "swarm") == "Enjambre", "unitName swarm es")
+	assert(I18n.unitName("en", "wisp") == "WISP", "unitName wisp")
+	assert(I18n.unitName("pt", "drake") == "DRACONATO", "unitName drake")
 	assert(I18n.trapName("pt", "unknown_trap") == "unknown_trap", "fallback trapName")
 	assert(I18n.trapVerb("pt", "unknown_trap") == "", "fallback trapVerb")
 	assert(I18n.unitName("pt", "unknown_unit") == "unknown_unit", "fallback unitName")

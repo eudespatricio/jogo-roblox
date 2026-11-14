@@ -6,7 +6,15 @@
 local bit32 = bit32
 
 export type DifficultyMode = "normal" | "nightmare"
-export type UnitKind = "runner" | "brute" | "swarm" | "shieldbearer" | "pyromancer" | "sapper"
+export type UnitKind =
+	"runner"
+	| "brute"
+	| "swarm"
+	| "shieldbearer"
+	| "pyromancer"
+	| "sapper"
+	| "wisp"
+	| "drake"
 export type BossId =
 	"iron_ram_colossus"
 	| "slag_juggernaut"
@@ -554,6 +562,7 @@ local RAW_STAGES: { CampaignStageSpec } = {
 		waves = {
 			slice(10, 28, 6, "shieldbearer", LANE_MID3, true),
 			slice(160, 24, 8, "pyromancer", LANE_ODD, false),
+			slice(240, 32, 3, "drake", LANE_FLANKS, false),
 			slice(310, 22, 8, "sapper", LANE_FLANKS, false),
 		},
 		rewardGoldFirst = 110,
@@ -785,6 +794,7 @@ local RAW_STAGES: { CampaignStageSpec } = {
 		waves = {
 			slice(10, 28, 5, "brute", LANE_MID3, false),
 			slice(150, 26, 6, "sapper", LANE_EVEN, true),
+			slice(220, 24, 4, "wisp", LANE_FLANKS, false),
 			slice(290, 28, 5, "shieldbearer", LANE_R3, false),
 		},
 		rewardGoldFirst = 165,
@@ -810,6 +820,7 @@ local RAW_STAGES: { CampaignStageSpec } = {
 		waves = {
 			slice(10, 28, 6, "shieldbearer", LANE_MID3, true),
 			slice(160, 26, 6, "pyromancer", LANE_ODD, true),
+			slice(230, 22, 4, "wisp", LANE_FLANKS, false),
 			slice(300, 24, 6, "sapper", LANE_FLANKS, false),
 		},
 		rewardGoldFirst = 180,

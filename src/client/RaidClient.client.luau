@@ -365,14 +365,14 @@ local resultTitle = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.amberBright),
 	Enum.Font.GothamBlack
 )
-resultTitle.Position = UDim2.fromOffset(14, 10)
-resultTitle.Size = UDim2.new(1, -28, 0, 32)
+resultTitle.Position = UDim2.fromOffset(14, 8)
+resultTitle.Size = UDim2.new(1, -28, 0, 28)
 resultTitle.TextXAlignment = Enum.TextXAlignment.Center
 resultTitle.TextScaled = true
 resultTitle.ZIndex = 19
 
 local resultCoin = UiKit.iconCoin(resultCard, 20)
-resultCoin.Position = UDim2.fromOffset(16, 52)
+resultCoin.Position = UDim2.fromOffset(16, 42)
 resultCoin.ZIndex = 19
 
 local details = UiKit.label(
@@ -382,15 +382,15 @@ local details = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.parchment),
 	Enum.Font.GothamBold
 )
-details.Position = UDim2.fromOffset(42, 48)
-details.Size = UDim2.new(1, -56, 0, 28)
+details.Position = UDim2.fromOffset(42, 40)
+details.Size = UDim2.new(1, -56, 0, 24)
 details.TextYAlignment = Enum.TextYAlignment.Center
 details.TextWrapped = true
 details.TextScaled = true
 details.ZIndex = 19
 local detailsCap = Instance.new("UITextSizeConstraint")
 detailsCap.MinTextSize = 10
-detailsCap.MaxTextSize = 16
+detailsCap.MaxTextSize = 15
 detailsCap.Parent = details
 
 local hashLabel = UiKit.label(
@@ -400,8 +400,8 @@ local hashLabel = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.stone),
 	Enum.Font.Code
 )
-hashLabel.Position = UDim2.fromOffset(14, 80)
-hashLabel.Size = UDim2.new(1, -28, 0, 18)
+hashLabel.Position = UDim2.fromOffset(14, 66)
+hashLabel.Size = UDim2.new(1, -28, 0, 16)
 hashLabel.TextXAlignment = Enum.TextXAlignment.Center
 hashLabel.TextScaled = true
 hashLabel.ZIndex = 19
@@ -409,6 +409,57 @@ local hashCap = Instance.new("UITextSizeConstraint")
 hashCap.MinTextSize = 9
 hashCap.MaxTextSize = 12
 hashCap.Parent = hashLabel
+
+local function makeRewardPill(parent: Instance, name: string, strokeColor: Color3): TextLabel
+	local pill = Instance.new("TextLabel")
+	pill.Name = name
+	pill.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+	pill.BackgroundTransparency = 0.08
+	pill.BorderSizePixel = 0
+	pill.Text = ""
+	pill.TextColor3 = UiKit.color(VisualTheme.PALETTE.parchment)
+	pill.Font = Enum.Font.GothamBlack
+	pill.TextScaled = true
+	pill.TextWrapped = false
+	pill.Visible = false
+	pill.ZIndex = 19
+	pill.Parent = parent
+	UiKit.corner(pill, 6)
+	UiKit.stroke(pill, strokeColor, 1.5, 0.15)
+	local cap = Instance.new("UITextSizeConstraint")
+	cap.MinTextSize = 8
+	cap.MaxTextSize = 11
+	cap.Parent = pill
+	return pill
+end
+
+local champBetPill =
+	makeRewardPill(resultCard, "ChampBetPill", UiKit.color(VisualTheme.PALETTE.amberBright))
+champBetPill.Position = UDim2.fromOffset(14, 86)
+champBetPill.Size = UDim2.new(1, -28, 0, 18)
+
+local dropBadgesRow = Instance.new("Frame")
+dropBadgesRow.Name = "DropBadgesRow"
+dropBadgesRow.Position = UDim2.fromOffset(14, 106)
+dropBadgesRow.Size = UDim2.new(1, -28, 0, 18)
+dropBadgesRow.BackgroundTransparency = 1
+dropBadgesRow.ZIndex = 19
+dropBadgesRow.Parent = resultCard
+
+local dropBadgesLayout = Instance.new("UIListLayout")
+dropBadgesLayout.FillDirection = Enum.FillDirection.Horizontal
+dropBadgesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+dropBadgesLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+dropBadgesLayout.Padding = UDim.new(0, 6)
+dropBadgesLayout.Parent = dropBadgesRow
+
+local shardBadge =
+	makeRewardPill(dropBadgesRow, "ShardBadge", UiKit.color(VisualTheme.PALETTE.teal))
+shardBadge.Size = UDim2.new(0.48, -3, 1, 0)
+
+local coreBadge =
+	makeRewardPill(dropBadgesRow, "CoreBadge", UiKit.color(VisualTheme.PALETTE.amberBright))
+coreBadge.Size = UDim2.new(0.48, -3, 1, 0)
 
 local replayButton = UiKit.button(resultCard, "Replay", "REPLAY")
 replayButton.Position = UDim2.new(0, 14, 1, -54)
@@ -561,6 +612,7 @@ end)
 type UnitLifecycle = {
 	id: number,
 	kind: string,
+	isChampion: boolean,
 	lane: number,
 	firstIdx: number,
 	firstX: number,
@@ -612,6 +664,9 @@ local function themeRgb(c: { number }): Color3
 end
 
 local function resolvePortalThemeKey(result: any): PortalThemes.PortalThemeId
+	if type(result.portalTheme) == "string" and PortalThemes.THEMES[result.portalTheme] ~= nil then
+		return result.portalTheme :: PortalThemes.PortalThemeId
+	end
 	if result.mode == "campaign" then
 		local actHint = if type(result.matchup) == "table"
 				and type(result.matchup.card2) == "table"
@@ -758,12 +813,15 @@ local function buildFrames(result: any): (any, any)
 	local capturedSpawn: { [number]: boolean } = {}
 	local function snapshot()
 		local unitsFrame = {}
+		local champArr = (battle :: any).uIsChampion
 		for index = 1, battle.uCount do
+			local isChamp = type(champArr) == "table" and champArr[index] == true
 			if battle.uHp[index] > 0 then
 				capturedSpawn[index] = true
 				unitsFrame[#unitsFrame + 1] = {
 					id = index,
 					kind = battle.uType[index] or kindFromSpeed(battle.uBaseSpeed[index]),
+					isChampion = isChamp,
 					lane = battle.uLane[index],
 					x = battle.uX[index],
 					y = battle.uY[index],
@@ -779,6 +837,7 @@ local function buildFrames(result: any): (any, any)
 				unitsFrame[#unitsFrame + 1] = {
 					id = index,
 					kind = kind,
+					isChampion = isChamp,
 					lane = battle.uLane[index],
 					x = Core.ARENA.spawnX,
 					y = battle.uY[index],
@@ -901,6 +960,7 @@ local function buildScene(result: any, frames: { any }): ()
 	type RawUnitTrack = {
 		id: number,
 		kind: string,
+		isChampion: boolean,
 		lane: number,
 		firstIdx: number,
 		firstX: number,
@@ -922,6 +982,7 @@ local function buildScene(result: any, frames: { any }): ()
 					tracks[id] = {
 						id = id,
 						kind = unitData.kind,
+						isChampion = unitData.isChampion == true,
 						lane = lane,
 						firstIdx = frameIdx,
 						firstX = ux,
@@ -934,6 +995,9 @@ local function buildScene(result: any, frames: { any }): ()
 					existing.lastIdx = frameIdx
 					existing.lastX = ux
 					existing.lastY = uy
+					if unitData.isChampion == true then
+						existing.isChampion = true
+					end
 					if unitData.spawnKilled ~= true then
 						existing.spawnKilled = false
 					end
@@ -979,6 +1043,7 @@ local function buildScene(result: any, frames: { any }): ()
 			unitLifecycle[id] = {
 				id = id,
 				kind = track.kind,
+				isChampion = track.isChampion,
 				lane = track.lane,
 				firstIdx = track.firstIdx,
 				firstX = track.firstX,
@@ -990,7 +1055,13 @@ local function buildScene(result: any, frames: { any }): ()
 				visualDeathIdx = visualDeathIdx,
 				arenaDeathX = arenaDeathX,
 			}
-			local unit = HordeKit.create(track.kind, newScene, CFrame.new(portalSpawnOrigin), id)
+			local unit = HordeKit.create(
+				track.kind,
+				newScene,
+				CFrame.new(portalSpawnOrigin),
+				id,
+				track.isChampion
+			)
 			if unit ~= nil then
 				HordeKit.setApproachScale(unit, PortalThemes.MIN_SCALE)
 				HordeKit.setVisible(unit, false)
@@ -1185,14 +1256,20 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 						unitData.kind,
 						activeScene,
 						CFrame.new(RAID_ORIGIN + Vector3.new(PortalThemes.THROAT_X, FLOOR_TOP_Y, 0)),
-						id
+						id,
+						unitData.isChampion == true
 					)
 					if unit ~= nil then
 						unitVisuals[id] = unit
 					end
+				elseif unitData.isChampion == true and not unit.isChampion then
+					HordeKit.setChampion(unit, true)
 				end
 				if unit ~= nil then
 					local pos = unitWorldPos(unitData.lane, unitData.x)
+					local vfxPos = if unit.flying
+						then pos + Vector3.new(0, VisualTheme.AERIAL.hoverY, 0)
+						else pos
 					if not unitVisible[id] then
 						HordeKit.setApproachScale(unit, 1.0)
 						HordeKit.setVisible(unit, true)
@@ -1242,7 +1319,7 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 									unitData.lane,
 									unitData.x,
 									uy,
-									pos,
+									vfxPos,
 									id
 								)
 							end
@@ -1265,16 +1342,19 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 					then deathPos
 					else prevPos
 				lastUnitPos[id] = position
+				local vfxPos = if unit.flying
+					then position + Vector3.new(0, VisualTheme.AERIAL.hoverY, 0)
+					else position
 				if life.killedByTrap then
 					local uy = life.lastY or Core.laneY(life.lane)
 					HordeKit.hitSquash(unit)
-					fireTrapsForLane(activeScene, life.lane, deathAx, uy, position, id)
+					fireTrapsForLane(activeScene, life.lane, deathAx, uy, vfxPos, id)
 				end
 				local teal = Color3.fromRGB(20, 184, 166)
-				Vfx.death(activeScene, position, teal)
+				Vfx.death(activeScene, vfxPos, teal)
 				local vz = if id % 2 == 0 then 2.2 else -2.2
-				Vfx.ragdollEnemy(activeScene, position, teal, Vector3.new(4, 7.5, vz))
-				AudioKit.unitDeath(life.kind or unitKind[id] or "runner", position)
+				Vfx.ragdollEnemy(activeScene, vfxPos, teal, Vector3.new(4, 7.5, vz))
+				AudioKit.unitDeath(life.kind or unitKind[id] or "runner", vfxPos)
 				HordeKit.setVisible(unit, false)
 				unitVisible[id] = false
 			end
@@ -1282,11 +1362,14 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			local position = lastUnitPos[id]
 				or (unit.base and unit.base.Position)
 				or (RAID_ORIGIN + Vector3.new(0, FLOOR_TOP_Y, 0))
+			local vfxPos = if unit.flying
+				then position + Vector3.new(0, VisualTheme.AERIAL.hoverY, 0)
+				else position
 			local teal = Color3.fromRGB(20, 184, 166)
-			Vfx.death(activeScene, position, teal)
+			Vfx.death(activeScene, vfxPos, teal)
 			local vz = if id % 2 == 0 then 2.2 else -2.2
-			Vfx.ragdollEnemy(activeScene, position, teal, Vector3.new(4, 7.5, vz))
-			AudioKit.unitDeath(unitKind[id] or "runner", position)
+			Vfx.ragdollEnemy(activeScene, vfxPos, teal, Vector3.new(4, 7.5, vz))
+			AudioKit.unitDeath(unitKind[id] or "runner", vfxPos)
 			HordeKit.setVisible(unit, false)
 			unitVisible[id] = false
 		end
@@ -1576,6 +1659,57 @@ local function stepVisualFrame(
 	end
 end
 
+local function clearResultBadges(): ()
+	champBetPill.Visible = false
+	shardBadge.Visible = false
+	coreBadge.Visible = false
+	dropBadgesRow.Visible = false
+end
+
+local function applyResultBadges(result: any, loc: string): ()
+	clearResultBadges()
+	local champOutcome = result.championOutcome
+	local hasChamp = false
+	if champOutcome == "survived" then
+		hasChamp = true
+		champBetPill.Text = I18n.t(loc, "deck_champ_survived")
+		champBetPill.TextColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
+		UiKit.stroke(champBetPill, UiKit.color(VisualTheme.PALETTE.amberBright), 1.5, 0.1)
+		champBetPill.Visible = true
+	elseif champOutcome == "hunted" then
+		hasChamp = true
+		champBetPill.Text = I18n.t(loc, "deck_champ_hunted")
+		champBetPill.TextColor3 = UiKit.color(VisualTheme.PALETTE.danger)
+		UiKit.stroke(champBetPill, UiKit.color(VisualTheme.PALETTE.danger), 1.5, 0.15)
+		champBetPill.Visible = true
+	end
+
+	local shardCount = math.max(0, math.floor(tonumber(result.shardEarned) or 0))
+	if shardCount > 0 then
+		shardBadge.Text = I18n.t(loc, "deck_reward_shard", shardCount)
+		shardBadge.TextColor3 = UiKit.color(VisualTheme.PALETTE.teal)
+		shardBadge.Visible = true
+	end
+
+	local coreCount = if type(result.coreDropped) == "number"
+		then math.max(0, math.floor(result.coreDropped))
+		elseif
+			result.coreDropped == true
+			or (type(result.coreDropped) == "string" and result.coreDropped ~= "")
+		then 1
+		else 0
+	if coreCount > 0 then
+		coreBadge.Text = I18n.t(loc, "deck_reward_core", coreCount)
+		coreBadge.TextColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
+		coreBadge.Visible = true
+	end
+
+	if shardCount > 0 or coreCount > 0 then
+		dropBadgesRow.Position = UDim2.fromOffset(14, if hasChamp then 106 else 90)
+		dropBadgesRow.Visible = true
+	end
+end
+
 local function showError(message: string): ()
 	TransitionKit.fadeOut(0.18)
 	status.Text = rmsg("failed")
@@ -1584,6 +1718,7 @@ local function showError(message: string): ()
 	resultCoin.Visible = false
 	details.Text = message
 	hashLabel.Text = ""
+	clearResultBadges()
 	replayButton.Visible = false
 	combatCamButton.Visible = false
 	speedButton.Visible = false
@@ -1601,6 +1736,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 	wallProgress.frame.Visible = true
 	replayProgress.frame.Visible = true
 	resultCard.Visible = false
+	clearResultBadges()
 	combatCamButton.Text = UiKit.cameraButtonLabel(nil, true)
 	combatCamButton.Visible = true
 	speedButton.Visible = true
@@ -1631,6 +1767,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 			tostring(final.hash)
 		)
 		hashLabel.Text = ""
+		clearResultBadges()
 		replayButton.Visible = false
 		combatCamButton.Visible = false
 		speedButton.Visible = false
@@ -1761,6 +1898,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 				I18n.t(loc, "hud_gold", tonumber(result.rewardGold) or 0)
 			)
 			hashLabel.Text = tostring(result.resultHash)
+			applyResultBadges(result, loc)
 			replayButton.Visible = true
 			resultCard.Visible = true
 			combatCamButton.Visible = false
@@ -1785,6 +1923,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 			resultTitle.TextColor3 = UiKit.color(VisualTheme.PALETTE.danger)
 			details.Text = tostring(animationErr)
 			hashLabel.Text = ""
+			clearResultBadges()
 			replayButton.Visible = false
 			resultCard.Visible = true
 			combatCamButton.Visible = false
@@ -1823,6 +1962,7 @@ local function hideModal(): ()
 		status.Text = rmsg("ready")
 		details.Text = ""
 		hashLabel.Text = ""
+		clearResultBadges()
 		if activeBattleId ~= nil then
 			raidEvent:FireServer("close", { battleId = activeBattleId })
 			activeBattleId = nil
@@ -1859,8 +1999,10 @@ startBattle = function(mode: string, extraOpts: { [string]: any }?): ()
 	status.TextColor3 = UiKit.color(VisualTheme.PALETTE.parchment)
 	details.Text = ""
 	hashLabel.Text = ""
+	clearResultBadges()
 	replayButton.Visible = false
 	resultCard.Visible = false
+	clearResultBadges()
 	combatCamButton.Text = UiKit.cameraButtonLabel(nil, true)
 	combatCamButton.Visible = true
 	speedButton.Visible = true

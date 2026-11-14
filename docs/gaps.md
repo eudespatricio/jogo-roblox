@@ -7,7 +7,7 @@
 **Linha atual:**
 
 ```text
-GAP: GAP-005, GAP-013, GAP-018, GAP-019, GAP-020 · Playtest v1.2 (13/11/2026) entregou Campanha Crônicas do Bastião (25 estágios + 5 Bosses multi-lane em Core v7, schema v4), Torcida (CrowdKit), 6 classes de horda encarando -X, câmera wall recuada e 56 SFX Open Cloud + 4 stems BGM; seguem abertos live ops (GAP-005), ticket regional (GAP-013), co-op síncrono 20 Hz (GAP-018), F1/5 temas BGM (GAP-019) e sistemas comerciais (GAP-020) · ver docs/gaps.md
+GAP: GAP-005, GAP-013, GAP-018, GAP-019, GAP-020 · Playtest v1.4 (14/11/2026) entregou Horde Deck customizável (5 facções, 13 cartas, DeckUi, slots de esquadrão, apostas de campeão mítico no Core v8 com voadores wisp/drake imunes a armadilhas terrestres, schema v5); seguem abertos live ops (GAP-005), ticket regional (GAP-013), co-op síncrono 20 Hz (GAP-018), F1/5 temas BGM (GAP-019) e sistemas comerciais (GAP-020) · ver docs/gaps.md
 ```
 
 | ID | Fase | Gap | Risco | Gatilho para fechar | Status |
@@ -156,3 +156,15 @@ Por decisão explícita do diretor (`AGENTS.md`: *Decisão humana > código + te
 - [`campanha-bosses-e-coop-sincrono.md`](campanha-bosses-e-coop-sincrono.md) — Pilar 2 + Co-op Síncrono: Campanha *Crônicas do Bastião* (5 Atos × 5 estágios, Solo/Duo Assíncrono/Duo Síncrono), escalonamento inteiro, selos 3★, 8 mutadores, 5 Bosses multi-lane no `Core` e Co-op Síncrono *lockstep* `20 Hz` com anti-leaver 90s e replay 8s preservado.
 - [`animacoes-fisica-real-e-vfx.md`](animacoes-fisica-real-e-vfx.md) — Pilar 3: Física Real Híbrida (`Core` impulsos inteiros + `CollisionGroups` isolados com `BallSocketConstraint` ragdoll e fratura do portão em 12 blocos sob governor Low/Mid/High), máquinas de animação 60 Hz e catálogo completo de VFX.
 - [`sistemas-jogo-completo.md`](sistemas-jogo-completo.md) — Fechamento comercial completo: FTUE 30 min (`ftueStep 0..6`), Pós-Partida/DPS Meter, Contratos/Passe/12 Badges, Ordens/Blueprints `MRL-XXXX`, Configurações/Daltonismo/Gamepad/i18n e Loja `ProcessReceipt` + `PolicyService` + Admin/Drain.
+
+---
+
+## Playtest v1.4 — Customização de Horda, DeckUi e Motor Aéreo v8 (14/11/2026)
+
+Entrega do sistema completo de personalização da Horda atacante:
+- **Core v8 (`src/shared/sim/core.luau`):** Unidades aéreas (`wisp`, `drake`) imunes a armadilhas de piso (`tar`, `cannon`, `catapult`), bônus de Arqueiro contra voadores (+25%), suporte a `isChampion` em fatias com multiplicadores e contabilidade de sobrevida/eliminação de campeão no resultado da batalha, preservando determinismo da seed 42 (`1245379674`).
+- **DeckCatalog (`src/shared/raid/DeckCatalog.luau`):** 5 Facções (Ferro, Escória, Gelo, Pólvora, Fenda), 13 Cartas (8 esquadrões + 5 campeões míticos), 4 modos de trilha, ratings táticos e travas de liga/núcleos.
+- **Perfil v5 (`ProfileSchema.SCHEMA_VERSION = 5`):** Adiciona `horde` (facção inicial, esquadrões ativos, campeão selecionado, cartas desbloqueadas, estilhaços e núcleos de chefe 1..5) e migração neutra `0..4 -> 5`.
+- **DeckUi & BuildLayout:** Botão de HUD 2x2 para mobile e empilhado no desktop, modal responsivo de seleção de facção, customização de esquadrão e cofre de relíquias.
+- **Apresentação 3D:** Unidades aéreas com elevação suave +3.2 studs e oscilação senoidal em `HordeKit`, crista e escala de campeão, badges no resultado do Raid.
+- **I18n:** 133 chaves sincronizadas entre Luau, CSV e contrato de teste nos idiomas PT-BR, EN e ES.

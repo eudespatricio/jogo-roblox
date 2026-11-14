@@ -6,10 +6,13 @@
 local BattleLog = require("../src/shared/raid/BattleLog")
 local BattleLogLedger = require("../src/shared/raid/BattleLogLedger")
 local BotPhantoms = require("../src/shared/raid/BotPhantoms")
+local DeckCatalog = require("../src/shared/raid/DeckCatalog")
 local PhantomStore = require("../src/server/raid/PhantomStore")
 local RaidReplay = require("../src/shared/raid/RaidReplay")
 local RaidTelemetry = require("../src/shared/raid/RaidTelemetry")
 local AnalyticsTypes = require("../src/shared/analytics/AnalyticsTypes")
+local BuildProtocol = require("../src/shared/build/BuildProtocol")
+local GridLayout = require("../src/shared/build/GridLayout")
 local Core = require("../src/shared/sim/core")
 local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local TrapCatalog = require("../src/shared/data/TrapCatalog")
@@ -526,6 +529,175 @@ check("matchmaking justo + progressao de win-rate L1..L5 + defend escalonado", f
 		end
 	end
 	assert(defWins >= 15, "defend inicial deveria vencer >= 75%: " .. tostring(defWins))
+end)
+
+check("BattleLog preserva portalTheme/championOutcome e rejeita invalidos", function()
+	local wall, _ = phantomWall()
+	local res = Core.Battle
+		.new({
+			seed = 91,
+			simVersion = Core.SIM_VERSION,
+			wall = wall,
+			wave = { count = 20 },
+		})
+		:Run()
+
+	local rec, err = BattleLog.fromBattle(
+		"22222222222222222222222222222222",
+		res,
+		TrapCatalog.CONTENT_VERSION,
+		Core.GRID_WIDTH,
+		#wall.traps,
+		wall,
+		1762800100,
+		{ portalTheme = "act5", championOutcome = "survived" }
+	)
+	assert(rec ~= nil, tostring(err))
+	assert(rec.schemaVersion == 1, "BattleLog schemaVersion != 1")
+	assert(rec.portalTheme == "act5", "portalTheme nao copiado")
+	assert(rec.championOutcome == "survived", "championOutcome nao copiado")
+	assert(BattleLog.validate(rec), "BattleLog com meta valido recusado")
+	assert(ProfileSchema.isJsonSafe(rec), "BattleLog com meta nao e JSON-safe")
+
+	local rewardedRec, markErr = BattleLog.markRewarded(rec, 42)
+	assert(rewardedRec ~= nil, tostring(markErr))
+	assert(rewardedRec.portalTheme == "act5", "markRewarded perdeu portalTheme")
+	assert(rewardedRec.championOutcome == "survived", "markRewarded perdeu championOutcome")
+	assert(BattleLog.validate(rewardedRec), "BattleLog rewarded invalido")
+
+	local badOutcome = {
+		schemaVersion = rec.schemaVersion,
+		battleId = rec.battleId,
+		seed = rec.seed,
+		simVersion = rec.simVersion,
+		contentVersion = rec.contentVersion,
+		gridWidth = rec.gridWidth,
+		trapsCount = rec.trapsCount,
+		resultHash = rec.resultHash,
+		winner = rec.winner,
+		wallHp = rec.wallHp,
+		leaked = rec.leaked,
+		ticks = rec.ticks,
+		durationMs = rec.durationMs,
+		createdAt = rec.createdAt,
+		rewarded = rec.rewarded,
+		rewardGold = rec.rewardGold,
+		wall = rec.wall,
+		portalTheme = "act1",
+		championOutcome = "escaped",
+	}
+	assert(not BattleLog.validate(badOutcome), "aceitou championOutcome invalido")
+end)
+
+check("BuildProtocol + WallService + DeckCatalog + Core v8 Champion Bet ponta a ponta", function()
+	local profile = ProfileSchema.template()
+	local contentOk, contentErr = TrapCatalog.ensureProfileContent(profile)
+	assert(contentOk, tostring(contentErr))
+	profile.gold = 500
+	profile.horde.shards = 6
+	profile.horde.bossCores.act1 = true
+
+	local emitted = {}
+	local service = WallService.new({
+		profile = profile,
+		schema = ProfileSchema,
+		catalog = TrapCatalog,
+		deckCatalog = DeckCatalog,
+		emit = function(name, props)
+			emitted[#emitted + 1] = { name = name, props = props }
+			local ev, evErr = AnalyticsTypes.newEvent(CTX, name, props)
+			assert(ev ~= nil, "evento " .. tostring(name) .. " invalido: " .. tostring(evErr))
+			local okEv, valErr = AnalyticsTypes.validate(ev)
+			assert(okEv, "validacao evento " .. tostring(name) .. ": " .. tostring(valErr))
+		end,
+	})
+
+	local chooseReq, chooseReqErr =
+		BuildProtocol.validateRequest(GridLayout, "choose_horde", { faction = "rift" })
+	assert(chooseReq ~= nil, tostring(chooseReqErr))
+	local chooseRes, chooseErr = BuildProtocol.apply(service, chooseReq)
+	assert(chooseRes ~= nil, tostring(chooseErr))
+	assert(profile.horde.starterChosen == true and profile.horde.faction == "rift", "starter rift")
+	assert(chooseRes.portalTheme == "act5", "portalTheme rift")
+
+	local secondChoose, secondErr = service.chooseHorde("iron")
+	assert(secondChoose == nil and secondErr == "starter_already_chosen", tostring(secondErr))
+
+	local lockedFail, lockedErr = service.unlockCard("squad_sky_drakes")
+	assert(lockedFail == nil and lockedErr == "missing_boss_core", tostring(lockedErr))
+
+	local unlockReq, unlockReqErr =
+		BuildProtocol.validateRequest(GridLayout, "unlock_card", { cardId = "champ_iron_ram" })
+	assert(unlockReq ~= nil, tostring(unlockReqErr))
+	local unlockRes, unlockErr = BuildProtocol.apply(service, unlockReq)
+	assert(unlockRes ~= nil, tostring(unlockErr))
+	assert(profile.horde.unlockedCards.champ_iron_ram == true, "champ_iron_ram nao desbloqueou")
+	assert(profile.gold == 100 and profile.horde.shards == 1, "custo gold/shards incorreto")
+
+	local saveBadReq = assert(BuildProtocol.validateRequest(GridLayout, "save_deck", {
+		squads = {
+			{ cardId = "squad_sky_drakes", count = 1, laneMode = "center" },
+		},
+		championCardId = nil,
+		championLaneMode = "center",
+	}))
+	local saveBad, saveBadErr = BuildProtocol.apply(service, saveBadReq)
+	assert(saveBad == nil and saveBadErr == "card_locked", tostring(saveBadErr))
+
+	local saveReq = assert(BuildProtocol.validateRequest(GridLayout, "save_deck", {
+		squads = {
+			{ cardId = "squad_rift_wisps", count = 2, laneMode = "flanks" },
+			{ cardId = "squad_slag_pyros", count = 2, laneMode = "split" },
+			{ cardId = "squad_swarm_brood", count = 2, laneMode = "center" },
+		},
+		championCardId = "champ_iron_ram",
+		championLaneMode = "center",
+	}))
+	local saveRes, saveErr = BuildProtocol.apply(service, saveReq)
+	assert(saveRes ~= nil, tostring(saveErr))
+	assert(#emitted == 4, "esperava 4 eventos emitidos, veio " .. tostring(#emitted))
+	assert(emitted[1].name == "horde_starter_chosen", "ev 1")
+	assert(emitted[2].name == "gold_spent" and emitted[2].props.sink == "horde", "ev 2 sink horde")
+	assert(emitted[3].name == "horde_card_unlocked", "ev 3")
+	assert(emitted[4].name == "deck_saved" and emitted[4].props.has_champion == true, "ev 4")
+
+	local snap = BuildProtocol.snapshot(profile, TrapCatalog, GridLayout, DeckCatalog)
+	assert(snap ~= nil and type(snap.horde) == "table", "snapshot.horde ausente")
+	assert(snap.horde.portalTheme == "act5", "snapshot.horde.portalTheme")
+	assert(snap.horde.stats.hasChampion == true, "snapshot.horde.stats.hasChampion")
+
+	local waveSpec = DeckCatalog.toWaveSpec(profile.horde, 1)
+	assert(DeckCatalog.portalThemeFor(profile.horde.faction) == "act5", "portalThemeFor rift")
+	local weakWall = { level = 1, hp = 80, traps = {} }
+	local atkA = Core.Battle
+		.new({ seed = 314, simVersion = Core.SIM_VERSION, wall = weakWall, wave = waveSpec })
+		:Run()
+	local atkB = Core.Battle
+		.new({ seed = 314, simVersion = Core.SIM_VERSION, wall = weakWall, wave = waveSpec })
+		:Run()
+	local replayOk, replayErr = RaidReplay.verify(atkA, atkB)
+	assert(replayOk, tostring(replayErr))
+	assert(atkA.winner == "attacker", "ataque contra parede vazia deveria vencer")
+	assert(atkA.championSpawned == 1 and atkA.championSurvived == true, "Champion Bet survived")
+
+	local fortress = {
+		level = 5,
+		hp = 1250,
+		traps = {
+			{ type = "archer", level = 5, x = 2000, y = 1000 },
+			{ type = "archer", level = 5, x = 3500, y = 1500 },
+			{ type = "frost", level = 5, x = 5000, y = 2500 },
+			{ type = "cannon", level = 5, x = 6500, y = 2500 },
+			{ type = "archer", level = 5, x = 8000, y = 3500 },
+			{ type = "cannon", level = 5, x = 3500, y = 3500 },
+			{ type = "catapult", level = 5, x = 5000, y = 4000 },
+		},
+	}
+	local defRes = Core.Battle
+		.new({ seed = 314, simVersion = Core.SIM_VERSION, wall = fortress, wave = waveSpec })
+		:Run()
+	assert(defRes.championSpawned == 1, "champion deveria ter spawnado")
+	assert(defRes.winner == "defender" and defRes.championKilled == 1, "champion hunted")
 end)
 
 print(string.format("contrato de raid (S6/S8.1): %d checagens, %d falhas", checks, #failures))

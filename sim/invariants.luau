@@ -1,6 +1,6 @@
 --!nonstrict
--- Invariantes executaveis da Muralha (matematica v7: posicoes livres, Nv1..Nv5, L1..L5,
--- disparo real, sinergias, 6 tipos de horda, 8 mutadores e 5 Bosses Multi-Lane FSM).
+-- Invariantes executaveis da Muralha (matematica v8: posicoes livres, Nv1..Nv5, L1..L5,
+-- disparo real, sinergias, 8 tipos de horda c/ voadores, Campeoes de Ato, 8 mutadores e 5 Bosses FSM).
 -- Roda no Luau CLI e falha o processo se qualquer regra de negocio for violada:
 --   luau sim/invariants.luau
 local Core = require("../src/shared/sim/core")
@@ -96,7 +96,7 @@ check("I5 resultado consistente", function()
 		assert(r.ticks > 0 and r.ticks <= Core.MAX_TICKS, "ticks fora do cap")
 		assert(r.spawned <= 70, "spawnou mais que a onda")
 		assert(r.traps == 5, "loadout padrao deveria ter 5 ativas")
-		assert(r.simVersion == 7, "simVersion deveria ser 7")
+		assert(r.simVersion == 8, "simVersion deveria ser 8")
 		assert(r.hash == math.floor(r.hash), "hash fracionario")
 	end
 end)
@@ -604,13 +604,29 @@ check("I16 muralha Nv1..Nv5 e armadilhas L4/L5", function()
 	assert(not Core.validateWall({ level = 1, traps = traps(6) }), "validateWall aceitou 6 no Nv1")
 end)
 
--- I17 (v7): 6 arquetipos de unidade, armorMilli, frostResistMilli e WaveSliceSpec
-check("I17 6 arquetipos de unidade, mitigacao de armadura e WaveSliceSpec", function()
+-- I17 (v7/v8): 8 arquetipos de unidade, armorMilli, frostResistMilli, voadores e WaveSliceSpec
+check("I17 8 arquetipos de unidade, mitigacao de armadura e WaveSliceSpec", function()
 	assert(#Core.UNIT_NAMES == 3, "UNIT_NAMES padrao P1 deve continuar com 3 tipos")
-	assert(#Core.ALL_UNIT_NAMES == 6, "ALL_UNIT_NAMES deve ter 6 tipos")
+	assert(#Core.ALL_UNIT_NAMES == 8, "ALL_UNIT_NAMES deve ter 8 tipos")
 	assert(Core.UNIT.shieldbearer.armorMilli == 250, "shieldbearer armor != 250")
 	assert(Core.UNIT.pyromancer.frostResistMilli == 350, "pyromancer frostResist != 350")
 	assert(Core.UNIT.sapper.leak == 22000, "sapper leak != 22000")
+	assert(
+		Core.UNIT.wisp.hp == 90000
+			and Core.UNIT.wisp.speed == 2800
+			and Core.UNIT.wisp.leak == 4000
+			and Core.UNIT.wisp.flying == true,
+		"wisp stats invalidos"
+	)
+	assert(
+		Core.UNIT.drake.hp == 380000
+			and Core.UNIT.drake.speed == 1350
+			and Core.UNIT.drake.leak == 16000
+			and Core.UNIT.drake.armorMilli == 200
+			and Core.UNIT.drake.frostResistMilli == 250
+			and Core.UNIT.drake.flying == true,
+		"drake stats invalidos"
+	)
 
 	local b = Core.Battle.new({
 		seed = 101,
@@ -750,6 +766,151 @@ check("I19 determinismo dos 5 Bosses e 8 Mutadores", function()
 		local r2 = runBossSim()
 		assert(r1.hash == r2.hash and r1.ticks == r2.ticks, "divergencia em boss " .. bossId)
 	end
+end)
+
+-- I20 (v8): regras anti-aereas (wisp/drake) e Campeoes de Ato (isChampion)
+check("I20 unidades voadoras (wisp/drake), +25% archer anti-air e Campeoes de Ato", function()
+	-- 1) tar, cannon e catapult (primario + splash) ignoram u.flying == true
+	for _, groundTrapType in ipairs({ "tar", "cannon", "catapult" }) do
+		local b = Core.Battle.new({
+			seed = 77,
+			simVersion = Core.SIM_VERSION,
+			wall = { traps = { { cell = "r3c4", type = groundTrapType, level = 1 } } },
+			wave = {
+				slices = {
+					{
+						startTick = 1,
+						everyTicks = 10,
+						count = 1,
+						unit = "wisp",
+						laneMask = 4,
+						isElite = false,
+					},
+				},
+			},
+		})
+		b:Step()
+		b.uX[1] = 7000 -- dentro do alcance de r3c4 (x=6500)
+		local hpBefore = b.uHp[1]
+		local fired = b:applyTrap(b.traps[1])
+		assert(
+			fired == false and b.uHp[1] == hpBefore,
+			groundTrapType .. " nao deveria atingir wisp voador"
+		)
+	end
+
+	-- 2) archer causa +25% dano inteiro contra voador (math.floor(dmg * 1250 / 1000))
+	local bGround = Core.Battle.new({
+		seed = 78,
+		simVersion = Core.SIM_VERSION,
+		wall = { traps = { { cell = "r3c5", type = "archer", level = 1 } } },
+		wave = {
+			slices = {
+				{
+					startTick = 1,
+					everyTicks = 10,
+					count = 1,
+					unit = "runner",
+					laneMask = 4,
+					isElite = false,
+				},
+			},
+		},
+	})
+	bGround:Step()
+	local groundDmg = Core.UNIT.runner.hp - bGround.uHp[1]
+	assert(groundDmg > 0, "archer nao atingiu runner")
+
+	local bAir = Core.Battle.new({
+		seed = 78,
+		simVersion = Core.SIM_VERSION,
+		wall = { traps = { { cell = "r3c5", type = "archer", level = 1 } } },
+		wave = {
+			slices = {
+				{
+					startTick = 1,
+					everyTicks = 10,
+					count = 1,
+					unit = "wisp",
+					laneMask = 4,
+					isElite = false,
+				},
+			},
+		},
+	})
+	bAir:Step()
+	local airDmg = Core.UNIT.wisp.hp - bAir.uHp[1]
+	assert(
+		airDmg == math.floor(groundDmg * 1250 / 1000),
+		"archer anti-air != +25%: " .. tostring(airDmg) .. " vs " .. tostring(groundDmg)
+	)
+
+	-- 3) frost atinge e desacelera voadores normalmente
+	local bFrost = Core.Battle.new({
+		seed = 79,
+		simVersion = Core.SIM_VERSION,
+		wall = { traps = { { cell = "r3c5", type = "frost", level = 1 } } },
+		wave = {
+			slices = {
+				{
+					startTick = 1,
+					everyTicks = 10,
+					count = 1,
+					unit = "wisp",
+					laneMask = 4,
+					isElite = false,
+				},
+			},
+		},
+	})
+	bFrost:Step()
+	assert(bFrost.uHp[1] < Core.UNIT.wisp.hp, "frost nao causou dano em wisp")
+	assert(bFrost.uSlowUntil[1] > bFrost.tick, "frost nao desacelerou wisp")
+
+	-- 4) isChampion: hp * 22/10, armor + 100 (cap 900), leak * 15/10, sobrevivencia e abate
+	local bChampSurvive = Core.Battle.new({
+		seed = 80,
+		simVersion = Core.SIM_VERSION,
+		wall = { traps = {} },
+		wave = {
+			slices = {
+				{
+					startTick = 1,
+					everyTicks = 10,
+					count = 1,
+					unit = "shieldbearer",
+					laneMask = 4,
+					isElite = false,
+					isChampion = true,
+				},
+			},
+		},
+	})
+	bChampSurvive:Step()
+	assert(
+		bChampSurvive.uHp[1] == math.floor(Core.UNIT.shieldbearer.hp * 22 / 10),
+		"champion hp != 2.2x"
+	)
+	assert(
+		bChampSurvive.uArmorMilli[1] == Core.UNIT.shieldbearer.armorMilli + 100,
+		"champion armor != base + 100"
+	)
+	assert(
+		bChampSurvive.uLeak[1] == math.floor(Core.UNIT.shieldbearer.leak * 15 / 10),
+		"champion leak != 1.5x"
+	)
+	assert(
+		bChampSurvive.uIsChampion[1] == true and bChampSurvive.championSpawned == 1,
+		"champion flag/counter"
+	)
+	local resSurvive = bChampSurvive:Run()
+	assert(
+		resSurvive.championSpawned == 1
+			and resSurvive.championKilled == 0
+			and resSurvive.championBreached == 1
+			and resSurvive.championSurvived == true,
+		"champion deveria sobreviver sem traps"
+	)
 end)
 
 print(string.format("invariantes: %d checagens, %d falhas", checks, #failures))

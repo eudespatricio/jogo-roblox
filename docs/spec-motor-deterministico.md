@@ -509,3 +509,26 @@ migrado), `sim/profile-contract.luau` 20/20, `sim/walls-contract.luau` 13/13,
 3. **Fatias determinísticas (`wave.slices`), escalas inteiras e 8 Mutadores:** Suporta `WaveSliceSpec` (`startTick`, `everyTicks`, `count`, `unit`, `laneMask`, `isElite`), `hpScaleMilli`, `armorMilli` (clamp `0..600`), `speedMilli` (cap `<= 2400`) e os 8 mutadores (`mut_iron_hide`, `mut_haste_wind`, `mut_frost_ward`, `mut_swarm_surge`, `mut_amber_tax`, `mut_cracked_gate`, `mut_volatile_oil`, `mut_echo_rift`).
 4. **Máquina de Estados de Boss Multi-Lane (`laneSpan = 3`, `20 Hz`):** Suporta os 5 Bosses (`iron_ram_colossus`, `slag_juggernaut`, `rime_matriarch`, `powder_baron`, `rift_titan`) com deduplicação estrita de AoE por `shotId` (`lastHitByShotId`), barra de postura (`staggerMilli` → `VULNERABLE` por 30 ticks com dano `* 1300 / 1000`), `TELEGRAPH` (40 ticks) → `ABILITY` → `MARCH` e `ENRAGE` abaixo de 40% HP.
 5. **Perfil v4 (`ProfileSchema.SCHEMA_VERSION = 4`):** Adiciona `campaign` (`highestUnlockedStage`, `nightmareUnlocked`, `starsNormal`, `starsNightmare`, `actMilestoneClaims` com chaves string JSON-safe `"1"`..`"5"` e `"1-1"`..`"5-5"`) e migração neutra `3 → 4`.
+
+---
+
+## 20. Matemática v8 — Unidades Aéreas (Espectro/Draconato), Alvo Aéreo e Campeões de Horda (Playtest v1.4, 14/11/2026)
+
+**Versões:** `SCHEMA_VERSION 5` · `CONTENT_VERSION 3` · `SIM_VERSION 8` · `DEFAULT_POWER_PCT = 270` · hash de referência `1245379674` (seed 42, 100% preservado para ondas padrão P1).
+
+**Mudanças na simulação (`src/shared/sim/core.luau`) e catálogo de horda (`DeckCatalog.luau`):**
+
+1. **Preservação estrita do hash de referência:** `Core.UNIT_NAMES = { "runner", "brute", "swarm" }` e o loop de ticks não-estendido continuam intactos, garantindo que `Core.Run(42).hash == 1245379674` permaneça idêntico em 1.000 seeds no `sim/acceptance.luau`.
+2. **Oito arquétipos de horda (`Core.ALL_UNIT_NAMES`):** Adição de duas unidades aéreas a `Core.UNIT` e `Core.ALL_UNIT_NAMES`:
+   - `wisp`: `{ hp = 90000, speed = 2800, leak = 4000, armorMilli = 0, frostResistMilli = 0, flying = true }`
+   - `drake`: `{ hp = 380000, speed = 1350, leak = 16000, armorMilli = 200, frostResistMilli = 250, flying = true }`
+3. **Regras de interação de armadilhas com voadores (`applyTrap`):**
+   - **Armadilhas de piso:** `tar`, `cannon` e `catapult` (alvo primário e loop de splash da catapulta) ignoram unidades com `u.flying == true`.
+   - **Arqueiro com bônus antiaéreo:** atinge alvos voadores (`u.flying == true`) com dano aumentado em +25% em aritmética inteira (`math.floor(dmg * 1250 / 1000)`).
+   - **Gelo:** atinge e aplica lentidão a alvos voadores normalmente.
+   - Unidades terrestres legadas mantêm comportamento inalterado.
+4. **Campeão de Horda (`isChampion`):**
+   - Suporte ao campo opcional `isChampion: boolean?` no spawn de fatias (`wave.slices`).
+   - Quando `isChampion == true`: vida escalada para `math.floor(hp * 22 / 10)`, armadura aumentada em `math.min(900, (u.armorMilli or 0) + 100)`, vazamento escalado para `math.floor(leak * 15 / 10)`, `self.championSpawned += 1`.
+   - Contabilidade determinística: rastreia `self.championKilled` no abate e `self.championBreached` no vazamento de portão.
+   - `Battle:Result()` expõe `championSpawned`, `championKilled`, `championBreached` e o booleano de aposta `championSurvived` (`self.championSpawned > 0 and self.championKilled == 0 and (self.championBreached > 0 or self.winner == "attacker")`).

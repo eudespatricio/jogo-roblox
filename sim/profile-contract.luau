@@ -1,7 +1,7 @@
 --!nonstrict
--- Contrato de schema v4 e de sessao do perfil (P2+ Campanha).
+-- Contrato de schema v5 e de sessao do perfil (P2+ 5 Hordas & Deck).
 -- Roda no Luau CLI: luau sim/profile-contract.luau
--- Cobre: template v4, validacao, migracao 0->4 / 1->4 / 2->4 / 3->4 com fixtures, JSON-safe,
+-- Cobre: template v5, validacao, migracao 0->5 / 1->5 / 2->5 / 3->5 / 4->5 com fixtures, JSON-safe,
 -- StartSessionAsync nil, EndSession no leave, recarga sem duplicar e recusa de versao futura.
 local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local ProfileService = require("../src/server/data/ProfileService")
@@ -9,6 +9,7 @@ local fixtureV0 = require("./fixtures/profile-v0")
 local fixtureV1 = require("./fixtures/profile-v1")
 local fixtureV2 = require("./fixtures/profile-v2")
 local fixtureV3 = require("./fixtures/profile-v3")
+local fixtureV4 = require("./fixtures/profile-v4")
 
 local failures = {}
 local checks = 0
@@ -126,10 +127,10 @@ local function newController(store, options)
 end
 
 -- ---------------------------------------------------------------- template e validacao
-check("template v4 e JSON-safe", function()
+check("template v5 e JSON-safe", function()
 	local profile = ProfileSchema.template()
 	assert(profile.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion errado")
-	assert(profile.schemaVersion == 4, "SCHEMA_VERSION != 4")
+	assert(profile.schemaVersion == 5, "SCHEMA_VERSION != 5")
 	assert(profile.contentVersion == ProfileSchema.DEFAULT_CONTENT_VERSION, "contentVersion errado")
 	assert(profile.wall.level == 1, "wall.level inicial != 1")
 	assert(profile.wall.gridWidth == 5 and profile.wall.activeTrapLimit == 5, "grade fora do P2")
@@ -149,12 +150,29 @@ check("template v4 e JSON-safe", function()
 		"campaign defaults errados"
 	)
 	assert(
+		type(profile.horde) == "table"
+			and profile.horde.starterChosen == false
+			and profile.horde.faction == "iron"
+			and profile.horde.unlockedCards.squad_runner_pack == true
+			and profile.horde.unlockedCards.squad_brute_guards == true
+			and profile.horde.unlockedCards.squad_iron_vanguard == true
+			and profile.horde.shards == 0
+			and profile.horde.bossCores.act1 == false
+			and profile.horde.bossCores.act5 == false
+			and profile.horde.dailyPlunderDayId == 0
+			and profile.horde.dailyPlunderCount == 0
+			and #profile.horde.squads == 3
+			and profile.horde.championCardId == nil
+			and profile.horde.championLaneMode == "center",
+		"horde defaults errados"
+	)
+	assert(
 		type(profile.wall.cells) == "table" and next(profile.wall.cells) == nil,
 		"cells nao vazio"
 	)
 	assert(
 		keysOf(profile)
-			== "campaign,contentVersion,cosmetics,equipped,gold,league,schemaVersion,stats,wall",
+			== "campaign,contentVersion,cosmetics,equipped,gold,horde,league,schemaVersion,stats,wall",
 		"chaves: " .. keysOf(profile)
 	)
 	local ok, err = ProfileSchema.validate(profile)
@@ -168,9 +186,15 @@ check("template devolve tabela nova a cada chamada", function()
 	a.gold = 999
 	a.wall.cells.r1c1 = { trap = "archer", level = 1, x = 2000, y = 500 }
 	a.campaign.highestUnlockedStage = "3-2"
+	a.horde.shards = 42
+	a.horde.squads[1].count = 15
 	local b = ProfileSchema.template()
 	assert(
-		b.gold == 0 and next(b.wall.cells) == nil and b.campaign.highestUnlockedStage == "1-1",
+		b.gold == 0
+			and next(b.wall.cells) == nil
+			and b.campaign.highestUnlockedStage == "1-1"
+			and b.horde.shards == 0
+			and b.horde.squads[1].count ~= 15,
 		"template compartilhou referencia"
 	)
 end)
@@ -297,6 +321,38 @@ check("validacao recusa perfil invalido", function()
 				return p
 			end,
 		},
+		{
+			"horde faction invalida",
+			function()
+				local p = ProfileSchema.template()
+				p.horde.faction = "void"
+				return p
+			end,
+		},
+		{
+			"horde squad laneMode invalido",
+			function()
+				local p = ProfileSchema.template()
+				p.horde.squads[1].laneMode = "diagonal"
+				return p
+			end,
+		},
+		{
+			"horde shards negativo",
+			function()
+				local p = ProfileSchema.template()
+				p.horde.shards = -1
+				return p
+			end,
+		},
+		{
+			"horde bossCores tipo invalido",
+			function()
+				local p = ProfileSchema.template()
+				p.horde.bossCores.act1 = 1
+				return p
+			end,
+		},
 	}
 	for _, case in ipairs(cases) do
 		local ok, err = ProfileSchema.validate(case[2]())
@@ -331,12 +387,12 @@ check("isJsonSafe recusa o que o DataStore nao serializa", function()
 	assert(not ProfileSchema.isJsonSafe(sparse), "aceitou array com buraco")
 end)
 
--- ---------------------------------------------------------------- migracoes 0 -> 4, 1 -> 4, 2 -> 4, 3 -> 4
-check("migracao 0->4 com fixture preserva o valido e descarta o resto", function()
+-- ---------------------------------------------------------------- migracoes 0..4 -> 5
+check("migracao 0->5 com fixture preserva o valido e descarta o resto", function()
 	local original = clone(fixtureV0)
 	local profile, err = ProfileSchema.migrate(fixtureV0)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 4, "schemaVersion nao subiu")
+	assert(profile.schemaVersion == 5, "schemaVersion nao subiu")
 	assert(profile.contentVersion == 3, "contentVersion nao subiu")
 	assert(profile.gold == 120, "gold perdido")
 	assert(profile.league.points == 34, "league.points perdido")
@@ -349,6 +405,10 @@ check("migracao 0->4 com fixture preserva o valido e descarta o resto", function
 	assert(profile.cosmetics.banner_default == true, "cosmetico perdido")
 	assert(profile.equipped.commander == "cmd_vorn", "equipped default ausente")
 	assert(profile.campaign.highestUnlockedStage == "1-1", "campaign default ausente")
+	assert(
+		profile.horde.faction == "iron" and profile.horde.starterChosen == false,
+		"horde default"
+	)
 	assert(profile.coins == nil, "campo do prototipo (coins) sobreviveu")
 	assert(profile.hackAttempt == nil, "campo desconhecido sobreviveu")
 	assert(profile.player_name == nil, "PII sobreviveu")
@@ -361,70 +421,110 @@ check("migracao 0->4 com fixture preserva o valido e descarta o resto", function
 	assert(fixtureV0.gold == 120 and fixtureV0.stats.lastSeenAt == 1762800000, "fixture mutado")
 end)
 
-check("migracao 1->4 adiciona contentVersion/x/y/equipped/campaign sem perder a parede", function()
-	local profile, err = ProfileSchema.migrate(fixtureV1)
-	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 4, "schemaVersion nao subiu")
-	assert(profile.contentVersion == 3, "contentVersion nao subiu")
-	assert(profile.gold == 120, "gold perdido")
-	assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
-	assert(profile.wall.cells.r1c1.trap == "oil", "trap antiga deveria sobreviver ao schema")
-	assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "x/y de r1c1")
-	assert(profile.campaign.highestUnlockedStage == "1-1", "campaign default")
-	local ok, validateErr = ProfileSchema.validate(profile)
-	assert(ok, "perfil v4 invalido: " .. tostring(validateErr))
-end)
+check(
+	"migracao 1->5 adiciona contentVersion/x/y/equipped/campaign/horde sem perder a parede",
+	function()
+		local profile, err = ProfileSchema.migrate(fixtureV1)
+		assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+		assert(profile.schemaVersion == 5, "schemaVersion nao subiu")
+		assert(profile.contentVersion == 3, "contentVersion nao subiu")
+		assert(profile.gold == 120, "gold perdido")
+		assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
+		assert(profile.wall.cells.r1c1.trap == "oil", "trap antiga deveria sobreviver ao schema")
+		assert(
+			profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500,
+			"x/y de r1c1"
+		)
+		assert(profile.campaign.highestUnlockedStage == "1-1", "campaign default")
+		assert(profile.horde.faction == "iron", "horde default")
+		local ok, validateErr = ProfileSchema.validate(profile)
+		assert(ok, "perfil v5 invalido: " .. tostring(validateErr))
+	end
+)
 
-check("migracao 2->4 mapeia rXcY para x/y e adiciona wall.level + equipped + campaign", function()
-	local original = clone(fixtureV2)
-	local profile, err = ProfileSchema.migrate(fixtureV2)
-	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 4, "schemaVersion != 4")
-	assert(profile.contentVersion == 3, "contentVersion != 3")
-	assert(profile.gold == 260, "gold perdido")
-	assert(profile.league.points == 134, "league perdido")
-	assert(profile.wall.level == 1, "wall.level != 1")
-	assert(profile.wall.activeTrapLimit == 5, "activeTrapLimit != 5")
-	assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "r1c1 pos")
-	assert(profile.wall.cells.r3c3.x == 5000 and profile.wall.cells.r3c3.y == 2500, "r3c3 pos")
-	assert(profile.equipped.theme == "theme_default", "equipped.theme")
-	assert(profile.campaign.highestUnlockedStage == "1-1", "campaign.highestUnlockedStage")
-	assert(keysOf(fixtureV2) == keysOf(original), "fixture v2 mutado")
-	local ok, validateErr = ProfileSchema.validate(profile)
-	assert(ok, "perfil migrado v4 invalido: " .. tostring(validateErr))
-end)
+check(
+	"migracao 2->5 mapeia rXcY para x/y e adiciona wall.level + equipped + campaign + horde",
+	function()
+		local original = clone(fixtureV2)
+		local profile, err = ProfileSchema.migrate(fixtureV2)
+		assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+		assert(profile.schemaVersion == 5, "schemaVersion != 5")
+		assert(profile.contentVersion == 3, "contentVersion != 3")
+		assert(profile.gold == 260, "gold perdido")
+		assert(profile.league.points == 134, "league perdido")
+		assert(profile.wall.level == 1, "wall.level != 1")
+		assert(profile.wall.activeTrapLimit == 5, "activeTrapLimit != 5")
+		assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "r1c1 pos")
+		assert(profile.wall.cells.r3c3.x == 5000 and profile.wall.cells.r3c3.y == 2500, "r3c3 pos")
+		assert(profile.equipped.theme == "theme_default", "equipped.theme")
+		assert(profile.campaign.highestUnlockedStage == "1-1", "campaign.highestUnlockedStage")
+		assert(profile.horde.faction == "iron", "horde.faction")
+		assert(keysOf(fixtureV2) == keysOf(original), "fixture v2 mutado")
+		local ok, validateErr = ProfileSchema.validate(profile)
+		assert(ok, "perfil migrado v5 invalido: " .. tostring(validateErr))
+	end
+)
 
-check("migracao 3->4 adiciona campaign aditivo e preserva wall.level/equipped/x/y", function()
-	local original = clone(fixtureV3)
-	local profile, err = ProfileSchema.migrate(fixtureV3)
+check(
+	"migracao 3->5 adiciona campaign + horde aditivo e preserva wall.level/equipped/x/y",
+	function()
+		local original = clone(fixtureV3)
+		local profile, err = ProfileSchema.migrate(fixtureV3)
+		assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+		assert(profile.schemaVersion == 5, "schemaVersion != 5")
+		assert(profile.contentVersion == 3, "contentVersion != 3")
+		assert(profile.gold == 340, "gold perdido")
+		assert(profile.wall.level == 2, "wall.level != 2")
+		assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "r1c1 pos")
+		assert(profile.wall.cells.r3c3.x == 5000 and profile.wall.cells.r3c3.y == 2500, "r3c3 pos")
+		assert(profile.campaign.highestUnlockedStage == "1-1", "campaign.highestUnlockedStage")
+		assert(profile.campaign.nightmareUnlocked == false, "campaign.nightmareUnlocked")
+		assert(profile.campaign.actMilestoneClaims["1"] == 0, "actMilestoneClaims[1]")
+		assert(profile.horde.faction == "iron" and #profile.horde.squads == 3, "horde default")
+		assert(keysOf(fixtureV3) == keysOf(original), "fixture v3 mutado")
+		local ok, validateErr = ProfileSchema.validate(profile)
+		assert(ok, "perfil migrado v5 invalido: " .. tostring(validateErr))
+		local jsonOk, jsonErr = ProfileSchema.isJsonSafe(profile)
+		assert(jsonOk, "perfil migrado v5 nao e JSON-safe: " .. tostring(jsonErr))
+	end
+)
+
+check("migracao 4->5 adiciona horde aditivo e preserva campaign/wall.level/equipped/x/y", function()
+	local original = clone(fixtureV4)
+	local profile, err = ProfileSchema.migrate(fixtureV4)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 4, "schemaVersion != 4")
+	assert(profile.schemaVersion == 5, "schemaVersion != 5")
 	assert(profile.contentVersion == 3, "contentVersion != 3")
-	assert(profile.gold == 340, "gold perdido")
+	assert(profile.gold == 420, "gold perdido")
 	assert(profile.wall.level == 2, "wall.level != 2")
-	assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "r1c1 pos")
-	assert(profile.wall.cells.r3c3.x == 5000 and profile.wall.cells.r3c3.y == 2500, "r3c3 pos")
-	assert(profile.campaign.highestUnlockedStage == "1-1", "campaign.highestUnlockedStage")
-	assert(profile.campaign.nightmareUnlocked == false, "campaign.nightmareUnlocked")
-	assert(profile.campaign.actMilestoneClaims["1"] == 0, "actMilestoneClaims[1]")
-	assert(keysOf(fixtureV3) == keysOf(original), "fixture v3 mutado")
+	assert(profile.campaign.highestUnlockedStage == "2-1", "campaign.highestUnlockedStage")
+	assert(profile.campaign.starsNormal["1-1"] == 7, "campaign.starsNormal[1-1]")
+	assert(profile.horde.starterChosen == false, "horde.starterChosen")
+	assert(profile.horde.faction == "iron", "horde.faction")
+	assert(profile.horde.unlockedCards.squad_runner_pack == true, "horde unlocked starter")
+	assert(profile.horde.shards == 0 and profile.horde.dailyPlunderCount == 0, "horde counters")
+	assert(
+		profile.horde.bossCores.act1 == false and #profile.horde.squads == 3,
+		"horde squads/cores"
+	)
+	assert(keysOf(fixtureV4) == keysOf(original), "fixture v4 mutado")
 	local ok, validateErr = ProfileSchema.validate(profile)
-	assert(ok, "perfil migrado v4 invalido: " .. tostring(validateErr))
+	assert(ok, "perfil migrado v5 invalido: " .. tostring(validateErr))
 	local jsonOk, jsonErr = ProfileSchema.isJsonSafe(profile)
-	assert(jsonOk, "perfil migrado v4 nao e JSON-safe: " .. tostring(jsonErr))
+	assert(jsonOk, "perfil migrado v5 nao e JSON-safe: " .. tostring(jsonErr))
 end)
 
 check("migracao de v0 vazio devolve o template", function()
 	local profile, err = ProfileSchema.migrate({}, 0)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
 	assert(
-		profile.schemaVersion == 4 and profile.contentVersion == 3 and profile.gold == 0,
+		profile.schemaVersion == 5 and profile.contentVersion == 3 and profile.gold == 0,
 		"template esperado"
 	)
 	assert(ProfileSchema.validate(profile), "v0 vazio gerou perfil invalido")
 end)
 
-check("validacao v4: slot, coordenadas step 250, tooClose, wall.level e campaign", function()
+check("validacao v5: slot, coordenadas step 250, tooClose, wall.level, campaign e horde", function()
 	local p = ProfileSchema.template()
 	p.wall.level = 5
 	p.wall.activeTrapLimit = 7
@@ -433,10 +533,16 @@ check("validacao v4: slot, coordenadas step 250, tooClose, wall.level e campaign
 	p.campaign.highestUnlockedStage = "2-3"
 	p.campaign.starsNormal["1-1"] = 7
 	p.campaign.actMilestoneClaims["1"] = 3
+	p.horde.starterChosen = true
+	p.horde.faction = "rift"
+	p.horde.shards = 4
+	p.horde.bossCores.act5 = true
+	p.horde.championCardId = "champ_rift_archon"
+	p.horde.championLaneMode = "split"
 	local ok, err = ProfileSchema.validate(p)
-	assert(ok, "perfil v4 valido recusado: " .. tostring(err))
+	assert(ok, "perfil v5 valido recusado: " .. tostring(err))
 	local jsonOk, jsonErr = ProfileSchema.isJsonSafe(p)
-	assert(jsonOk, "perfil v4 com stars nao e JSON-safe: " .. tostring(jsonErr))
+	assert(jsonOk, "perfil v5 com horde nao e JSON-safe: " .. tostring(jsonErr))
 
 	local badSlot = clone(p)
 	badSlot.wall.cells["BAD!"] = { trap = "archer", level = 1, x = 5000, y = 2500 }
@@ -535,7 +641,7 @@ check("migra no load e persiste a migracao", function()
 		end,
 	})
 	local session = assert(controller.startSession("User_3"))
-	assert(session.Data.schemaVersion == 4, "nao migrou")
+	assert(session.Data.schemaVersion == 5, "nao migrou")
 	assert(profile.saves == 1, "migracao nao foi salva: " .. tostring(profile.saves))
 	assert(profile.reconciles == 1, "Reconcile nao rodou")
 	assert(infos[1].migrated == true, "info.migrated deveria ser true")

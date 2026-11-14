@@ -39,6 +39,7 @@ export type HudLayout = {
 	trapCardW: number,
 	trapCardH: number,
 	trapCardGap: number,
+	deckBtn: Rect,
 	storyBtn: Rect,
 	defendBtn: Rect,
 	attackBtn: Rect,
@@ -291,6 +292,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 
 	local toolsDock: Rect
 	local trapDock: Rect
+	local deckBtn: Rect
 	local storyBtn: Rect
 	local defendBtn: Rect
 	local attackBtn: Rect
@@ -298,12 +300,12 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 
 	if usableW >= 600 then
 		-- Single peripheral bottom band (Landscape phones + tablets + desktop)
-		local ctaW = clamp(round(w * 0.135), 96, 128)
+		local ctaW = if h <= 420 then 96 else clamp(round(w * 0.135), 96, 128)
 		local ctaH = 44
 		local ctaGap = 5
 		local maxDockCenterW = usableW - toolsW - ctaW - gap * 2
 		local rawCardW = math.floor((maxDockCenterW - dockPadX * 2 - cardGap * 4) / 5)
-		cardW = clamp(rawCardW, 48, if h <= 420 then 62 else 72)
+		cardW = clamp(rawCardW, 48, if h <= 420 then 56 else 72)
 		local dockW = cardW * 5 + cardGap * 4 + dockPadX * 2
 		local dockY = maxY - cardH
 		local dockCenterSpace = (maxX - ctaW - gap) - (minX + toolsW + gap)
@@ -311,11 +313,12 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 
 		toolsDock = rect(minX, maxY - toolBtn, toolsW, toolBtn)
 		trapDock = rect(dockX, dockY, dockW, cardH)
+		deckBtn = rect(maxX - ctaW, maxY - (ctaH * 4 + ctaGap * 3), ctaW, ctaH)
 		storyBtn = rect(maxX - ctaW, maxY - (ctaH * 3 + ctaGap * 2), ctaW, ctaH)
 		defendBtn = rect(maxX - ctaW, maxY - (ctaH * 2 + ctaGap), ctaW, ctaH)
 		attackBtn = rect(maxX - ctaW, maxY - ctaH, ctaW, ctaH)
 	else
-		-- Narrow portrait stack: bottom trap row + compact action row + story row just above
+		-- Narrow portrait stack: bottom trap row + compact 2x2 CTA grid on the right
 		local maxCardW = math.floor((usableW - dockPadX * 2 - cardGap * 4) / 5)
 		cardW = clamp(maxCardW, 46, 68)
 		local dockW = cardW * 5 + cardGap * 4 + dockPadX * 2
@@ -327,9 +330,11 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		local ctaGap = 4
 		local ctaW = clamp(math.floor((ctaAreaW - ctaGap) / 2), 68, 120)
 		local ctasLeft = maxX - (ctaW * 2 + ctaGap)
+		local topCtaY = actionRowY - 44 - ctaGap
 
 		toolsDock = rect(minX, actionRowY, toolsW, toolBtn)
-		storyBtn = rect(ctasLeft, actionRowY - gap - 44, ctaW * 2 + ctaGap, 44)
+		deckBtn = rect(ctasLeft, topCtaY, ctaW, 44)
+		storyBtn = rect(ctasLeft + ctaW + ctaGap, topCtaY, ctaW, 44)
 		defendBtn = rect(ctasLeft, actionRowY, ctaW, 44)
 		attackBtn = rect(ctasLeft + ctaW + ctaGap, actionRowY, ctaW, 44)
 		trapDock = rect(dockX, dockY, dockW, cardH)
@@ -337,7 +342,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 
 	local bottomCenterTop = if usableW >= 600
 		then trapDock.y
-		else math.min(trapDock.y, math.min(defendBtn.y, storyBtn.y))
+		else math.min(trapDock.y, math.min(defendBtn.y, math.min(storyBtn.y, deckBtn.y)))
 	local clearCenterHeight = math.max(0, bottomCenterTop - topChromeBottom)
 
 	local toastW = clamp(usableW - 40, 220, 420)
@@ -395,6 +400,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		+ utilityCluster.w * utilityCluster.h
 		+ toolsDock.w * toolsDock.h
 		+ trapDock.w * trapDock.h
+		+ deckBtn.w * deckBtn.h
 		+ storyBtn.w * storyBtn.h
 		+ defendBtn.w * defendBtn.h
 		+ attackBtn.w * attackBtn.h
@@ -418,6 +424,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		trapCardW = cardW,
 		trapCardH = cardH,
 		trapCardGap = cardGap,
+		deckBtn = deckBtn,
 		storyBtn = storyBtn,
 		defendBtn = defendBtn,
 		attackBtn = attackBtn,

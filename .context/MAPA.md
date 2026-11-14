@@ -1,6 +1,6 @@
 # MAPA — onde cada responsabilidade mora
 
-> Teto: 60 linhas. Atualizado: 13/11/2026. Se um caminho não estiver aqui, procure antes de editar.
+> Teto: 60 linhas. Atualizado: 14/11/2026. Se um caminho não estiver aqui, procure antes de editar.
 
 | Caminho | O que tem | Quando carregar |
 |---|---|---|
@@ -23,16 +23,16 @@
 | `docs/referencias-tower-defense.md` | jogos e vídeos de referência | antes de decidir game feel |
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |
-| `src/shared/sim/core.luau` | motor v7: 6 classes, 5 Bosses multi-lane, 8 mutadores, Arqueiro 360°, RNG/hash | qualquer mudança de simulação |
+| `src/shared/sim/core.luau` · `DeckCatalog.luau` | motor v8 (wisp/drake voadores, campeões) + DeckCatalog (5 facções/13 cartas) | qualquer mudança de simulação |
 | `sim/poc.luau` · `sim/acceptance.luau` | benchmark/demo e acceptance P1 (1.000 seeds × 3) | medir performance/validar hash |
 | `sim/invariants.luau` | oráculo executável (19 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |
-| `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v4 (campanha/marcos) + `contentVersion 3` + catálogo (5 traps/`WALL_LEVELS`); migração 0..3→4 | mexer em dado/catálogo |
+| `src/shared/data/ProfileSchema.luau` · `TrapCatalog.luau` · `sim/profile-contract.luau` | schema v5 (horde deck/cards/cores) + `contentVersion 3` + catálogo; migração 0..4→5 | mexer em dado/catálogo |
 | `src/server/data/ProfileService.luau` · `src/server/ProfileBoot.server.luau` | sessão (nil/retry, `EndSession`) e ligação com Players/vendor | mexer em sessão/persistência |
 | `src/shared/analytics/` · `src/server/analytics/` · `sim/analytics-contract.luau` | contrato v2 (35/35) + sink DataStore/Memory + `es-419→es-MX`; QA `teste-s7-studio.md` | emitir/validar evento |
-| `src/shared/i18n/I18n.luau` · `src/shared/campaign/CampaignCatalog.luau` · `BotPhantoms.luau` · `sim/campaign-contract.luau` | 77 chaves PT/EN/ES + 25 estágios/5 Bosses + 10 bots L1..L5 + contratos (`i18n`/`campaign`) | tradução/campanha/matchmaking |
-| `src/shared/visual/{VisualTheme,UiAssets}.luau` · `src/client/visual/` · `sim/visual-contract.luau` | P2/v1.2 visual/áudio: `TransitionKit` (`Card 1 VS Card 2`), `CrowdKit`, `CampaignUi`, `HordeKit`, `56 SFX` + `4 BGM` | mexer na apresentação/áudio |
+| `src/shared/i18n/I18n.luau` · `src/shared/campaign/CampaignCatalog.luau` · `BotPhantoms.luau` · `sim/campaign-contract.luau` | 133 chaves PT/EN/ES + 25 estágios/5 Bosses + DeckUi/Horde + contratos | tradução/campanha/matchmaking |
+| `src/shared/visual/{VisualTheme,UiAssets}.luau` · `src/client/visual/` · `sim/visual-contract.luau` | visual/áudio: DeckUi, HordeKit (voadores/campeões), TransitionKit, 5 Portais | mexer na apresentação/áudio |
 | `src/server/walls/WallService.luau` · `WallController.server.luau` · `sim/walls-contract.luau` · `sim/content-contract.luau` · `sim/build-contract.luau` | S3/S3.4: regras, `toBattleWall`, `contentVersion`; S4: UI pura, remotes + contratos | mexer em muralha/economia/conteúdo/build |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{...}`, `replicatedFirst/` (`BootLoading`), `server/...`, `client/`, `world/` | navegar no código |
@@ -48,7 +48,7 @@
 ## Armadilhas conhecidas
 
 1. **Não edite `src/shared/sim/core.luau` sem rodar `sim/invariants.luau` e `sim/acceptance.luau`.**
-2. **Mudou a matemática? Suba `simVersion` e atualize `docs/versoes.md`.** Atual = **7**; replay v1..v6 não roda no motor v7.
+2. **Mudou a matemática? Suba `simVersion` e atualize `docs/versoes.md`.** Atual = **8**; replay v1..v7 não roda no motor v8.
 3. **`src/` é produção**; o legado de moedas foi apagado na S1 e vive na tag anotada `legacy-coins`.
 4. **Doc mais velho que código mente.** Rode a radiografia antes de confiar em README/tese.
 5. **`.tools/` não é versionado.** Reinstale com `rokit install` se sumir.

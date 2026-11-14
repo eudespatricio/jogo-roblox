@@ -121,6 +121,14 @@ local PROPS = {
 	cosmetic_equipped = { slot = "theme", cosmetic_id = "theme_default" },
 	league_changed = { ["from"] = 10, to = 7, delta = -3 },
 	blueprint_earned = { blueprint_id = "frost_blueprint", rarity = "rare", source = "raid" },
+	horde_starter_chosen = { faction = "iron", portal_theme = "act1" },
+	horde_card_unlocked = {
+		card_id = "squad_iron_vanguard",
+		rarity = "rare",
+		cost_gold = 120,
+		cost_shards = 1,
+	},
+	deck_saved = { faction = "iron", supply_used = 48, total_units = 24, has_champion = false },
 	-- 2.4 monetizacao
 	offer_shown = { offer_id = "starter_pack", price_robux = 399, placement = "store" },
 	purchase_start = { offer_id = "starter_pack", price_robux = 399 },
@@ -159,15 +167,15 @@ local function validEvent(name)
 end
 
 -- ---------------------------------------------------------------- catalogo
-check("catalogo: schema 2 e 34 eventos da taxonomia", function()
+check("catalogo: schema 2 e 37 eventos da taxonomia", function()
 	assert(Analytics.SCHEMA_VERSION == 2, "schema_version deveria ser 2")
 	assert(AnalyticsService.SCHEMA_VERSION == 2, "AnalyticsService.SCHEMA_VERSION deveria ser 2")
 	local collector = Analytics.COLLECTOR_SCHEMA_VERSIONS
 	assert(#collector == 2 and collector[1] == 1 and collector[2] == 2, "coletor aceita v1 e v2")
 	local names = Analytics.eventNames()
-	assert(#names == 34, "esperava 34 eventos: " .. tostring(#names))
+	assert(#names == 37, "esperava 37 eventos: " .. tostring(#names))
 	assert(#fixtureErrors == 0, "fixtures invalidas: " .. table.concat(fixtureErrors, " | "))
-	assert(countKeys(FIXTURES) == 34, "fixtures: " .. tostring(countKeys(FIXTURES)))
+	assert(countKeys(FIXTURES) == 37, "fixtures: " .. tostring(countKeys(FIXTURES)))
 	assert(Analytics.MAX_EVENTS_PER_SESSION == 200, "teto de eventos/sessao")
 	assert(Analytics.MAX_CLIENT_EVENTS_PER_MINUTE == 10, "rate limit de cliente")
 	assert(Analytics.MAX_FREE_STRING == 256, "limite de string livre")
@@ -337,12 +345,12 @@ check("lote: validateAll aponta o indice do invalido", function()
 end)
 
 -- ---------------------------------------------------------------- motor
-check("BattleResult expoe seed e simVersion 7 com o hash de referencia", function()
+check("BattleResult expoe seed e simVersion 8 com o hash de referencia", function()
 	local result = Core.Run(42)
 	assert(result.hash == 1245379674, "hash mudou: " .. tostring(result.hash))
 	assert(result.seed == 42, "seed ausente no resultado: " .. tostring(result.seed))
 	assert(result.simVersion == Core.SIM_VERSION, "simVersion divergente")
-	assert(Core.SIM_VERSION == 7, "simVersion deveria ser 7")
+	assert(Core.SIM_VERSION == 8, "simVersion deveria ser 8")
 
 	local event, err = Analytics.battleFinished(CTX, BATTLE_ID, result)
 	assert(event ~= nil, "evento de batalha invalido: " .. tostring(err))
@@ -513,7 +521,7 @@ local function newService(options)
 	return service, record, clock
 end
 
-check("servico: os 34 eventos do catalogo validam e chegam ao sink", function()
+check("servico: os 37 eventos do catalogo validam e chegam ao sink", function()
 	local service, record = newService()
 	local session, beginErr = service.beginSession(1, sessionFields())
 	assert(session ~= nil, tostring(beginErr))
@@ -524,7 +532,7 @@ check("servico: os 34 eventos do catalogo validam e chegam ao sink", function()
 		accepted += 1
 	end
 	local flushed = service.flush("test")
-	assert(flushed == accepted + 1, "flush deveria levar session_start + 34 eventos")
+	assert(flushed == accepted + 1, "flush deveria levar session_start + 37 eventos")
 	assert(#record.events == accepted + 1, "sink recebeu " .. tostring(#record.events))
 	for _, event in ipairs(record.events) do
 		local ok, err = Analytics.validate(event)
@@ -588,6 +596,14 @@ check("rate limit de cliente: 10/min e client_error uma vez", function()
 	local serverOnly, serverOnlyErr =
 		service.emitClient(1, "battle_finished", PROPS.battle_finished)
 	assert(serverOnly == nil and serverOnlyErr == "server_only", tostring(serverOnlyErr))
+	for _, hordeEvent in ipairs({ "horde_starter_chosen", "horde_card_unlocked", "deck_saved" }) do
+		assert(Analytics.isServerOnly(hordeEvent), hordeEvent .. " deveria ser SERVER_ONLY")
+		local blocked, blockedErr = service.emitClient(1, hordeEvent, PROPS[hordeEvent])
+		assert(
+			blocked == nil and blockedErr == "server_only",
+			hordeEvent .. ": " .. tostring(blockedErr)
+		)
+	end
 	assert(service.flush("test") > 0, "flush")
 	local reports = 0
 	for _, event in ipairs(record.events) do
@@ -967,6 +983,23 @@ check("normalizacao de locale LATAM/Roblox para ll-CC v1", function()
 		service.beginSession(1, sessionFields({ locale = I18n.toAnalyticsLocale("es-419") }))
 	assert(startEvent ~= nil, tostring(beginErr))
 	assert(startEvent.locale == "es-MX", "locale da sessao deveria ser es-MX")
+end)
+
+check("horde sink e eventos server_only da v1.4 validam corretamente", function()
+	local hordeSpent, spentErr =
+		Analytics.newEvent(CTX, "gold_spent", { amount = 120, sink = "horde" })
+	assert(hordeSpent ~= nil and Analytics.validate(hordeSpent), tostring(spentErr))
+
+	local badSpent = Analytics.newEvent(CTX, "gold_spent", { amount = 120, sink = "invalid_sink" })
+	assert(badSpent == nil, "aceitou sink invalido")
+
+	local badUnlock = Analytics.newEvent(CTX, "horde_card_unlocked", {
+		card_id = "squad_iron_vanguard",
+		rarity = "invalid_rarity",
+		cost_gold = 100,
+		cost_shards = 0,
+	})
+	assert(badUnlock == nil, "aceitou raridade invalida em horde_card_unlocked")
 end)
 
 print(string.format("contrato de analytics: %d checagens, %d falhas", checks, #failures))

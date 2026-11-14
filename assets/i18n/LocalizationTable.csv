@@ -76,3 +76,59 @@ story_locked_nm,Story/Mode,Locked hint,Vença 5-5 Normal p/ Pesadelo,Clear 5-5 N
 boss_telegraph_tag,Boss/HUD,Telegraph alert,ALERTA: GOLPE PESADO!,WARNING: HEAVY SLAM!,¡ALERTA: GOLPE PESADO!
 boss_vulnerable_tag,Boss/HUD,Stagger alert,ATORDADO (+30% DANO),STAGGERED (+30% DMG),ATURDIDO (+30% DAÑO)
 boss_enrage_tag,Boss/HUD,Enrage alert,FÚRIA DO CHEFE,BOSS ENRAGED,FURIA DEL JEFE
+cta_horde,HUD/CTA,Button,HORDA,HORDE,HORDA
+unit_wisp,Horde/Unit,Unit name,ESPECTRO,WISP,ESPECTRO
+unit_drake,Horde/Unit,Unit name,DRACONATO,DRAKE,DRACO
+deck_faction_iron,Deck/Faction,Faction name,Ferro,Iron,Hierro
+deck_faction_slag,Deck/Faction,Faction name,Escória,Slag,Escoria
+deck_faction_frost,Deck/Faction,Faction name,Gelo,Frost,Hielo
+deck_faction_powder,Deck/Faction,Faction name,Pólvora,Powder,Pólvora
+deck_faction_rift,Deck/Faction,Faction name,Fenda,Rift,Grieta
+deck_rarity_common,Deck/Rarity,Card rarity,Comum,Common,Común
+deck_rarity_rare,Deck/Rarity,Card rarity,Rara,Rare,Rara
+deck_rarity_epic,Deck/Rarity,Card rarity,Épica,Epic,Épica
+deck_rarity_legendary,Deck/Rarity,Card rarity,Lendária,Legendary,Legendaria
+deck_rarity_mythic,Deck/Rarity,Card rarity,Mítica,Mythic,Mítica
+deck_card_squad_runner_pack,Deck/Card,Card title,Bando de Corredores,Runner Pack,Manada de Corredores
+deck_card_squad_swarm_brood,Deck/Card,Card title,Ninhada do Enxame,Swarm Brood,Camada de Enjambre
+deck_card_squad_brute_guards,Deck/Card,Card title,Guardas Brutos,Brute Guards,Guardias Brutos
+deck_card_squad_iron_vanguard,Deck/Card,Card title,Vanguarda de Ferro,Iron Vanguard,Vanguardia de Hierro
+deck_card_squad_slag_pyros,Deck/Card,Card title,Piroclastas de Escória,Slag Pyros,Piros de Escoria
+deck_card_squad_sapper_team,Deck/Card,Card title,Equipe de Sapadores,Sapper Team,Equipo de Zapadores
+deck_card_squad_rift_wisps,Deck/Card,Card title,Espectros da Fenda,Rift Wisps,Espectros de la Grieta
+deck_card_squad_sky_drakes,Deck/Card,Card title,Dracos Celestes,Sky Drakes,Dracos Celestes
+deck_card_champ_iron_ram,Deck/Card,Card title,Arietão Blindado,Armored Iron Ram,Ariete Blindado
+deck_card_champ_slag_lord,Deck/Card,Card title,Lorde de Escória,Slag Juggernaut,Señor de Escoria
+deck_card_champ_frost_matriarch,Deck/Card,Card title,Matriarca Glacial,Rime Matriarch,Matriarca Glacial
+deck_card_champ_powder_baron,Deck/Card,Card title,Barão da Pólvora,Powder Baron,Barón de la Pólvora
+deck_card_champ_rift_archon,Deck/Card,Card title,Arconte da Fenda,Rift Titan,Titán de la Grieta
+deck_lane_center,Deck/Lane,Lane mode,Centro,Center,Centro
+deck_lane_flanks,Deck/Lane,Lane mode,Flancos,Flanks,Flancos
+deck_lane_split,Deck/Lane,Lane mode,Divisão,Split,División
+deck_lane_all,Deck/Lane,Lane mode,Todas,All Lanes,Todos
+deck_stat_ground,Deck/Stat,Stat name,Solo,Ground,Tierra
+deck_stat_air,Deck/Stat,Stat name,Aéreo,Air,Aéreo
+deck_stat_armor,Deck/Stat,Stat name,Armadura,Armor,Armadura
+deck_stat_speed,Deck/Stat,Stat name,Velocidade,Speed,Velocidad
+deck_champ_survived,Raid/Pill,Bet result,Campeão Sobreviveu (+25% Ouro),Champion Survived (+25% Gold),Campeón Sobrevivió (+25% Oro)
+deck_champ_hunted,Raid/Pill,Bet result,Campeão Abatido,Champion Hunted,Campeón Abatido
+deck_reward_shard,Raid/Badge,Reward badge,+%d Estilhaços,+%d Shards,+%d Fragmentos
+deck_reward_core,Raid/Badge,Reward badge,+%d Núcleo de Chefe,+%d Boss Core,+%d Núcleo de Jefe
+deck_title,Deck/Modal,Modal header,FORJA DA HORDA,HORDE FORGE,FORJA DE LA HORDA
+deck_choose_faction,Deck/Modal,Step header,ESCOLHA SUA FACÇÃO,CHOOSE YOUR FACTION,ELIGE TU FACCIÓN
+deck_confirm_faction,Deck/CTA,Button,CONFIRMAR FACÇÃO,CONFIRM FACTION,CONFIRMAR FACCIÓN
+deck_squads_title,Deck/Section,Section title,ESQUADRÕES,SQUADS,ESCUADRONES
+deck_forge_vault,Deck/Section,Section title,COFRE DE RELÍQUIAS,RELIC VAULT,CÁMARA DE RELIQUIAS
+deck_supply_label,Deck/Stat,Capacity,Suprimento: %d/%d,Supply: %d/%d,Suministro: %d/%d
+deck_shards_label,Deck/Stat,Currency,%d Estilhaços,%d Shards,%d Fragmentos
+deck_champion_row,Deck/Section,Row title,CAMPEÃO MÍTICO,MYTHIC CHAMPION,CAMPEÓN MÍTICO
+deck_champion_hint,Deck/Hint,Bonus hint,Aposta: +25% Ouro e Estilhaço se sobreviver,Bet: +25% Gold & Shard if survived,Apuesta: +25% Oro y Fragmento si sobrevive
+deck_unlock_btn,Deck/CTA,Button,DESBLOQUEAR,UNLOCK,DESBLOQUEAR
+deck_unlocked_badge,Deck/Badge,Status badge,DESBLOQUEADA,UNLOCKED,DESBLOQUEADA
+deck_save_btn,Deck/CTA,Button,SALVAR HORDA,SAVE HORDE,GUARDAR HORDA
+deck_saved_toast,Deck/Toast,Save confirmation,Horda salva com sucesso!,Horde saved successfully!,¡Horda guardada con éxito!
+deck_cost_fmt,Deck/Cost,Unlock cost,%dg + %d Estilhaços,%dg + %d Shards,%dg + %d Fragmentos
+deck_requires_core,Deck/Cost,Requirement,Requer Núcleo do Ato %d,Requires Act %d Core,Requiere Núcleo del Acto %d
+deck_squad_vanguard,Deck/Squad,Row label,Vanguarda,Vanguard,Vanguardia
+deck_squad_pressure,Deck/Squad,Row label,Pressão,Pressure,Presión
+deck_squad_assault,Deck/Squad,Row label,Assalto,Assault,Asalto

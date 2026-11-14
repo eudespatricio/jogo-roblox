@@ -1,7 +1,7 @@
 --!strict
 -- Contrato de analytics v2: envelope, catalogo de eventos, limites e anti-PII.
 -- Fonte de verdade: docs/taxonomia-analytics.md (v1 aprovada em 09/11/2026; v2 = P2 onda 1:
--- muralha livre x/y, trap_moved, wall_upgraded, cosmetic_equipped; 31 -> 34 eventos).
+-- muralha livre x/y, trap_moved, wall_upgraded, cosmetic_equipped + Playtest v1.4 horda/deck; 37 eventos).
 -- Puro Luau (nenhuma API do Roblox): o validador roda no CLI em sim/analytics-contract.luau
 -- e no servidor. Analytics nunca entra no estado da simulacao nem no hash: o servidor emite
 -- `battle_finished` DEPOIS de calcular o BattleResult.
@@ -110,6 +110,9 @@ AnalyticsTypes.SERVER_ONLY = {
 	trap_moved = true,
 	wall_upgraded = true,
 	cosmetic_equipped = true,
+	horde_starter_chosen = true,
+	horde_card_unlocked = true,
+	deck_saved = true,
 } :: { [string]: boolean }
 
 function AnalyticsTypes.isServerOnly(name: string): boolean
@@ -223,7 +226,7 @@ local CATALOG: { [string]: CatalogEntry } = {
 	}),
 	gold_spent = catalogEvent({
 		prop("amount", int(0, nil)),
-		prop("sink", oneOf({ "trap", "upgrade", "repair", "wall" })),
+		prop("sink", oneOf({ "trap", "upgrade", "repair", "wall", "horde" })),
 	}),
 	-- v2: posicao livre (x/y milli) + nivel; `slot`/`cell` sao metadados opcionais.
 	trap_placed = catalogEvent({
@@ -271,6 +274,23 @@ local CATALOG: { [string]: CatalogEntry } = {
 		prop("blueprint_id", str(32, "id")),
 		prop("rarity", str(32, "id")),
 		prop("source", str(32, "id")),
+	}),
+	-- v2 (server_only, Playtest v1.4): escolha de faccao inicial, desbloqueio de carta e deck.
+	horde_starter_chosen = catalogEvent({
+		prop("faction", oneOf({ "iron", "slag", "frost", "powder", "rift" })),
+		prop("portal_theme", oneOf({ "act1", "act2", "act3", "act4", "act5", "rift" })),
+	}),
+	horde_card_unlocked = catalogEvent({
+		prop("card_id", str(48, "id")),
+		prop("rarity", oneOf({ "common", "rare", "epic", "legendary", "mythic" })),
+		prop("cost_gold", int(0, nil)),
+		prop("cost_shards", int(0, nil)),
+	}),
+	deck_saved = catalogEvent({
+		prop("faction", oneOf({ "iron", "slag", "frost", "powder", "rift" })),
+		prop("supply_used", int(0, nil)),
+		prop("total_units", int(0, nil)),
+		prop("has_champion", bool()),
 	}),
 	-- 2.4 monetizacao
 	-- v2 (server_only): troca de cosmetico equipado (nunca entra no BattleResult).

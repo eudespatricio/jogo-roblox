@@ -11,6 +11,9 @@ BuildProtocol.ACTIONS = table.freeze({
 	move = "move",
 	upgrade_wall = "upgrade_wall",
 	equip_cosmetic = "equip_cosmetic",
+	choose_horde = "choose_horde",
+	unlock_card = "unlock_card",
+	save_deck = "save_deck",
 })
 
 local EQUIPPED_SLOTS: { [string]: boolean } = {
@@ -20,11 +23,34 @@ local EQUIPPED_SLOTS: { [string]: boolean } = {
 	commander = true,
 }
 
+local HORDE_FACTIONS: { [string]: boolean } = {
+	iron = true,
+	slag = true,
+	frost = true,
+	powder = true,
+	rift = true,
+}
+
+local LANE_MODES: { [string]: boolean } = {
+	center = true,
+	flanks = true,
+	split = true,
+	all = true,
+}
+
+local MAX_DECK_SQUADS = 8
+local MAX_SQUAD_UNITS = 200
+
 export type Grid = {
 	parseCell: (cell: string) -> (number?, number?),
 	isValidSlot: ((slot: any) -> boolean)?,
 	validateArenaPos: ((x: any, y: any) -> (boolean, string?))?,
 	cellToArenaPos: ((cell: string) -> (number?, number?))?,
+}
+export type DeckSquadPayload = {
+	cardId: string,
+	count: number,
+	laneMode: string,
 }
 export type Request = {
 	action: string,
@@ -34,6 +60,16 @@ export type Request = {
 	x: number?,
 	y: number?,
 	cosmeticId: string?,
+	faction: string?,
+	cardId: string?,
+	squads: { DeckSquadPayload }?,
+	championCardId: string?,
+	championLaneMode: string?,
+}
+export type SaveDeckPayload = {
+	squads: { DeckSquadPayload },
+	championCardId: string?,
+	championLaneMode: string?,
 }
 export type Service = {
 	place: (trapId: string, cellOrSlot: string, x: number?, y: number?) -> (any?, string?),
@@ -43,7 +79,60 @@ export type Service = {
 	upgrade: (slot: string) -> (any?, string?),
 	upgradeWall: (() -> (any?, string?))?,
 	equipCosmetic: ((slotName: string, cosmeticId: string) -> (any?, string?))?,
+	chooseHorde: ((faction: string) -> (any?, string?))?,
+	unlockCard: ((cardId: string) -> (any?, string?))?,
+	saveDeck: ((payload: SaveDeckPayload) -> (any?, string?))?,
 }
+
+local cachedDeckCatalog: any = nil
+
+local function resolveDeckCatalog(explicit: any?): any?
+	if type(explicit) == "table" then
+		return explicit
+	end
+	if cachedDeckCatalog ~= nil then
+		return cachedDeckCatalog
+	end
+	local okGame, rep = pcall(function(): any
+		return game:GetService("ReplicatedStorage")
+	end)
+	if okGame and rep ~= nil then
+		local sharedFolder = rep:FindFirstChild("Shared")
+		local raidFolder = if sharedFolder ~= nil then sharedFolder:FindFirstChild("raid") else nil
+		local mod = if raidFolder ~= nil then raidFolder:FindFirstChild("DeckCatalog") else nil
+		if mod ~= nil then
+			local req: any = require
+			local okReq, loaded = pcall(req, mod)
+			if okReq and type(loaded) == "table" then
+				cachedDeckCatalog = loaded
+				return loaded
+			end
+		end
+	end
+	local req: any = require
+	local cliPath = "../raid/" .. "DeckCatalog"
+	local okCli, cliLoaded = pcall(req, cliPath)
+	if okCli and type(cliLoaded) == "table" then
+		cachedDeckCatalog = cliLoaded
+		return cliLoaded
+	end
+	return nil
+end
+
+local function isIdString(value: any): boolean
+	return type(value) == "string"
+		and #value > 0
+		and #value <= 48
+		and string.match(value, "^[%w_%.%-]+$") ~= nil
+end
+
+local function isFiniteInt(value: any): boolean
+	if type(value) ~= "number" then
+		return false
+	end
+	local n = value :: number
+	return n == n and n ~= math.huge and n ~= -math.huge and n % 1 == 0
+end
 
 local function checkSlot(grid: Grid, slot: any): boolean
 	if type(slot) ~= "string" then
@@ -100,6 +189,103 @@ function BuildProtocol.validateRequest(
 			cell = "",
 			slot = "",
 		}, nil
+	end
+
+	if action == "choose_horde" then
+		local rawFaction = if type(arg1) == "table" then arg1.faction else arg1
+		if type(rawFaction) ~= "string" then
+			return nil, "bad_request"
+		end
+		if HORDE_FACTIONS[rawFaction] ~= true then
+			return nil, "invalid_faction"
+		end
+		return {
+			action = "choose_horde",
+			trapId = "",
+			cell = "",
+			slot = "",
+			faction = rawFaction,
+		},
+			nil
+	end
+
+	if action == "unlock_card" then
+		local rawCardId = if type(arg1) == "table" then arg1.cardId else arg1
+		if type(rawCardId) ~= "string" then
+			return nil, "bad_request"
+		end
+		if not isIdString(rawCardId) then
+			return nil, "unknown_card"
+		end
+		return {
+			action = "unlock_card",
+			trapId = "",
+			cell = "",
+			slot = "",
+			cardId = rawCardId,
+		},
+			nil
+	end
+
+	if action == "save_deck" then
+		if type(arg1) ~= "table" or type(arg1.squads) ~= "table" then
+			return nil, "bad_request"
+		end
+		local rawSquads = arg1.squads :: { any }
+		local rawKeys = 0
+		for k in pairs(rawSquads) do
+			if not isFiniteInt(k) or (k :: number) < 1 then
+				return nil, "invalid_squads"
+			end
+			rawKeys += 1
+		end
+		if rawKeys ~= #rawSquads or #rawSquads < 1 or #rawSquads > MAX_DECK_SQUADS then
+			return nil, "invalid_squads"
+		end
+		local squadsOut: { DeckSquadPayload } = {}
+		for _, sq in ipairs(rawSquads) do
+			if type(sq) ~= "table" or not isIdString(sq.cardId) then
+				return nil, "invalid_squad_card"
+			end
+			if not isFiniteInt(sq.count) or sq.count < 1 or sq.count > MAX_SQUAD_UNITS then
+				return nil, "invalid_squad_count"
+			end
+			if type(sq.laneMode) ~= "string" or LANE_MODES[sq.laneMode] ~= true then
+				return nil, "invalid_lane_mode"
+			end
+			table.insert(squadsOut, {
+				cardId = sq.cardId :: string,
+				count = sq.count :: number,
+				laneMode = sq.laneMode :: string,
+			})
+		end
+		local champIdOut: string? = nil
+		if arg1.championCardId ~= nil and arg1.championCardId ~= "" then
+			if not isIdString(arg1.championCardId) then
+				return nil, "invalid_champion_card"
+			end
+			champIdOut = arg1.championCardId :: string
+		end
+		local champLaneOut = "center"
+		if arg1.championLaneMode ~= nil then
+			if
+				type(arg1.championLaneMode) ~= "string"
+				or LANE_MODES[arg1.championLaneMode] ~= true
+			then
+				return nil, "invalid_lane_mode"
+			end
+			champLaneOut = arg1.championLaneMode :: string
+		end
+		return {
+			action = "save_deck",
+			trapId = "",
+			cell = "",
+			slot = "",
+			squads = squadsOut,
+			championCardId = champIdOut,
+			championLaneMode = champLaneOut,
+		},
+			nil
 	end
 
 	if action == "equip_cosmetic" then
@@ -213,7 +399,12 @@ end
 
 -- Whitelist defensiva: o cliente recebe estado da muralha, catalogo e configuracao publica;
 -- nunca schema inteiro nem chaves internas nao declaradas.
-function BuildProtocol.snapshot(profile: any, catalog: any, grid: Grid): { [string]: any }?
+function BuildProtocol.snapshot(
+	profile: any,
+	catalog: any,
+	grid: Grid,
+	deckCatalog: any?
+): { [string]: any }?
 	if
 		type(profile) ~= "table"
 		or type(profile.wall) ~= "table"
@@ -287,6 +478,113 @@ function BuildProtocol.snapshot(profile: any, catalog: any, grid: Grid): { [stri
 		commander = if type(srcEq.commander) == "string" then srcEq.commander else "cmd_vorn",
 	}
 
+	local dc = resolveDeckCatalog(deckCatalog)
+	local srcHorde = if type(profile.horde) == "table" then profile.horde else nil
+	local faction = if srcHorde ~= nil
+			and type(srcHorde.faction) == "string"
+			and HORDE_FACTIONS[srcHorde.faction] == true
+		then srcHorde.faction
+		else "iron"
+	local unlockedOut: { [string]: boolean } = {}
+	if srcHorde ~= nil and type(srcHorde.unlockedCards) == "table" then
+		for cardId, flag in pairs(srcHorde.unlockedCards) do
+			if type(cardId) == "string" and type(flag) == "boolean" then
+				unlockedOut[cardId] = flag
+			end
+		end
+	elseif dc ~= nil and type(dc.starterForFaction) == "function" then
+		local starter = dc.starterForFaction(faction)
+		if type(starter) == "table" and type(starter.unlockedCards) == "table" then
+			for cardId, flag in pairs(starter.unlockedCards) do
+				if flag == true then
+					unlockedOut[cardId] = true
+				end
+			end
+		end
+	else
+		unlockedOut.squad_runner_pack = true
+		unlockedOut.squad_brute_guards = true
+		unlockedOut.squad_iron_vanguard = true
+	end
+	local coresSrc = if srcHorde ~= nil and type(srcHorde.bossCores) == "table"
+		then srcHorde.bossCores
+		else {}
+	local bossCoresOut = {
+		act1 = coresSrc.act1 == true,
+		act2 = coresSrc.act2 == true,
+		act3 = coresSrc.act3 == true,
+		act4 = coresSrc.act4 == true,
+		act5 = coresSrc.act5 == true,
+	}
+	local squadsOut: { DeckSquadPayload } = {}
+	if srcHorde ~= nil and type(srcHorde.squads) == "table" then
+		for _, sq in ipairs(srcHorde.squads) do
+			if
+				type(sq) == "table"
+				and type(sq.cardId) == "string"
+				and type(sq.count) == "number"
+			then
+				table.insert(squadsOut, {
+					cardId = sq.cardId,
+					count = sq.count,
+					laneMode = if type(sq.laneMode) == "string"
+							and LANE_MODES[sq.laneMode] == true
+						then sq.laneMode
+						else "center",
+				})
+			end
+		end
+	elseif dc ~= nil and type(dc.starterForFaction) == "function" then
+		local starter = dc.starterForFaction(faction)
+		if type(starter) == "table" and type(starter.squads) == "table" then
+			for _, sq in ipairs(starter.squads) do
+				table.insert(squadsOut, {
+					cardId = sq.cardId,
+					count = sq.count,
+					laneMode = sq.laneMode,
+				})
+			end
+		end
+	end
+	local champCardId = if srcHorde ~= nil
+			and type(srcHorde.championCardId) == "string"
+			and srcHorde.championCardId ~= ""
+		then srcHorde.championCardId
+		else nil
+	local champLaneMode = if srcHorde ~= nil
+			and type(srcHorde.championLaneMode) == "string"
+			and LANE_MODES[srcHorde.championLaneMode] == true
+		then srcHorde.championLaneMode
+		else "center"
+	local hordeOut: { [string]: any } = {
+		starterChosen = srcHorde ~= nil and srcHorde.starterChosen == true,
+		faction = faction,
+		unlockedCards = unlockedOut,
+		shards = if srcHorde ~= nil and type(srcHorde.shards) == "number"
+			then math.max(0, math.floor(srcHorde.shards))
+			else 0,
+		bossCores = bossCoresOut,
+		dailyPlunderDayId = if srcHorde ~= nil
+				and type(srcHorde.dailyPlunderDayId) == "number"
+			then math.max(0, math.floor(srcHorde.dailyPlunderDayId))
+			else 0,
+		dailyPlunderCount = if srcHorde ~= nil
+				and type(srcHorde.dailyPlunderCount) == "number"
+			then math.max(0, math.floor(srcHorde.dailyPlunderCount))
+			else 0,
+		squads = squadsOut,
+		championCardId = champCardId,
+		championLaneMode = champLaneMode,
+	}
+	if dc ~= nil then
+		if type(dc.portalThemeFor) == "function" then
+			hordeOut.portalTheme = dc.portalThemeFor(faction)
+		end
+		if type(dc.computeStats) == "function" then
+			hordeOut.stats = dc.computeStats(hordeOut, league)
+		end
+	end
+
 	return {
 		gold = profile.gold or 0,
 		schemaVersion = profile.schemaVersion,
@@ -299,6 +597,7 @@ function BuildProtocol.snapshot(profile: any, catalog: any, grid: Grid): { [stri
 		maxWallLevel = catalog.MAX_WALL_LEVEL or 5,
 		wallLevels = wallLevelsOut,
 		equipped = equipped,
+		horde = hordeOut,
 		cells = cells,
 		catalog = catalogOut,
 	}
@@ -336,6 +635,25 @@ function BuildProtocol.apply(service: Service, request: Request): (any?, string?
 			request.slot or request.trapId,
 			request.cosmeticId or request.cell
 		)
+	elseif request.action == "choose_horde" then
+		if service.chooseHorde == nil then
+			return nil, "bad_action"
+		end
+		return service.chooseHorde(request.faction or "")
+	elseif request.action == "unlock_card" then
+		if service.unlockCard == nil then
+			return nil, "bad_action"
+		end
+		return service.unlockCard(request.cardId or "")
+	elseif request.action == "save_deck" then
+		if service.saveDeck == nil then
+			return nil, "bad_action"
+		end
+		return service.saveDeck({
+			squads = request.squads or {},
+			championCardId = request.championCardId,
+			championLaneMode = request.championLaneMode,
+		})
 	end
 	return nil, "bad_action"
 end

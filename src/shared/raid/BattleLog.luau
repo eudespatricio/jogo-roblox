@@ -26,6 +26,13 @@ export type Record = {
 	rewarded: boolean,
 	rewardGold: number,
 	wall: WallSnapshot,
+	portalTheme: string?,
+	championOutcome: string?,
+}
+
+export type RecordMeta = {
+	portalTheme: string?,
+	championOutcome: string?,
 }
 
 export type WallTrap = {
@@ -216,6 +223,16 @@ function BattleLog.validate(record: any): (boolean, string?)
 	if record.trapsCount ~= #record.wall.traps then
 		return false, "trapsCount != #wall.traps"
 	end
+	if record.portalTheme ~= nil and (not isId(record.portalTheme) or #record.portalTheme > 32) then
+		return false, "portalTheme invalido"
+	end
+	if
+		record.championOutcome ~= nil
+		and record.championOutcome ~= "survived"
+		and record.championOutcome ~= "hunted"
+	then
+		return false, "championOutcome invalido"
+	end
 	return true, nil
 end
 
@@ -228,7 +245,8 @@ function BattleLog.fromBattle(
 	gridWidth: number,
 	trapsCount: number,
 	wall: WallSnapshot,
-	createdAt: number
+	createdAt: number,
+	meta: RecordMeta?
 ): (Record?, string?)
 	if type(result) ~= "table" then
 		return nil, "result invalido"
@@ -246,6 +264,12 @@ function BattleLog.fromBattle(
 			x = trap.x,
 			y = trap.y,
 		}
+	end
+	local portalTheme: string? = nil
+	local championOutcome: string? = nil
+	if type(meta) == "table" then
+		portalTheme = meta.portalTheme
+		championOutcome = meta.championOutcome
 	end
 	local record: Record = {
 		schemaVersion = BattleLog.SCHEMA_VERSION,
@@ -265,6 +289,8 @@ function BattleLog.fromBattle(
 		rewarded = false,
 		rewardGold = 0,
 		wall = wallCopy,
+		portalTheme = portalTheme,
+		championOutcome = championOutcome,
 	}
 	local ok, err = BattleLog.validate(record)
 	if not ok then
@@ -303,6 +329,8 @@ function BattleLog.markRewarded(record: Record, rewardGold: number): (Record?, s
 		createdAt = record.createdAt,
 		rewarded = true,
 		rewardGold = rewardGold,
+		portalTheme = record.portalTheme,
+		championOutcome = record.championOutcome,
 		wall = {
 			level = record.wall.level,
 			hp = record.wall.hp,

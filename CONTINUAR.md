@@ -1,6 +1,8 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 14/11/2026 · **Status:** **P2 + PLAYTEST V1.3 ENTREGUE** — `schema=4`, `content=3`, `simVersion=7` (`hash=1245379674`), `analytics=2`; **`CameraFraming` multiplataforma, `PortalThemes` + 5 Portais de Campanha Open Cloud (`PORTAL_act1..act5` + Fan Manifold 5 trilhas + Breach VFX `0.50->1.00`), `UnitLifecycle` para entrada de `swarms`, Campanha (25 estágios + 5 Bosses), Torcida e 87 cues Open Cloud** entregues ponta a ponta.
+**Data:** 14/11/2026 · **Status:** **P2 + PLAYTEST V1.4 ENTREGUE** — `schema=5`, `content=3`, `simVersion=8` (`hash=1245379674`), `analytics=2`; **`Core v8` aéreo (`wisp`/`drake` + Campeões), `DeckCatalog` (5 Hordas + 13 relíquias + Champion Bet), `DeckUi` + `ProfileSchema v5`, `CameraFraming`, `PortalThemes` e Campanha** entregues ponta a ponta.
+
+> **Playtest v1.4 (14/11/2026):** `Core v8` (`wisp`/`drake` voadores, `+25%` antiaéreo em `archer`, `tar`/`cannon`/`catapult` ignoram ar, `isChampion` `2.2x` HP), `DeckCatalog` (5 facções iniciais, 13 cartas em 5 raridades, teto `70..90` & `MAX_UNITS=85`), `ProfileSchema v5` (`horde`, Boss Cores, Shards diários, Champion Bet `+25%` Ouro + `1` Shard), `HordeKit` (`+3.2` studs hover e `ChampionCrest`), `DeckUi` (grid `2x2` retrato), e `133` chaves I18n (`deck-contract` 5/5).
 
 > **Playtest v1.3 (14/11/2026):** `CameraFraming` (enquadramento responsivo 4:3/16:9/20:9/Portrait com zoom mobile recalibrado em `BuildLayout`), `PortalThemes` + 5 portais Blender/Open Cloud (`PORTAL_act1..act5`, Fan Manifold curvo em 5 trilhas, `Vfx.portalBreach` e aproximação `0.50 -> 1.00`), e `UnitLifecycle` + `spawnKilled` em `RaidClient` garantindo emergência visível e entrada dos `swarms` antes do abate/ragdoll (`visual-contract` 22/22, `build-contract` 17/17).
 
@@ -8,7 +10,7 @@
 
 > **GAP (13/11/2026):** **GAP-001/002/003/004/008/009/010/011/012/014/015/016/017** fechados; **GAP-018** e **GAP-019** parcialmente fechados (restam co-op síncrono `lockstep` 20 Hz + `ReserveServer` em `GAP-018` e `uImpulseX` F1 + 5 temas horizontais de Ato em `GAP-019`). Seguem abertos **GAP-005/013/018(co-op)/019(F1)/020** em `docs/gaps.md`.
 
-GAP: GAP-005, GAP-013, GAP-018, GAP-019, GAP-020 · Playtest v1.2 entregou Campanha (25 estágios + 5 Bosses multi-lane em Core v7, schema v4), 6 classes de horda encarando -X, Torcida (CrowdKit), câmera wall recuada e 56 SFX Open Cloud + 4 stems BGM (I18n 77 chaves); seguem abertos live ops (GAP-005), ticket regional (GAP-013), co-op síncrono 20 Hz (GAP-018), F1/5 temas BGM (GAP-019) e sistemas comerciais (GAP-020) · ver docs/gaps.md
+GAP: GAP-005, GAP-013, GAP-018, GAP-019, GAP-020 · Playtest v1.4 (14/11/2026) entregou Horde Deck customizável (5 facções, 13 cartas, DeckUi, slots de esquadrão, apostas de campeão mítico no Core v8 com voadores wisp/drake imunes a armadilhas terrestres, schema v5); seguem abertos live ops (GAP-005), ticket regional (GAP-013), co-op síncrono 20 Hz (GAP-018), F1/5 temas BGM (GAP-019) e sistemas comerciais (GAP-020) · ver docs/gaps.md
 
 > **Entrega P2 Wave 2 & Arte/VFX/Áudio (13/11/2026):**
 > - **Client 3D & UX (`BuildClient`/`RaidClient`/`DropInClient`/`BuildHud`/`I18n`):** colocação livre em `step 250` com disco verde/vermelho, `MOVE` (`0g`), upgrade/remoção por slot (`L1..L5`), pill de upgrade da muralha `Nv1..5`, Guia de Combos `?` (`PT/EN/ES`, `62` chaves), e controle de velocidade do ataque `1×/2×/3×` (`1×` em ~20s com `tick % 4`).

@@ -130,6 +130,24 @@ VisualTheme.ENEMIES = table.freeze({
 		scale = 0.88,
 		parts = 8,
 	},
+	wisp = {
+		label = "ESPECTRO",
+		color = { 34, 211, 238 },
+		dark = { 12, 92, 110 },
+		accent = { 165, 243, 252 },
+		scale = 0.82,
+		parts = 7,
+		flying = true,
+	},
+	drake = {
+		label = "DRACONATO",
+		color = { 38, 42, 52 },
+		dark = { 18, 20, 26 },
+		accent = { 245, 190, 48 },
+		scale = 1.24,
+		parts = 10,
+		flying = true,
+	},
 })
 
 VisualTheme.BOSSES = table.freeze({
@@ -226,9 +244,27 @@ VisualTheme.AUDIO = table.freeze({
 VisualTheme.BUDGET = table.freeze({
 	trapParts = 12,
 	unitParts = 8,
+	flyingUnitParts = 12,
 	arenaParts = 185,
 	maxUnits = 150,
 	drawCalls = 500,
+})
+
+VisualTheme.AERIAL = table.freeze({
+	hoverY = 3.2,
+	bobAmplitude = 0.28,
+	bobSpeed = 4.6,
+	wingAmplitudeDeg = 28,
+	wingSpeed = 10.5,
+	wispMaxParts = 8,
+	drakeMaxParts = 12,
+})
+
+VisualTheme.CHAMPION = table.freeze({
+	scale = 1.28,
+	crestParts = 1,
+	haloColor = { 255, 199, 64 },
+	accentColor = { 20, 184, 166 },
 })
 
 VisualTheme.GRID_TILES = table.freeze({
@@ -288,6 +324,29 @@ function VisualTheme.enemyIds(): { string }
 	end
 	table.sort(ids)
 	return ids
+end
+
+function VisualTheme.aerialHoverAlpha(localX: number, throatX: number, entryX: number): number
+	if localX <= entryX then
+		return 1
+	end
+	if localX >= throatX or throatX <= entryX then
+		return 0
+	end
+	local u = (throatX - localX) / (throatX - entryX)
+	return u * u * (3 - 2 * u)
+end
+
+function VisualTheme.aerialHoverOffset(
+	flying: boolean?,
+	localX: number,
+	throatX: number,
+	entryX: number
+): number
+	if flying ~= true then
+		return 0
+	end
+	return VisualTheme.AERIAL.hoverY * VisualTheme.aerialHoverAlpha(localX, throatX, entryX)
 end
 
 function VisualTheme.bossIds(): { string }

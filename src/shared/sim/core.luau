@@ -36,8 +36,10 @@ Core.MAX_WALL_LEVEL = 5
 -- v6 (13/11/2026): archer com mira circular 360 graus (omni=true, range=2500, dmg=1400).
 -- v7 (14/11/2026): 6 tipos de unidade (+shieldbearer, pyromancer, sapper), WaveSliceSpec,
 -- 8 mutadores deterministicos e 5 Bosses Multi-Lane (laneSpan=3, shotId dedup, stagger/FSM).
+-- v8 (14/11/2026): 8 tipos de unidade (+wisp, drake voadores), regras anti-aereas (tar/cannon/catapult
+-- ignoram flying; archer +25% dano contra flying; frost normal) e Campeoes de Ato (isChampion).
 -- Preserva 100% o caminho P1 (Core.Run(42) hash == 1245379674).
-Core.SIM_VERSION = 7
+Core.SIM_VERSION = 8
 
 local function deepFreeze(tbl)
 	for _, value in pairs(tbl) do
@@ -131,6 +133,22 @@ local UNIT = deepFreeze({
 		frostResistMilli = 350,
 	},
 	sapper = { hp = 16 * MILLI, speed = 175, leak = 22 * MILLI, armorMilli = 0 },
+	wisp = {
+		hp = 90000,
+		speed = 2800,
+		leak = 4000,
+		armorMilli = 0,
+		frostResistMilli = 0,
+		flying = true,
+	},
+	drake = {
+		hp = 380000,
+		speed = 1350,
+		leak = 16000,
+		armorMilli = 200,
+		frostResistMilli = 250,
+		flying = true,
+	},
 })
 local UNIT_NAMES = deepFreeze({ "runner", "brute", "swarm" })
 local ALL_UNIT_NAMES = deepFreeze({
@@ -140,6 +158,8 @@ local ALL_UNIT_NAMES = deepFreeze({
 	"shieldbearer",
 	"pyromancer",
 	"sapper",
+	"wisp",
+	"drake",
 })
 
 local TRAP = deepFreeze({
@@ -587,6 +607,9 @@ function Battle.new(spec)
 	self.nextShotId = 0
 	self.eliteSpawned = 0
 	self.runnerSpawnCount = 0
+	self.championSpawned = 0
+	self.championKilled = 0
+	self.championBreached = 0
 
 	self.uCount = 0
 	-- Menor indice possivelmente vivo (so pula mortos: otimizacao pura, nao muda resultado).
@@ -597,6 +620,8 @@ function Battle.new(spec)
 	self.uLane = {} -- lane de spawn (1..5): metadado de apresentacao (RaidClient); o alvo usa uY
 	self.uType = {}
 	self.uIsElite = {}
+	self.uFlying = {}
+	self.uIsChampion = {}
 	self.uArmorMilli = {}
 	self.uFrostResistMilli = {}
 	self.uBaseSpeed = {}
@@ -709,6 +734,7 @@ function Battle.new(spec)
 					unit = rawSlice.unit,
 					lanes = lanes,
 					isElite = rawSlice.isElite == true,
+					isChampion = rawSlice.isChampion == true,
 				}
 				totalToSpawn += sliceCount
 			end
@@ -786,6 +812,8 @@ function Battle:spawnUnit()
 	self.uLane[i] = lane
 	self.uType[i] = tname
 	self.uIsElite[i] = false
+	self.uFlying[i] = false
+	self.uIsChampion[i] = false
 	self.uArmorMilli[i] = 0
 	self.uFrostResistMilli[i] = 0
 	self.uBaseSpeed[i] = def.speed
@@ -796,13 +824,14 @@ function Battle:spawnUnit()
 	self.uLeak[i] = def.leak
 end
 
-function Battle:spawnConfiguredUnit(tname, lane, isElite, customX, useVariance)
+function Battle:spawnConfiguredUnit(tname, lane, isElite, customX, useVariance, isChampion)
 	local def = UNIT[tname]
 	local elite = false
 	if isElite and self.eliteSpawned < Core.MAX_ELITES_PER_BATTLE then
 		elite = true
 		self.eliteSpawned += 1
 	end
+	local champ = isChampion == true
 	local baseHp = def.hp
 	if useVariance then
 		local variancePct = 90 + self.rng:int(21)
@@ -815,6 +844,9 @@ function Battle:spawnConfiguredUnit(tname, lane, isElite, customX, useVariance)
 	if elite then
 		hp = math.floor(hp * 1350 / MILLI)
 	end
+	if champ then
+		hp = math.floor(hp * 22 / 10)
+	end
 
 	local unitArmor = (def.armorMilli or 0) + self.waveArmorMilli
 	if self.mutators.mut_iron_hide and (tname == "brute" or tname == "shieldbearer") then
@@ -824,10 +856,19 @@ function Battle:spawnConfiguredUnit(tname, lane, isElite, customX, useVariance)
 		unitArmor += 100
 	end
 	unitArmor = clampInt(unitArmor, 0, Core.MAX_ARMOR_MILLI)
+	if champ then
+		unitArmor = math.min(900, unitArmor + 100)
+	end
 
-	local speedTick = math.max(10, math.floor(def.speed * self.speedScaleMilli / MILLI))
+	local rawSpeed = if def.speed > 240 then math.floor(def.speed / Core.TICK_HZ) else def.speed
+	local speedTick = math.max(10, math.floor(rawSpeed * self.speedScaleMilli / MILLI))
 	if speedTick > 240 then
 		speedTick = 240
+	end
+
+	local leak = def.leak
+	if champ then
+		leak = math.floor(leak * 15 / 10)
 	end
 
 	self.uCount += 1
@@ -838,6 +879,8 @@ function Battle:spawnConfiguredUnit(tname, lane, isElite, customX, useVariance)
 	self.uLane[i] = lane
 	self.uType[i] = tname
 	self.uIsElite[i] = elite
+	self.uFlying[i] = def.flying == true
+	self.uIsChampion[i] = champ
 	self.uArmorMilli[i] = unitArmor
 	self.uFrostResistMilli[i] = def.frostResistMilli or 0
 	self.uBaseSpeed[i] = speedTick
@@ -845,18 +888,33 @@ function Battle:spawnConfiguredUnit(tname, lane, isElite, customX, useVariance)
 	self.uSlowPct[i] = 100
 	self.uTarUntil[i] = 0
 	self.uFrostUntil[i] = 0
-	self.uLeak[i] = def.leak
+	self.uLeak[i] = leak
+	if champ then
+		self.championSpawned += 1
+	end
 
 	if tname == "runner" and self.mutators.mut_echo_rift then
 		self.runnerSpawnCount += 1
 		if self.runnerSpawnCount % 4 == 0 then
-			self:spawnConfiguredUnit("swarm", lane, false, customX, false)
+			self:spawnConfiguredUnit("swarm", lane, false, customX, false, false)
 		end
 	end
 end
 
+local function isUnitFlying(self, unitIndex)
+	if self.uFlying ~= nil and self.uFlying[unitIndex] ~= nil then
+		return self.uFlying[unitIndex] == true
+	end
+	local tname = self.uType ~= nil and self.uType[unitIndex] or nil
+	local def = if tname ~= nil then UNIT[tname] else nil
+	return def ~= nil and def.flying == true
+end
+
 local function hitDamage(self, trap, baseDamage, unitIndex)
 	local dmg = baseDamage
+	if trap.type == "archer" and isUnitFlying(self, unitIndex) then
+		dmg = math.floor(dmg * 1250 / 1000)
+	end
 	if
 		(trap.type == "cannon" or trap.type == "catapult")
 		and self.tick <= self.uTarUntil[unitIndex]
@@ -1015,12 +1073,17 @@ function Battle:applyTrap(trap, shotId)
 	local boss = self.boss
 	local canHitBoss = boss ~= nil and bossInTrapRange(trap, def, boss)
 
-	-- Catapult atinge todas as unidades no alcance (frente + faixa lateral); os outros tipos
-	-- miram a unidade mais a frente (uma por cooldown).
+	-- Catapult atinge todas as unidades no alcance (frente + faixa lateral), ignorando voadores;
+	-- os outros tipos miram a unidade mais a frente (uma por cooldown).
 	if def.splash then
 		local hitAny = false
 		for i = self.aliveLo, self.uCount do
-			if self.uHp[i] > 0 and self.uY[i] >= yLo and self.uY[i] <= yHi then
+			if
+				self.uHp[i] > 0
+				and not isUnitFlying(self, i)
+				and self.uY[i] >= yLo
+				and self.uY[i] <= yHi
+			then
 				local dx = self.uX[i] - trap.x
 				if dx > 0 and dx <= def.range then
 					hitAny = true
@@ -1029,6 +1092,9 @@ function Battle:applyTrap(trap, shotId)
 					if self.uHp[i] <= 0 then
 						self.uHp[i] = 0
 						self.killed += 1
+						if self.uIsChampion[i] then
+							self.championKilled += 1
+						end
 					end
 				end
 			end
@@ -1063,8 +1129,14 @@ function Battle:applyTrap(trap, shotId)
 			end
 		end
 	else
+		local skipFlying = trap.type == "tar" or trap.type == "cannon"
 		for i = self.aliveLo, self.uCount do
-			if self.uHp[i] > 0 and self.uY[i] >= yLo and self.uY[i] <= yHi then
+			if
+				self.uHp[i] > 0
+				and (not skipFlying or not isUnitFlying(self, i))
+				and self.uY[i] >= yLo
+				and self.uY[i] <= yHi
+			then
 				local dx = self.uX[i] - trap.x
 				if dx > 0 and dx <= def.range and self.uX[i] < bestX then
 					best, bestX = i, self.uX[i]
@@ -1087,6 +1159,9 @@ function Battle:applyTrap(trap, shotId)
 	if self.uHp[best] <= 0 then
 		self.uHp[best] = 0
 		self.killed += 1
+		if self.uIsChampion[best] then
+			self.championKilled += 1
+		end
 	end
 	return true
 end
@@ -1328,7 +1403,7 @@ function Battle:Step()
 		return
 	end
 
-	-- Caminho estendido v7 (Campanha, WaveSliceSpec, Mutadores, Pool e Bosses)
+	-- Caminho estendido v7/v8 (Campanha, WaveSliceSpec, Mutadores, Pool, Bosses e Campeoes)
 	if self.slices ~= nil then
 		for _, slice in ipairs(self.slices) do
 			if slice.spawned < slice.count and self.tick >= slice.startTick then
@@ -1337,7 +1412,14 @@ function Battle:Step()
 					slice.spawned += 1
 					self.spawned += 1
 					local lane = slice.lanes[((slice.spawned - 1) % #slice.lanes) + 1]
-					self:spawnConfiguredUnit(slice.unit, lane, slice.isElite, ARENA.spawnX, false)
+					self:spawnConfiguredUnit(
+						slice.unit,
+						lane,
+						slice.isElite,
+						ARENA.spawnX,
+						false,
+						slice.isChampion
+					)
 				end
 			end
 		end
@@ -1394,6 +1476,9 @@ function Battle:Step()
 			if self.uX[i] <= 0 then
 				self.uHp[i] = 0
 				self.leaked += 1
+				if self.uIsChampion[i] then
+					self.championBreached += 1
+				end
 				self.wallHp -= math.floor(self.uLeak[i] * leakScalePct / 100)
 			end
 		end
@@ -1443,8 +1528,12 @@ function Battle:Result()
 	if self.boss ~= nil and (self.boss.alive or self.boss.hp > 0) then
 		defenderWon = false
 	end
+	local winner = defenderWon and "defender" or "attacker"
+	local championSurvived = self.championSpawned > 0
+		and self.championKilled == 0
+		and (self.championBreached > 0 or winner == "attacker")
 	local res = {
-		winner = defenderWon and "defender" or "attacker",
+		winner = winner,
 		wallHp = math.floor(math.max(0, self.wallHp) / MILLI),
 		wallPct = math.max(0, self.wallHp) / self.wallMax,
 		ticks = self.tick,
@@ -1455,6 +1544,10 @@ function Battle:Result()
 		seed = self.seed,
 		simVersion = self.simVersion,
 		hash = self.hash,
+		championSpawned = self.championSpawned,
+		championKilled = self.championKilled,
+		championBreached = self.championBreached,
+		championSurvived = championSurvived,
 	}
 	if self.boss ~= nil then
 		res.boss = self:BossSnapshot()

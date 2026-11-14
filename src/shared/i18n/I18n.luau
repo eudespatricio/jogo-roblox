@@ -181,6 +181,90 @@ local TABLE: { [string]: Entry } = {
 		"ATURDIDO (+30% DAÑO)"
 	),
 	boss_enrage_tag = row("FÚRIA DO CHEFE", "BOSS ENRAGED", "FURIA DEL JEFE"),
+	cta_horde = row("HORDA", "HORDE", "HORDA"),
+	unit_wisp = row("ESPECTRO", "WISP", "ESPECTRO"),
+	unit_drake = row("DRACONATO", "DRAKE", "DRACO"),
+	deck_faction_iron = row("Ferro", "Iron", "Hierro"),
+	deck_faction_slag = row("Escória", "Slag", "Escoria"),
+	deck_faction_frost = row("Gelo", "Frost", "Hielo"),
+	deck_faction_powder = row("Pólvora", "Powder", "Pólvora"),
+	deck_faction_rift = row("Fenda", "Rift", "Grieta"),
+	deck_rarity_common = row("Comum", "Common", "Común"),
+	deck_rarity_rare = row("Rara", "Rare", "Rara"),
+	deck_rarity_epic = row("Épica", "Epic", "Épica"),
+	deck_rarity_legendary = row("Lendária", "Legendary", "Legendaria"),
+	deck_rarity_mythic = row("Mítica", "Mythic", "Mítica"),
+	deck_card_squad_runner_pack = row("Bando de Corredores", "Runner Pack", "Manada de Corredores"),
+	deck_card_squad_swarm_brood = row("Ninhada do Enxame", "Swarm Brood", "Camada de Enjambre"),
+	deck_card_squad_brute_guards = row("Guardas Brutos", "Brute Guards", "Guardias Brutos"),
+	deck_card_squad_iron_vanguard = row(
+		"Vanguarda de Ferro",
+		"Iron Vanguard",
+		"Vanguardia de Hierro"
+	),
+	deck_card_squad_slag_pyros = row("Piroclastas de Escória", "Slag Pyros", "Piros de Escoria"),
+	deck_card_squad_sapper_team = row("Equipe de Sapadores", "Sapper Team", "Equipo de Zapadores"),
+	deck_card_squad_rift_wisps = row("Espectros da Fenda", "Rift Wisps", "Espectros de la Grieta"),
+	deck_card_squad_sky_drakes = row("Dracos Celestes", "Sky Drakes", "Dracos Celestes"),
+	deck_card_champ_iron_ram = row("Arietão Blindado", "Armored Iron Ram", "Ariete Blindado"),
+	deck_card_champ_slag_lord = row("Lorde de Escória", "Slag Juggernaut", "Señor de Escoria"),
+	deck_card_champ_frost_matriarch = row(
+		"Matriarca Glacial",
+		"Rime Matriarch",
+		"Matriarca Glacial"
+	),
+	deck_card_champ_powder_baron = row(
+		"Barão da Pólvora",
+		"Powder Baron",
+		"Barón de la Pólvora"
+	),
+	deck_card_champ_rift_archon = row("Arconte da Fenda", "Rift Titan", "Titán de la Grieta"),
+	deck_lane_center = row("Centro", "Center", "Centro"),
+	deck_lane_flanks = row("Flancos", "Flanks", "Flancos"),
+	deck_lane_split = row("Divisão", "Split", "División"),
+	deck_lane_all = row("Todas", "All Lanes", "Todos"),
+	deck_stat_ground = row("Solo", "Ground", "Tierra"),
+	deck_stat_air = row("Aéreo", "Air", "Aéreo"),
+	deck_stat_armor = row("Armadura", "Armor", "Armadura"),
+	deck_stat_speed = row("Velocidade", "Speed", "Velocidad"),
+	deck_champ_survived = row(
+		"Campeão Sobreviveu (+25% Ouro)",
+		"Champion Survived (+25% Gold)",
+		"Campeón Sobrevivió (+25% Oro)"
+	),
+	deck_champ_hunted = row("Campeão Abatido", "Champion Hunted", "Campeón Abatido"),
+	deck_reward_shard = row("+%d Estilhaços", "+%d Shards", "+%d Fragmentos"),
+	deck_reward_core = row("+%d Núcleo de Chefe", "+%d Boss Core", "+%d Núcleo de Jefe"),
+	deck_title = row("FORJA DA HORDA", "HORDE FORGE", "FORJA DE LA HORDA"),
+	deck_choose_faction = row("ESCOLHA SUA FACÇÃO", "CHOOSE YOUR FACTION", "ELIGE TU FACCIÓN"),
+	deck_confirm_faction = row("CONFIRMAR FACÇÃO", "CONFIRM FACTION", "CONFIRMAR FACCIÓN"),
+	deck_squads_title = row("ESQUADRÕES", "SQUADS", "ESCUADRONES"),
+	deck_forge_vault = row("COFRE DE RELÍQUIAS", "RELIC VAULT", "CÁMARA DE RELIQUIAS"),
+	deck_supply_label = row("Suprimento: %d/%d", "Supply: %d/%d", "Suministro: %d/%d"),
+	deck_shards_label = row("%d Estilhaços", "%d Shards", "%d Fragmentos"),
+	deck_champion_row = row("CAMPEÃO MÍTICO", "MYTHIC CHAMPION", "CAMPEÓN MÍTICO"),
+	deck_champion_hint = row(
+		"Aposta: +25% Ouro e Estilhaço se sobreviver",
+		"Bet: +25% Gold & Shard if survived",
+		"Apuesta: +25% Oro y Fragmento si sobrevive"
+	),
+	deck_unlock_btn = row("DESBLOQUEAR", "UNLOCK", "DESBLOQUEAR"),
+	deck_unlocked_badge = row("DESBLOQUEADA", "UNLOCKED", "DESBLOQUEADA"),
+	deck_save_btn = row("SALVAR HORDA", "SAVE HORDE", "GUARDAR HORDA"),
+	deck_saved_toast = row(
+		"Horda salva com sucesso!",
+		"Horde saved successfully!",
+		"¡Horda guardada con éxito!"
+	),
+	deck_cost_fmt = row("%dg + %d Estilhaços", "%dg + %d Shards", "%dg + %d Fragmentos"),
+	deck_requires_core = row(
+		"Requer Núcleo do Ato %d",
+		"Requires Act %d Core",
+		"Requiere Núcleo del Acto %d"
+	),
+	deck_squad_vanguard = row("Vanguarda", "Vanguard", "Vanguardia"),
+	deck_squad_pressure = row("Pressão", "Pressure", "Presión"),
+	deck_squad_assault = row("Assalto", "Assault", "Asalto"),
 }
 
 I18n.TABLE = table.freeze(TABLE)

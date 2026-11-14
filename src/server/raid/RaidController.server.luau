@@ -18,6 +18,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local raidModules = Shared:WaitForChild("raid")
 local BattleLog = require(raidModules:WaitForChild("BattleLog"))
 local BotPhantoms = require(raidModules:WaitForChild("BotPhantoms"))
+local DeckCatalog = require(raidModules:WaitForChild("DeckCatalog"))
 local RaidReplay = require(raidModules:WaitForChild("RaidReplay"))
 local RaidTelemetry = require(raidModules:WaitForChild("RaidTelemetry"))
 local CampaignCatalog = require(Shared:WaitForChild("campaign"):WaitForChild("CampaignCatalog"))
@@ -297,6 +298,8 @@ local function runBattleWithTimeline(seed: number, wall: any, waveSpec: any): (a
 					y = battle.uY[index],
 					hp = battle.uHp[index],
 					isElite = battle.uIsElite[index] == true,
+					isChampion = type((battle :: any).uIsChampion) == "table"
+						and (battle :: any).uIsChampion[index] == true,
 				}
 			end
 		end
@@ -392,6 +395,72 @@ local function ensureProfileCampaign(profile: any): any
 		}
 	end
 	return profile.campaign
+end
+
+local function ensureProfileHorde(profile: any): any
+	if type(profile.horde) ~= "table" then
+		profile.horde = ProfileSchema.template().horde
+	end
+	local horde = profile.horde
+	if type(horde.unlockedCards) ~= "table" then
+		horde.unlockedCards = {}
+	end
+	if type(horde.bossCores) ~= "table" then
+		horde.bossCores = {
+			act1 = false,
+			act2 = false,
+			act3 = false,
+			act4 = false,
+			act5 = false,
+		}
+	end
+	if type(horde.squads) ~= "table" then
+		horde.squads = ProfileSchema.template().horde.squads
+	end
+	if type(horde.shards) ~= "number" or horde.shards < 0 then
+		horde.shards = 0
+	end
+	if type(horde.dailyPlunderDayId) ~= "number" or horde.dailyPlunderDayId < 0 then
+		horde.dailyPlunderDayId = 0
+	end
+	if type(horde.dailyPlunderCount) ~= "number" or horde.dailyPlunderCount < 0 then
+		horde.dailyPlunderCount = 0
+	end
+	return horde
+end
+
+local function hordeSummary(horde: any, leagueId: number): { [string]: any }
+	local faction = if type(horde.faction) == "string" then horde.faction else "iron"
+	return {
+		starterChosen = horde.starterChosen == true,
+		faction = faction,
+		portalTheme = DeckCatalog.portalThemeFor(faction),
+		shards = math.max(0, math.floor(tonumber(horde.shards) or 0)),
+		bossCores = cloneTable(horde.bossCores),
+		dailyPlunderDayId = math.max(0, math.floor(tonumber(horde.dailyPlunderDayId) or 0)),
+		dailyPlunderCount = math.max(0, math.floor(tonumber(horde.dailyPlunderCount) or 0)),
+		championCardId = horde.championCardId,
+		championLaneMode = horde.championLaneMode or "center",
+		stats = DeckCatalog.computeStats(horde, leagueId),
+	}
+end
+
+local function countWaveUnits(waveSpec: any): number
+	if type(waveSpec) ~= "table" then
+		return 0
+	end
+	if type(waveSpec.count) == "number" and waveSpec.count > 0 then
+		return math.floor(waveSpec.count)
+	end
+	local total = 0
+	if type(waveSpec.slices) == "table" then
+		for _, slice in ipairs(waveSpec.slices) do
+			if type(slice) == "table" and type(slice.count) == "number" and slice.count > 0 then
+				total += math.floor(slice.count)
+			end
+		end
+	end
+	return total
 end
 
 local function buildCampaignSnapshot(profile: any): any
@@ -517,6 +586,23 @@ local function startCampaignBattle(
 	end
 
 	profile.stats.defenses += 1
+	local horde = ensureProfileHorde(profile)
+	local shardEarned = 0
+	local coreDropped: string? = nil
+	if
+		stageSpec.bossId ~= nil
+		and playerWon
+		and (starsEarned >= 3 or difficulty == "nightmare")
+	then
+		local coreKey = "act" .. tostring(stageSpec.act)
+		if type(horde.bossCores) == "table" and horde.bossCores[coreKey] ~= true then
+			horde.bossCores[coreKey] = true
+			coreDropped = coreKey
+		end
+		horde.shards = (tonumber(horde.shards) or 0) + 1
+		shardEarned += 1
+	end
+
 	local rewardGold = 0
 	if playerWon then
 		profile.stats.wins += 1
@@ -536,6 +622,7 @@ local function startCampaignBattle(
 		end
 	end
 
+	local portalTheme = "act" .. tostring(stageSpec.act)
 	local record, recordErr = BattleLog.fromBattle(
 		battleId,
 		result,
@@ -543,7 +630,8 @@ local function startCampaignBattle(
 		Core.GRID_WIDTH,
 		#wall.traps,
 		wall,
-		os.time()
+		os.time(),
+		{ portalTheme = portalTheme }
 	)
 	if record == nil then
 		return { ok = false, err = "battlelog: " .. tostring(recordErr) }
@@ -578,6 +666,7 @@ local function startCampaignBattle(
 	local campaignSnap = cloneTable(campaign)
 	local myLeague = TrapCatalog.leagueOf(profile.league.points)
 	local myWallLvl = tonumber(wall.level) or 1
+	local hordeSnap = hordeSummary(horde, myLeague)
 	local responsePayload = {
 		ok = true,
 		mode = "campaign",
@@ -596,6 +685,12 @@ local function startCampaignBattle(
 		rewardGold = creditedGold,
 		starsEarned = starsEarned,
 		starsMask = newMask,
+		portalTheme = portalTheme,
+		championOutcome = nil,
+		championBonusGold = 0,
+		shardEarned = shardEarned,
+		coreDropped = coreDropped,
+		horde = hordeSnap,
 		campaign = campaignSnap,
 		timeline = timeline,
 		waveSpec = waveSpec,
@@ -750,8 +845,17 @@ local function startRaid(player: Player, rawOpts: any): any
 		end
 
 		local wall = wallFromSnapshot(target)
-		local waveSpec =
-			BotPhantoms.waveFor(targetLeague, isDefend, #wall.traps, tonumber(wall.level) or 1)
+		local horde = ensureProfileHorde(profile)
+		local portalTheme: string? = nil
+		local waveSpec: any
+		if not isDefend and horde.starterChosen == true then
+			waveSpec = DeckCatalog.toWaveSpec(horde, myLeague)
+			portalTheme = DeckCatalog.portalThemeFor(horde.faction)
+		else
+			waveSpec =
+				BotPhantoms.waveFor(targetLeague, isDefend, #wall.traps, tonumber(wall.level) or 1)
+		end
+		local waveCount = countWaveUnits(waveSpec)
 		print(
 			string.format(
 				"[raid] %s hash=%s league=%d traps=%d hp=%d wave=%d bot=%s store=%s",
@@ -760,7 +864,7 @@ local function startRaid(player: Player, rawOpts: any): any
 				targetLeague,
 				#wall.traps,
 				target.hp,
-				waveSpec.count,
+				waveCount,
 				tostring(isBot),
 				phantomMock and "Mock" or "DataStore"
 			)
@@ -841,6 +945,35 @@ local function startRaid(player: Player, rawOpts: any): any
 			})
 		end
 
+		local shardEarned = 0
+		local coreDropped: string? = nil
+		local championOutcome: string? = nil
+		local championBonusGold = 0
+		if not isDefend and playerWon then
+			local dayId = math.floor(os.time() / ProfileSchema.SECONDS_PER_DAY)
+			if horde.dailyPlunderDayId ~= dayId then
+				horde.dailyPlunderDayId = dayId
+				horde.dailyPlunderCount = 0
+			end
+			if horde.dailyPlunderCount < 3 then
+				horde.dailyPlunderCount += 1
+				horde.shards = (tonumber(horde.shards) or 0) + 1
+				shardEarned += 1
+			end
+		end
+		if not isDefend and (tonumber(result.championSpawned) or 0) > 0 then
+			if playerWon and result.championSurvived == true then
+				championOutcome = "survived"
+				if rewardGold > 0 then
+					championBonusGold = math.max(1, math.floor(rewardGold * 25 / 100))
+				end
+				horde.shards = (tonumber(horde.shards) or 0) + 1
+				shardEarned += 1
+			elseif (tonumber(result.championKilled) or 0) > 0 then
+				championOutcome = "hunted"
+			end
+		end
+
 		local rewarded = true
 		local creditedGold = 0
 		local goldAfter: number? = nil
@@ -851,6 +984,17 @@ local function startRaid(player: Player, rawOpts: any): any
 				creditedGold = rewardGold
 			end
 		end
+		if championBonusGold > 0 then
+			local bonusOk, bonusGoldAfter = creditRaid(player, battleId, championBonusGold, "raid")
+			if bonusOk then
+				creditedGold += championBonusGold
+				if bonusGoldAfter ~= nil then
+					goldAfter = bonusGoldAfter
+				end
+			else
+				championBonusGold = 0
+			end
+		end
 
 		local record, recordErr = BattleLog.fromBattle(
 			battleId,
@@ -859,7 +1003,11 @@ local function startRaid(player: Player, rawOpts: any): any
 			Core.GRID_WIDTH,
 			#wall.traps,
 			wall,
-			os.time()
+			os.time(),
+			{
+				portalTheme = portalTheme,
+				championOutcome = championOutcome,
+			}
 		)
 		if record == nil then
 			return { ok = false, err = "battlelog: " .. tostring(recordErr) }
@@ -931,7 +1079,7 @@ local function startRaid(player: Player, rawOpts: any): any
 					isBot = true,
 					name = string.format("Horda L%d", targetLeague),
 					league = targetLeague,
-					waveCount = waveSpec.count,
+					waveCount = waveCount,
 					unitClasses = summarizeWaveClasses(waveSpec),
 				},
 			}
@@ -947,7 +1095,7 @@ local function startRaid(player: Player, rawOpts: any): any
 					wallHp = tonumber(currentSnapshot.hp) or 500,
 					trapCount = myTrapCount,
 					trapLimit = wallTrapLimit(myWallLevel),
-					waveCount = waveSpec.count,
+					waveCount = waveCount,
 					wins = profile.stats.wins,
 					unitClasses = summarizeWaveClasses(waveSpec),
 					traps = summarizeTraps(currentSnapshot.traps),
@@ -980,10 +1128,16 @@ local function startRaid(player: Player, rawOpts: any): any
 			ticks = result.ticks,
 			durationMs = result.ticks * BattleLog.TICK_MS,
 			rewardGold = creditedGold,
+			portalTheme = portalTheme,
+			championOutcome = championOutcome,
+			championBonusGold = championBonusGold,
+			shardEarned = shardEarned,
+			coreDropped = coreDropped,
+			horde = hordeSummary(horde, newLeague),
 			replaySeconds = RaidReplay.SECONDS,
 			wall = wall,
 			phantomName = phantomLabel,
-			waveCount = waveSpec.count,
+			waveCount = waveCount,
 			spawnEveryTicks = waveSpec.spawnEveryTicks,
 			waveSpec = waveSpec,
 			simVersion = Core.SIM_VERSION,

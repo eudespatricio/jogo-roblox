@@ -28,6 +28,7 @@ local CrowdKit = require(visual:WaitForChild("CrowdKit"))
 local TrapKit = require(visual:WaitForChild("TrapKit"))
 local AudioKit = require(visual:WaitForChild("AudioKit"))
 local Vfx = require(visual:WaitForChild("Vfx"))
+local DeckUi = require(visual:WaitForChild("DeckUi"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -512,6 +513,8 @@ local cellButtons: { [string]: TextButton } = {}
 local send: (action: string, trapId: string, slot: string, x: number?, y: number?) -> ()
 local setStatus: (text: string) -> ()
 local movingSlot: string? = nil
+local deckUi: DeckUi.DeckUiHandle
+local deckBtn: TextButton
 
 local function makeCellButton(cell: string, row: number, col: number): TextButton
 	local button = Instance.new("TextButton")
@@ -1027,6 +1030,9 @@ local function refresh(snapshot: any): ()
 		end
 	end
 	TrapKit.sync(Workspace, snapshot.cells, Vector3.new(0, 0, 0), { floorTopY = 0.33 })
+	if deckUi ~= nil then
+		deckUi.ingestSnapshot(snapshot)
+	end
 
 	local wasReady = hud.uiSeconds ~= nil
 	local uiSeconds = BuildHud.markReady(hud)
@@ -1115,6 +1121,46 @@ send = function(action: string, trapId: string, slot: string, x: number?, y: num
 	end
 end
 
+local function invokeHordeAction(action: string, payload: any): any
+	local ok, result = pcall(function()
+		return buildAction:InvokeServer(action, payload)
+	end)
+	if not ok or type(result) ~= "table" then
+		AudioKit.play("build_invalid")
+		setStatus(msgFor("server_unavailable"))
+		return { ok = false, err = "server_unavailable" }
+	end
+	if result.ok then
+		if result.snapshot ~= nil then
+			playGoldDelta(result.snapshot)
+			refresh(result.snapshot)
+		end
+	else
+		setStatus(statusFor(tostring(result.err), nil, action))
+	end
+	return result
+end
+
+deckUi = DeckUi.create(root, {
+	chooseHorde = function(action: string, payload: { faction: string }): any
+		return invokeHordeAction(action, payload)
+	end,
+	unlockCard = function(action: string, payload: { cardId: string }): any
+		return invokeHordeAction(action, payload)
+	end,
+	saveDeck = function(action: string, payload: DeckUi.SaveDeckPayload): any
+		return invokeHordeAction(action, payload)
+	end,
+	onToast = function(msg: string): ()
+		setStatus(msg)
+	end,
+})
+deckBtn = deckUi.deckButton
+deckBtn.MouseButton1Click:Connect(function()
+	closeContextBar()
+	comboModal.Visible = false
+end)
+
 -- ---------------------------------------------------------------- layout
 local function positionContextBar(): ()
 	if selectedWorldSlot == nil or not contextTrapBar.Visible then
@@ -1180,6 +1226,9 @@ local function applyLayout(): ()
 
 	applyRect(toolsDock, hudRects.toolsDock)
 	applyRect(trapDock, hudRects.trapDock)
+	applyRect(deckBtn, hudRects.deckBtn)
+	deckBtn.Text = ""
+	deckUi.applyLayout(hudRects)
 	applyRect(toastBanner, hudRects.toastBanner)
 
 	trapLayout.Padding = UDim.new(0, hudRects.trapCardGap)
@@ -1281,6 +1330,7 @@ end)
 
 comboBtn.MouseButton1Click:Connect(function()
 	closeContextBar()
+	deckUi.closeModal()
 	comboModal.Visible = not comboModal.Visible
 	AudioKit.play("ui_toggle")
 end)
@@ -1470,7 +1520,7 @@ local function activeDiscTrapId(): string?
 end
 
 local function setPlacementDiscFromScreen(screenPos: Vector2?): ()
-	if screenPos == nil or comboModal.Visible then
+	if screenPos == nil or comboModal.Visible or deckUi.isOpen() then
 		ArenaVisual.setPlacementDisc(Workspace, nil, false, nil)
 		return
 	end
@@ -1504,7 +1554,7 @@ local function switchToPlaceMode(): ()
 end
 
 local function onTap3D(screenPos: Vector2): ()
-	if comboModal.Visible then
+	if comboModal.Visible or deckUi.isOpen() then
 		return
 	end
 	if state.mode == "place" then
@@ -1685,6 +1735,7 @@ player:GetAttributeChangedSignal("MuralhaInRaid"):Connect(function()
 		movingSlot = nil
 		closeContextBar()
 		comboModal.Visible = false
+		deckUi.closeModal()
 		ArenaVisual.setPlacementDisc(Workspace, nil, false)
 	else
 		refreshBuildCamera()
@@ -1700,6 +1751,7 @@ end)
 UiKit.onLocaleChanged(function()
 	refreshHeaderLabels(state.snapshot)
 	refreshComboModal()
+	deckUi.refreshLocale()
 	updateModeButtons()
 	refreshSelection()
 	updateCardAffordability()

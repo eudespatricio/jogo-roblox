@@ -1,6 +1,6 @@
 --!nonstrict
 -- Contrato executavel da Campanha ("Cronicas do Bastiao", 5 Atos x 5 Estagios = 25 fases,
--- 5 Bosses Multi-Lane, 8 Mutadores, selos 3 estrelas, marcos por Ato e ProfileSchema v4).
+-- 5 Bosses Multi-Lane, 8 Mutadores, selos 3 estrelas, marcos por Ato e ProfileSchema v5).
 -- Roda no Luau CLI: luau sim/campaign-contract.luau
 
 local bit32 = bit32
@@ -20,8 +20,8 @@ local function check(name, fn)
 	end
 end
 
--- C1: 5 Atos x 5 Estagios = 25 fases, comandantes, bosses em X-5 e 6 tipos de unidades nas ondas
-check("C1 25 estagios (1-1 a 5-5), 5 Atos, 5 Bosses em X-5 e 6 tipos de horda", function()
+-- C1: 5 Atos x 5 Estagios = 25 fases, comandantes, bosses em X-5 e 8 tipos de unidades nas ondas
+check("C1 25 estagios (1-1 a 5-5), 5 Atos, 5 Bosses em X-5 e 8 tipos de horda", function()
 	local ids = CampaignCatalog.allStageIds()
 	assert(#ids == 25, "esperava 25 fases, achou " .. tostring(#ids))
 	assert(#CampaignCatalog.ACT_NAMES == 5, "ACT_NAMES != 5")
@@ -233,18 +233,18 @@ check("C5 calibragem Ato 5 (5-1 a 5-5 + Boss 5) vencivel com muralha L4/L5", fun
 	end
 end)
 
--- C6: ProfileSchema v4 JSON safety com chaves string ("1".."5" e "1-1".."5-5") e migracao v3->v4
-check("C6 ProfileSchema v4 JSON safety e migracao v3->v4", function()
+-- C6: ProfileSchema v5 JSON safety com chaves string ("1".."5" e "1-1".."5-5") e migracao v3->v5
+check("C6 ProfileSchema v5 JSON safety e migracao v3->v5", function()
 	local migrated, err = ProfileSchema.migrate(fixtureV3)
-	assert(migrated ~= nil, "migracao v3->v4 falhou: " .. tostring(err))
-	assert(migrated.schemaVersion == 4, "schemaVersion != 4")
+	assert(migrated ~= nil, "migracao v3->v5 falhou: " .. tostring(err))
+	assert(migrated.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion != 5")
 	migrated.campaign.starsNormal["1-1"] = 7
 	migrated.campaign.starsNightmare["1-1"] = 3
 	migrated.campaign.actMilestoneClaims["1"] = 7
 	local valid, validErr = ProfileSchema.validate(migrated)
-	assert(valid, "validate v4 falhou: " .. tostring(validErr))
+	assert(valid, "validate v5 falhou: " .. tostring(validErr))
 	local jsonOk, jsonErr = ProfileSchema.isJsonSafe(migrated)
-	assert(jsonOk, "isJsonSafe v4 falhou: " .. tostring(jsonErr))
+	assert(jsonOk, "isJsonSafe v5 falhou: " .. tostring(jsonErr))
 end)
 
 print(string.format("contrato de campanha: %d checagens, %d falhas", checks, #failures))

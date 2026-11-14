@@ -18,6 +18,9 @@ local GridLayout = require(
 local BuildProtocol = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("build"):WaitForChild("BuildProtocol")
 )
+local DeckCatalog = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("raid"):WaitForChild("DeckCatalog")
+)
 local WallService = require(script.Parent:WaitForChild("WallService"))
 local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
@@ -86,7 +89,7 @@ local function snapshotFor(player: Player): { [string]: any }?
 	if type(data) ~= "table" or type(data.wall) ~= "table" then
 		return nil
 	end
-	local snapshot = BuildProtocol.snapshot(data, TrapCatalog, GridLayout)
+	local snapshot = BuildProtocol.snapshot(data, TrapCatalog, GridLayout, DeckCatalog)
 	if snapshot ~= nil then
 		pcall(BuildGrid.refresh, data.wall.cells)
 	end
@@ -103,6 +106,7 @@ local function serviceFor(player: Player): (any?, string?)
 			profile = session.Data,
 			schema = ProfileSchema,
 			catalog = TrapCatalog,
+			deckCatalog = DeckCatalog,
 			emit = function(name: string, props: { [string]: any })
 				AnalyticsService.emit(player, name, props)
 			end,
@@ -147,6 +151,9 @@ local function handleAction(
 
 	local session = ProfileRegistry.get(player)
 	if session ~= nil then
+		if type(result.gold) == "number" then
+			player:SetAttribute("MuralhaGold", result.gold)
+		end
 		pcall(BuildGrid.refresh, session.Data.wall.cells)
 		if
 			not buildCompleted[player]
