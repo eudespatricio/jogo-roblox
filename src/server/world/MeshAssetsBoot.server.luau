@@ -17,14 +17,30 @@ if folder == nil then
 end
 assert(folder ~= nil)
 
+local function needsPaletteTexture(textureId: string): boolean
+	return textureId == "" or string.sub(textureId, 1, 15) == "rbxassethash://"
+end
+
 local function prepare(model: Model): ()
+	local paletteTexture = if MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID > 0
+		then "rbxassetid://" .. tostring(MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID)
+		else ""
 	for _, descendant in ipairs(model:GetDescendants()) do
-		if descendant:IsA("BasePart") then
+		if descendant:IsA("SurfaceAppearance") then
+			descendant:Destroy()
+		elseif descendant:IsA("BasePart") then
 			descendant.Anchored = true
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.CanQuery = false
 			descendant.CastShadow = true
+			if
+				descendant:IsA("MeshPart")
+				and paletteTexture ~= ""
+				and needsPaletteTexture(descendant.TextureID)
+			then
+				descendant.TextureID = paletteTexture
+			end
 		end
 	end
 end
@@ -83,4 +99,6 @@ for key, assetId in pairs(MeshAssets.FAUNA) do
 	loadMesh(MeshAssets.faunaModelName(key), assetId)
 end
 
-loadMesh(MeshAssets.PORTAL_MODEL, MeshAssets.PORTAL)
+for themeKey, assetId in pairs(MeshAssets.PORTALS) do
+	loadMesh(MeshAssets.portalModelName(themeKey), assetId)
+end

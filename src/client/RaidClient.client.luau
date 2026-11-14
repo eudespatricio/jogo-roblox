@@ -22,6 +22,7 @@ local CampaignCatalog = require(Shared:WaitForChild("campaign"):WaitForChild("Ca
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
 local BuildLayout = require(Shared:WaitForChild("build"):WaitForChild("BuildLayout"))
 local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
+local PortalThemes = require(Shared:WaitForChild("visual"):WaitForChild("PortalThemes"))
 local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTheme"))
 
 local visual = script.Parent:WaitForChild("visual")
@@ -237,6 +238,7 @@ UiKit.stroke(attackLabel, UiKit.color(VisualTheme.PALETTE.ink), 1.5, 0.25)
 
 local RAID_ORIGIN = Vector3.new(-520, 0, 0)
 local FLOOR_TOP_Y = 0.33
+local MIN_ARENA_ENTRY_FRAMES = 6
 
 local function getRaidCamera(): (CFrame, number)
 	local cam = Workspace.CurrentCamera
@@ -248,6 +250,7 @@ local topHud = UiKit.panel(root, "RaidTopHud")
 topHud.AnchorPoint = Vector2.zero
 topHud.Position = UDim2.fromOffset(192, 6)
 topHud.Size = UDim2.fromOffset(280, 44)
+topHud.BackgroundTransparency = 0.14
 topHud.Visible = false
 UiKit.corner(topHud, 12)
 
@@ -259,10 +262,14 @@ local title = UiKit.label(
 	Enum.Font.GothamBlack
 )
 title.Position = UDim2.fromOffset(10, 3)
-title.Size = UDim2.new(0.54, -10, 0, 17)
+title.Size = UDim2.new(0.58, -10, 0, 17)
 title.TextScaled = true
 title.TextWrapped = false
 title.TextTruncate = Enum.TextTruncate.AtEnd
+local topTitleCap = Instance.new("UITextSizeConstraint")
+topTitleCap.MinTextSize = 9
+topTitleCap.MaxTextSize = 13
+topTitleCap.Parent = title
 
 local status = UiKit.label(
 	topHud,
@@ -271,12 +278,16 @@ local status = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.parchment),
 	Enum.Font.GothamBold
 )
-status.Position = UDim2.new(0.54, 0, 0, 3)
-status.Size = UDim2.new(0.46, -10, 0, 17)
+status.Position = UDim2.new(0.58, 0, 0, 3)
+status.Size = UDim2.new(0.42, -10, 0, 17)
 status.TextXAlignment = Enum.TextXAlignment.Right
 status.TextScaled = true
 status.TextWrapped = false
 status.TextTruncate = Enum.TextTruncate.AtEnd
+local topStatusCap = Instance.new("UITextSizeConstraint")
+topStatusCap.MinTextSize = 9
+topStatusCap.MaxTextSize = 13
+topStatusCap.Parent = status
 
 local wallProgress = UiKit.progress(topHud, "WallProgress", UiKit.color(VisualTheme.PALETTE.amber))
 wallProgress.frame.Position = UDim2.fromOffset(10, 23)
@@ -294,6 +305,10 @@ wallLabel.Size = UDim2.fromOffset(70, 14)
 wallLabel.TextXAlignment = Enum.TextXAlignment.Right
 wallLabel.TextScaled = true
 wallLabel.TextWrapped = false
+local wallLabelCap = Instance.new("UITextSizeConstraint")
+wallLabelCap.MinTextSize = 9
+wallLabelCap.MaxTextSize = 12
+wallLabelCap.Parent = wallLabel
 
 local replayProgress =
 	UiKit.progress(topHud, "ReplayProgress", UiKit.color(VisualTheme.PALETTE.teal))
@@ -439,9 +454,23 @@ local campaignUi = CampaignUi.create(root, {
 	end,
 })
 
+local hasActiveBossStage = false
+
 local function applyRect(obj: GuiObject, r: BuildLayout.Rect): ()
 	obj.Position = UDim2.fromOffset(r.x, r.y)
 	obj.Size = UDim2.fromOffset(r.w, r.h)
+end
+
+local function updateWallHudLayout(): ()
+	if topHud.Size.X.Offset < 248 then
+		wallProgress.frame.Size = UDim2.new(1, -60, 0, 9)
+		wallLabel.Position = UDim2.new(1, -48, 0, 20)
+		wallLabel.Size = UDim2.fromOffset(40, 14)
+	else
+		wallProgress.frame.Size = UDim2.new(1, -94, 0, 9)
+		wallLabel.Position = UDim2.new(1, -80, 0, 20)
+		wallLabel.Size = UDim2.fromOffset(70, 14)
+	end
 end
 
 local function applyRaidLayout(): ()
@@ -452,7 +481,11 @@ local function applyRaidLayout(): ()
 	local hudRects = BuildLayout.computeHud(size.X, size.Y, UiKit.safeTopbarInsets(root))
 	applyRect(defendButton, hudRects.defendBtn)
 	applyRect(attackButton, hudRects.attackBtn)
-	applyRect(topHud, hudRects.combatTopPill)
+	applyRect(
+		topHud,
+		if hasActiveBossStage then hudRects.combatTopPill else hudRects.combatTopSoloPill
+	)
+	updateWallHudLayout()
 	applyRect(combatCamButton, hudRects.combatCamBtn)
 	applyRect(speedButton, hudRects.combatSpeedBtn)
 	applyRect(closeButton, hudRects.combatCloseBtn)
@@ -525,10 +558,33 @@ UiKit.onLocaleChanged(function()
 	refreshStaticLocale()
 end)
 
+type UnitLifecycle = {
+	id: number,
+	kind: string,
+	lane: number,
+	firstIdx: number,
+	firstX: number,
+	lastIdx: number,
+	lastX: number,
+	lastY: number,
+	fromPortal: boolean,
+	killedByTrap: boolean,
+	visualDeathIdx: number,
+	arenaDeathX: number,
+}
+
+type BossSpawnInfo = {
+	firstIdx: number,
+	laneCenter: number,
+}
+
 local busy = false
 local scene: Folder? = nil
 local raidCrowd: CrowdKit.CrowdHandle? = nil
+local activePortalTheme: PortalThemes.PortalThemeSpec? = nil
 local bossVisual: HordeKit.BossUnit? = nil
+local bossSpawnInfo: BossSpawnInfo? = nil
+local breachedBoss = false
 local bossSpawned = false
 local prevBossHp: number? = nil
 local prevBossState: string? = nil
@@ -538,8 +594,11 @@ local lastBossPos: Vector3? = nil
 local lastCrowdComboAt = 0
 local unitVisuals: { [number]: any } = {}
 local unitVisible: { [number]: boolean } = {}
+local unitLifecycle: { [number]: UnitLifecycle } = {}
+local unitDeadDone: { [number]: boolean } = {}
+local breachedUnits: { [number]: boolean } = {}
 local prevUnitHp: { [number]: number } = {}
-local lastUnitPos: { [number]: Vector3 } = {}
+local lastUnitPos: { [number]: Vector3? } = {}
 local unitKind: { [number]: string } = {}
 local lastWallPct = 1
 local fracturedGate = false
@@ -547,6 +606,43 @@ local activeBattleId: string? = nil
 local lastResult: any = nil
 local replayToken = 0
 local shakeUntil = 0
+
+local function themeRgb(c: { number }): Color3
+	return Color3.fromRGB(c[1], c[2], c[3])
+end
+
+local function resolvePortalThemeKey(result: any): PortalThemes.PortalThemeId
+	if result.mode == "campaign" then
+		local actHint = if type(result.matchup) == "table"
+				and type(result.matchup.card2) == "table"
+			then result.matchup.card2.act
+			else nil
+		if actHint ~= nil then
+			return PortalThemes.resolve(actHint).id
+		end
+		if type(result.stageId) == "string" then
+			return PortalThemes.fromStageId(result.stageId)
+		end
+	end
+	return "rift"
+end
+
+local function triggerPortalBreach(lane: number, isBoss: boolean): Vector3
+	local resolvedTheme = activePortalTheme or PortalThemes.resolve("rift")
+	local mouthZ = (math.clamp(lane, 1, 5) - 3) * 0.95
+	local mouthPos = RAID_ORIGIN + Vector3.new(PortalThemes.THROAT_X, FLOOR_TOP_Y, mouthZ)
+	local activeScene = scene
+	if activeScene ~= nil then
+		Vfx.portalBreach(
+			activeScene,
+			mouthPos,
+			themeRgb(resolvedTheme.veilColor),
+			themeRgb(resolvedTheme.accentColor),
+			isBoss
+		)
+	end
+	return mouthPos
+end
 
 speedButton.MouseButton1Click:Connect(function()
 	speedIndex = (speedIndex % #SPEED_OPTIONS) + 1
@@ -606,7 +702,11 @@ local function clearScene(): ()
 		scene:Destroy()
 		scene = nil
 	end
+	activePortalTheme = nil
 	bossVisual = nil
+	bossSpawnInfo = nil
+	breachedBoss = false
+	hasActiveBossStage = false
 	bossSpawned = false
 	prevBossHp = nil
 	prevBossState = nil
@@ -615,9 +715,13 @@ local function clearScene(): ()
 	lastBossPos = nil
 	lastCrowdComboAt = 0
 	campaignUi.hideBossHud()
+	applyRaidLayout()
 	AudioKit.setBossActive(false)
 	unitVisuals = {}
 	unitVisible = {}
+	unitLifecycle = {}
+	unitDeadDone = {}
+	breachedUnits = {}
 	prevUnitHp = {}
 	lastUnitPos = {}
 	unitKind = {}
@@ -651,10 +755,12 @@ local function buildFrames(result: any): (any, any)
 		wave = waveArg,
 	})
 	local frames = {}
+	local capturedSpawn: { [number]: boolean } = {}
 	local function snapshot()
 		local unitsFrame = {}
 		for index = 1, battle.uCount do
 			if battle.uHp[index] > 0 then
+				capturedSpawn[index] = true
 				unitsFrame[#unitsFrame + 1] = {
 					id = index,
 					kind = battle.uType[index] or kindFromSpeed(battle.uBaseSpeed[index]),
@@ -662,6 +768,23 @@ local function buildFrames(result: any): (any, any)
 					x = battle.uX[index],
 					y = battle.uY[index],
 					hp = battle.uHp[index],
+				}
+			elseif not capturedSpawn[index] then
+				capturedSpawn[index] = true
+				local kind = battle.uType[index] or kindFromSpeed(battle.uBaseSpeed[index])
+				local unitDef = (Core.UNIT :: any)[kind]
+				local maxHp = if unitDef ~= nil and type(unitDef.hp) == "number"
+					then unitDef.hp
+					else 7000
+				unitsFrame[#unitsFrame + 1] = {
+					id = index,
+					kind = kind,
+					lane = battle.uLane[index],
+					x = Core.ARENA.spawnX,
+					y = battle.uY[index],
+					hp = 1,
+					maxHp = maxHp,
+					spawnKilled = true,
 				}
 			end
 		end
@@ -684,6 +807,37 @@ local function buildFrames(result: any): (any, any)
 	return frames, battle:Result()
 end
 
+local function frontKillArenaX(wallTraps: { any }, lane: number): number
+	local uy = Core.laneY(lane)
+	local checkX = Core.ARENA.spawnX - 210
+	local bestTrapX: number? = nil
+	for _, trap in ipairs(wallTraps) do
+		local ax = trap.x
+		local ay = trap.y
+		if (ax == nil or ay == nil) and type(trap.cell) == "string" then
+			local cx, cy = Core.cellToPos(trap.cell)
+			ax = ax or cx
+			ay = ay or cy
+		end
+		local def = if type(trap.type) == "string" then (Core.TRAP :: any)[trap.type] else nil
+		if type(ax) == "number" and type(ay) == "number" and def ~= nil then
+			local inReach = false
+			if def.omni == true then
+				local dx = checkX - ax
+				local dy = uy - ay
+				inReach = dx * dx + dy * dy <= def.range * def.range
+			else
+				local dx = checkX - ax
+				inReach = math.abs(uy - ay) <= Core.ARENA.laneReach and dx > 0 and dx <= def.range
+			end
+			if inReach and (bestTrapX == nil or ax > bestTrapX) then
+				bestTrapX = ax
+			end
+		end
+	end
+	return math.clamp((bestTrapX or 8000) + 450, 8250, 9050)
+end
+
 local function buildScene(result: any, frames: { any }): ()
 	local newScene = Instance.new("Folder")
 	newScene.Name = "RaidLocalScene"
@@ -695,7 +849,13 @@ local function buildScene(result: any, frames: { any }): ()
 			and type(result.wall.level) == "number"
 		then result.wall.level
 		else 1
-	ArenaVisual.build(newScene, RAID_ORIGIN, { dropIn = false, wallTier = wallTier })
+	local portalThemeKey = resolvePortalThemeKey(result)
+	activePortalTheme = PortalThemes.resolve(portalThemeKey)
+	ArenaVisual.build(
+		newScene,
+		RAID_ORIGIN,
+		{ dropIn = false, wallTier = wallTier, portalTheme = portalThemeKey }
+	)
 	raidCrowd = CrowdKit.build(newScene, RAID_ORIGIN)
 
 	local cells: { [string]: TrapKit.TrapData } = {}
@@ -714,43 +874,129 @@ local function buildScene(result: any, frames: { any }): ()
 	end
 	TrapKit.sync(newScene, cells, RAID_ORIGIN, { floorTopY = FLOOR_TOP_Y })
 
+	local portalSpawnOrigin = RAID_ORIGIN + Vector3.new(PortalThemes.THROAT_X, FLOOR_TOP_Y, 0)
 	local bossId: string? = if type(result.bossId) == "string" then result.bossId else nil
-	if bossId == nil then
-		for _, frame in ipairs(frames) do
-			if type(frame.boss) == "table" and type(frame.boss.bossId) == "string" then
+	bossSpawnInfo = nil
+	breachedBoss = false
+	for frameIdx, frame in ipairs(frames) do
+		if type(frame.boss) == "table" and frame.boss.alive == true then
+			if bossId == nil and type(frame.boss.bossId) == "string" then
 				bossId = frame.boss.bossId
-				break
+			end
+			if bossSpawnInfo == nil and (frame.boss.x == nil or frame.boss.x >= 8500) then
+				bossSpawnInfo = {
+					firstIdx = frameIdx,
+					laneCenter = frame.boss.laneCenter or 3,
+				}
 			end
 		end
 	end
 	if bossId ~= nil then
-		local createdBoss = HordeKit.createBoss(
-			bossId,
-			newScene,
-			CFrame.new(RAID_ORIGIN + Vector3.new(24, FLOOR_TOP_Y, 0))
-		)
+		local createdBoss = HordeKit.createBoss(bossId, newScene, CFrame.new(portalSpawnOrigin))
+		HordeKit.setBossApproachScale(createdBoss, PortalThemes.MIN_SCALE)
 		HordeKit.setBossVisible(createdBoss, false)
 		bossVisual = createdBoss
 	end
 
-	local kindById: { [number]: string } = {}
-	for _, frame in ipairs(frames) do
+	type RawUnitTrack = {
+		id: number,
+		kind: string,
+		lane: number,
+		firstIdx: number,
+		firstX: number,
+		lastIdx: number,
+		lastX: number,
+		lastY: number,
+		spawnKilled: boolean,
+	}
+	local tracks: { [number]: RawUnitTrack } = {}
+	for frameIdx, frame in ipairs(frames) do
 		for _, unitData in ipairs(frame.units or {}) do
-			if unitData.id ~= nil and kindById[unitData.id] == nil then
-				kindById[unitData.id] = unitData.kind
+			local id = unitData.id
+			if type(id) == "number" then
+				local ux = if type(unitData.x) == "number" then unitData.x else Core.ARENA.spawnX
+				local lane = if type(unitData.lane) == "number" then unitData.lane else 3
+				local uy = if type(unitData.y) == "number" then unitData.y else Core.laneY(lane)
+				local existing = tracks[id]
+				if existing == nil then
+					tracks[id] = {
+						id = id,
+						kind = unitData.kind,
+						lane = lane,
+						firstIdx = frameIdx,
+						firstX = ux,
+						lastIdx = frameIdx,
+						lastX = ux,
+						lastY = uy,
+						spawnKilled = unitData.spawnKilled == true,
+					}
+				else
+					existing.lastIdx = frameIdx
+					existing.lastX = ux
+					existing.lastY = uy
+					if unitData.spawnKilled ~= true then
+						existing.spawnKilled = false
+					end
+				end
 			end
 		end
 	end
 
+	local aliveInFinal: { [number]: boolean } = {}
+	local finalFrame = frames[#frames]
+	if finalFrame ~= nil then
+		for _, unitData in ipairs(finalFrame.units or {}) do
+			if type(unitData.id) == "number" and unitData.spawnKilled ~= true then
+				aliveInFinal[unitData.id] = true
+			end
+		end
+	end
+
+	unitLifecycle = {}
+	unitDeadDone = {}
+	breachedUnits = {}
 	unitVisuals = {}
 	unitVisible = {}
-	local spawnPos = RAID_ORIGIN + Vector3.new(24, FLOOR_TOP_Y, 0)
-	for id, kind in pairs(kindById) do
-		local unit = HordeKit.create(kind, newScene, CFrame.new(spawnPos), id)
-		if unit ~= nil then
-			HordeKit.setVisible(unit, false)
-			unitVisuals[id] = unit
-			unitVisible[id] = false
+	for id, track in pairs(tracks) do
+		local alive = aliveInFinal[id] == true
+		if not (track.firstIdx + 4 > #frames and not alive) then
+			local fromPortal = track.firstX >= 8500
+			local rawDeathIdx = if track.spawnKilled
+				then track.firstIdx
+				else math.min(track.lastIdx + 1, #frames)
+			local visualDeathIdx = if alive
+				then (#frames + 1000)
+				elseif fromPortal then math.max(
+					rawDeathIdx,
+					math.min(track.firstIdx + MIN_ARENA_ENTRY_FRAMES, #frames)
+				)
+				else rawDeathIdx
+			local arenaDeathX = track.lastX
+			if not alive and track.lastX > 9050 then
+				arenaDeathX = frontKillArenaX(wallTraps, track.lane)
+			end
+			local killedByTrap = (not alive) and (track.lastX > 650)
+			unitLifecycle[id] = {
+				id = id,
+				kind = track.kind,
+				lane = track.lane,
+				firstIdx = track.firstIdx,
+				firstX = track.firstX,
+				lastIdx = track.lastIdx,
+				lastX = track.lastX,
+				lastY = track.lastY,
+				fromPortal = fromPortal,
+				killedByTrap = killedByTrap,
+				visualDeathIdx = visualDeathIdx,
+				arenaDeathX = arenaDeathX,
+			}
+			local unit = HordeKit.create(track.kind, newScene, CFrame.new(portalSpawnOrigin), id)
+			if unit ~= nil then
+				HordeKit.setApproachScale(unit, PortalThemes.MIN_SCALE)
+				HordeKit.setVisible(unit, false)
+				unitVisuals[id] = unit
+				unitVisible[id] = false
+			end
 		end
 	end
 end
@@ -878,11 +1124,21 @@ end
 
 local function unitWorldPos(lane: number, arenaX: number): Vector3
 	local z = -16 + (lane - 1) * 8
-	local x = -22 + (arenaX / 10000) * 47
+	local ax = math.clamp(arenaX, 0, 10000)
+	local x: number
+	if ax >= 8000 then
+		x = 16.0 + ((ax - 8000) / 2000) * 5.5
+	elseif ax >= 5000 then
+		x = ((ax - 5000) / 3000) * 16.0
+	elseif ax >= 2000 then
+		x = -16.0 + ((ax - 2000) / 3000) * 16.0
+	else
+		x = -22.0 + (ax / 2000) * 6.0
+	end
 	return RAID_ORIGIN + Vector3.new(x, FLOOR_TOP_Y, z)
 end
 
-local function applyDiscreteFrame(frame: any): ()
+local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 	local activeScene = scene
 	if activeScene == nil then
 		return
@@ -908,82 +1164,156 @@ local function applyDiscreteFrame(frame: any): ()
 		Vfx.fractureGate(activeScene, RAID_ORIGIN + Vector3.new(-24, FLOOR_TOP_Y, 0))
 		AudioKit.playAt("gate_fracture", RAID_ORIGIN + Vector3.new(-24, FLOOR_TOP_Y + 2, 0))
 	end
-	wallLabel.Text = string.format("%s %d%%", rmsg("wall_prefix"), math.floor(pct * 100))
+	if topHud.Size.X.Offset < 248 then
+		wallLabel.Text = string.format("%d%%", math.floor(pct * 100))
+	else
+		wallLabel.Text = string.format("%s %d%%", rmsg("wall_prefix"), math.floor(pct * 100))
+	end
 	wallProgress.set(pct)
 
 	local seen: { [number]: boolean } = {}
 	for _, unitData in ipairs(frame.units or {}) do
 		local id = unitData.id
 		if id ~= nil then
-			seen[id] = true
-			unitKind[id] = unitData.kind
-			local unit = unitVisuals[id]
-			if unit == nil then
-				unit = HordeKit.create(
-					unitData.kind,
-					activeScene,
-					CFrame.new(RAID_ORIGIN + Vector3.new(24, FLOOR_TOP_Y, 0)),
-					id
-				)
-				if unit ~= nil then
-					unitVisuals[id] = unit
-				end
-			end
-			if unit ~= nil then
-				if not unitVisible[id] then
-					HordeKit.setVisible(unit, true)
-					unitVisible[id] = true
-					if prevUnitHp[id] == nil then
-						AudioKit.playAt(
-							"horde_spawn",
-							RAID_ORIGIN + Vector3.new(24, FLOOR_TOP_Y + 2, 0),
-							0.8
-						)
+			local life = unitLifecycle[id]
+			if life ~= nil or unitVisuals[id] ~= nil then
+				seen[id] = true
+				unitKind[id] = unitData.kind
+				local unit = unitVisuals[id]
+				if unit == nil then
+					unit = HordeKit.create(
+						unitData.kind,
+						activeScene,
+						CFrame.new(RAID_ORIGIN + Vector3.new(PortalThemes.THROAT_X, FLOOR_TOP_Y, 0)),
+						id
+					)
+					if unit ~= nil then
+						unitVisuals[id] = unit
 					end
 				end
-				local pos = unitWorldPos(unitData.lane, unitData.x)
-				lastUnitPos[id] = pos
-				local prevHp = prevUnitHp[id]
-				if prevHp ~= nil and unitData.hp < prevHp then
-					HordeKit.hitSquash(unit)
-					local uy = if type(unitData.y) == "number"
-						then unitData.y
-						else Core.laneY(unitData.lane)
-					fireTrapsForLane(activeScene, unitData.lane, unitData.x, uy, pos, id)
+				if unit ~= nil then
+					local pos = unitWorldPos(unitData.lane, unitData.x)
+					if not unitVisible[id] then
+						HordeKit.setApproachScale(unit, 1.0)
+						HordeKit.setVisible(unit, true)
+						unitVisible[id] = true
+						if not breachedUnits[id] then
+							breachedUnits[id] = true
+							if type(unitData.x) == "number" and unitData.x >= 8500 then
+								local mouthPos = triggerPortalBreach(unitData.lane, false)
+								AudioKit.playAt(
+									"horde_spawn",
+									mouthPos + Vector3.new(0, 2, 0),
+									0.75
+								)
+							else
+								local resolvedTheme = activePortalTheme
+									or PortalThemes.resolve("rift")
+								Vfx.portalBreach(
+									activeScene,
+									pos,
+									themeRgb(resolvedTheme.veilColor),
+									themeRgb(resolvedTheme.accentColor),
+									false
+								)
+								AudioKit.playAt("horde_spawn", pos + Vector3.new(0, 2, 0), 0.75)
+							end
+						end
+					end
+					if unitData.spawnKilled == true then
+						if lastUnitPos[id] == nil then
+							lastUnitPos[id] = pos
+						end
+					else
+						lastUnitPos[id] = pos
+						local prevHp = prevUnitHp[id]
+						if prevHp ~= nil and unitData.hp < prevHp then
+							if
+								type(unitData.x) == "number"
+								and unitData.x <= 9200
+								and (life == nil or frameIdx < life.visualDeathIdx)
+							then
+								HordeKit.hitSquash(unit)
+								local uy = if type(unitData.y) == "number"
+									then unitData.y
+									else Core.laneY(unitData.lane)
+								fireTrapsForLane(
+									activeScene,
+									unitData.lane,
+									unitData.x,
+									uy,
+									pos,
+									id
+								)
+							end
+						end
+						prevUnitHp[id] = unitData.hp
+					end
 				end
-				prevUnitHp[id] = unitData.hp
 			end
 		end
 	end
 	for id, unit in pairs(unitVisuals) do
-		if not seen[id] and unitVisible[id] then
+		local life = unitLifecycle[id]
+		if life ~= nil then
+			if frameIdx >= life.visualDeathIdx and not unitDeadDone[id] then
+				unitDeadDone[id] = true
+				local deathAx = math.min(life.arenaDeathX, 9050)
+				local deathPos = unitWorldPos(life.lane, deathAx)
+				local prevPos = lastUnitPos[id]
+				local position: Vector3 = if life.lastX > 9050 or prevPos == nil
+					then deathPos
+					else prevPos
+				lastUnitPos[id] = position
+				if life.killedByTrap then
+					local uy = life.lastY or Core.laneY(life.lane)
+					HordeKit.hitSquash(unit)
+					fireTrapsForLane(activeScene, life.lane, deathAx, uy, position, id)
+				end
+				local teal = Color3.fromRGB(20, 184, 166)
+				Vfx.death(activeScene, position, teal)
+				local vz = if id % 2 == 0 then 2.2 else -2.2
+				Vfx.ragdollEnemy(activeScene, position, teal, Vector3.new(4, 7.5, vz))
+				AudioKit.unitDeath(life.kind or unitKind[id] or "runner", position)
+				HordeKit.setVisible(unit, false)
+				unitVisible[id] = false
+			end
+		elseif not seen[id] and unitVisible[id] then
 			local position = lastUnitPos[id]
 				or (unit.base and unit.base.Position)
 				or (RAID_ORIGIN + Vector3.new(0, FLOOR_TOP_Y, 0))
 			local teal = Color3.fromRGB(20, 184, 166)
 			Vfx.death(activeScene, position, teal)
-			Vfx.ragdollEnemy(activeScene, position, teal, Vector3.new(12, 8, 0))
+			local vz = if id % 2 == 0 then 2.2 else -2.2
+			Vfx.ragdollEnemy(activeScene, position, teal, Vector3.new(4, 7.5, vz))
 			AudioKit.unitDeath(unitKind[id] or "runner", position)
 			HordeKit.setVisible(unit, false)
 			unitVisible[id] = false
 		end
 	end
 
+	local bossApproaching = bossSpawnInfo ~= nil and frameIdx < bossSpawnInfo.firstIdx
 	local boss = frame.boss
 	if bossVisual ~= nil and type(boss) == "table" then
 		local bossLane = math.clamp(math.round(boss.laneCenter or 3), 1, 5)
 		local bossPos = unitWorldPos(boss.laneCenter or 3, boss.x or 10000)
 		lastBossPos = bossPos
 		if boss.alive == true then
+			if not breachedBoss then
+				breachedBoss = true
+				triggerPortalBreach(bossLane, true)
+			end
 			if not bossSpawned then
 				bossSpawned = true
 				prevBossAlive = true
+				HordeKit.setBossApproachScale(bossVisual, 1.0)
 				HordeKit.setBossVisible(bossVisual, true)
 				AudioKit.play("boss_intro")
 				AudioKit.setBossActive(true)
 				local spawnedBossId = bossVisual.bossId
 				local activeLocale = UiKit.getLocale()
-				campaignUi.showBossQuote(spawnedBossId, "intro")
+				local headPos = bossPos + Vector3.new(0, bossVisual.height + 0.8, 0)
+				campaignUi.showBossQuote(spawnedBossId, "intro", headPos)
 				task.delay(0.30, function()
 					if replayToken == activeToken then
 						AudioKit.playBossVoice(spawnedBossId, "intro", activeLocale)
@@ -1029,7 +1359,8 @@ local function applyDiscreteFrame(frame: any): ()
 				AudioKit.play("boss_enrage")
 				local enragedBossId = bossVisual.bossId
 				local activeLocale = UiKit.getLocale()
-				campaignUi.showBossQuote(enragedBossId, "enrage")
+				local headPos = bossPos + Vector3.new(0, bossVisual.height + 0.8, 0)
+				campaignUi.showBossQuote(enragedBossId, "enrage", headPos)
 				task.delay(0.22, function()
 					if replayToken == activeToken then
 						AudioKit.playBossVoice(enragedBossId, "enrage", activeLocale)
@@ -1037,7 +1368,7 @@ local function applyDiscreteFrame(frame: any): ()
 				end)
 			end
 			campaignUi.updateBossHud(boss)
-		elseif prevBossAlive then
+		elseif prevBossAlive and not bossApproaching then
 			prevBossAlive = false
 			HordeKit.setBossVisible(bossVisual, false)
 			AudioKit.play("boss_death")
@@ -1048,7 +1379,7 @@ local function applyDiscreteFrame(frame: any): ()
 			end
 			campaignUi.hideBossHud()
 		end
-	elseif prevBossAlive then
+	elseif prevBossAlive and not bossApproaching then
 		prevBossAlive = false
 		if bossVisual ~= nil then
 			HordeKit.setBossVisible(bossVisual, false)
@@ -1062,7 +1393,13 @@ local function applyDiscreteFrame(frame: any): ()
 	end
 end
 
-local function stepVisualFrame(frameA: any, frameB: any, alpha: number): ()
+local function stepVisualFrame(
+	frames: { any },
+	fPos: number,
+	idx: number,
+	nextIdx: number,
+	alpha: number
+): ()
 	local activeScene = scene
 	if activeScene == nil then
 		return
@@ -1080,49 +1417,162 @@ local function stepVisualFrame(frameA: any, frameB: any, alpha: number): ()
 		end
 	end
 
-	local nextById: { [number]: any } = {}
-	if frameB ~= nil and frameB ~= frameA then
-		for _, unitData in ipairs(frameB.units or {}) do
-			if unitData.id ~= nil then
-				nextById[unitData.id] = unitData
+	local now = time()
+	local leadIn = PortalThemes.LEAD_IN_FRAMES
+	for id, life in pairs(unitLifecycle) do
+		if life.fromPortal then
+			local startPos = life.firstIdx - leadIn
+			if fPos >= startPos and fPos < life.firstIdx then
+				local unit = unitVisuals[id]
+				if unit ~= nil then
+					local t = math.clamp((fPos - startPos) / leadIn, 0, 1)
+					if not breachedUnits[id] then
+						breachedUnits[id] = true
+						unitKind[id] = life.kind
+						local mouthPos = triggerPortalBreach(life.lane, false)
+						AudioKit.playAt("horde_spawn", mouthPos + Vector3.new(0, 2, 0), 0.75)
+					end
+					if not unitVisible[id] then
+						HordeKit.setVisible(unit, true)
+						unitVisible[id] = true
+					end
+					local fx, fz, yaw = PortalThemes.sampleFanPath(life.lane, t)
+					local worldPos = RAID_ORIGIN + Vector3.new(fx, FLOOR_TOP_Y, fz)
+					lastUnitPos[id] = worldPos
+					HordeKit.setApproachScale(unit, PortalThemes.approachScale(t))
+					HordeKit.setBase(unit, CFrame.new(worldPos) * CFrame.Angles(0, yaw, 0))
+					HordeKit.step(unit, now, true)
+				end
 			end
 		end
 	end
 
-	local now = time()
-	for _, unitData in ipairs(frameA.units or {}) do
-		local id = unitData.id
-		if id ~= nil then
-			local unit = unitVisuals[id]
-			if unit ~= nil and unitVisible[id] then
-				local targetData = nextById[id]
-				local xVal = unitData.x
-				if targetData ~= nil then
-					xVal = unitData.x + (targetData.x - unitData.x) * alpha
+	local frameA = frames[idx]
+	local frameB = frames[nextIdx]
+	if fPos >= 1 and frameA ~= nil then
+		local curById: { [number]: any } = {}
+		for _, unitData in ipairs(frameA.units or {}) do
+			if unitData.id ~= nil then
+				curById[unitData.id] = unitData
+			end
+		end
+		local nextById: { [number]: any } = {}
+		if frameB ~= nil and frameB ~= frameA then
+			for _, unitData in ipairs(frameB.units or {}) do
+				if unitData.id ~= nil then
+					nextById[unitData.id] = unitData
 				end
-				local pos = unitWorldPos(unitData.lane, xVal)
+			end
+		end
+		for id, life in pairs(unitLifecycle) do
+			local unit = unitVisuals[id]
+			if
+				unit ~= nil
+				and unitVisible[id]
+				and not unitDeadDone[id]
+				and fPos >= life.firstIdx
+				and fPos < life.visualDeathIdx
+			then
+				local curData = curById[id]
+				local nextData = nextById[id]
+				local xVal: number
+				if
+					curData ~= nil
+					and curData.spawnKilled ~= true
+					and nextData ~= nil
+					and nextData.spawnKilled ~= true
+				then
+					xVal = curData.x + (nextData.x - curData.x) * alpha
+				elseif
+					fPos >= life.lastIdx
+					and life.visualDeathIdx > life.lastIdx
+					and life.visualDeathIdx <= #frames
+				then
+					local span = math.max(1, life.visualDeathIdx - life.lastIdx)
+					local frac = math.clamp((fPos - life.lastIdx) / span, 0, 1)
+					xVal = life.lastX + (life.arenaDeathX - life.lastX) * frac
+				elseif curData ~= nil then
+					xVal = curData.x
+				else
+					xVal = life.lastX
+				end
+				local pos = unitWorldPos(life.lane, xVal)
 				lastUnitPos[id] = pos
+				HordeKit.setApproachScale(unit, 1.0)
 				HordeKit.setBase(unit, CFrame.new(pos))
 				HordeKit.step(unit, now, true)
 			end
 		end
 	end
 
-	if bossVisual ~= nil and type(frameA.boss) == "table" and frameA.boss.alive == true then
-		local bA = frameA.boss
-		local bB = if frameB ~= nil
-				and frameB ~= frameA
-				and type(frameB.boss) == "table"
-			then frameB.boss
-			else nil
-		local xVal = bA.x or 10000
-		if bB ~= nil and type(bB.x) == "number" then
-			xVal = xVal + (bB.x - xVal) * alpha
+	if bossVisual ~= nil then
+		local approachingBoss = false
+		if bossSpawnInfo ~= nil then
+			local bossStart = bossSpawnInfo.firstIdx - leadIn
+			if fPos >= bossStart and fPos < bossSpawnInfo.firstIdx then
+				approachingBoss = true
+				local t = math.clamp((fPos - bossStart) / leadIn, 0, 1)
+				local fx, fz, yaw = PortalThemes.sampleFanPath(bossSpawnInfo.laneCenter, t)
+				local pos = RAID_ORIGIN + Vector3.new(fx, FLOOR_TOP_Y, fz)
+				if not breachedBoss then
+					breachedBoss = true
+					triggerPortalBreach(bossSpawnInfo.laneCenter, true)
+				end
+				if not bossSpawned then
+					bossSpawned = true
+					prevBossAlive = true
+					HordeKit.setBossVisible(bossVisual, true)
+					AudioKit.play("boss_intro")
+					AudioKit.setBossActive(true)
+					local spawnedBossId = bossVisual.bossId
+					local activeLocale = UiKit.getLocale()
+					local activeToken = replayToken
+					local headPos = pos + Vector3.new(0, bossVisual.height + 0.8, 0)
+					campaignUi.showBossQuote(spawnedBossId, "intro", headPos)
+					local firstBossFrame = frames[bossSpawnInfo.firstIdx]
+					if firstBossFrame ~= nil and type(firstBossFrame.boss) == "table" then
+						campaignUi.updateBossHud(firstBossFrame.boss)
+					end
+					task.delay(0.30, function()
+						if replayToken == activeToken then
+							AudioKit.playBossVoice(spawnedBossId, "intro", activeLocale)
+						end
+					end)
+					if raidCrowd ~= nil then
+						raidCrowd:react("boss")
+					end
+				end
+				lastBossPos = pos
+				HordeKit.setBossApproachScale(bossVisual, PortalThemes.approachScale(t))
+				HordeKit.setBossBase(bossVisual, CFrame.new(pos) * CFrame.Angles(0, yaw, 0))
+				HordeKit.stepBoss(bossVisual, now, "MARCH", false)
+				campaignUi.stepBossBubble(cam, pos + Vector3.new(0, bossVisual.height + 0.8, 0))
+			end
 		end
-		local pos = unitWorldPos(bA.laneCenter or 3, xVal)
-		lastBossPos = pos
-		HordeKit.setBossBase(bossVisual, CFrame.new(pos))
-		HordeKit.stepBoss(bossVisual, now, bA.state, bA.enraged == true)
+		if
+			not approachingBoss
+			and fPos >= 1
+			and frameA ~= nil
+			and type(frameA.boss) == "table"
+			and frameA.boss.alive == true
+		then
+			local bA = frameA.boss
+			local bB = if frameB ~= nil
+					and frameB ~= frameA
+					and type(frameB.boss) == "table"
+				then frameB.boss
+				else nil
+			local xVal = bA.x or 10000
+			if bB ~= nil and type(bB.x) == "number" then
+				xVal = xVal + (bB.x - xVal) * alpha
+			end
+			local pos = unitWorldPos(bA.laneCenter or 3, xVal)
+			lastBossPos = pos
+			HordeKit.setBossApproachScale(bossVisual, 1.0)
+			HordeKit.setBossBase(bossVisual, CFrame.new(pos))
+			HordeKit.stepBoss(bossVisual, now, bA.state, bA.enraged == true)
+			campaignUi.stepBossBubble(cam, pos + Vector3.new(0, bossVisual.height + 0.8, 0))
+		end
 	end
 end
 
@@ -1144,6 +1594,8 @@ end
 
 local function startReplay(result: any, isQuickReplay: boolean?): ()
 	clearScene()
+	hasActiveBossStage = result.bossId ~= nil
+	applyRaidLayout()
 	local myToken = replayToken
 	wallLabel.Visible = true
 	wallProgress.frame.Visible = true
@@ -1212,8 +1664,11 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 	local liveFmt = string.format(rmsg("live_info"), speedMult)
 	details.Text = (string.gsub(liveFmt, "70", tostring(tonumber(result.waveCount) or 70)))
 
-	pcall(applyDiscreteFrame, frames[1])
-	pcall(stepVisualFrame, frames[1], frames[2], 0)
+	if topHud.Size.X.Offset < 248 then
+		wallLabel.Text = "100%"
+	else
+		wallLabel.Text = string.format("%s 100%%", rmsg("wall_prefix"))
+	end
 	if isQuickReplay ~= true then
 		TransitionKit.revealMatchupAndWait(
 			result.matchup,
@@ -1226,10 +1681,17 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 	local baseSeconds = if isQuickReplay == true
 		then 20
 		else math.max(3, (tonumber(result.ticks) or Core.MAX_TICKS) / Core.TICK_HZ)
+	local leadInFrames = PortalThemes.LEAD_IN_FRAMES
+	local frameSteps = math.max(1, #frames - 1)
+	local leadInSeconds = if #frames > 1
+		then baseSeconds * (leadInFrames / frameSteps)
+		else PortalThemes.APPROACH_SECONDS
+	local totalSeconds = leadInSeconds + baseSeconds
+	local totalSpan = leadInFrames + (#frames - 1)
 	local started = time()
 	local lastTick = started
 	local simElapsed = 0
-	local lastDiscreteIndex = 1
+	local lastDiscreteIndex = 0
 	task.spawn(function()
 		local animationOk, animationErr = pcall(function()
 			while replayToken == myToken do
@@ -1237,18 +1699,18 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 				local dt = math.min(now - lastTick, 0.1)
 				lastTick = now
 				simElapsed += dt * speedMult
-				local progress = math.clamp(simElapsed / baseSeconds, 0, 1)
-				local fPos = 1 + progress * (#frames - 1)
-				local index = math.clamp(math.floor(fPos), 1, #frames)
+				local progress = math.clamp(simElapsed / totalSeconds, 0, 1)
+				local fPos = (1 - leadInFrames) + progress * totalSpan
+				local index = math.clamp(math.floor(math.max(1, fPos)), 1, #frames)
 				local nextIndex = math.min(index + 1, #frames)
-				local alpha = fPos - index
-				if index > lastDiscreteIndex then
+				local alpha = math.clamp(fPos - index, 0, 1)
+				if fPos >= 1 and index > lastDiscreteIndex then
 					for stepIdx = lastDiscreteIndex + 1, index do
-						applyDiscreteFrame(frames[stepIdx])
+						applyDiscreteFrame(frames[stepIdx], stepIdx)
 					end
 					lastDiscreteIndex = index
 				end
-				stepVisualFrame(frames[index], frames[nextIndex], alpha)
+				stepVisualFrame(frames, fPos, index, nextIndex, alpha)
 				TrapKit.step(dt * speedMult)
 				replayProgress.set(progress)
 				if progress >= 1 then

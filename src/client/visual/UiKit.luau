@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local BuildLayout = require(Shared:WaitForChild("build"):WaitForChild("BuildLayout"))
+local CameraFraming = require(Shared:WaitForChild("visual"):WaitForChild("CameraFraming"))
 local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTheme"))
 local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
 
@@ -935,67 +936,11 @@ function UiKit.computeArenaCamera(
 	mode: string?,
 	angle: string?
 ): (CFrame, number)
-	local w = math.max(320, viewportW)
-	local h = math.max(240, viewportH)
-	local aspect = w / h
 	local resolvedAngle = UiKit.resolveCameraAngle(angle or UiKit.getCameraAngle())
-
-	local eyeOffset: Vector3
-	local lookOffset: Vector3
-	local baseFov: number
-	if resolvedAngle == "corridor" then
-		if mode == "combat" or mode == "raid" then
-			eyeOffset = Vector3.new(0, 36, 44)
-			lookOffset = Vector3.new(0, 1.5, -1)
-			baseFov = 42
-		elseif mode == "dropin" then
-			eyeOffset = Vector3.new(0, 36, 42)
-			lookOffset = Vector3.new(0, 1.5, -1)
-			baseFov = 42
-		else
-			eyeOffset = Vector3.new(0, 42, 46)
-			lookOffset = Vector3.new(0, 1.2, -1)
-			baseFov = 40
-		end
-	elseif resolvedAngle == "wall" then
-		if mode == "combat" or mode == "raid" or mode == "dropin" then
-			eyeOffset = Vector3.new(-40, 32, 0)
-			lookOffset = Vector3.new(1, 1.2, 0)
-			baseFov = 46
-		else
-			eyeOffset = Vector3.new(-42, 36, 0)
-			lookOffset = Vector3.new(0, 1.0, 0)
-			baseFov = 46
-		end
-	else
-		if mode == "combat" or mode == "raid" then
-			eyeOffset = Vector3.new(38, 28, 40)
-			lookOffset = Vector3.new(1, 2, 0)
-			baseFov = 40
-		elseif mode == "dropin" then
-			eyeOffset = Vector3.new(38, 28, 38)
-			lookOffset = Vector3.new(2, 1.5, 0)
-			baseFov = 40
-		else
-			eyeOffset = Vector3.new(42, 38, 44)
-			lookOffset = Vector3.new(1, 1.2, 0)
-			baseFov = 38
-		end
-	end
-
-	local zoom = 1.0
-	local fov = baseFov
-	if aspect < 1.0 then
-		zoom = math.clamp(1.12 / math.max(0.55, aspect), 1.08, 1.45)
-		fov = baseFov + 10
-	elseif h <= 480 then
-		zoom = 1.04
-		fov = baseFov + 2
-	end
-
-	local target = origin + lookOffset
-	local eye = target + (eyeOffset - lookOffset) * zoom
-	return CFrame.lookAt(eye, target), fov
+	local spec = CameraFraming.compute(viewportW, viewportH, mode, resolvedAngle)
+	local eye = origin + Vector3.new(spec.eye.x, spec.eye.y, spec.eye.z)
+	local target = origin + Vector3.new(spec.target.x, spec.target.y, spec.target.z)
+	return CFrame.lookAt(eye, target), spec.fov
 end
 
 return UiKit

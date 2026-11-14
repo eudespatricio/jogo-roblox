@@ -558,10 +558,20 @@ check("hud periferico mobile + safe insets: 9 viewports sem sobreposicao", funct
 	local iphoneSE = BuildLayout.computeHud(667, 375)
 	assert(iphoneSE.clearArenaRatio >= 0.75, "667x375 clearArenaRatio < 0.75")
 	assert(iphoneSE.clearCenterHeight >= 250, "667x375 clearCenterHeight < 250")
+	assert(
+		iphoneSE.combatBossPill.y == iphoneSE.combatTopPill.y
+			and iphoneSE.combatBossPill.y + iphoneSE.combatBossPill.h <= 56,
+		"667x375 combatBossPill deve ficar lado a lado no topo"
+	)
 
 	local iphoneX = BuildLayout.computeHud(812, 375)
 	assert(iphoneX.clearArenaRatio >= 0.80, "812x375 clearArenaRatio < 0.80")
 	assert(iphoneX.clearCenterHeight >= 250, "812x375 clearCenterHeight < 250")
+	assert(
+		iphoneX.combatBossPill.y == iphoneX.combatTopPill.y
+			and iphoneX.combatBossPill.y + iphoneX.combatBossPill.h <= 56,
+		"812x375 combatBossPill deve ficar lado a lado no topo"
+	)
 end)
 
 print(string.format("contrato de build: %d checagens, %d falhas", checks, #failures))

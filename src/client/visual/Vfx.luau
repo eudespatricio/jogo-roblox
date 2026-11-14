@@ -56,6 +56,8 @@ local currentTier: QualityTier = "Mid"
 local lowFpsSeconds = 0
 local activeF2: { F2Entry } = {}
 local governorConn: RBXScriptConnection? = nil
+local lastPortalBreachAt = -1
+local PORTAL_BREACH_COOLDOWN = 0.065
 
 local function rgb(value: { number }): Color3
 	return Color3.fromRGB(value[1], value[2], value[3])
@@ -600,6 +602,96 @@ function Vfx.ring(parent: Instance, position: Vector3, color: Color3): ()
 		{ Size = Vector3.new(0.12, 7, 7), Transparency = 1 }
 	):Play()
 	Debris:AddItem(ring, 0.5)
+end
+
+local function spawnBreachEllipse(
+	parent: Instance,
+	center: Vector3,
+	color: Color3,
+	startSpan: number,
+	endSpan: number,
+	duration: number
+): ()
+	local disc = makePart(
+		parent,
+		Vector3.new(0.24, startSpan * 1.25, startSpan * 0.88),
+		center,
+		color,
+		Enum.Material.Neon
+	)
+	disc.Name = "VfxPortalBreach"
+	disc.Transparency = 0.15
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = disc
+
+	TweenService
+		:Create(disc, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = Vector3.new(0.12, endSpan * 1.25, endSpan * 0.88),
+			Transparency = 1,
+		})
+		:Play()
+	Debris:AddItem(disc, duration + 0.05)
+end
+
+function Vfx.portalBreach(
+	parent: Instance,
+	worldPos: Vector3,
+	veilColor: Color3,
+	accentColor: Color3,
+	isBoss: boolean?
+): ()
+	local boss = isBoss == true
+	local now = time()
+	if not boss then
+		if now - lastPortalBreachAt < PORTAL_BREACH_COOLDOWN then
+			return
+		end
+		lastPortalBreachAt = now
+	end
+
+	local center =
+		Vector3.new(worldPos.X + 0.35, worldPos.Y + (if boss then 4.5 else 2.2), worldPos.Z)
+	local startSpan = if boss then 4.5 else 2.0
+	local endSpan = if boss then 12.0 else 5.4
+
+	spawnBreachEllipse(parent, center, veilColor, startSpan, endSpan, 0.28)
+	if boss then
+		spawnBreachEllipse(
+			parent,
+			center + Vector3.new(-0.14, 0, 0),
+			accentColor,
+			startSpan * 0.82,
+			endSpan * 1.15,
+			0.28
+		)
+	end
+
+	local mistAnchor = makeAnchor(parent, center, 0.55, "VfxPortalBreachMist")
+	attachEmitter(mistAnchor, {
+		name = "PortalBreachMist",
+		color = ColorSequence.new(accentColor, veilColor),
+		size = NumberSequence.new(if boss then 1.1 else 0.55, if boss then 2.8 else 1.4),
+		transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.25),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		lifetime = NumberRange.new(0.22, 0.42),
+		speed = NumberRange.new(if boss then 6 else 4, if boss then 13 else 8),
+		spreadAngle = Vector2.new(65, 65),
+		emissionDirection = Enum.NormalId.Left,
+		drag = 3,
+		lightEmission = 0.85,
+		burstCount = if boss then 18 else 8,
+	})
+	spawnLightFlash(
+		parent,
+		center,
+		veilColor,
+		if boss then 2.6 else 1.4,
+		if boss then 18 else 10,
+		0.24
+	)
 end
 
 -- Lei HSV (§1): defensores nunca usam 160-195 deg (teal); frost usa azul glacial > 200 deg.

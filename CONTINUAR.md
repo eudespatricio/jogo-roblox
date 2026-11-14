@@ -1,6 +1,8 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 13/11/2026 · **Status:** **P2 + PLAYTEST V1.2 ENTREGUE** — `schema=4`, `content=3`, `simVersion=7` (`hash=1245379674`), `analytics=2`; **Campanha *Crônicas do Bastião* (25 estágios + 5 Bosses multi-lane), Torcida (`CrowdKit`), 6 classes de horda encarando `-X`, câmera `wall` recuada e 56 cues SFX Open Cloud + 4 stems BGM** entregues ponta a ponta.
+**Data:** 14/11/2026 · **Status:** **P2 + PLAYTEST V1.3 ENTREGUE** — `schema=4`, `content=3`, `simVersion=7` (`hash=1245379674`), `analytics=2`; **`CameraFraming` multiplataforma, `PortalThemes` + 5 Portais de Campanha Open Cloud (`PORTAL_act1..act5` + Fan Manifold 5 trilhas + Breach VFX `0.50->1.00`), `UnitLifecycle` para entrada de `swarms`, Campanha (25 estágios + 5 Bosses), Torcida e 87 cues Open Cloud** entregues ponta a ponta.
+
+> **Playtest v1.3 (14/11/2026):** `CameraFraming` (enquadramento responsivo 4:3/16:9/20:9/Portrait com zoom mobile recalibrado em `BuildLayout`), `PortalThemes` + 5 portais Blender/Open Cloud (`PORTAL_act1..act5`, Fan Manifold curvo em 5 trilhas, `Vfx.portalBreach` e aproximação `0.50 -> 1.00`), e `UnitLifecycle` + `spawnKilled` em `RaidClient` garantindo emergência visível e entrada dos `swarms` antes do abate/ragdoll (`visual-contract` 22/22, `build-contract` 17/17).
 
 > **Playtest v1.2 (13/11/2026):** `Core v7` (6 classes de horda + 5 Bosses multi-lane com telegraph/stagger/enrage + 8 mutadores), `ProfileSchema v4` (progresso Normal/Nightmare, estrelas `3★` e marcos de Ato), `CampaignUi` (modal 5 Atos × 5 estágios + Boss HUD), `CrowdKit` (24 espectadores reativos ao redor da arena), câmera `wall` recuada sem clipe de HUD, modelos Blender/Open Cloud alinhados a `-X` (mobs, fauna e 5 Bosses) e 56 cues de áudio masterizados com 4 stems `BGM_Bus` (`BGM_Boss` incluso) + `SfxWarmthEQ`.
 

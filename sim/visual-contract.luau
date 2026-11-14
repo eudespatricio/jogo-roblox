@@ -10,6 +10,8 @@ local MeshAssets = require("../src/shared/visual/MeshAssets")
 local BackdropAssets = require("../src/shared/visual/BackdropAssets")
 local UiAssets = require("../src/shared/visual/UiAssets")
 local AudioAssets = require("../src/shared/visual/AudioAssets")
+local CameraFraming = require("../src/shared/visual/CameraFraming")
+local PortalThemes = require("../src/shared/visual/PortalThemes")
 
 local failures = {}
 local checks = 0
@@ -107,7 +109,7 @@ end)
 check("orcamentos: traps/unidades/arena/VFX", function()
 	assert(VisualTheme.BUDGET.trapParts <= 12, "trapParts")
 	assert(VisualTheme.BUDGET.unitParts <= 8, "unitParts")
-	assert(VisualTheme.BUDGET.arenaParts <= 160, "arenaParts")
+	assert(VisualTheme.BUDGET.arenaParts <= 185, "arenaParts")
 	assert(VisualTheme.BUDGET.maxUnits <= 150, "maxUnits")
 	assert(VisualTheme.BUDGET.drawCalls <= 500, "drawCalls")
 	assert(VisualTheme.VFX.maxParticlesPerEmitter <= 40, "particulas")
@@ -203,12 +205,21 @@ check("lanes: 5 trilhas em X (linha = lane), slots dentro da lane, sem xadrez", 
 		)
 	end
 	-- Orcamento da arena (contagem espelhada de ArenaVisual.build, dropIn incluso).
-	local tally = { island = 19, wall = 43, portal = 8, props = 44, tiles = 25, ui = 1, dropIn = 1 }
+	local tally = {
+		island = 19,
+		fanManifold = 17,
+		wall = 43,
+		portal = 8,
+		props = 44,
+		tiles = 25,
+		ui = 2,
+		dropIn = 1,
+	}
 	local total = 0
 	for _, count in pairs(tally) do
 		total += count
 	end
-	assert(total <= 150, "arena estoura 150 partes: " .. tostring(total))
+	assert(total <= 175, "arena estoura 175 partes: " .. tostring(total))
 	assert(total <= VisualTheme.BUDGET.arenaParts, "arena estoura BUDGET.arenaParts")
 end)
 
@@ -359,6 +370,10 @@ check("hud periferico mobile: minTouch >= 44, arena livre e combatTopPill compac
 			hud.combatTopPill.h <= 48,
 			string.format("%dx%d combatTopPill alto demais", vp.w, vp.h)
 		)
+		assert(
+			hud.combatBossPill.h <= 48 and hud.combatBossPill.y == hud.combatTopPill.y,
+			string.format("%dx%d combatBossPill fora da faixa superior", vp.w, vp.h)
+		)
 		assert(hud.camBtn.h >= VisualTheme.UI.minTouch, "camBtn < minTouch")
 		assert(hud.muteBtn.h >= VisualTheme.UI.minTouch, "muteBtn < minTouch")
 		assert(hud.comboBtn.h >= VisualTheme.UI.minTouch, "comboBtn < minTouch")
@@ -368,6 +383,198 @@ check("hud periferico mobile: minTouch >= 44, arena livre e combatTopPill compac
 		assert(hud.combatCloseBtn.h >= VisualTheme.UI.minTouch, "combatCloseBtn < minTouch")
 	end
 end)
+
+check("camera multiplataforma: 10 viewports x 3 modos x 3 angulos no corredor util", function()
+	local viewports = {
+		{ 852, 393 },
+		{ 812, 375 },
+		{ 667, 375 },
+		{ 1024, 768 },
+		{ 1108, 768 },
+		{ 1194, 834 },
+		{ 1366, 768 },
+		{ 1920, 1080 },
+		{ 1440, 900 },
+		{ 390, 844 },
+	}
+	local modes = { "build", "raid", "dropin" }
+	local angles = { "diagonal", "corridor", "wall" }
+
+	for _, vp in ipairs(viewports) do
+		local w, h = vp[1], vp[2]
+		local hud = BuildLayout.computeHud(w, h)
+		for _, mode in ipairs(modes) do
+			local topHudBottom = if mode == "build"
+				then math.max(
+					hud.goldPill.y + hud.goldPill.h,
+					hud.utilityCluster.y + hud.utilityCluster.h
+				)
+				else hud.combatTopPill.y + hud.combatTopPill.h
+			local botHudTop = if mode == "build" then hud.trapDock.y else (h - 52)
+			local minV = math.min(0.25, topHudBottom / h)
+			local maxV = math.max(0.75, botHudTop / h)
+
+			for _, angle in ipairs(angles) do
+				local isMobile = CameraFraming.isCompactMobile(w, h)
+				local spec = CameraFraming.compute(w, h, mode, angle)
+				assert(spec.fov >= 38 and spec.fov <= 78, "fov fora da faixa")
+				assert(spec.zoom >= 1.0 and spec.zoom <= 2.15, "zoom fora da faixa")
+				if isMobile and w > h then
+					local dx = spec.eye.x - spec.target.x
+					local dy = spec.eye.y - spec.target.y
+					local dz = spec.eye.z - spec.target.z
+					local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+					local maxDist = if mode == "build" then 76.0 else 73.0
+					assert(
+						dist <= maxDist,
+						string.format(
+							"%dx%d %s/%s mobile distante demais: dist=%.1f > %.1f",
+							w,
+							h,
+							mode,
+							angle,
+							dist,
+							maxDist
+						)
+					)
+				end
+				local anchors = CameraFraming.anchorsForViewport(w, h, angle)
+				assert(#anchors >= 16, "ancoras insuficientes para " .. angle)
+				local vLo = if isMobile and w > h then 0.03 else (minV - 0.02)
+				local vHi = if isMobile and w > h then 0.96 else (maxV + 0.02)
+				for idx, pt in ipairs(anchors) do
+					local u, v, depth = CameraFraming.projectPoint(spec, w, h, pt)
+					assert(
+						depth > 1.0,
+						string.format(
+							"%dx%d %s/%s anchor %d depth=%.2f",
+							w,
+							h,
+							mode,
+							angle,
+							idx,
+							depth
+						)
+					)
+					assert(
+						u >= 0.02 and u <= 0.98,
+						string.format("%dx%d %s/%s anchor %d u=%.3f", w, h, mode, angle, idx, u)
+					)
+					assert(
+						v >= vLo and v <= vHi,
+						string.format(
+							"%dx%d %s/%s anchor %d v=%.3f fora de [%.3f..%.3f]",
+							w,
+							h,
+							mode,
+							angle,
+							idx,
+							v,
+							vLo,
+							vHi
+						)
+					)
+				end
+			end
+		end
+	end
+end)
+
+check(
+	"portal fan manifold: garganta em X>=36, continuidade nas 5 lanes e escala 0.50->1.00",
+	function()
+		assert(close(PortalThemes.PORTAL_X, 38.0), "PORTAL_X != 38")
+		assert(close(PortalThemes.ENTRY_X, 21.5), "ENTRY_X != 21.5")
+		assert(close(PortalThemes.MIN_SCALE, 0.50), "MIN_SCALE != 0.50")
+		assert(close(PortalThemes.MAX_SCALE, 1.00), "MAX_SCALE != 1.00")
+
+		for lane = 1, 5 do
+			local x0, z0, yaw0 = PortalThemes.sampleFanPath(lane, 0)
+			assert(x0 >= 36.0, "garganta X < 36 na lane " .. tostring(lane))
+			assert(math.abs(z0) <= 2.5, "garganta |Z| > 2.5 na lane " .. tostring(lane))
+			assert(close(yaw0, 0), "yaw inicial != 0 na lane " .. tostring(lane))
+
+			local x1, z1, yaw1 = PortalThemes.sampleFanPath(lane, 1)
+			local expectedZ1 = -16 + (lane - 1) * 8
+			assert(close(x1, 21.5), "entrada X != 21.5 na lane " .. tostring(lane))
+			assert(close(z1, expectedZ1), "entrada Z divergente na lane " .. tostring(lane))
+			assert(close(yaw1, 0), "yaw final != 0 na lane " .. tostring(lane))
+		end
+
+		assert(close(PortalThemes.approachScale(0), 0.50), "approachScale(0) != 0.50")
+		assert(close(PortalThemes.approachScale(1), 1.00), "approachScale(1) != 1.00")
+		local prevScale = PortalThemes.approachScale(0)
+		for step = 1, 20 do
+			local curScale = PortalThemes.approachScale(step / 20)
+			assert(curScale >= prevScale, "approachScale nao monotono no passo " .. tostring(step))
+			prevScale = curScale
+		end
+	end
+)
+
+check("open cloud: 5 portais de campanha + rift e paleta low-poly publicados", function()
+	assert(
+		type(MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID) == "number"
+			and MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID > 0,
+		"LOWPOLY_PALETTE_TEXTURE_ID nao publicado"
+	)
+	local keys = { "rift", "act1", "act2", "act3", "act4", "act5" }
+	local seenIds = {}
+	local seenLabels = {}
+	for _, key in ipairs(keys) do
+		local spec = PortalThemes.THEMES[key]
+		assert(spec ~= nil, "PortalThemes sem spec: " .. key)
+		assert(spec.id == key, "spec.id divergente: " .. key)
+		assert(type(spec.label) == "string" and #spec.label > 0, "label vazio: " .. key)
+		assert(not seenLabels[spec.label], "label duplicado em PortalThemes: " .. spec.label)
+		seenLabels[spec.label] = true
+		assert(
+			#spec.framePrimary == 3 and #spec.veilColor == 3 and #spec.accentColor == 3,
+			"cores RGB: " .. key
+		)
+
+		local assetId = MeshAssets.PORTALS[key]
+		assert(type(assetId) == "number" and assetId > 0, "portal nao publicado: " .. key)
+		assert(not seenIds[assetId], "assetId de portal duplicado: " .. key)
+		seenIds[assetId] = true
+	end
+	for act = 1, 5 do
+		local key = "act" .. tostring(act)
+		assert(PortalThemes.resolve(act).id == key, "resolve(act) falhou: " .. key)
+		assert(
+			PortalThemes.fromStageId(tostring(act) .. "-3") == key,
+			"fromStageId falhou: " .. key
+		)
+		assert(
+			MeshAssets.portalModelName(key) == "PORTAL_" .. key,
+			"portalModelName falhou: " .. key
+		)
+	end
+	assert(MeshAssets.portalModelName("rift") == "PROP_rift_portal", "portalModelName(rift)")
+end)
+
+check(
+	"orcamento detalhado da arena: fanManifold (17) + portal monumental dentro de 185 partes",
+	function()
+		local tally = {
+			island = 19,
+			fanManifold = 17,
+			wall = 43,
+			portal = 8,
+			props = 44,
+			tiles = 25,
+			ui = 2,
+			dropIn = 1,
+		}
+		local total = 0
+		for _, count in pairs(tally) do
+			total += count
+		end
+		assert(total == 159, "esperava 159 partes procedurais na arena, achei " .. tostring(total))
+		assert(VisualTheme.BUDGET.arenaParts == 185, "BUDGET.arenaParts != 185")
+		assert(total <= VisualTheme.BUDGET.arenaParts, "arena excede BUDGET.arenaParts")
+	end
+)
 
 print(string.format("contrato visual (S8): %d checagens, %d falhas", checks, #failures))
 if #failures > 0 then

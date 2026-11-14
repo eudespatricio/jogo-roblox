@@ -18,6 +18,9 @@ local WallAssets = require(
 local MeshAssets = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
 )
+local PortalThemes = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PortalThemes")
+)
 local Players = game:GetService("Players")
 
 local ArenaVisual = {}
@@ -25,10 +28,12 @@ local ArenaVisual = {}
 export type BuildOptions = {
 	dropIn: boolean?,
 	wallTier: number?, -- liga do dono da muralha; nil = atributo MuralhaWallTier do LocalPlayer
+	portalTheme: string?,
 }
 
 local OBSIDIAN_DARK = Color3.fromRGB(22, 24, 32)
-local OBSIDIAN_EDGE = Color3.fromRGB(34, 38, 50)
+local PORTAL_TARGET_HEIGHT = 15.2
+local TERRACE_CENTER_X = 5
 -- Lanes: terra batida/pedra gasta quente (lado defensor); bermas de grama musgo.
 local LANE_TOP_Y = 0.33
 local LANE_VERGE = 1.8
@@ -268,16 +273,16 @@ local function buildIsland(folder: Folder, origin: Vector3): ()
 	part(
 		folder,
 		"ValleyBlendApron",
-		Vector3.new(86, 0.24, 70),
-		CFrame.new(origin + Vector3.new(0, -0.14, 0)),
+		Vector3.new(96, 0.24, 70),
+		CFrame.new(origin + Vector3.new(TERRACE_CENTER_X, -0.14, 0)),
 		Color3.fromRGB(65, 88, 50),
 		Enum.Material.LeafyGrass
 	)
 	local foundation = part(
 		folder,
 		"BastionFoundation",
-		Vector3.new(74, 0.34, 58),
-		CFrame.new(origin + Vector3.new(0, -0.04, 0)),
+		Vector3.new(84, 0.34, 58),
+		CFrame.new(origin + Vector3.new(TERRACE_CENTER_X, -0.04, 0)),
 		Color3.fromRGB(108, 102, 92),
 		Enum.Material.Cobblestone
 	)
@@ -286,8 +291,8 @@ local function buildIsland(folder: Folder, origin: Vector3): ()
 	local grass = part(
 		folder,
 		"GrassTerrace",
-		Vector3.new(70, 0.4, 54),
-		CFrame.new(origin + Vector3.new(0, 0, 0)),
+		Vector3.new(80, 0.4, 54),
+		CFrame.new(origin + Vector3.new(TERRACE_CENTER_X, 0, 0)),
 		rgb(VisualTheme.PALETTE.grass),
 		Enum.Material.Grass
 	)
@@ -369,10 +374,138 @@ local function buildIsland(folder: Folder, origin: Vector3): ()
 		folder,
 		"CurbEast",
 		Vector3.new(0.8, 0.36, 43.6),
-		CFrame.new(origin + Vector3.new(21.4, 0.35, 0)),
+		CFrame.new(origin + Vector3.new(21.4, 0.14, 0)),
 		rgb(VisualTheme.PALETTE.stoneDark),
 		Enum.Material.Slate
 	)
+end
+
+local function fanLaneColor(theme: PortalThemes.PortalThemeSpec): Color3
+	return LANE_EARTH:Lerp(rgb(theme.apronColor), 0.65)
+end
+
+local function makeSegmentPart(
+	parent: Instance,
+	name: string,
+	pA: Vector3,
+	pB: Vector3,
+	width: number,
+	thickness: number,
+	padLength: number,
+	color: Color3,
+	material: Enum.Material
+): Part
+	local delta = pB - pA
+	local mid = (pA + pB) * 0.5
+	local cf = CFrame.lookAt(mid, pB)
+	local piece = part(
+		parent,
+		name,
+		Vector3.new(width, thickness, delta.Magnitude + padLength),
+		cf,
+		color,
+		material
+	)
+	piece.CanCollide = true
+	piece.CanQuery = true
+	return piece
+end
+
+-- Leque de abordagem (X = +36.8 -> +21.0): dais do portal + 5x2 segmentos de trilha + 6 bermas (17 partes).
+local function buildPortalManifold(
+	folder: Folder,
+	origin: Vector3,
+	theme: PortalThemes.PortalThemeSpec
+): ()
+	local manifold = Instance.new("Folder")
+	manifold.Name = "PortalManifold"
+	manifold.Parent = folder
+
+	local apron = part(
+		manifold,
+		"PortalApron",
+		Vector3.new(8.5, 0.7, 16.5),
+		CFrame.new(origin + Vector3.new(PortalThemes.PORTAL_X, -0.04, 0)),
+		rgb(theme.framePrimary),
+		Enum.Material.Slate
+	)
+	apron.CanCollide = true
+	apron.CanQuery = true
+
+	local laneColor = fanLaneColor(theme)
+	for row = 1, GridLayout.HEIGHT do
+		local x0, z0 = PortalThemes.sampleFanPath(row, 0)
+		local x1, z1 = PortalThemes.sampleFanPath(row, 0.5)
+		local _, z2 = PortalThemes.sampleFanPath(row, 1.0)
+		local x2 = 21.0
+
+		local stagger = math.abs(row - 3) * 0.002
+		local y1 = LANE_TOP_Y - 0.14 - stagger
+		local y2 = LANE_TOP_Y - 0.142 - stagger
+
+		makeSegmentPart(
+			manifold,
+			string.format("FanLane_%d_1", row),
+			origin + Vector3.new(x0, y1, z0),
+			origin + Vector3.new(x1, y1, z1),
+			2.4,
+			0.28,
+			0.8,
+			laneColor,
+			Enum.Material.Cobblestone
+		)
+
+		local dx2 = math.abs(x2 - x1)
+		local dz2 = math.abs(z2 - z1)
+		local cos2 = dx2 / math.max(0.01, math.sqrt(dx2 * dx2 + dz2 * dz2))
+		makeSegmentPart(
+			manifold,
+			string.format("FanLane_%d_2", row),
+			origin + Vector3.new(x1, y2, z1),
+			origin + Vector3.new(x2, y2, z2),
+			6.1 * cos2,
+			0.28,
+			0.5,
+			laneColor,
+			Enum.Material.Cobblestone
+		)
+	end
+
+	-- 6 bermas de grama (topo Y = 0.58) moldando o leque ate as LaneVerge_0..5 da arena.
+	for sep = 0, GridLayout.HEIGHT do
+		if sep == 0 or sep == GridLayout.HEIGHT then
+			local side = if sep == 0 then -1 else 1
+			makeSegmentPart(
+				manifold,
+				"FanVerge_" .. tostring(sep),
+				origin + Vector3.new(33.8, LANE_TOP_Y, side * 6.4),
+				origin + Vector3.new(21.0, LANE_TOP_Y, side * 20.05),
+				2.4,
+				0.5,
+				0.6,
+				VERGE_GRASS,
+				Enum.Material.Grass
+			)
+		else
+			local uEast = 0.68
+			local sEast = uEast * uEast * (3 - 2 * uEast)
+			local xEast = PortalThemes.THROAT_X
+				+ (PortalThemes.ENTRY_X - PortalThemes.THROAT_X) * uEast
+			local zEast = (sep - 2.5) * (0.95 + (8.0 - 0.95) * sEast)
+			local zWest = (sep - 2.5) * 8.0
+			makeSegmentPart(
+				manifold,
+				"FanVerge_" .. tostring(sep),
+				origin + Vector3.new(xEast, LANE_TOP_Y, zEast),
+				origin + Vector3.new(21.0, LANE_TOP_Y, zWest),
+				1.65,
+				0.5,
+				0.5,
+				VERGE_GRASS,
+				Enum.Material.Grass
+			)
+		end
+	end
 end
 
 local function buildWallAndGatehouse(folder: Folder, origin: Vector3): ()
@@ -542,40 +675,58 @@ local function buildWallAndGatehouse(folder: Folder, origin: Vector3): ()
 	)
 end
 
-local function ensurePortalVortex(arena: Instance): ()
-	if arena:GetAttribute("HasPortalVortex") == true then
-		return
+local function findArena(parent: Instance): Instance?
+	return if parent.Name == "MuralhaArena" then parent else parent:FindFirstChild("MuralhaArena")
+end
+
+local function stylePortalVortex(att: Instance, theme: PortalThemes.PortalThemeSpec): ()
+	local portalLight = att:FindFirstChild("PortalVortexLight")
+	if portalLight ~= nil and portalLight:IsA("PointLight") then
+		portalLight.Color = rgb(theme.veilColor)
 	end
+	local emitter = att:FindFirstChild("PortalVortexParticles")
+	if emitter ~= nil and emitter:IsA("ParticleEmitter") then
+		emitter.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, rgb(theme.accentColor)),
+			ColorSequenceKeypoint.new(0.45, rgb(theme.veilColor)),
+			ColorSequenceKeypoint.new(1, rgb(theme.mistColor)),
+		})
+	end
+end
+
+local function ensurePortalVortex(arena: Instance, theme: PortalThemes.PortalThemeSpec?): ()
+	local resolved = theme or PortalThemes.resolve(arena:GetAttribute("PortalTheme"))
 	local host = arena:FindFirstChild("GrassTerrace")
 	if host == nil or not host:IsA("BasePart") then
 		return
 	end
+	local existing = host:FindFirstChild("PortalVortexAttachment")
+	if existing ~= nil and existing:IsA("Attachment") then
+		stylePortalVortex(existing, resolved)
+		return
+	end
 	arena:SetAttribute("HasPortalVortex", true)
 
+	local origin = Vector3.new(
+		tonumber(arena:GetAttribute("OriginX")) or 0,
+		tonumber(arena:GetAttribute("OriginY")) or 0,
+		tonumber(arena:GetAttribute("OriginZ")) or 0
+	)
 	local att = Instance.new("Attachment")
 	att.Name = "PortalVortexAttachment"
-	-- GrassTerrace fica em origin + (0, 0, 0); boca do arco fica em X = +24.8, Y = 5.2.
-	att.Position = Vector3.new(24.8, 5.2, 0)
+	att.Position =
+		host.CFrame:PointToObjectSpace(origin + Vector3.new(PortalThemes.PORTAL_X, 5.4, 0))
 	att.Parent = host
-
-	local eyeNeon = Color3.fromRGB(220, 255, 245)
-	local tealSwarm = rgb(VisualTheme.ENEMIES.swarm.color)
 
 	local portalLight = Instance.new("PointLight")
 	portalLight.Name = "PortalVortexLight"
-	portalLight.Color = tealSwarm
-	portalLight.Brightness = 1.25
-	portalLight.Range = 22
+	portalLight.Brightness = 1.35
+	portalLight.Range = 26
 	portalLight.Shadows = false
 	portalLight.Parent = att
 
 	local emitter = Instance.new("ParticleEmitter")
 	emitter.Name = "PortalVortexParticles"
-	emitter.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, eyeNeon),
-		ColorSequenceKeypoint.new(0.45, tealSwarm),
-		ColorSequenceKeypoint.new(1, rgb(VisualTheme.PALETTE.tealDark)),
-	})
 	emitter.Size = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 0.55),
 		NumberSequenceKeypoint.new(0.4, 2.2),
@@ -597,36 +748,44 @@ local function ensurePortalVortex(arena: Instance): ()
 	emitter.RotSpeed = NumberRange.new(-170, 170)
 	emitter.LightEmission = 0.85
 	emitter.Parent = att
+
+	stylePortalVortex(att, resolved)
 end
 
--- 8 partes de fallback em silhueta curva/cilindrica (tally.portal = 8) + VFX persistente.
-local function buildRiftPortal(folder: Folder, origin: Vector3): ()
+-- 7 partes de moldura em PortalBlocks + 1 PortalVeil persistente (tally.portal = 8) + VFX persistente.
+local function buildRiftPortal(
+	folder: Folder,
+	origin: Vector3,
+	theme: PortalThemes.PortalThemeSpec
+): ()
 	local portalBlocks = Instance.new("Folder")
 	portalBlocks.Name = "PortalBlocks"
 	portalBlocks.Parent = folder
-	local spawnX = 25
+	local spawnX = PortalThemes.PORTAL_X
+	local primary = rgb(theme.framePrimary)
+	local secondary = rgb(theme.frameSecondary)
 	part(
 		portalBlocks,
 		"PortalPlinth",
-		Vector3.new(4.4, 0.8, 12.2),
-		CFrame.new(origin + Vector3.new(spawnX, 0.4, 0)),
-		OBSIDIAN_DARK,
+		Vector3.new(5.6, 1.0, 15.6),
+		CFrame.new(origin + Vector3.new(spawnX, 0.5, 0)),
+		primary,
 		Enum.Material.Slate
 	)
 	for side = -1, 1, 2 do
 		cylinder(
 			portalBlocks,
 			"PortalPillar_" .. tostring(side),
-			Vector3.new(8.6, 2.4, 2.4),
-			CFrame.new(origin + Vector3.new(spawnX, 4.6, side * 4.2)),
-			OBSIDIAN_DARK,
+			Vector3.new(12.4, 3.0, 3.0),
+			CFrame.new(origin + Vector3.new(spawnX, 6.7, side * 5.6)),
+			primary,
 			Enum.Material.Slate
 		)
 		local crown = Instance.new("WedgePart")
 		crown.Name = "PortalCrown_" .. tostring(side)
-		crown.Size = Vector3.new(1.6, 2.8, 1.8)
+		crown.Size = Vector3.new(2.2, 3.6, 2.4)
 		local yaw = if side == 1 then 0 else math.rad(180)
-		crown.CFrame = CFrame.new(origin + Vector3.new(spawnX, 9.7, side * 4.4))
+		crown.CFrame = CFrame.new(origin + Vector3.new(spawnX, 13.6, side * 5.8))
 			* CFrame.Angles(0, yaw, 0)
 			* CFrame.Angles(math.rad(14), 0, 0)
 		crown.Anchored = true
@@ -634,35 +793,41 @@ local function buildRiftPortal(folder: Folder, origin: Vector3): ()
 		crown.CanTouch = false
 		crown.CanQuery = false
 		crown.Material = Enum.Material.Slate
-		crown.Color = OBSIDIAN_EDGE
+		crown.Color = secondary
 		crown.Parent = portalBlocks
 	end
 	local lintel = part(
 		portalBlocks,
 		"PortalLintel",
-		Vector3.new(10.6, 2.2, 2.2),
-		CFrame.new(origin + Vector3.new(spawnX, 8.9, 0)) * CFrame.Angles(0, math.rad(90), 0),
-		OBSIDIAN_DARK,
+		Vector3.new(14.0, 2.8, 2.8),
+		CFrame.new(origin + Vector3.new(spawnX, 12.6, 0)) * CFrame.Angles(0, math.rad(90), 0),
+		primary,
 		Enum.Material.Slate
 	)
 	lintel.Shape = Enum.PartType.Cylinder
 	neon(
 		portalBlocks,
 		"PortalRuneKeystone",
-		Vector3.new(1.4, 1.4, 1.4),
-		CFrame.new(origin + Vector3.new(spawnX, 9.45, 0)) * CFrame.Angles(math.rad(45), 0, 0),
-		rgb(VisualTheme.ENEMIES.swarm.color)
+		Vector3.new(1.8, 1.8, 1.8),
+		CFrame.new(origin + Vector3.new(spawnX, 14.2, 0)) * CFrame.Angles(math.rad(45), 0, 0),
+		rgb(theme.accentColor)
 	)
-	local portal = neon(
-		portalBlocks,
-		"Portal",
-		Vector3.new(0.45, 7.6, 7.6),
-		CFrame.new(origin + Vector3.new(spawnX - 0.12, 4.9, 0)),
-		rgb(VisualTheme.PALETTE.teal)
+
+	-- PortalVeil dedicado fica fora de PortalBlocks para sobreviver a troca para PortalMesh.
+	local veil = neon(
+		folder,
+		"PortalVeil",
+		Vector3.new(0.35, 10.2, 7.6),
+		CFrame.new(origin + Vector3.new(PortalThemes.VEIL_X, 5.4, 0)),
+		rgb(theme.veilColor)
 	)
-	portal.Shape = Enum.PartType.Cylinder
-	portal.Transparency = 0.28
-	ensurePortalVortex(folder)
+	veil.CastShadow = false
+	veil.Transparency = 0.32
+	local veilMesh = Instance.new("SpecialMesh")
+	veilMesh.MeshType = Enum.MeshType.Sphere
+	veilMesh.Parent = veil
+
+	ensurePortalVortex(folder, theme)
 end
 
 type PropSlotSpec = {
@@ -710,7 +875,7 @@ local PROP_SLOTS: { PropSlotSpec } = {
 	{
 		slot = "Pine_5",
 		modelName = "BACKDROP_tree01",
-		pos = Vector3.new(31, 0.2, -17),
+		pos = Vector3.new(39.5, 0.2, -15.5),
 		height = 11.2,
 		yaw = -60,
 		fx = nil,
@@ -750,7 +915,7 @@ local PROP_SLOTS: { PropSlotSpec } = {
 	{
 		slot = "Rock_4",
 		modelName = "PROP_rock_cluster",
-		pos = Vector3.new(30, 0.14, -10),
+		pos = Vector3.new(37.5, 0.14, -12.0),
 		height = 2.5,
 		yaw = 95,
 		fx = nil,
@@ -758,7 +923,7 @@ local PROP_SLOTS: { PropSlotSpec } = {
 	{
 		slot = "Rock_5",
 		modelName = "PROP_rock_cluster",
-		pos = Vector3.new(30, 0.14, 14),
+		pos = Vector3.new(37.5, 0.14, 12.0),
 		height = 2.4,
 		yaw = 210,
 		fx = nil,
@@ -806,16 +971,16 @@ local PROP_SLOTS: { PropSlotSpec } = {
 	{
 		slot = "Obelisk_L",
 		modelName = "PROP_rift_obelisk",
-		pos = Vector3.new(22.8, 0.18, -11.5),
-		height = 5.2,
+		pos = Vector3.new(36.2, 0.18, -9.8),
+		height = 5.6,
 		yaw = 12,
 		fx = "rift",
 	},
 	{
 		slot = "Obelisk_R",
 		modelName = "PROP_rift_obelisk",
-		pos = Vector3.new(22.8, 0.18, 11.5),
-		height = 5.2,
+		pos = Vector3.new(36.2, 0.18, 9.8),
+		height = 5.6,
 		yaw = -12,
 		fx = "rift",
 	},
@@ -823,14 +988,13 @@ local PROP_SLOTS: { PropSlotSpec } = {
 
 local function buildPerimeterProps(folder: Folder, origin: Vector3): ()
 	local wallX = GridLayout.WALL_X
-	local spawnX = 25
 
 	local treeSpecs = {
 		{ slot = "Pine_1", pos = Vector3.new(-31, 0.2, -22), scale = 1.05 },
 		{ slot = "Pine_2", pos = Vector3.new(-13, 0.2, -24.2), scale = 0.9 },
 		{ slot = "Pine_3", pos = Vector3.new(4, 0.2, -24.5), scale = 1.1 },
 		{ slot = "Pine_4", pos = Vector3.new(19, 0.2, -23.5), scale = 0.95 },
-		{ slot = "Pine_5", pos = Vector3.new(31, 0.2, -17), scale = 1.0 },
+		{ slot = "Pine_5", pos = Vector3.new(39.5, 0.2, -15.5), scale = 1.0 },
 		{ slot = "Pine_6", pos = Vector3.new(-31, 0.2, 20), scale = 0.95 },
 	}
 	for index, spec in ipairs(treeSpecs) do
@@ -841,8 +1005,8 @@ local function buildPerimeterProps(folder: Folder, origin: Vector3): ()
 		{ slot = "Rock_1", pos = Vector3.new(-28, 0.5, -14), scale = 1.15 },
 		{ slot = "Rock_2", pos = Vector3.new(-6, 0.5, -25), scale = 1.0 },
 		{ slot = "Rock_3", pos = Vector3.new(13, 0.5, -24.5), scale = 1.2 },
-		{ slot = "Rock_4", pos = Vector3.new(30, 0.5, -10), scale = 1.1 },
-		{ slot = "Rock_5", pos = Vector3.new(30, 0.5, 14), scale = 1.05 },
+		{ slot = "Rock_4", pos = Vector3.new(37.5, 0.5, -12.0), scale = 1.1 },
+		{ slot = "Rock_5", pos = Vector3.new(37.5, 0.5, 12.0), scale = 1.05 },
 		{ slot = "Rock_6", pos = Vector3.new(-29, 0.5, 11), scale = 1.1 },
 	}
 	for index, spec in ipairs(rockOffsets) do
@@ -874,8 +1038,8 @@ local function buildPerimeterProps(folder: Folder, origin: Vector3): ()
 
 	brazier(folder, "BrazierL", origin + Vector3.new(wallX + 3.2, 0.22, -18.5), "Brazier_L")
 	brazier(folder, "BrazierR", origin + Vector3.new(wallX + 3.2, 0.22, 18.5), "Brazier_R")
-	tealPylon(folder, "TealPylonL", origin + Vector3.new(spawnX - 2.2, 0.22, -11.5), "Obelisk_L")
-	tealPylon(folder, "TealPylonR", origin + Vector3.new(spawnX - 2.2, 0.22, 11.5), "Obelisk_R")
+	tealPylon(folder, "TealPylonL", origin + Vector3.new(36.2, 0.22, -9.8), "Obelisk_L")
+	tealPylon(folder, "TealPylonR", origin + Vector3.new(36.2, 0.22, 9.8), "Obelisk_R")
 end
 
 -- Slots so aparecem como LUZ (diretor): nada de quadrados/grade em repouso. Cada tile invisivel
@@ -1107,11 +1271,24 @@ local function buildSelectionIndicator(folder: Folder, origin: Vector3): Part
 	return indicator
 end
 
-local function placePortalMesh(arena: Instance): boolean
+local function placePortalMesh(arena: Instance, themeKey: string?): (boolean, boolean)
+	local resolved = PortalThemes.resolve(themeKey or arena:GetAttribute("PortalTheme"))
+	local targetName = MeshAssets.portalModelName(resolved.id)
 	local assets = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
-	local source = if assets ~= nil then assets:FindFirstChild(MeshAssets.PORTAL_MODEL) else nil
-	if source == nil or not source:IsA("Model") then
-		return false
+	if assets == nil then
+		return false, false
+	end
+	local preferred = assets:FindFirstChild(targetName)
+	local source: Model? = if preferred ~= nil and preferred:IsA("Model") then preferred else nil
+	local isExact = source ~= nil
+	if source == nil and targetName ~= MeshAssets.PORTAL_MODEL then
+		local fallback = assets:FindFirstChild(MeshAssets.PORTAL_MODEL)
+		if fallback ~= nil and fallback:IsA("Model") then
+			source = fallback
+		end
+	end
+	if source == nil then
+		return false, false
 	end
 	local origin = Vector3.new(
 		tonumber(arena:GetAttribute("OriginX")) or 0,
@@ -1122,8 +1299,10 @@ local function placePortalMesh(arena: Instance): boolean
 	if old ~= nil then
 		old:Destroy()
 	end
-	local clone = (source :: Model):Clone()
+	local clone = source:Clone()
 	clone.Name = "PortalMesh"
+	clone:SetAttribute("PortalTheme", resolved.id)
+	clone:SetAttribute("SourceModelName", source.Name)
 	for _, descendant in ipairs(clone:GetDescendants()) do
 		if descendant:IsA("BasePart") then
 			descendant.Anchored = true
@@ -1133,9 +1312,13 @@ local function placePortalMesh(arena: Instance): boolean
 			descendant.CastShadow = true
 		end
 	end
+	local _, rawSize = clone:GetBoundingBox()
+	if rawSize.Y > 0.01 then
+		clone:ScaleTo(clone:GetScale() * PORTAL_TARGET_HEIGHT / rawSize.Y)
+	end
 	local box, size = clone:GetBoundingBox()
 	local bottom = box.Position - Vector3.new(0, size.Y / 2, 0)
-	local target = origin + Vector3.new(25, 0, 0)
+	local target = origin + Vector3.new(PortalThemes.PORTAL_X, 0.28, 0)
 	clone:PivotTo(
 		CFrame.new(target)
 			* CFrame.Angles(0, math.rad(-90), 0)
@@ -1143,25 +1326,50 @@ local function placePortalMesh(arena: Instance): boolean
 			* clone:GetPivot()
 	)
 	clone.Parent = arena
-	ensurePortalVortex(arena)
+	ensurePortalVortex(arena, resolved)
+	-- Mantem PortalVeil e PortalVortexAttachment intocados; remove so a moldura procedural.
 	local blocks = arena:FindFirstChild("PortalBlocks")
 	if blocks ~= nil then
 		blocks:Destroy()
 	end
-	return true
+	return true, isExact
 end
 
-local function trySwapPortalMesh(arena: Instance): ()
-	if placePortalMesh(arena) then
+local function trySwapPortalMesh(arena: Instance, themeKey: string?): ()
+	local resolved = PortalThemes.resolve(themeKey or arena:GetAttribute("PortalTheme"))
+	local _, isExact = placePortalMesh(arena, resolved.id)
+	if isExact then
 		return
 	end
+	local targetName = MeshAssets.portalModelName(resolved.id)
 	task.spawn(function()
 		local assets = ReplicatedStorage:WaitForChild(MeshAssets.FOLDER, 30)
-		if assets == nil then
+		if assets == nil or arena.Parent == nil then
 			return
 		end
-		if assets:WaitForChild(MeshAssets.PORTAL_MODEL, 60) ~= nil and arena.Parent ~= nil then
-			placePortalMesh(arena)
+		if arena:GetAttribute("PortalTheme") ~= resolved.id then
+			return
+		end
+		local awaited: Instance? = assets:WaitForChild(targetName, 60)
+		if awaited ~= nil then
+			if
+				(arena.Parent :: Instance?) ~= nil
+				and arena:GetAttribute("PortalTheme") == resolved.id
+			then
+				placePortalMesh(arena, resolved.id)
+			end
+			return
+		end
+		if targetName ~= MeshAssets.PORTAL_MODEL then
+			local fallback: Instance? = assets:FindFirstChild(MeshAssets.PORTAL_MODEL)
+				or assets:WaitForChild(MeshAssets.PORTAL_MODEL, 15) :: Instance?
+			if
+				fallback ~= nil
+				and (arena.Parent :: Instance?) ~= nil
+				and arena:GetAttribute("PortalTheme") == resolved.id
+			then
+				placePortalMesh(arena, resolved.id)
+			end
 		end
 	end)
 end
@@ -1254,8 +1462,23 @@ local function ensureWallTorches(arena: Instance): ()
 	if grass == nil or not grass:IsA("BasePart") then
 		return
 	end
-	attachEffect(grass, Vector3.new(GridLayout.WALL_X + 2.2, 5.0, -4.9), "fire", "WallTorchFxL")
-	attachEffect(grass, Vector3.new(GridLayout.WALL_X + 2.2, 5.0, 4.9), "fire", "WallTorchFxR")
+	local origin = Vector3.new(
+		tonumber(arena:GetAttribute("OriginX")) or 0,
+		tonumber(arena:GetAttribute("OriginY")) or 0,
+		tonumber(arena:GetAttribute("OriginZ")) or 0
+	)
+	attachEffect(
+		grass,
+		grass.CFrame:PointToObjectSpace(origin + Vector3.new(GridLayout.WALL_X + 2.2, 5.0, -4.9)),
+		"fire",
+		"WallTorchFxL"
+	)
+	attachEffect(
+		grass,
+		grass.CFrame:PointToObjectSpace(origin + Vector3.new(GridLayout.WALL_X + 2.2, 5.0, 4.9)),
+		"fire",
+		"WallTorchFxR"
+	)
 end
 
 -- Muralha em malha (Forge3D/Open Cloud): troca todos os blocos de WallBlocks pelo modelo do tier
@@ -1445,23 +1668,77 @@ local function clearExisting(parent: Instance): ()
 	end
 end
 
+function ArenaVisual.setPortalTheme(arena: Instance, themeKey: string?): ()
+	local targetArena = findArena(arena)
+	if targetArena == nil then
+		return
+	end
+	local resolved = PortalThemes.resolve(themeKey or targetArena:GetAttribute("PortalTheme"))
+	targetArena:SetAttribute("PortalTheme", resolved.id)
+
+	local primary = rgb(resolved.framePrimary)
+	local secondary = rgb(resolved.frameSecondary)
+	local veilColor = rgb(resolved.veilColor)
+	local accentColor = rgb(resolved.accentColor)
+
+	local veil = targetArena:FindFirstChild("PortalVeil")
+	if veil ~= nil and veil:IsA("BasePart") then
+		veil.Color = veilColor
+	end
+
+	local portalBlocks = targetArena:FindFirstChild("PortalBlocks")
+	if portalBlocks ~= nil then
+		for _, child in ipairs(portalBlocks:GetChildren()) do
+			if child:IsA("BasePart") then
+				if child.Name == "PortalRuneKeystone" then
+					child.Color = accentColor
+				elseif string.sub(child.Name, 1, 12) == "PortalCrown_" then
+					child.Color = secondary
+				else
+					child.Color = primary
+				end
+			end
+		end
+	end
+
+	local manifold = targetArena:FindFirstChild("PortalManifold")
+	if manifold ~= nil then
+		local laneColor = fanLaneColor(resolved)
+		for _, child in ipairs(manifold:GetChildren()) do
+			if child:IsA("BasePart") then
+				if child.Name == "PortalApron" then
+					child.Color = primary
+				elseif string.sub(child.Name, 1, 8) == "FanLane_" then
+					child.Color = laneColor
+				end
+			end
+		end
+	end
+
+	ensurePortalVortex(targetArena, resolved)
+	trySwapPortalMesh(targetArena, resolved.id)
+end
+
 function ArenaVisual.build(parent: Instance, origin: Vector3, options: BuildOptions?): Folder
 	clearExisting(parent)
 	local opts: BuildOptions = options or {}
 	local dropIn = opts.dropIn == true
+	local resolvedTheme = PortalThemes.resolve(opts.portalTheme)
 	local folder = Instance.new("Folder")
 	folder.Name = "MuralhaArena"
 	folder.Parent = parent
 	folder:SetAttribute("OriginX", origin.X)
 	folder:SetAttribute("OriginY", origin.Y)
 	folder:SetAttribute("OriginZ", origin.Z)
+	folder:SetAttribute("PortalTheme", resolvedTheme.id)
 
 	buildIsland(folder, origin)
+	buildPortalManifold(folder, origin, resolvedTheme)
 	local wallBlocks = Instance.new("Folder")
 	wallBlocks.Name = "WallBlocks"
 	wallBlocks.Parent = folder
 	buildWallAndGatehouse(wallBlocks, origin)
-	buildRiftPortal(folder, origin)
+	buildRiftPortal(folder, origin, resolvedTheme)
 	buildPerimeterProps(folder, origin)
 	buildCellTiles(folder, origin)
 	buildSelectionIndicator(folder, origin)
@@ -1478,7 +1755,7 @@ function ArenaVisual.build(parent: Instance, origin: Vector3, options: BuildOpti
 	end
 
 	ArenaVisual.setWallTier(parent, resolveTier(opts.wallTier))
-	trySwapPortalMesh(folder)
+	trySwapPortalMesh(folder, resolvedTheme.id)
 	trySwapPropMeshes(folder, origin)
 
 	-- Gancho opcional: cenario de fundo (modulo irmao "Backdrop"); no-op se ausente ou com erro.
@@ -1490,10 +1767,6 @@ function ArenaVisual.build(parent: Instance, origin: Vector3, options: BuildOpti
 		end
 	end
 	return folder
-end
-
-local function findArena(parent: Instance): Instance?
-	return if parent.Name == "MuralhaArena" then parent else parent:FindFirstChild("MuralhaArena")
 end
 
 -- Hover/toque livre: disco circular de luz (verde valido, vermelho invalido/tooClose, oculto em repouso).

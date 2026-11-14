@@ -3,6 +3,10 @@
 -- Fica em src/client/visual/ para manter src/client/ raiz apenas com *.client.luau.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 local bit32 = bit32
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -31,7 +35,8 @@ export type CampaignUiHandle = {
 	ingestCampaignSnapshot: (campaignTable: any) -> (),
 	updateBossHud: (bossSnap: any?) -> (),
 	hideBossHud: () -> (),
-	showBossQuote: (bossId: string, eventKind: string) -> (),
+	showBossQuote: (bossId: string, eventKind: string, headWorldPos: Vector3?) -> (),
+	stepBossBubble: (camera: Camera?, headWorldPos: Vector3?) -> (),
 }
 
 local BOSS_QUOTES: { [string]: { pt: string, en: string, es: string } } = {
@@ -400,6 +405,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	bossHud.AnchorPoint = Vector2.zero
 	bossHud.Position = UDim2.fromOffset(192, 54)
 	bossHud.Size = UDim2.fromOffset(280, 44)
+	bossHud.BackgroundTransparency = 0.14
 	bossHud.Visible = false
 	bossHud.ZIndex = 17
 	UiKit.corner(bossHud, 10)
@@ -413,11 +419,15 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		Enum.Font.GothamBlack
 	)
 	bossNameLbl.Position = UDim2.fromOffset(8, 2)
-	bossNameLbl.Size = UDim2.new(0.55, -8, 0, 16)
+	bossNameLbl.Size = UDim2.new(0.60, -8, 0, 16)
 	bossNameLbl.TextScaled = true
 	bossNameLbl.TextWrapped = false
 	bossNameLbl.TextTruncate = Enum.TextTruncate.AtEnd
 	bossNameLbl.ZIndex = 18
+	local bossNameCap = Instance.new("UITextSizeConstraint")
+	bossNameCap.MinTextSize = 9
+	bossNameCap.MaxTextSize = 13
+	bossNameCap.Parent = bossNameLbl
 
 	local bossStateLbl = UiKit.label(
 		bossHud,
@@ -426,13 +436,17 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		UiKit.color(VisualTheme.PALETTE.amberBright),
 		Enum.Font.GothamBlack
 	)
-	bossStateLbl.Position = UDim2.new(0.55, 0, 0, 2)
-	bossStateLbl.Size = UDim2.new(0.45, -8, 0, 16)
+	bossStateLbl.Position = UDim2.new(0.60, 0, 0, 2)
+	bossStateLbl.Size = UDim2.new(0.40, -8, 0, 16)
 	bossStateLbl.TextXAlignment = Enum.TextXAlignment.Right
 	bossStateLbl.TextScaled = true
 	bossStateLbl.TextWrapped = false
 	bossStateLbl.TextTruncate = Enum.TextTruncate.AtEnd
 	bossStateLbl.ZIndex = 18
+	local bossStateCap = Instance.new("UITextSizeConstraint")
+	bossStateCap.MinTextSize = 9
+	bossStateCap.MaxTextSize = 11
+	bossStateCap.Parent = bossStateLbl
 
 	local bossHpBar = UiKit.progress(bossHud, "BossHp", UiKit.color(VisualTheme.PALETTE.danger))
 	bossHpBar.frame.Position = UDim2.fromOffset(8, 21)
@@ -448,41 +462,126 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	bossStaggerBar.fill.ZIndex = 18
 
 	local quoteToken = 0
-	local bossQuotePill = Instance.new("Frame")
-	bossQuotePill.Name = "BossQuotePill"
-	bossQuotePill.AnchorPoint = Vector2.new(0.5, 0)
-	bossQuotePill.Position = UDim2.new(0.5, 0, 0, 104)
-	bossQuotePill.Size = UDim2.fromOffset(380, 28)
-	bossQuotePill.BackgroundColor3 = Color3.fromRGB(14, 19, 32)
-	bossQuotePill.BackgroundTransparency = 0.10
-	bossQuotePill.BorderSizePixel = 0
-	bossQuotePill.Active = false
-	bossQuotePill.Visible = false
-	bossQuotePill.ZIndex = 18
-	bossQuotePill.Parent = root
-	UiKit.corner(bossQuotePill, 8)
-	local bossQuoteStroke =
-		UiKit.stroke(bossQuotePill, UiKit.color(VisualTheme.PALETTE.amberBright), 1.5, 0.1)
+	local latestHudRects: BuildLayout.HudLayout? = nil
+	local lastHeadWorldPos: Vector3? = nil
+	local quoteStreamConn: RBXScriptConnection? = nil
+
+	local bossBubble = Instance.new("Frame")
+	bossBubble.Name = "BossSpeechBubble"
+	bossBubble.AnchorPoint = Vector2.zero
+	bossBubble.Position = UDim2.fromOffset(0, 0)
+	bossBubble.Size = UDim2.fromOffset(188, 36)
+	bossBubble.BackgroundColor3 = Color3.fromRGB(14, 19, 32)
+	bossBubble.BackgroundTransparency = 0.12
+	bossBubble.BorderSizePixel = 0
+	bossBubble.Active = false
+	bossBubble.ClipsDescendants = false
+	bossBubble.Visible = false
+	bossBubble.ZIndex = 16
+	bossBubble.Parent = root
+	UiKit.corner(bossBubble, 8)
+	local bossBubbleStroke =
+		UiKit.stroke(bossBubble, UiKit.color(VisualTheme.PALETTE.amberBright), 1.5, 0.08)
+	local bossBubbleScale = Instance.new("UIScale")
+	bossBubbleScale.Scale = 1
+	bossBubbleScale.Parent = bossBubble
+
+	local bossBubbleTail = Instance.new("Frame")
+	bossBubbleTail.Name = "Tail"
+	bossBubbleTail.AnchorPoint = Vector2.new(0.5, 0.5)
+	bossBubbleTail.Position = UDim2.fromOffset(94, 36)
+	bossBubbleTail.Size = UDim2.fromOffset(7, 7)
+	bossBubbleTail.Rotation = 45
+	bossBubbleTail.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
+	bossBubbleTail.BackgroundTransparency = 0.08
+	bossBubbleTail.BorderSizePixel = 0
+	bossBubbleTail.Active = false
+	bossBubbleTail.ZIndex = 15
+	bossBubbleTail.Parent = bossBubble
 
 	local bossQuoteLbl = UiKit.label(
-		bossQuotePill,
+		bossBubble,
 		"QuoteText",
 		"",
 		UiKit.color(VisualTheme.PALETTE.parchment),
 		Enum.Font.GothamBold
 	)
-	bossQuoteLbl.Position = UDim2.fromOffset(10, 2)
-	bossQuoteLbl.Size = UDim2.new(1, -20, 1, -4)
-	bossQuoteLbl.TextXAlignment = Enum.TextXAlignment.Center
-	bossQuoteLbl.TextScaled = true
+	bossQuoteLbl.Position = UDim2.fromOffset(8, 4)
+	bossQuoteLbl.Size = UDim2.new(1, -16, 1, -9)
+	bossQuoteLbl.TextXAlignment = Enum.TextXAlignment.Left
+	bossQuoteLbl.TextYAlignment = Enum.TextYAlignment.Center
+	bossQuoteLbl.TextScaled = false
+	bossQuoteLbl.TextSize = 11
 	bossQuoteLbl.TextWrapped = true
-	bossQuoteLbl.RichText = true
+	bossQuoteLbl.TextTruncate = Enum.TextTruncate.None
+	bossQuoteLbl.RichText = false
 	bossQuoteLbl.Active = false
-	bossQuoteLbl.ZIndex = 19
-	local quoteCap = Instance.new("UITextSizeConstraint")
-	quoteCap.MinTextSize = 10
-	quoteCap.MaxTextSize = 15
-	quoteCap.Parent = bossQuoteLbl
+	bossQuoteLbl.ZIndex = 17
+
+	local function stopQuoteStream(): ()
+		if quoteStreamConn ~= nil then
+			quoteStreamConn:Disconnect()
+			quoteStreamConn = nil
+		end
+	end
+
+	local function computeBubbleSize(quote: string): (number, number, number)
+		local isDesktop = if latestHudRects ~= nil then latestHudRects.isDesktop else false
+		local isPortrait = if latestHudRects ~= nil then latestHudRects.isPortrait else false
+		local bubbleW = if isDesktop then 224 elseif isPortrait then 196 else 188
+		local fontSize = if isDesktop then 12 else 11
+		local ok, bounds = pcall(function()
+			return TextService:GetTextSize(
+				quote,
+				fontSize,
+				Enum.Font.GothamBold,
+				Vector2.new(bubbleW - 16, 120)
+			)
+		end)
+		local textH = if ok and typeof(bounds) == "Vector2" then math.ceil(bounds.Y) else 26
+		local bubbleH = math.clamp(textH + 10, 28, 58)
+		return bubbleW, bubbleH, fontSize
+	end
+
+	local function positionBossBubble(camera: Camera?, headWorldPos: Vector3?): ()
+		local worldPos = headWorldPos or lastHeadWorldPos
+		if worldPos == nil then
+			return
+		end
+		local cam = camera or Workspace.CurrentCamera
+		if cam == nil then
+			return
+		end
+		local vpPt, onScreen = cam:WorldToViewportPoint(worldPos)
+		if not onScreen and vpPt.Z <= 0 then
+			return
+		end
+		local rootPos = root.AbsolutePosition
+		local rootSize = root.AbsoluteSize
+		if rootSize.X <= 0 or rootSize.Y <= 0 then
+			return
+		end
+		local localX = vpPt.X - rootPos.X
+		local localY = vpPt.Y - rootPos.Y
+		local bw = bossBubble.Size.X.Offset
+		local bh = bossBubble.Size.Y.Offset
+		local minTopY = 56
+		if latestHudRects ~= nil then
+			local topBottom = math.max(
+				latestHudRects.combatTopPill.y + latestHudRects.combatTopPill.h,
+				if bossHud.Visible
+					then latestHudRects.combatBossPill.y + latestHudRects.combatBossPill.h
+					else 0
+			)
+			minTopY = topBottom + 6
+		end
+		local maxBottomY = math.max(minTopY, rootSize.Y - 56 - bh)
+		local bx = math.clamp(math.floor(localX - bw * 0.5), 8, math.max(8, rootSize.X - bw - 8))
+		local by = math.clamp(math.floor(localY - bh - 10), minTopY, maxBottomY)
+		local tailX = math.clamp(math.floor(localX - bx), 14, math.max(14, bw - 14))
+		bossBubble.Position = UDim2.fromOffset(bx, by)
+		bossBubbleTail.Position = UDim2.fromOffset(tailX, bh)
+	end
 
 	local function claimableGoldForAct(actIdx: number): number
 		local claims = latestCampaign.actMilestoneClaims
@@ -650,14 +749,15 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		storyButton = storyButton,
 		bossHud = bossHud,
 		applyLayout = function(hudRects: BuildLayout.HudLayout): ()
+			latestHudRects = hudRects
 			applyRect(storyButton, hudRects.storyBtn)
 			applyRect(bossHud, hudRects.combatBossPill)
-			local quoteW = math.clamp(hudRects.width - 40, 260, 440)
-			bossQuotePill.Position = UDim2.fromOffset(
-				math.floor(hudRects.width * 0.5),
-				hudRects.combatBossPill.y + hudRects.combatBossPill.h + 6
-			)
-			bossQuotePill.Size = UDim2.fromOffset(quoteW, 28)
+			if bossBubble.Visible and bossQuoteLbl.Text ~= "" then
+				local bw, bh, fontSize = computeBubbleSize(bossQuoteLbl.Text)
+				bossQuoteLbl.TextSize = fontSize
+				bossBubble.Size = UDim2.fromOffset(bw, bh)
+				positionBossBubble(nil, nil)
+			end
 			local mw = math.clamp(hudRects.width - 20, 304, 560)
 			local mh = math.clamp(hudRects.height - 20, 256, 348)
 			modal.Size = UDim2.fromOffset(mw, mh)
@@ -715,9 +815,18 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		hideBossHud = function(): ()
 			bossHud.Visible = false
 			quoteToken += 1
-			bossQuotePill.Visible = false
+			stopQuoteStream()
+			bossBubble.Visible = false
 		end,
-		showBossQuote = function(bossId: string, eventKind: string): ()
+		stepBossBubble = function(camera: Camera?, headWorldPos: Vector3?): ()
+			if headWorldPos ~= nil then
+				lastHeadWorldPos = headWorldPos
+			end
+			if bossBubble.Visible then
+				positionBossBubble(camera, headWorldPos)
+			end
+		end,
+		showBossQuote = function(bossId: string, eventKind: string, headWorldPos: Vector3?): ()
 			local key = bossId .. (if eventKind == "enrage" then "_enrage" else "_intro")
 			local entry = BOSS_QUOTES[key]
 			if entry == nil then
@@ -725,29 +834,64 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 			end
 			local loc = UiKit.getLocale()
 			local quote = if loc == "en" then entry.en elseif loc == "es" then entry.es else entry.pt
-			local bSpec = CampaignCatalog.BOSS_SPECS[bossId]
-			local bossTitle = if bSpec ~= nil
-				then I18n.t(loc, "boss_" .. tostring(bSpec.act))
-				else ""
-			local isEnrage = eventKind == "enrage"
-			local accentHex = if isEnrage then "#FCA5A5" else "#FCD34D"
-			bossQuoteStroke.Color = UiKit.color(
-				if isEnrage then VisualTheme.PALETTE.danger else VisualTheme.PALETTE.amberBright
-			)
-			bossQuoteLbl.Text = if bossTitle ~= ""
-				then string.format(
-					'<font color="%s">%s:</font> “%s”',
-					accentHex,
-					bossTitle,
-					quote
-				)
-				else string.format("“%s”", quote)
-			bossQuotePill.Visible = true
+			stopQuoteStream()
 			quoteToken += 1
 			local myToken = quoteToken
-			task.delay(3.6, function()
-				if quoteToken == myToken then
-					bossQuotePill.Visible = false
+			if headWorldPos ~= nil then
+				lastHeadWorldPos = headWorldPos
+			end
+
+			local isEnrage = eventKind == "enrage"
+			local accent = UiKit.color(
+				if isEnrage then VisualTheme.PALETTE.danger else VisualTheme.PALETTE.amberBright
+			)
+			bossBubbleStroke.Color = accent
+			bossBubbleTail.BackgroundColor3 = accent
+			bossBubble.BackgroundTransparency = 0.12
+			bossBubbleStroke.Transparency = 0.08
+			bossBubbleTail.BackgroundTransparency = 0.08
+			bossQuoteLbl.TextTransparency = 0
+
+			local bw, bh, fontSize = computeBubbleSize(quote)
+			bossQuoteLbl.TextSize = fontSize
+			bossQuoteLbl.Text = quote
+			local totalGraphemes = utf8.len(quote) or #quote
+			bossQuoteLbl.MaxVisibleGraphemes = 0
+			bossBubble.Size = UDim2.fromOffset(bw, bh)
+			positionBossBubble(Workspace.CurrentCamera, headWorldPos)
+
+			bossBubbleScale.Scale = 0.86
+			bossBubble.Visible = true
+			TweenService:Create(
+				bossBubbleScale,
+				TweenInfo.new(0.14, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+				{ Scale = 1 }
+			):Play()
+
+			local startedAt = time()
+			local streamDuration = totalGraphemes / 36
+			local holdUntil = startedAt + streamDuration + 1.85
+			local fadeDuration = 0.22
+			quoteStreamConn = RunService.Heartbeat:Connect(function()
+				if quoteToken ~= myToken or not bossBubble.Visible or bossBubble.Parent == nil then
+					stopQuoteStream()
+					return
+				end
+				local now = time()
+				local elapsed = now - startedAt
+				local shown = math.clamp(math.floor(elapsed * 36), 1, totalGraphemes)
+				bossQuoteLbl.MaxVisibleGraphemes = shown
+				if now >= holdUntil then
+					local alpha = math.clamp((now - holdUntil) / fadeDuration, 0, 1)
+					bossBubble.BackgroundTransparency = 0.12 + 0.88 * alpha
+					bossBubbleStroke.Transparency = 0.08 + 0.92 * alpha
+					bossBubbleTail.BackgroundTransparency = 0.08 + 0.92 * alpha
+					bossQuoteLbl.TextTransparency = alpha
+					if alpha >= 1 then
+						stopQuoteStream()
+						bossBubble.Visible = false
+						bossQuoteLbl.MaxVisibleGraphemes = -1
+					end
 				end
 			end)
 		end,

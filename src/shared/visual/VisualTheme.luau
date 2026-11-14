@@ -226,7 +226,7 @@ VisualTheme.AUDIO = table.freeze({
 VisualTheme.BUDGET = table.freeze({
 	trapParts = 12,
 	unitParts = 8,
-	arenaParts = 160,
+	arenaParts = 185,
 	maxUnits = 150,
 	drawCalls = 500,
 })

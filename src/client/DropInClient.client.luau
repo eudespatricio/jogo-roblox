@@ -21,6 +21,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local BuildLayout = require(Shared:WaitForChild("build"):WaitForChild("BuildLayout"))
 local DropInState = require(Shared:WaitForChild("dropin"):WaitForChild("DropInState"))
 local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
+local PortalThemes = require(Shared:WaitForChild("visual"):WaitForChild("PortalThemes"))
 local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTheme"))
 
 local visual = script.Parent:WaitForChild("visual")
@@ -82,10 +83,22 @@ end
 hideBuildGrid()
 task.delay(1, hideBuildGrid)
 
+local DROPIN_PORTAL_THEME = PortalThemes.resolve("rift")
+local VEIL_COLOR = Color3.fromRGB(
+	DROPIN_PORTAL_THEME.veilColor[1],
+	DROPIN_PORTAL_THEME.veilColor[2],
+	DROPIN_PORTAL_THEME.veilColor[3]
+)
+local ACCENT_COLOR = Color3.fromRGB(
+	DROPIN_PORTAL_THEME.accentColor[1],
+	DROPIN_PORTAL_THEME.accentColor[2],
+	DROPIN_PORTAL_THEME.accentColor[3]
+)
+
 local scene = Instance.new("Folder")
 scene.Name = "DropInLocalScene"
 scene.Parent = Workspace
-ArenaVisual.build(scene, ORIGIN, { dropIn = true, wallTier = 1 })
+ArenaVisual.build(scene, ORIGIN, { dropIn = true, wallTier = 1, portalTheme = "rift" })
 local crowd = CrowdKit.build(scene, ORIGIN)
 
 local FLOOR_TOP_Y = 0.39
@@ -99,22 +112,35 @@ local PREBUILT = {
 }
 TrapKit.sync(scene, PREBUILT, ORIGIN, { floorTopY = FLOOR_TOP_Y })
 
-local horde = {}
+type DropInUnitItem = {
+	unit: HordeKit.HordeUnit,
+	kind: string,
+	lane: number,
+	z: number,
+	delay: number,
+	breached: boolean,
+}
+
+local horde: { DropInUnitItem } = {}
 local kinds = { "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }
 local unitSeq = 0
 for lane = 1, 5 do
 	local z = (lane - 3) * 8
-	for unit = 1, 2 do
+	for order = 1, 2 do
 		unitSeq += 1
-		local kind = kinds[(lane + unit) % #kinds + 1]
-		local spawn = ORIGIN + Vector3.new(10 + unit * 2, FLOOR_TOP_Y, z)
-		local model = HordeKit.create(kind, scene, CFrame.new(spawn), unitSeq)
+		local kind = kinds[(lane + order) % #kinds + 1]
+		local mouthPos = ORIGIN + Vector3.new(PortalThemes.THROAT_X, FLOOR_TOP_Y, (lane - 3) * 0.95)
+		local model = HordeKit.create(kind, scene, CFrame.new(mouthPos), unitSeq)
 		if model ~= nil then
+			HordeKit.setApproachScale(model, PortalThemes.MIN_SCALE)
+			HordeKit.setVisible(model, false)
 			horde[#horde + 1] = {
 				unit = model,
 				kind = kind,
+				lane = lane,
 				z = z,
-				offset = unit * 4,
+				delay = (order - 1) * 0.45 + ((lane - 1) % 3) * 0.08,
+				breached = false,
 			}
 		end
 	end
@@ -241,8 +267,8 @@ local function applyDropInLayout(): ()
 		return
 	end
 	local hudRects = BuildLayout.computeHud(size.X, size.Y, UiKit.safeTopbarInsets(root))
-	bar.Position = UDim2.fromOffset(hudRects.combatTopPill.x, hudRects.combatTopPill.y)
-	bar.Size = UDim2.fromOffset(hudRects.combatTopPill.w, hudRects.combatTopPill.h)
+	bar.Position = UDim2.fromOffset(hudRects.combatTopSoloPill.x, hudRects.combatTopSoloPill.y)
+	bar.Size = UDim2.fromOffset(hudRects.combatTopSoloPill.w, hudRects.combatTopSoloPill.h)
 
 	localePill.Position =
 		UDim2.fromOffset(hudRects.localeBtn.x + hudRects.localeBtn.w - 48, hudRects.localeBtn.y)
@@ -305,7 +331,7 @@ local phase = "shown"
 local serverSnapshot: any = nil
 local scenarioStart = time()
 local pressed = false
-local pressProgress = 0
+local pressElapsed = 0
 local defeated = false
 local finished = false
 
@@ -329,10 +355,14 @@ local function setHordeVisible(visible: boolean): ()
 end
 
 local function resetHorde(): ()
-	setHordeVisible(true)
+	for _, item in ipairs(horde) do
+		item.breached = false
+		HordeKit.setApproachScale(item.unit, PortalThemes.MIN_SCALE)
+		HordeKit.setVisible(item.unit, false)
+	end
 	scenarioStart = time()
 	pressed = false
-	pressProgress = 0
+	pressElapsed = 0
 end
 
 local function showDefeat(): ()
@@ -432,7 +462,7 @@ local function press(): ()
 	end
 	pressed = true
 	button.Visible = false
-	pressProgress = math.clamp((time() - scenarioStart) / 5, 0, 1)
+	pressElapsed = math.max(0, time() - scenarioStart)
 	AudioKit.play("ui_click")
 
 	local ok, result = pcall(function()
@@ -493,7 +523,7 @@ local function retry(): ()
 	resetHorde()
 	applySnapshot(result.snapshot)
 	AudioKit.play("horn")
-	AudioKit.playAt("horde_spawn", ORIGIN + Vector3.new(14, 2, 0), 0.8)
+	AudioKit.playAt("horde_spawn", ORIGIN + Vector3.new(PortalThemes.PORTAL_X, 2, 0), 0.8)
 end
 
 button.MouseButton1Click:Connect(press)
@@ -513,7 +543,7 @@ end)
 
 AudioKit.setMode("raid")
 AudioKit.play("horn")
-AudioKit.playAt("horde_spawn", ORIGIN + Vector3.new(14, 2, 0), 0.8)
+AudioKit.playAt("horde_spawn", ORIGIN + Vector3.new(PortalThemes.PORTAL_X, 2, 0), 0.8)
 
 RunService.RenderStepped:Connect(function(dt: number)
 	if finished then
@@ -521,19 +551,45 @@ RunService.RenderStepped:Connect(function(dt: number)
 	end
 	local now = time()
 	TrapKit.step(dt)
-	local progress
+	local effectiveElapsed: number
 	if phase == "defeated" then
-		progress = 1
+		effectiveElapsed = 5.6
 	elseif pressed then
-		progress = pressProgress
+		effectiveElapsed = pressElapsed
 	else
-		progress = math.clamp((now - scenarioStart) / 5, 0, 1)
+		effectiveElapsed = math.max(0, now - scenarioStart)
 	end
+	local marchDuration = 4.15
 	for _, item in ipairs(horde) do
-		local x = 11 - 33 * progress + item.offset * 0.25
-		local base = CFrame.new(ORIGIN + Vector3.new(x, FLOOR_TOP_Y, item.z))
-		HordeKit.setBase(item.unit, base)
-		HordeKit.step(item.unit, now, not pressed or phase == "shown")
+		local itemElapsed = effectiveElapsed - item.delay
+		if itemElapsed < 0 then
+			HordeKit.setVisible(item.unit, false)
+		else
+			if not item.breached then
+				item.breached = true
+				HordeKit.setVisible(item.unit, true)
+				local mouthPos = ORIGIN
+					+ Vector3.new(PortalThemes.THROAT_X, FLOOR_TOP_Y, (item.lane - 3) * 0.95)
+				Vfx.portalBreach(scene, mouthPos, VEIL_COLOR, ACCENT_COLOR, false)
+			end
+			if itemElapsed < PortalThemes.APPROACH_SECONDS then
+				local t = math.clamp(itemElapsed / PortalThemes.APPROACH_SECONDS, 0, 1)
+				local fx, fz, yaw = PortalThemes.sampleFanPath(item.lane, t)
+				local pos = ORIGIN + Vector3.new(fx, FLOOR_TOP_Y, fz)
+				HordeKit.setApproachScale(item.unit, PortalThemes.approachScale(t))
+				HordeKit.setBase(item.unit, CFrame.new(pos) * CFrame.Angles(0, yaw, 0))
+			else
+				local marchT =
+					math.clamp((itemElapsed - PortalThemes.APPROACH_SECONDS) / marchDuration, 0, 1)
+				local x = PortalThemes.ENTRY_X - (PortalThemes.ENTRY_X + 20.5) * marchT
+				HordeKit.setApproachScale(item.unit, 1.0)
+				HordeKit.setBase(
+					item.unit,
+					CFrame.new(ORIGIN + Vector3.new(x, FLOOR_TOP_Y, item.z))
+				)
+			end
+			HordeKit.step(item.unit, now, not pressed or phase == "shown")
+		end
 	end
 
 	local elapsedMs = (now - scenarioStart) * 1000

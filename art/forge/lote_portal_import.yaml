@@ -1,4 +1,4 @@
-# Forge3D 0.6.1 — rota `import`: portal da fenda gotico-arcano esculpido (art/scripts/make_portal.py)
+# Forge3D 0.6.1 — rota `import`: portal da fenda + 5 portais monumentais da campanha (art/scripts/make_portal.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
 schema: forge3d/spec@4
@@ -26,3 +26,68 @@ lote:
     seed: 20261113
     lod: [100]
     tags: [muralha, portal, rift]
+
+  - id: portal.act1_iron.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act1_iron.glb
+    altura_metros: 3.7841   # 13.5145 studs
+    pivot: base
+    limite_triangulos: 2000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, portal, campaign, act1]
+
+  - id: portal.act2_slag.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act2_slag.glb
+    altura_metros: 3.8121   # 13.6148 studs
+    pivot: base
+    limite_triangulos: 2000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, portal, campaign, act2]
+
+  - id: portal.act3_frost.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act3_frost.glb
+    altura_metros: 3.8629   # 13.796 studs
+    pivot: base
+    limite_triangulos: 2000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, portal, campaign, act3]
+
+  - id: portal.act4_powder.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act4_powder.glb
+    altura_metros: 3.6679   # 13.0995 studs
+    pivot: base
+    limite_triangulos: 2000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, portal, campaign, act4]
+
+  - id: portal.act5_rift.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act5_rift.glb
+    altura_metros: 4.0713   # 14.5405 studs
+    pivot: base
+    limite_triangulos: 2000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, portal, campaign, act5]

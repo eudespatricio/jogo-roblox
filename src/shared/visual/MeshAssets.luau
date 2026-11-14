@@ -8,6 +8,16 @@ local MeshAssets = {}
 MeshAssets.FOLDER = "MuralhaAssets"
 MeshAssets.PORTAL_MODEL = "PROP_rift_portal"
 MeshAssets.PORTAL = 74985506027399
+MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID = 114634345522428
+
+MeshAssets.PORTALS = table.freeze({
+	rift = 74985506027399, -- PROP_rift_portal
+	act1 = 108436475454198, -- PORTAL_act1 (Cinzas da Fronteira)
+	act2 = 81617764852651, -- PORTAL_act2 (Forjas de Escoria)
+	act3 = 113047421173759, -- PORTAL_act3 (Geada do Desfiladeiro)
+	act4 = 113385018037201, -- PORTAL_act4 (Polvora e Trincheira)
+	act5 = 79499853834521, -- PORTAL_act5 (A Fenda Profunda)
+}) :: { [string]: number }
 
 MeshAssets.TRAPS = table.freeze({
 	archer = table.freeze({
@@ -103,6 +113,19 @@ end
 
 function MeshAssets.faunaModelName(key: string): string
 	return string.format("FAUNA_%s", key)
+end
+
+function MeshAssets.portalModelName(themeKey: string?): string
+	if
+		themeKey == "act1"
+		or themeKey == "act2"
+		or themeKey == "act3"
+		or themeKey == "act4"
+		or themeKey == "act5"
+	then
+		return string.format("PORTAL_%s", themeKey)
+	end
+	return MeshAssets.PORTAL_MODEL
 end
 
 return table.freeze(MeshAssets)

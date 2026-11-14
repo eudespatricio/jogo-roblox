@@ -84,6 +84,7 @@ export type HordeUnit = {
 	base: CFrame,
 	phase: number,
 	kind: string,
+	approachScale: number,
 	squashUntil: number,
 	squashSeq: number,
 	squashed: boolean,
@@ -575,6 +576,7 @@ export type BossUnit = {
 	base: CFrame,
 	bossId: string,
 	height: number,
+	approachScale: number,
 	color: Color3,
 	accent: Color3,
 	squashUntil: number,
@@ -720,6 +722,7 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 	unit.rootPart.CFrame = rigCF
 
 	local metrics = RIG_METRICS[unit.kind] or RIG_METRICS.runner
+	local approach = math.clamp(unit.approachScale, 0.45, 1.25)
 	local sxz = 1
 	local sy = 1
 	if now < unit.squashUntil then
@@ -730,6 +733,8 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 	elseif unit.squashed then
 		unit.squashed = false
 	end
+	sxz *= approach
+	sy *= approach
 
 	local posX = unit.base.Position.X
 	if unit.lastNow > 0 then
@@ -1042,6 +1047,7 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 	unit.lastEnraged = isEnraged
 	unit.lastNow = now
 
+	local approach = math.clamp(unit.approachScale, 0.45, 1.25)
 	local sxz = 1
 	local sy = 1
 	if now < unit.squashUntil then
@@ -1052,6 +1058,8 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 	elseif unit.squashed then
 		unit.squashed = false
 	end
+	sxz *= approach
+	sy *= approach
 
 	local bobY = 0
 	local pitch = 0
@@ -1107,7 +1115,9 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 	local rigCF = CFrame.new(unit.base.Position)
 		* unit.base.Rotation
 		* CFrame.Angles(0, math.rad(90), 0)
-	local animCF = rigCF * CFrame.new(jitterX, bobY, lungeZ) * CFrame.Angles(pitch, 0, roll)
+	local animCF = rigCF
+		* CFrame.new(jitterX * approach, bobY * approach, lungeZ * approach)
+		* CFrame.Angles(pitch, 0, roll)
 	unit.rootPart.CFrame = animCF
 
 	local enrageScale = if isEnraged then 1.04 else 1.0
@@ -1233,6 +1243,7 @@ function HordeKit.create(kind: string, parent: Instance, cframe: CFrame, unitId:
 		base = cframe,
 		phase = phase,
 		kind = kind,
+		approachScale = 1.0,
 		squashUntil = 0,
 		squashSeq = 0,
 		squashed = false,
@@ -1257,6 +1268,10 @@ end
 
 function HordeKit.setBase(unit: HordeUnit, cframe: CFrame): ()
 	unit.base = cframe
+end
+
+function HordeKit.setApproachScale(unit: HordeUnit, scale: number): ()
+	unit.approachScale = math.clamp(scale, 0.45, 1.25)
 end
 
 function HordeKit.hitSquash(unit: HordeUnit): ()
@@ -1440,6 +1455,7 @@ function HordeKit.createBoss(bossId: string, parent: Instance, cframe: CFrame): 
 		base = cframe,
 		bossId = bossId,
 		height = spec.height,
+		approachScale = 1.0,
 		color = rgb(spec.color),
 		accent = rgb(spec.accent),
 		squashUntil = 0,
@@ -1464,6 +1480,10 @@ end
 
 function HordeKit.setBossBase(bossUnit: BossUnit, cframe: CFrame): ()
 	bossUnit.base = cframe
+end
+
+function HordeKit.setBossApproachScale(bossUnit: BossUnit, scale: number): ()
+	bossUnit.approachScale = math.clamp(scale, 0.45, 1.25)
 end
 
 function HordeKit.stepBoss(bossUnit: BossUnit, now: number, state: string?, enraged: boolean?): ()

@@ -44,6 +44,7 @@ export type HudLayout = {
 	attackBtn: Rect,
 	toastBanner: Rect,
 	combatTopPill: Rect,
+	combatTopSoloPill: Rect,
 	combatBossPill: Rect,
 	combatCamBtn: Rect,
 	combatSpeedBtn: Rect,
@@ -351,19 +352,32 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	-- Combat & DropIn peripheral rectangles
 	local combatReserveRight = if utilY == minY then localeW + gap else 0
 	local combatTopAvail = math.max(0, row1MaxX - combatReserveRight - row1MinX)
-	local combatTopW = clamp(round(w * 0.44), 200, 380)
-	local combatTopPill: Rect
+	local soloDesiredW = clamp(round(w * 0.44), 200, 360)
+	local combatTopSoloPill: Rect
 	if combatTopAvail >= 200 then
-		local fitW = math.min(combatTopW, combatTopAvail)
+		local fitW = math.min(soloDesiredW, combatTopAvail)
 		local freeCenterX = row1MinX + math.floor((combatTopAvail - fitW) * 0.5)
-		combatTopPill = rect(freeCenterX, minY, fitW, pillH)
+		combatTopSoloPill = rect(freeCenterX, minY, fitW, pillH)
 	else
-		local fitW = clamp(usableW, 200, 380)
+		local fitW = clamp(usableW, 200, 360)
 		local pillY = math.max(minY + pillH + gap, safeTop + unibarH + 4)
-		combatTopPill = rect(minX + math.floor((usableW - fitW) * 0.5), pillY, fitW, pillH)
+		combatTopSoloPill = rect(minX + math.floor((usableW - fitW) * 0.5), pillY, fitW, pillH)
 	end
-	local combatBossPill =
-		rect(combatTopPill.x, combatTopPill.y + combatTopPill.h + 4, combatTopPill.w, 44)
+
+	local combatTopPill: Rect
+	local combatBossPill: Rect
+	local canPairRow1 = (utilY == minY) and (combatTopAvail >= 368)
+	if canPairRow1 then
+		local pairMaxW = math.min(combatTopAvail, if isDesktop then 680 else 540)
+		local topW = clamp(math.floor((pairMaxW - gap) * 0.52), 184, 350)
+		local bossW = clamp(pairMaxW - gap - topW, 176, 322)
+		local pairX = row1MinX + math.floor((combatTopAvail - (topW + gap + bossW)) * 0.5)
+		combatTopPill = rect(pairX, minY, topW, pillH)
+		combatBossPill = rect(pairX + topW + gap, minY, bossW, pillH)
+	else
+		combatTopPill = combatTopSoloPill
+		combatBossPill = rect(combatTopPill.x, combatTopPill.y + pillH + 4, combatTopPill.w, pillH)
+	end
 
 	local closeW = if w < 420 then 84 else 96
 	local speedW = 54
@@ -409,6 +423,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		attackBtn = attackBtn,
 		toastBanner = toastBanner,
 		combatTopPill = combatTopPill,
+		combatTopSoloPill = combatTopSoloPill,
 		combatBossPill = combatBossPill,
 		combatCamBtn = combatCamBtn,
 		combatSpeedBtn = combatSpeedBtn,
