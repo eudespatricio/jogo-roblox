@@ -1,0 +1,123 @@
+# Cenario de fundo (alem da muralha) — Forge3D 0.6.0, rota mesh: concept SD1.5 -> TripoSR -> bake.
+# Puramente visual, visto de longe: malha grosseira e aceitavel. Saida no sandbox do Forge3D.
+# Rodar:
+#   FORGE3D_I23D_REMOVER_FUNDO=1 FORGE3D_CONCEPT_NEGATIVO="$(cat art/forge/backdrop_negativo.txt)" \
+#     ~/.local/bin/forge3d run art/forge/lote_backdrop.yaml --json
+# v2: sem "diorama" (gerava chao/base e cena cortada -> malha deitada).
+schema: forge3d/spec@1
+
+projeto: muralha
+perfil: roblox-r15
+destino_exportacao: ~/.local/state/forge3d/saida/muralha_backdrop
+estilo_global: lowpoly_lit
+
+politica:
+  falha: continuar
+  custo_max_min: 30
+  seed_base: 20261114
+
+lote:
+  - id: backdrop.castle.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      small stone castle with three round towers and blue cone roofs,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 10
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261114
+    lod: [100]
+    tags: [muralha, backdrop, castelo]
+
+  - id: backdrop.house.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      small cottage with white walls and red tiled roof,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 5
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261115
+    lod: [100]
+    tags: [muralha, backdrop, casa]
+
+  - id: backdrop.house.02
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      small stone farmhouse with thatched straw roof,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 5
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261116
+    lod: [100]
+    tags: [muralha, backdrop, casa]
+
+  - id: backdrop.tower.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      tall wooden watchtower with pointed roof,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 9
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261117
+    lod: [100]
+    tags: [muralha, backdrop, torre]
+
+  - id: backdrop.windmill.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      stone windmill with four wooden sails,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 9
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261118
+    lod: [100]
+    tags: [muralha, backdrop, moinho]
+
+  - id: backdrop.keep.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      square stone keep tower with battlements,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 10
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261119
+    lod: [100]
+    tags: [muralha, backdrop, torre]
+
+  - id: backdrop.tree.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      single round green oak tree,
+      single isolated object, full object in frame, white background, low poly toy, three-quarter view
+    altura_metros: 6
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: none
+    seed: 20261120
+    lod: [100]
+    tags: [muralha, backdrop, arvore]

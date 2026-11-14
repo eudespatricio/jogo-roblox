@@ -28,9 +28,18 @@ export type Record = {
 	wall: WallSnapshot,
 }
 
+export type WallTrap = {
+	cell: string?,
+	type: string,
+	level: number,
+	x: number?,
+	y: number?,
+}
+
 export type WallSnapshot = {
+	level: number?,
 	hp: number,
-	traps: { { cell: string, type: string, level: number } },
+	traps: { WallTrap },
 }
 
 export type BattleResult = {
@@ -54,9 +63,26 @@ local function isInteger(value: any): boolean
 		and numberValue % 1 == 0
 end
 
+local function isValidArenaPos(x: any, y: any): boolean
+	if not isInteger(x) or not isInteger(y) then
+		return false
+	end
+	local nx = x :: number
+	local ny = y :: number
+	return nx >= 1000
+		and nx <= 9000
+		and ny >= 500
+		and ny <= 4500
+		and nx % 250 == 0
+		and ny % 250 == 0
+end
+
 local function isValidWall(wall: any): (boolean, string?)
 	if type(wall) ~= "table" then
 		return false, "wall invalido"
+	end
+	if wall.level ~= nil and (not isInteger(wall.level) or wall.level < 1 or wall.level > 5) then
+		return false, "wall.level invalido"
 	end
 	if not isInteger(wall.hp) or wall.hp <= 0 then
 		return false, "wall.hp invalido"
@@ -68,14 +94,25 @@ local function isValidWall(wall: any): (boolean, string?)
 	for _ in pairs(wall.traps) do
 		count += 1
 	end
-	if count ~= #wall.traps or count > 5 then
+	if count ~= #wall.traps or count > 7 then
 		return false, "wall.traps invalido"
 	end
 	for index, trap in ipairs(wall.traps) do
 		if type(trap) ~= "table" then
 			return false, "wall.traps[" .. index .. "] invalido"
 		end
-		if type(trap.cell) ~= "string" or type(trap.type) ~= "string" then
+		if type(trap.type) ~= "string" then
+			return false, "wall.traps[" .. index .. "] invalido"
+		end
+		local hasPos = trap.x ~= nil or trap.y ~= nil
+		if hasPos then
+			if not isValidArenaPos(trap.x, trap.y) then
+				return false, "wall.traps[" .. index .. "] posicao invalida"
+			end
+			if trap.cell ~= nil and type(trap.cell) ~= "string" then
+				return false, "wall.traps[" .. index .. "] invalido"
+			end
+		elseif type(trap.cell) ~= "string" then
 			return false, "wall.traps[" .. index .. "] invalido"
 		end
 		if not isInteger(trap.level) or trap.level < 1 or trap.level > 5 then
@@ -200,9 +237,15 @@ function BattleLog.fromBattle(
 	if not wallOk then
 		return nil, wallErr
 	end
-	local wallCopy: WallSnapshot = { hp = wall.hp, traps = {} }
+	local wallCopy: WallSnapshot = { level = wall.level, hp = wall.hp, traps = {} }
 	for index, trap in ipairs(wall.traps) do
-		wallCopy.traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+		wallCopy.traps[index] = {
+			cell = trap.cell,
+			type = trap.type,
+			level = trap.level,
+			x = trap.x,
+			y = trap.y,
+		}
 	end
 	local record: Record = {
 		schemaVersion = BattleLog.SCHEMA_VERSION,
@@ -261,11 +304,18 @@ function BattleLog.markRewarded(record: Record, rewardGold: number): (Record?, s
 		rewarded = true,
 		rewardGold = rewardGold,
 		wall = {
+			level = record.wall.level,
 			hp = record.wall.hp,
-			traps = (function()
-				local traps = {}
+			traps = (function(): { WallTrap }
+				local traps: { WallTrap } = {}
 				for index, trap in ipairs(record.wall.traps) do
-					traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+					traps[index] = {
+						cell = trap.cell,
+						type = trap.type,
+						level = trap.level,
+						x = trap.x,
+						y = trap.y,
+					}
 				end
 				return traps
 			end)(),

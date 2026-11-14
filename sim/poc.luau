@@ -1,10 +1,9 @@
 --!nonstrict
--- Demo/benchmark do nucleo deterministico v2 (src/shared/sim/core.luau).
+-- Demo/benchmark do nucleo deterministico v4 (src/shared/sim/core.luau).
 -- Roda no Luau CLI:  luau sim/poc.luau
 local Core = require("../src/shared/sim/core")
 local Battle = Core.Battle
 local RNG = Core.RNG
-local TUNING = Core.TUNING
 local run = Core.Run
 
 print("=== 1. DETERMINISMO ===")
@@ -122,14 +121,14 @@ print("  -> " .. (ok and "OK: nenhum NaN/loop" or "FALHOU"))
 
 print("\n=== 7. VARREDURA DE CALIBRAGEM (vitoria do defensor %) ===")
 local waves = { 60, 75, 90 }
-local powers = { 200, 300, 380, 460, 540 }
+local powers = { 200, 270, 300, 380, 460 }
 local header = string.format("  %-13s", "power% \\ wave")
 for _, w in ipairs(waves) do
 	header ..= string.format("%6d", w)
 end
 print(header)
 for _, p in ipairs(powers) do
-	TUNING.powerPct = p
+	Core.setTuning({ powerPct = p })
 	local line = string.format("  %-13d", p)
 	for _, w in ipairs(waves) do
 		local w2 = 0
@@ -142,4 +141,4 @@ for _, p in ipairs(powers) do
 	end
 	print(line)
 end
-TUNING.powerPct = Core.DEFAULT_POWER_PCT
+Core.setTuning({ powerPct = Core.DEFAULT_POWER_PCT })

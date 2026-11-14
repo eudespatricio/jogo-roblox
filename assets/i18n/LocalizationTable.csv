@@ -13,12 +13,13 @@ cta_clip_8s,Replay/CTA,Button,CLIPE 8s,8s CLIP,CLIP 8s
 mode_place,Build/Mode,Mode button,COLOCAR,PLACE,COLOCAR
 mode_upgrade,Build/Mode,Mode button,MELHORAR,UPGRADE,MEJORAR
 mode_remove,Build/Mode,Mode button,REMOVER,REMOVE,QUITAR
+mode_move,Build/Mode,Mode button,MOVER,MOVE,MOVER
 trap_name_archer,Build/Trap,Card title,ARQUEIRO,ARCHER,ARQUERO
 trap_name_tar,Build/Trap,Card title,PICHE,TAR,BREA
 trap_name_frost,Build/Trap,Card title,GELO,FROST,HIELO
 trap_name_cannon,Build/Trap,Card title,CANHÃO,CANNON,CAÑÓN
 trap_name_catapult,Build/Trap,Card title,CATAPULTA,CATAPULT,CATAPULTA
-verb_archer,Build/Trap,Short verb,Disparo rápido na trilha.,Fast single-lane shot.,Disparo rápido en el carril.
+verb_archer,Build/Trap,Short verb,Disparo rápido em área 360°.,Fast 360° area shot.,Disparo rápido en área 360°.
 verb_tar,Build/Trap,Short verb,Retarda a horda no piso.,Slows enemies on the floor.,Ralentiza a la horda en el suelo.
 verb_frost,Build/Trap,Short verb,Congela o avanço na frente.,Chills incoming raiders.,Congela el avance en el frente.
 verb_cannon,Build/Trap,Short verb,Impacto pesado contra brutos.,Heavy blast vs brutes.,Impacto pesado contra brutos.
@@ -50,3 +51,13 @@ ping_focus,Coop/Ping,Quick ping,Foco aqui!,Focus here!,¡Foco aquí!
 ping_tar_here,Coop/Ping,Quick ping,Piche aqui!,Tar here!,¡Brea aquí!
 ping_frost_here,Coop/Ping,Quick ping,Gelo aqui!,Frost here!,¡Hielo aquí!
 ping_send_gold,Coop/Ping,Quick ping,Preciso de ouro,Need gold!,Necesito oro
+wall_hud,HUD/Wall,Wall status,MURALHA Nv%d · %d HP · %d/%d,WALL Lv%d · %d HP · %d/%d,MURALLA Nv%d · %d HP · %d/%d
+wall_max,HUD/Wall,Max cap,MÁX,MAX,MÁX
+combo_btn,Build/Combo,Toggle pill,? Combos,? Combos,? Combos
+combo_title,Build/Combo,Modal title,COMBOS DA MURALHA,WALL COMBOS,COMBOS DE MURALLA
+combo_tar_name,Build/Combo,Combo name,Piche Incendiário,Incendiary Tar,Brea Incendiaria
+combo_tar_desc,Build/Combo,Combo effect,Piche + Canhão/Catapulta (+25% dano),Tar + Cannon/Catapult (+25% dmg),Brea + Cañón/Catapulta (+25% daño)
+combo_frost_name,Build/Combo,Combo name,Choque Térmico,Thermal Shock,Choque Térmico
+combo_frost_desc,Build/Combo,Combo effect,Gelo + Canhão/Catapulta (+20% dano),Frost + Cannon/Catapult (+20% dmg),Hielo + Cañón/Catapulta (+20% daño)
+combo_battery_name,Build/Combo,Combo name,Bateria Cruzada,Cross Battery,Batería Cruzada
+combo_battery_desc,Build/Combo,Combo effect,Arqueiro perto de Arqueiro (-recarga),Archer near Archer (-cooldown),Arquero cerca de Arquero (-recarga)

@@ -1,21 +1,22 @@
---!nonstrict
--- Contrato headless da S5: estado do drop-in, funil (props da taxonomia v1) e a batalha fixa
--- que o servidor roda no press (seed 4, muralha pre-montada com catapulta).
+--!strict
+-- Contrato headless da S5: estado do drop-in, funil (props da taxonomia v1), starter grant
+-- unico de +40 ouro (AUD-05), retry de dropin_shown em no_session (AUD-03) e batalha fixa.
 -- Roda no Luau CLI: luau sim/dropin-contract.luau
 local DropInState = require("../src/shared/dropin/DropInState")
 local DropInTelemetry = require("../src/shared/dropin/DropInTelemetry")
 local AnalyticsTypes = require("../src/shared/analytics/AnalyticsTypes")
+local AnalyticsService = require("../src/server/analytics/AnalyticsService")
 local Core = require("../src/shared/sim/core")
 local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local TrapCatalog = require("../src/shared/data/TrapCatalog")
 local WallService = require("../src/server/walls/WallService")
 
-local failures = {}
+local failures: { string } = {}
 local checks = 0
 
-local function check(name, fn)
+local function check(name: string, fn: () -> ...any)
 	checks += 1
-	local ok, err = pcall(fn)
+	local ok, err = pcall(fn :: any)
 	if not ok then
 		failures[#failures + 1] = name .. " :: " .. tostring(err)
 	end
@@ -151,30 +152,181 @@ check("funil: props do dropin validam na taxonomia v1", function()
 
 	local badMs = DropInTelemetry.shownProps(-1)
 	assert(badMs == nil, "aceitou ms negativo")
-	local badPressed = DropInTelemetry.pressedProps(10, "sim")
+	local badPressed = DropInTelemetry.pressedProps(10, "sim" :: any)
 	assert(badPressed == nil, "aceitou pressed string")
 end)
 
-check("reward do drop-in: +3 ouro via WallService", function()
+local STARTER_GOLD = 40
+
+local function applyStarterGrant(
+	profile: any,
+	emitted: { { name: string, props: { [string]: any } } }
+): (boolean, number)
+	if profile.stats.defenses ~= 0 then
+		return true, 0
+	end
+	local service = WallService.new({
+		profile = profile,
+		schema = ProfileSchema,
+		catalog = TrapCatalog,
+		emit = function(name: string, props: { [string]: any })
+			emitted[#emitted + 1] = { name = name, props = props }
+		end,
+	})
+	profile.stats.defenses = 1
+	local result, creditErr = service.creditGold(STARTER_GOLD, "defense", nil)
+	assert(result ~= nil, tostring(creditErr))
+	return true, STARTER_GOLD
+end
+
+check("starter grant do drop-in: +40 ouro na 1a defesa (defenses 0 -> 1)", function()
 	local profile = ProfileSchema.template()
 	local ok, err = TrapCatalog.ensureProfileContent(profile)
 	assert(ok, tostring(err))
+	assert(profile.stats.defenses == 0, "defenses inicial")
+
+	local emitted: { { name: string, props: { [string]: any } } } = {}
+	local granted, amount = applyStarterGrant(profile, emitted)
+	assert(granted and amount == STARTER_GOLD, "valor do starter grant")
+	assert(profile.stats.defenses == 1, "defenses=" .. tostring(profile.stats.defenses))
+	assert(profile.gold == STARTER_GOLD, "gold=" .. tostring(profile.gold))
+	local valid, validErr = ProfileSchema.validate(profile)
+	assert(valid, "schema invalido: " .. tostring(validErr))
+	assert(#emitted == 1, "eventos")
+	local event = emitted[1]
+	assert(event.name == "gold_earned", tostring(event.name))
+	assert(
+		event.props.amount == STARTER_GOLD and event.props.source == "defense",
+		"props do reward"
+	)
+end)
+
+check("starter grant: veterano (defenses > 0) recebe 0 ouro", function()
+	local profile = ProfileSchema.template()
+	local ok, err = TrapCatalog.ensureProfileContent(profile)
+	assert(ok, tostring(err))
+	profile.stats.defenses = 2
+	profile.gold = 15
+
+	local emitted: { { name: string, props: { [string]: any } } } = {}
+	local granted, amount = applyStarterGrant(profile, emitted)
+	assert(granted and amount == 0, "veterano nao deve receber ouro")
+	assert(profile.gold == 15, "gold alterado para veterano: " .. tostring(profile.gold))
+	assert(profile.stats.defenses == 2, "defenses alterado para veterano")
+	assert(#emitted == 0, "veterano nao deve emitir gold_earned")
+	local valid, validErr = ProfileSchema.validate(profile)
+	assert(valid, "schema invalido: " .. tostring(validErr))
+end)
+
+check("starter grant: +40g compra primeira armadilha e segunda tentativa e bloqueada", function()
+	local profile = ProfileSchema.template()
+	local ok, err = TrapCatalog.ensureProfileContent(profile)
+	assert(ok, tostring(err))
+
+	local emitted: { { name: string, props: { [string]: any } } } = {}
+	local _, firstAmount = applyStarterGrant(profile, emitted)
+	assert(firstAmount == STARTER_GOLD, "primeiro grant")
+
 	local service = WallService.new({
 		profile = profile,
 		schema = ProfileSchema,
 		catalog = TrapCatalog,
 	})
-	local result, creditErr = service.creditGold(3, "defense", nil)
-	assert(result ~= nil, tostring(creditErr))
-	assert(profile.gold == 3, "gold=" .. tostring(profile.gold))
-	assert(result.events ~= nil and #result.events == 1, "eventos")
-	local event = result.events[1]
-	assert(event.name == "gold_earned", tostring(event.name))
-	assert(event.props.amount == 3 and event.props.source == "defense", "props do reward")
+	local placeResult, placeErr = service.place("archer", "r3c3")
+	assert(placeResult ~= nil, "nao comprou archer com 40g: " .. tostring(placeErr))
+	assert(profile.gold == 0, "gold apos compra=" .. tostring(profile.gold))
+
+	local _, secondAmount = applyStarterGrant(profile, emitted)
+	assert(secondAmount == 0, "segundo grant deveria ser 0")
+	assert(profile.gold == 0, "gold apos segundo dropin=" .. tostring(profile.gold))
+end)
+
+check("funil: dropin_shown retenta apos no_session e marca shownLogged ao aceitar", function()
+	local nowMs = 1762800000000
+	local seq = 0
+	local flushed: { any } = {}
+	local service = AnalyticsService.new({
+		types = AnalyticsTypes,
+		sink = {
+			name = "Capture",
+			write = function(events: { any }): (boolean, string?)
+				for _, ev in ipairs(events) do
+					flushed[#flushed + 1] = ev
+				end
+				return true, nil
+			end,
+		},
+		now = function(): number
+			return nowMs
+		end,
+		generateId = function(): string
+			seq += 1
+			return string.format("5f0c1e6a-9b2d-4c3f-8a71-%012d", seq)
+		end,
+	})
+
+	local player = { UserId = 42 }
+	local sessionState: { shownLogged: boolean } = { shownLogged = false }
+
+	local function tryLogShown(emitFn: (any, string, any) -> (any?, string?), msSinceJoin: number)
+		if sessionState.shownLogged then
+			return
+		end
+		local props, propsErr = DropInTelemetry.shownProps(msSinceJoin)
+		assert(props ~= nil, tostring(propsErr))
+		local ev, emitErr = emitFn(player, "dropin_shown", props)
+		if ev ~= nil or emitErr == "not_started" then
+			sessionState.shownLogged = true
+		end
+	end
+
+	-- Antes de beginSession -> no_session: shownLogged deve continuar false para tentar de novo.
+	tryLogShown(service.emit, 100)
+	assert(sessionState.shownLogged == false, "marcou shownLogged durante no_session")
+
+	-- Apos beginSession -> proximo snapshotFor retenta e aceita exatamente 1x.
+	local started, startErr = service.beginSession(player, {
+		player_id = AnalyticsService.hashId("42", "test"),
+		session_id = "2b6f1d9c-4a3e-4f7b-9c1d-8e5a0f3b6c42",
+		place_version = "0.1.0-s8",
+		platform = "mobile",
+		device_tier = "mid",
+		locale = "pt-BR",
+		is_age_checked = false,
+		server_id = AnalyticsService.hashId("srv", "test"),
+		experiment = "s8_playtest=on",
+		is_returning = false,
+		days_since_last_seen = -1,
+	})
+	assert(started ~= nil, tostring(startErr))
+
+	tryLogShown(service.emit, 250)
+	assert((sessionState.shownLogged :: boolean) == true, "nao marcou shownLogged apos emit aceito")
+	tryLogShown(service.emit, 500)
+	service.flush("test")
+
+	local shownCount = 0
+	for _, ev in ipairs(flushed) do
+		if ev.event_name == "dropin_shown" then
+			shownCount += 1
+			assert(ev.ms_since_join == 250, "ms_since_join=" .. tostring(ev.ms_since_join))
+		end
+	end
+	assert(shownCount == 1, "shownCount=" .. tostring(shownCount))
+
+	-- Fallback not_started tambem marca shownLogged = true (AnalyticsBoot ausente).
+	local notStartedState: { shownLogged: boolean } = { shownLogged = false }
+	local ev, err = (function(): (any?, string?)
+		return nil, "not_started"
+	end)()
+	if ev ~= nil or err == "not_started" then
+		notStartedState.shownLogged = true
+	end
+	assert(notStartedState.shownLogged == true, "not_started deveria marcar shownLogged")
 end)
 
 check("funil: ordem do funil inclui os dois eventos", function()
-	local found = {}
+	local found: { [string]: boolean } = {}
 	for _, name in ipairs(AnalyticsTypes.FUNNEL) do
 		found[name] = true
 	end

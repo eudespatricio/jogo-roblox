@@ -29,3 +29,7 @@ roblox.yml
 # renders gerados
 art/renders/
 .asphalt-debug/
+
+# ambiente Python local de audio/DSP
+.venv-audio/
+

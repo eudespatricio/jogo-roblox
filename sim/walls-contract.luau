@@ -87,11 +87,18 @@ local function seedGold(service, amount)
 	validateEvents(result.events)
 end
 
+local function cellEntry(cell: string, trap: string, level: number)
+	local cx, cy = ProfileSchema.cellToPos(cell)
+	assert(cx ~= nil and cy ~= nil, "cell invalida no teste: " .. cell)
+	return { trap = trap, level = level, x = cx, y = cy }
+end
+
 check("catalogo espelha o motor e desbloqueia por liga", function()
 	local okCatalog, catalogErr = TrapCatalog.validate()
 	assert(okCatalog, tostring(catalogErr))
-	assert(TrapCatalog.CONTENT_VERSION == 2, "CONTENT_VERSION")
-	assert(TrapCatalog.MAX_LEVEL == 3, "MAX_LEVEL")
+	assert(TrapCatalog.CONTENT_VERSION == 3, "CONTENT_VERSION")
+	assert(TrapCatalog.MAX_LEVEL == 5, "MAX_LEVEL")
+	assert(TrapCatalog.MAX_WALL_LEVEL == 5, "MAX_WALL_LEVEL")
 	assert(TrapCatalog.POINTS_PER_LEAGUE == 100, "POINTS_PER_LEAGUE")
 	-- Lista pinada: adicionar/renomear trap exige atualizar este teste, o doc, CONTENT_VERSION
 	-- e decidir simVersion (ver docs/economia-muralha.md secao 7).
@@ -100,7 +107,7 @@ check("catalogo espelha o motor e desbloqueia por liga", function()
 		"nova trap: atualize contrato/CONTENT_VERSION/simVersion"
 	)
 	assert(sortedKeys(TrapCatalog.GOLD_SOURCES) == "daily,defense,raid", "GOLD_SOURCES mudou")
-	assert(sortedKeys(TrapCatalog.GOLD_SINKS) == "trap,upgrade", "GOLD_SINKS mudou")
+	assert(sortedKeys(TrapCatalog.GOLD_SINKS) == "trap,upgrade,wall", "GOLD_SINKS mudou")
 	assert(TrapCatalog.leagueOf(0) == 1, "liga 0")
 	assert(TrapCatalog.leagueOf(99) == 1, "liga 99")
 	assert(TrapCatalog.leagueOf(100) == 2, "liga 100")
@@ -159,34 +166,34 @@ check("perfil carregado e validado contra o catalogo", function()
 	end
 
 	local unknown = newProfile()
-	unknown.wall.cells["r1c1"] = { trap = "tesla", level = 1 }
+	unknown.wall.cells["r1c1"] = cellEntry("r1c1", "tesla", 1)
 	rejects(unknown, "trap desconhecida")
 
 	local over = newProfile()
 	for col = 1, 5 do
-		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+		over.wall.cells["r1c" .. col] = cellEntry("r1c" .. col, "archer", 1)
 	end
-	over.wall.cells["r2c1"] = { trap = "archer", level = 1 }
+	over.wall.cells["r2c1"] = cellEntry("r2c1", "archer", 1)
 	rejects(over, "6 celulas")
 
 	local highLevel = newProfile()
-	highLevel.wall.cells["r1c1"] = { trap = "archer", level = 4 }
+	highLevel.wall.cells["r1c1"] = cellEntry("r1c1", "archer", 6)
 	rejects(highLevel, "level acima do cap")
 
 	local alias = newProfile()
-	alias.wall.cells["r01c1"] = { trap = "archer", level = 1 }
+	alias.wall.cells["r01c1"] = { trap = "archer", level = 1, x = 2000, y = 500 }
 	rejects(alias, "celula alias")
 
 	local lowLimit = newProfile()
 	lowLimit.wall.activeTrapLimit = 3
 	for col = 1, 5 do
-		lowLimit.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+		lowLimit.wall.cells["r1c" .. col] = cellEntry("r1c" .. col, "archer", 1)
 	end
 	rejects(lowLimit, "5 celulas com limite 3")
 
 	local valid = newProfile()
 	for col = 1, 5 do
-		valid.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+		valid.wall.cells["r1c" .. col] = cellEntry("r1c" .. col, "archer", 1)
 	end
 	local service =
 		WallService.new({ profile = valid, schema = ProfileSchema, catalog = TrapCatalog })
@@ -196,15 +203,15 @@ end)
 check("toBattleWall valida, ordena e reproduz o hash", function()
 	local profile = newProfile()
 	profile.wall.cells = {
-		r3c2 = { trap = "frost", level = 2 },
-		r1c5 = { trap = "tar", level = 1 },
-		r5c1 = { trap = "cannon", level = 3 },
-		r2c4 = { trap = "catapult", level = 1 },
-		r1c1 = { trap = "archer", level = 1 },
+		r3c2 = cellEntry("r3c2", "frost", 2),
+		r1c5 = cellEntry("r1c5", "tar", 1),
+		r5c1 = cellEntry("r5c1", "cannon", 3),
+		r2c4 = cellEntry("r2c4", "catapult", 1),
+		r1c1 = cellEntry("r1c1", "archer", 1),
 	}
-	local wall, err = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, 500)
+	local wall, err = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog)
 	assert(wall ~= nil, tostring(err))
-	assert(wall.hp == 500 and #wall.traps == 5, "hp/traps")
+	assert(wall.level == 1 and wall.hp == 500 and #wall.traps == 5, "hp/traps")
 	local order = {}
 	for index, trap in ipairs(wall.traps) do
 		order[index] = string.format("%s:%s:%d", trap.cell, trap.type, trap.level)
@@ -219,9 +226,9 @@ check("toBattleWall valida, ordena e reproduz o hash", function()
 	local reversed = newProfile()
 	for index = #wall.traps, 1, -1 do
 		local trap = wall.traps[index]
-		reversed.wall.cells[trap.cell] = { trap = trap.type, level = trap.level }
+		reversed.wall.cells[trap.cell] = cellEntry(trap.cell, trap.type, trap.level)
 	end
-	local reversedWall = assert(WallService.toBattleWall(reversed, ProfileSchema, TrapCatalog, 500))
+	local reversedWall = assert(WallService.toBattleWall(reversed, ProfileSchema, TrapCatalog))
 	local function hashOf(battleWall)
 		return Core.Battle
 			.new({
@@ -236,20 +243,20 @@ check("toBattleWall valida, ordena e reproduz o hash", function()
 
 	-- perfil invalido nao chega ao motor
 	local unknown = newProfile()
-	unknown.wall.cells.r1c1 = { trap = "tesla", level = 1 }
+	unknown.wall.cells.r1c1 = cellEntry("r1c1", "tesla", 1)
 	local invalid, invalidErr = WallService.toBattleWall(unknown, ProfileSchema, TrapCatalog, 500)
 	assert(invalid == nil and invalidErr ~= nil, "aceitou trap desconhecida")
 
 	local over = newProfile()
 	for col = 1, 5 do
-		over.wall.cells["r1c" .. col] = { trap = "archer", level = 1 }
+		over.wall.cells["r1c" .. col] = cellEntry("r1c" .. col, "archer", 1)
 	end
-	over.wall.cells.r2c1 = { trap = "archer", level = 1 }
+	over.wall.cells.r2c1 = cellEntry("r2c1", "archer", 1)
 	local tooMany, tooManyErr = WallService.toBattleWall(over, ProfileSchema, TrapCatalog, 500)
 	assert(tooMany == nil and tooManyErr ~= nil, "aceitou 6 ativas")
 
 	local highLevel = newProfile()
-	highLevel.wall.cells.r1c1 = { trap = "archer", level = 4 }
+	highLevel.wall.cells.r1c1 = cellEntry("r1c1", "archer", 6)
 	local capped, cappedErr = WallService.toBattleWall(highLevel, ProfileSchema, TrapCatalog, 500)
 	assert(capped == nil and cappedErr ~= nil, "aceitou level acima do cap")
 end)
@@ -380,10 +387,118 @@ check("upgrade debita ouro, sobe nivel e emite eventos", function()
 
 	local second = assert(service.upgrade("r1c1"))
 	assert(second.level == 3 and second.cost == 60, "upgrade 2->3")
+	local third = assert(service.upgrade("r1c1"))
+	assert(third.level == 4 and third.cost == 90, "upgrade 3->4")
+	local fourth = assert(service.upgrade("r1c1"))
+	assert(fourth.level == 5 and fourth.cost == 120, "upgrade 4->5")
+	validateEvents(fourth.events)
 	local goldAtMax = profile.gold
-	local third, maxErr = service.upgrade("r1c1")
-	assert(third == nil and maxErr == "max_level", tostring(maxErr))
+	local fifth, maxErr = service.upgrade("r1c1")
+	assert(fifth == nil and maxErr == "max_level", tostring(maxErr))
 	assert(profile.gold == goldAtMax, "gold mudou no max")
+end)
+
+check("placeAt livre (step 250), tooClose e move 0g", function()
+	local service, profile = newHarness()
+	seedGold(service, 500)
+	local placed, err = service.placeAt("archer", 1250, 750)
+	assert(placed ~= nil, tostring(err))
+	assert(placed.slot == "t1" and placed.x == 1250 and placed.y == 750, "slot/pos placeAt")
+	assert(placed.cell == nil, "fora de centro 5x5 nao tem cell")
+	validateEvents(placed.events)
+
+	local badStep, stepErr = service.placeAt("archer", 1100, 750)
+	assert(badStep == nil and stepErr == "invalid_position", tostring(stepErr))
+
+	local close, closeErr = service.placeAt("archer", 2000, 1500)
+	assert(close == nil and closeErr == "too_close", tostring(closeErr))
+
+	profile.league.points = 100
+	local second = assert(service.placeAt("tar", 2250, 1500, "p2_slot"))
+	assert(second.slot == "p2_slot", "slot customizado")
+
+	local badMove, badMoveErr = service.move("p2_slot", 1750, 1250)
+	assert(badMove == nil and badMoveErr == "too_close", tostring(badMoveErr))
+
+	local goldBefore = profile.gold
+	local moved, moveErr = service.move("t1", 1000, 500)
+	assert(moved ~= nil, tostring(moveErr))
+	assert(moved.cost == 0 and profile.gold == goldBefore, "move deve custar 0g")
+	assert(profile.wall.cells.t1.x == 1000 and profile.wall.cells.t1.y == 500, "move nao persistiu")
+	assert(#moved.events == 1 and moved.events[1].name == "trap_moved", "evento trap_moved")
+	validateEvents(moved.events)
+
+	local battleWall = assert(WallService.toBattleWall(profile, ProfileSchema, TrapCatalog))
+	assert(#battleWall.traps == 2, "2 traps no battleWall")
+	assert(battleWall.traps[1].x == 1000 and battleWall.traps[2].x == 2250, "ordenacao (y,x)")
+end)
+
+check("upgradeWall 1..5 valida liga/ouro, sobe hp/limite e emite eventos", function()
+	local service, profile = newHarness()
+	seedGold(service, 3000)
+
+	-- Liga 1: Nv1 -> Nv2 permitido (150g, HP 650, limite 5)
+	local up2, err2 = service.upgradeWall()
+	assert(up2 ~= nil, tostring(err2))
+	assert(profile.wall.level == 2 and service.snapshot().wallHp == 650, "wall Nv2")
+	validateEvents(up2.events)
+
+	-- Liga 1: Nv2 -> Nv3 exige liga 3
+	local locked, lockedErr = service.upgradeWall()
+	assert(locked == nil and lockedErr == "wall_locked", tostring(lockedErr))
+
+	profile.league.points = 200 -- liga 3
+	local up3 = assert(service.upgradeWall())
+	assert(profile.wall.level == 3 and profile.wall.activeTrapLimit == 6, "wall Nv3 limite 6")
+	validateEvents(up3.events)
+
+	profile.league.points = 400 -- liga 5
+	local up4 = assert(service.upgradeWall())
+	assert(profile.wall.level == 4 and service.snapshot().wallHp == 1000, "wall Nv4")
+	validateEvents(up4.events)
+	local up5 = assert(service.upgradeWall())
+	assert(
+		profile.wall.level == 5
+			and profile.wall.activeTrapLimit == 7
+			and service.snapshot().wallHp == 1250,
+		"wall Nv5"
+	)
+	validateEvents(up5.events)
+
+	local overMax, maxWallErr = service.upgradeWall()
+	assert(overMax == nil and maxWallErr == "max_wall_level", tostring(maxWallErr))
+
+	-- Com muralha Nv5, cabem 7 armadilhas ativas e toBattleWall usa HP 1250
+	for col = 1, 5 do
+		assert(service.place("archer", "r1c" .. col))
+	end
+	assert(service.place("archer", "r2c1"))
+	assert(service.place("archer", "r2c2"))
+	local battleWall = assert(WallService.toBattleWall(profile, ProfileSchema, TrapCatalog))
+	assert(
+		battleWall.level == 5 and battleWall.hp == 1250 and #battleWall.traps == 7,
+		"7 traps Nv5"
+	)
+end)
+
+check("equipCosmetic valida posse/slot e emite cosmetic_equipped", function()
+	local service, profile = newHarness()
+	profile.cosmetics.theme_obsidian = true
+
+	local eq, err = service.equipCosmetic("theme", "theme_obsidian")
+	assert(eq ~= nil, tostring(err))
+	assert(profile.equipped.theme == "theme_obsidian", "theme nao equipou")
+	assert(service.snapshot().equipped.theme == "theme_obsidian", "snapshot sem equipped")
+	validateEvents(eq.events)
+
+	local defEq = assert(service.equipCosmetic("commander", "cmd_vorn"))
+	validateEvents(defEq.events)
+
+	local unowned, unownedErr = service.equipCosmetic("theme", "theme_gold")
+	assert(unowned == nil and unownedErr == "not_owned", tostring(unownedErr))
+
+	local badSlot, badSlotErr = service.equipCosmetic("weapon", "theme_obsidian")
+	assert(badSlot == nil and badSlotErr == "invalid_slot", tostring(badSlotErr))
 end)
 
 check("remove apaga a celula e nao devolve ouro", function()

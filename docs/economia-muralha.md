@@ -1,4 +1,4 @@
-# Economia da muralha — S3/S3.4 (10/11/2026)
+# Economia da muralha — P2 Wave 1 (13/11/2026)
 
 > Primeira calibragem da P1. Os números são ponto de partida; mudança de custo/desbloqueio exige
 > atualizar este documento **e** o contrato (`sim/walls-contract.luau`). Processo completo de
@@ -22,17 +22,20 @@ O catálogo espelha os **5 tipos que o motor v3 simula** (`Core.TRAP` / `Core.TR
 | `catapult` | 180 | 130 | liga 5 (400 pontos) |
 
 - **Fonte única:** `src/shared/data/TrapCatalog.luau` (`TRAPS`, `TRAP_IDS`, `TRAP_ALIASES`,
-  `MAX_LEVEL`, `POINTS_PER_LEAGUE`, `GOLD_SOURCES`, `GOLD_SINKS`, `CONTENT_VERSION`). O
-  `WallService` recebe o catálogo por injeção; não há cópia de custos no serviço.
+  `MAX_LEVEL`, `MAX_WALL_LEVEL`, `WALL_LEVELS`, `POINTS_PER_LEAGUE`, `GOLD_SOURCES`, `GOLD_SINKS`,
+  `CONTENT_VERSION`). O `WallService` recebe o catálogo por injeção; não há cópia de custos no
+  serviço.
 - **Liga:** `TrapCatalog.leagueOf(points) = 1 + floor(points / 100)`.
 - **Upgrade:** do nível `n` para `n+1` custa `upgrade * n` (nível atual). Ex.: archer 1→2 = 30;
-  2→3 = 60. No modo UPGRADE a UI mostra a faixa `upgrade/2*upgrade` (30/60); ao tocar na célula o
-  status mostra o custo exato pelo nível atual e, após a ação, o valor realmente debitado.
-- **Nível máximo:** **3** (`TrapCatalog.MAX_LEVEL`, GDD §5). O schema aceita até 5 para expansão
-  futura, mas a economia da P1 trava em 3.
-- **N=5 ativas**, célula `rXcY` (linha = lane, coluna = profundidade), colocação livre nas 25.
-- O limite efetivo é `min(profile.wall.activeTrapLimit, schema.ACTIVE_TRAP_LIMIT)`: o perfil manda,
-  mas a S3 nunca passa de 5.
+  2→3 = 60; 3→4 = 90; 4→5 = 120. No modo UPGRADE a UI mostra a faixa `upgrade/4*upgrade` (30/120).
+- **Nível máximo de armadilha:** **5** (`TrapCatalog.MAX_LEVEL = 5`).
+- **Tiers da muralha (`WALL_LEVELS`, Nv1..Nv5):** Nv1 (0g, liga 1, 500 HP, 5 traps), Nv2 (150g, liga
+  1, 650 HP, 5 traps), Nv3 (350g, liga 3, 800 HP, 6 traps), Nv4 (700g, liga 4, 1000 HP, 6 traps),
+  Nv5 (1200g, liga 5, 1250 HP, 7 traps).
+- **Colocação livre (`schema v3` / `Core v5`):** grade 5×5 compatível (`r1c1..r5c5`) + arena
+  contínua `x ∈ [1000,9000]`, `y ∈ [500,4500]` quantizada em passo `250`, com distância mínima
+  `minSpacing = 1000` (`not tooClose`). Limite efetivo `min(profile.wall.activeTrapLimit,
+  WALL_LEVELS[wall.level].trapLimit)` (5 a 7).
 
 ## 2. Ouro
 
@@ -46,42 +49,48 @@ O catálogo espelha os **5 tipos que o motor v3 simula** (`Core.TRAP` / `Core.TR
 
 ## 3. Persistência
 
-`WallService` muta o `Profile.Data` vivo:
+`WallService` muta o `Profile.Data` vivo (schema v3):
 
-- `profile.wall.cells[cell] = { trap = trapId, level = 1 }`;
-- `profile.gold -= custo` (place/upgrade) ou `+= amount` (creditGold).
+- `profile.wall.cells[slot] = { trap = trapId, level = 1, x = x, y = y }`;
+- `profile.wall.level` (1..5), `profile.wall.activeTrapLimit` (5..7) e `profile.equipped`;
+- `profile.gold -= custo` (`place`/`upgrade`/`upgradeWall`) ou `+= amount` (`creditGold`).
 
 Depois de cada operação o serviço roda `ProfileSchema.validate(profile)` e falha alto se o estado
 não for válido. O `ProfileStore` autosalva o `Profile.Data`; o serviço não chama `Save` (a S4/S6
 decidem o momento de persistência explícita).
 
 Na criação, `WallService.new` roda `WallService.validateWall` e **falha fechado** se o perfil
-carregar trap desconhecida, célula fora da grade/alias, mais ativos que o limite, nível acima do
-cap econômico ou `contentVersion` diferente do catálogo. Esses dados nunca chegam ao motor
-(`Battle.new`). O boot (`ProfileBoot`) roda `TrapCatalog.ensureProfileContent` antes de expor
-`Data`: perfil v1 é reparado (`oil → tar`) e perfil futuro é recusado (`content_future`).
+carregar trap desconhecida, slot/posição inválidos, colisão `tooClose`, mais ativos que o limite,
+nível acima do cap econômico ou `contentVersion` diferente do catálogo. Esses dados nunca chegam ao
+motor (`Battle.new`). O boot (`ProfileBoot`) roda `TrapCatalog.ensureProfileContent` antes de expor
+`Data`: perfil antigo é reparado (`oil → tar`) e perfil futuro é recusado (`content_future`).
 
-A ponte perfil → motor é `WallService.toBattleWall(profile, schema, catalog, hp)`: ele roda
-`validateWall`, converte `wall.cells` em `wall.traps` e ordena por célula (linha, coluna). A S4/S6
-não monta `wall.traps` à mão; perfil inválido devolve `nil + erro` e não chega ao `Battle.new`.
+A ponte perfil → motor é `WallService.toBattleWall(profile, schema, catalog, hp?)`: ela roda
+`validateWall`, usa `WALL_LEVELS[wall.level].hp` por padrão, converte `wall.cells` em
+`wall.traps` (com `cell` quando em centro exato da grade 5×5) e ordena por `(y, x)`. A S4/S6 não
+montam `wall.traps` à mão; perfil inválido devolve `nil + erro` e não chega ao `Battle.new`.
 
-## 4. Eventos (taxonomia v1)
+## 4. Eventos (taxonomia v2)
 
 | Ação | Eventos |
 |---|---|
-| colocar | `trap_placed` (`trap_id`, `cell`, `cost`) + `gold_spent` (`amount`, `sink="trap"`) |
-| evoluir | `upgrade_bought` (`target=cell`, `level`, `cost`) + `gold_spent` (`amount`, `sink="upgrade"`) |
+| colocar | `trap_placed` (`trap_id`, `cost`, `x`, `y`, `level`, `slot?`, `cell?`) + `gold_spent` (`sink="trap"`) |
+| mover (0g) | `trap_moved` (`slot`, `trap_id`, `level`, `from_x`, `from_y`, `x`, `y`) |
+| evoluir trap | `upgrade_bought` (`target=slot`, `level`, `cost`, `trap_id?`, `x?`, `y?`) + `gold_spent` (`sink="upgrade"`) |
+| evoluir muralha | `wall_upgraded` (`from_level`, `level`, `cost`) + `gold_spent` (`sink="wall"`) |
+| equipar cosmético | `cosmetic_equipped` (`slot`, `cosmetic_id`) |
 | creditar ouro | `gold_earned` (`amount`, `source`, `battle_id?`) |
 | remover | nenhum (a taxonomia não tem `trap_removed`) |
 
 O serviço devolve `events = { { name, props } }` e, se receber `emit`, publica `emit(name, props)`.
-O envelope/`event_id`/sink é responsabilidade do `AnalyticsService` (S7, implementado em
-10/11/2026); o contrato monta o envelope e valida cada evento com `AnalyticsTypes.validate`.
+O envelope/`event_id`/sink é responsabilidade do `AnalyticsService` (S7/P2); o contrato monta o
+envelope e valida cada evento com `AnalyticsTypes.validate` (`SCHEMA_VERSION = 2`).
 
 ## 5. Erros estáveis
 
-`invalid_cell`, `cell_occupied`, `empty_cell`, `trap_limit`, `unknown_trap`, `trap_locked`,
-`insufficient_gold`, `max_level`, `gold_cap`, `invalid_amount`, `invalid_source`,
+`invalid_cell`, `invalid_slot`, `invalid_position`, `too_close`, `cell_occupied`, `empty_cell`,
+`trap_limit`, `unknown_trap`, `trap_locked`, `insufficient_gold`, `max_level`, `max_wall_level`,
+`wall_locked`, `not_owned`, `unknown_cosmetic`, `gold_cap`, `invalid_amount`, `invalid_source`,
 `content_version`, `content_future`.
 
 ## 6. API e teste
@@ -147,5 +156,5 @@ e a calibração da curva do Dia 1 (gargalo de `0g` inicial vs `40g` da 1ª arma
 adicionar em `TrapCatalog.GOLD_SOURCES`/`GOLD_SINKS`. O teste de contrato valida cada chave contra
 `AnalyticsTypes` e falha se o enum não existir.
 
-**Pendência para conteúdo em produção e playtest:** GAP-004, GAP-005, GAP-008, GAP-013, GAP-014, GAP-015, GAP-016 e GAP-017 em [`gaps.md`](gaps.md).
+**Pendência para conteúdo em produção e playtest:** GAP-005, GAP-013, GAP-018, GAP-019 e GAP-020 em [`gaps.md`](gaps.md).
 `CONTENT_VERSION` já é persistido no perfil (`contentVersion`) com reparo/recusa no boot **e no `BattleLog` da S6** (`GAP-011` fechado); o GAP-009 (ProfileStore real com schema v2) foi fechado no Modo B em 10/11/2026. Antes do playtest de 3 semanas, fechar o deadlock `0g` vs `40g` + `GAP-014` via [`plano-playtest-v1.md`](plano-playtest-v1.md).

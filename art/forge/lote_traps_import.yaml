@@ -1,0 +1,340 @@
+# Forge3D 0.6.0 — rota `import`: armadilhas L1-L5 modeladas por script (art/scripts/make_traps.py)
+# GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
+# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
+schema: forge3d/spec@1
+
+projeto: muralha
+perfil: roblox-r15
+destino_exportacao: ~/.local/state/forge3d/saida/muralha_traps
+estilo_global: lowpoly_lit
+
+politica:
+  falha: continuar
+  custo_max_min: 5
+  seed_base: 20261113
+
+lote:
+  - id: trap.archer.l1.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_archer_l1.glb
+    altura_metros: 1.5016   # 5.3627 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, archer, l1]
+
+  - id: trap.archer.l2.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_archer_l2.glb
+    altura_metros: 1.505   # 5.3751 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, archer, l2]
+
+  - id: trap.archer.l3.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_archer_l3.glb
+    altura_metros: 1.4884   # 5.3158 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, archer, l3]
+
+  - id: trap.archer.l4.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_archer_l4.glb
+    altura_metros: 1.5297   # 5.4633 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, archer, l4]
+
+  - id: trap.archer.l5.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_archer_l5.glb
+    altura_metros: 1.5301   # 5.4648 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, archer, l5]
+
+  - id: trap.tar.l1.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_tar_l1.glb
+    altura_metros: 0.2864   # 1.0227 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, tar, l1]
+
+  - id: trap.tar.l2.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_tar_l2.glb
+    altura_metros: 0.285   # 1.018 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, tar, l2]
+
+  - id: trap.tar.l3.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_tar_l3.glb
+    altura_metros: 0.3478   # 1.2421 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, tar, l3]
+
+  - id: trap.tar.l4.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_tar_l4.glb
+    altura_metros: 0.345   # 1.2322 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, tar, l4]
+
+  - id: trap.tar.l5.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_tar_l5.glb
+    altura_metros: 0.3472   # 1.2399 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, tar, l5]
+
+  - id: trap.frost.l1.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_frost_l1.glb
+    altura_metros: 1.2324   # 4.4015 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, frost, l1]
+
+  - id: trap.frost.l2.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_frost_l2.glb
+    altura_metros: 1.2317   # 4.3991 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, frost, l2]
+
+  - id: trap.frost.l3.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_frost_l3.glb
+    altura_metros: 1.2331   # 4.404 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, frost, l3]
+
+  - id: trap.frost.l4.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_frost_l4.glb
+    altura_metros: 1.2376   # 4.4201 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, frost, l4]
+
+  - id: trap.frost.l5.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_frost_l5.glb
+    altura_metros: 1.2335   # 4.4053 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, frost, l5]
+
+  - id: trap.cannon.l1.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_cannon_l1.glb
+    altura_metros: 0.8577   # 3.0631 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, cannon, l1]
+
+  - id: trap.cannon.l2.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_cannon_l2.glb
+    altura_metros: 0.8586   # 3.0665 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, cannon, l2]
+
+  - id: trap.cannon.l3.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_cannon_l3.glb
+    altura_metros: 0.9144   # 3.2656 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, cannon, l3]
+
+  - id: trap.cannon.l4.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_cannon_l4.glb
+    altura_metros: 0.918   # 3.2784 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, cannon, l4]
+
+  - id: trap.cannon.l5.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_cannon_l5.glb
+    altura_metros: 0.9126   # 3.2593 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, cannon, l5]
+
+  - id: trap.catapult.l1.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_catapult_l1.glb
+    altura_metros: 1.384   # 4.9428 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, catapult, l1]
+
+  - id: trap.catapult.l2.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_catapult_l2.glb
+    altura_metros: 1.3873   # 4.9546 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, catapult, l2]
+
+  - id: trap.catapult.l3.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_catapult_l3.glb
+    altura_metros: 1.3839   # 4.9426 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, catapult, l3]
+
+  - id: trap.catapult.l4.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_catapult_l4.glb
+    altura_metros: 1.3902   # 4.9649 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, catapult, l4]
+
+  - id: trap.catapult.l5.01
+    tipo: prop_estatico
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/trap_catapult_l5.glb
+    altura_metros: 1.3981   # 4.9931 studs
+    pivot: base
+    limite_triangulos: 1500
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, trap, catapult, l5]

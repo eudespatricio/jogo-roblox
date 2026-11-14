@@ -16,20 +16,21 @@ local Core = require("../../src/shared/sim/core")
 local ProfileSchema = require("../../src/shared/data/ProfileSchema")
 local TrapCatalog = require("../../src/shared/data/TrapCatalog")
 local WallService = require("../../src/server/walls/WallService")
-local fixtureV1 = require("../../sim/fixtures/profile-v1")
+local fixtureV2 = require("../../sim/fixtures/profile-v2")
 
--- Perfil congelado antes da migracao. No proximo schema, troque por profile-v2.luau.
-local OLD_PROFILE = fixtureV1
+-- Perfil v2 congelado antes da migracao v2 -> v3.
+local OLD_PROFILE = fixtureV2
 
 local SEED = 42
 local WAVE = 70
 local HP = 500
 
--- Parede como o perfil antigo a escrevia. Congele aqui ANTES de mudar o schema.
+-- Parede como o perfil v2 a escrevia (r1c1 e r3c3 ordenados por (row, col) = (y, x)).
 local OLD_WALL = {
 	hp = HP,
 	traps = {
-		{ cell = "r1c1", type = "oil", level = 2 },
+		{ cell = "r1c1", type = "tar", level = 2 },
+		{ cell = "r3c3", type = "archer", level = 1 },
 	},
 }
 
@@ -52,10 +53,20 @@ local function hashOf(wall)
 	return result.hash, result
 end
 
--- O motor v3 nao conhece `oil`; injeta o alias so para reproduzir a parede antiga.
-Core.TRAP.oil = Core.TRAP.tar
-local oldHash, oldResult = hashOf(OLD_WALL)
-Core.TRAP.oil = nil
+-- Core.TRAP e congelada; resolve aliases legados na copia para reproduzir a parede antiga.
+assert(table.isfrozen(Core.TRAP), "Core.TRAP deveria estar congelada")
+local aliasedOldWall = {
+	hp = OLD_WALL.hp,
+	traps = {},
+}
+for _, trap in ipairs(OLD_WALL.traps) do
+	aliasedOldWall.traps[#aliasedOldWall.traps + 1] = {
+		cell = trap.cell,
+		type = TrapCatalog.TRAP_ALIASES[trap.type] or trap.type,
+		level = trap.level,
+	}
+end
+local oldHash, oldResult = hashOf(aliasedOldWall)
 local newHash, newResult = hashOf(migratedWall)
 
 print(string.format("poc neutra: simVersion=%d seed=%d", Core.SIM_VERSION, SEED))

@@ -1,21 +1,28 @@
 # CONTINUAR — handoff de sessão
 
-**Data:** 13/11/2026 · **Status:** **P1 EM PAUSA** — **S1–S3.4 fechadas** (S3.4 com Modo B real);
-**S4 fechada** (QA runtime: FPS 60/60, Play→UI 1,9 s); **S5 fechada** (drop-in, funil e +3 ouro);
-**S6.1 fechada** (raid, fantasma real e replay 3D); **S7 fechada** (telemetria, contrato 34/34,
-sink persistente e `first_win_seconds`); **S8 fechada** (apresentação visual: diorama, traps/horda
-3D, UI, VFX/SFX); GAP-011 fechado na S6; GAP-012 fechado na S8; GAP-004/005/008/013..020 abertos · base
-de código `2a50bbd`; docs de pausa/pesquisa/auditoria e pacote 3 Pilares + Co-op/Física/Jogo Completo (13/11) no topo, CI verde. Este arquivo é autossuficiente: a conversa pode ser fechada.
+**Data:** 13/11/2026 · **Status:** **P2 COMPLETA + PLAYTEST V1.1 ENTREGUE** — `schema=3`, `content=3`, `simVersion=6` (`hash=1245379674`), `analytics=2`; **GAP-004, GAP-008, GAP-015 e GAP-016** fechados ponta a ponta.
 
-> **GAP (13/11/2026):** GAP-001/002/003/009/010 fechados na S3.4; **GAP-011 fechado na S6**
-> (`contentVersion` no `BattleLog`); **GAP-012 fechado na S7/S8** (`AnalyticsDataStoreSink` com
-> DataStore/Memory + contrato 34/34). Restam GAP-004/005/008/013..020 em `docs/gaps.md`.
+> **Playtest v1.1 (13/11/2026):** `Core v6` (Arqueiro com mira circular 360° + prévia de raio no Build), botões separados **DEFEND** (própria muralha) e **ATTACK** (muralha rival), luta ao vivo em tempo real (`60s` em `1×`, toggle `1×/2×/3×/4×`, resultado só no fim + botão `REPLAY` comprimido de `20s`), portal gótico-arcano com vórtice (`PROP_rift_portal`), horda híbrida articulada a `60 Hz` encarando a muralha (`CMD_runner`/`CMD_brute`/`CMD_swarm` + pernas/braços/cutelo/orbes animados), terreno continental alinhado acima do mar e UI uniforme.
 
-GAP: GAP-004, GAP-005, GAP-008, GAP-013, GAP-014, GAP-015, GAP-016, GAP-017, GAP-018, GAP-019, GAP-020 · classes/taxonomia v2, live ops, ticket regional, auditoria S6.1/S7/S8, extensibilidade P2, co-op síncrono/campanha/bosses, áudio/OST/física real híbrida e sistemas de jogo completo abertos · fechar GAP-014/017 (e camada client de GAP-019) antes/durante playtest P1 e demais na P2+ · ver docs/gaps.md
+> **GAP (13/11/2026):** **GAP-001/002/003/009/010/011/012/014/017** fechados na P1/Playtest V1; **GAP-004/008/015/016** fechados em 13/11/2026 (`schema=3`, `content=3`, `sim=6`, `analytics=2`). Restam **GAP-005/013/018/019(F1/BGM)/020** em `docs/gaps.md`.
 
-> **Transição de janela:** S1–S8 fechadas em 10/11/2026. A próxima sessão mede a saída da P1 no
-> teste de 3 semanas (sink persistente pronto) e faz o QA visual do S8 no Studio. Não reabra
-> S6.1/S6/S7/S8 e não inicie P2.
+GAP: GAP-005, GAP-013, GAP-018, GAP-019, GAP-020 · P2 + Playtest v1.1 fechou GAP-004, GAP-008, GAP-015 e GAP-016 ponta a ponta (schema v3, content v3, sim v6 Arqueiro 360°, analytics v2, DEFEND vs ATTACK, luta 60s real-time + REPLAY 20s, horda alinhada e 75 assets Open Cloud); seguem abertos live ops (GAP-005), ticket regional (GAP-013), co-op síncrono/campanha/bosses (GAP-018), F1/stems BGM (GAP-019) e sistemas comerciais (GAP-020) · ver docs/gaps.md
+
+> **Entrega P2 Wave 2 & Arte/VFX/Áudio (13/11/2026):**
+> - **Client 3D & UX (`BuildClient`/`RaidClient`/`DropInClient`/`BuildHud`/`I18n`):** colocação livre em `step 250` com disco verde/vermelho, `MOVE` (`0g`), upgrade/remoção por slot (`L1..L5`), pill de upgrade da muralha `Nv1..5`, Guia de Combos `?` (`PT/EN/ES`, `62` chaves), e controle de velocidade do ataque `1×/2×/3×` (`1×` em ~20s com `tick % 4`).
+> - **Visual, VFX & Open Cloud (75/75 `Approved`):** `ArenaVisual` com lanes naturais + `Backdrop` + 40 malhas (`WallAssets`/`MeshAssets`/`BackdropAssets`) + 35 SFX (`AudioAssets`/`AudioKit`) + `Vfx.trapEffect` para habilidades e combos elementais.
+> - **Próximo passo:** publicar place no Studio logado na conta `11966727684` (para `InsertService:LoadAsset`), fazer QA mobile e decidir Campanha/Bosses (`GAP-018`).
+
+> **Entrega P2 Wave 1 (13/11/2026):**
+> - **Schema & Conteúdo v3 (`GAP-004`, `GAP-016`):** `ProfileSchema v3` (`wall.level` 1..5, `activeTrapLimit` 5..7, `cells[slot]={trap,level,x,y}`, `equipped={theme,hordeSkin,finisher,commander}`, migração `0/1/2->3` com fixture `sim/fixtures/profile-v2.luau`), `TrapCatalog v3` (`MAX_LEVEL=5`, `WALL_LEVELS` Nv1..5, sink `"wall"`).
+> - **Serviço & Protocolo Contínuo:** `WallService` (`placeAt`, `move` 0g, `upgrade` Nv1..5, `upgradeWall` 1..5, `equipCosmetic`, `toBattleWall` por `(y,x)` + HP por nível, props `AnalyticsTypes v2`), `GridLayout.arenaPosToWorld`/`worldToArenaPos` (step 250, paridade nos 25 centros), `BuildProtocol` (6 ações + snapshot v3), `WallController` e `BuildGrid`.
+> - **Raid & BotPhantoms (`GAP-015`):** `BattleLog`, `PhantomStore`, `BotPhantoms` (L1..L5, HP `500..1250`, até 7 armadilhas `{type,level,x,y,cell?}`), `RaidController` e `DropInController` alinhados ao v3.
+
+> **Entrega Playtest V1 (13/11/2026):**
+> - **S8.1 (`GAP-014` fechado):** `WallController` injeta `emit` + cooldown `150ms` + `build_complete`; `DropInController` garante retry `dropin_shown` e bônus único `40g`; `BotPhantoms` (10 bots L1..L5) + `PhantomStore` sharded 8 slots/liga sem PII + zero self-raid + fadiga/Elo/1-write `BattleLogStore`; `AnalyticsBoot` normaliza `es-419 -> es-MX`.
+> - **S8.2 (`GAP-017` fechado + client `GAP-019` + i18n):** `I18n.luau` (`51/51` chaves PT-BR/EN/ES, toggle `[PT|EN|ES]`), `HordeKit` (`RootPart` anti-afundamento, `<=8` partes, hit-squash 90ms), `TrapKit` (`floorTopY`, chevrons L1..L3, deploy/recoil), `ArenaVisual` (25 tiles raycast + braziers/pilares), `Vfx` (F2 ragdoll/fratura `CanQuery=false`, cap `12` projéteis), `AudioKit` (`MuralhaMaster`/`BGM_Bus` offline-safe), `BuildClient` tap-to-build 3D, `RaidClient` botões `44px`, e `check.sh` com `luau-lsp --platform=roblox` completo (`0` erros).
+> - **S8.3 (`simVersion 4`):** `Core` v4 (`hash=1793200753`, `67,5%` defensor em `1.000` seeds), smart trigger (`cd` só reseta em hit), `uSlowPct` por unidade, Piche Incendiário (`+25%`), Choque Térmico (`+20%`), Bateria Cruzada (`-1t` cd adjacente, piso `8t`) e `table.freeze`.
+> - **Próximo passo:** QA visual mobile (`375×812` / `720×1280` em PT-BR/EN/ES) segundo [`docs/teste-s8-studio.md`](docs/teste-s8-studio.md) e medição de `first_win_seconds` no teste de 3 semanas. Não iniciar P2 (`schema v3`) sem autorização.
 
 ---
 

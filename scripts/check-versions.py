@@ -2,12 +2,13 @@
 """Gate de versoes (GAP-007): fonte executavel x bloco de docs/versoes.md.
 
 Compara `ProfileSchema.SCHEMA_VERSION`, `TrapCatalog.CONTENT_VERSION`,
-`Core.SIM_VERSION` e o hash de referencia da seed 42 (`sim/acceptance.luau`)
+`Core.SIM_VERSION`, o hash de referencia da seed 42 (`sim/acceptance.luau`)
+e `AnalyticsTypes.SCHEMA_VERSION` (taxonomia, P2)
 com o bloco documentado. Falha o processo se qualquer valor divergir.
 
 Uso:
     python3 scripts/check-versions.py            # valida e imprime o resumo
-    python3 scripts/check-versions.py --values   # valida e imprime "schema content sim hash"
+    python3 scripts/check-versions.py --values   # valida e imprime "schema content sim hash analytics"
 """
 
 from __future__ import annotations
@@ -23,10 +24,11 @@ SCHEMA_SOURCE = ROOT / "src" / "shared" / "data" / "ProfileSchema.luau"
 CONTENT_SOURCE = ROOT / "src" / "shared" / "data" / "TrapCatalog.luau"
 SIM_SOURCE = ROOT / "src" / "shared" / "sim" / "core.luau"
 HASH_SOURCE = ROOT / "sim" / "acceptance.luau"
+ANALYTICS_SOURCE = ROOT / "src" / "shared" / "analytics" / "AnalyticsTypes.luau"
 
 START = "<!-- VERSOES:INICIO -->"
 END = "<!-- VERSOES:FIM -->"
-KEYS = ("schema", "content", "sim", "hash")
+KEYS = ("schema", "content", "sim", "hash", "analytics")
 
 
 def fail(message: str) -> None:
@@ -102,6 +104,11 @@ def collect() -> dict[str, int]:
             r"\br\.hash\s*==\s*(\d+)",
             "hash de referencia (seed 42)",
         ),
+        "analytics": source_version(
+            ANALYTICS_SOURCE,
+            r"AnalyticsTypes\.SCHEMA_VERSION\s*=\s*(\d+)",
+            "AnalyticsTypes.SCHEMA_VERSION",
+        ),
     }
 
 
@@ -110,7 +117,7 @@ def main() -> int:
     parser.add_argument(
         "--values",
         action="store_true",
-        help='imprime "schema content sim hash" e cala o resumo',
+        help='imprime "schema content sim hash analytics" e cala o resumo',
     )
     args = parser.parse_args()
 
@@ -133,7 +140,8 @@ def main() -> int:
         print(
             "OK: versoes fonte x docs: "
             f"schema={source['schema']} content={source['content']} "
-            f"sim={source['sim']} hash={source['hash']}"
+            f"sim={source['sim']} hash={source['hash']} "
+            f"analytics={source['analytics']}"
         )
     return 0
 

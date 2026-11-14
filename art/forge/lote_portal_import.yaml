@@ -1,0 +1,28 @@
+# Forge3D 0.6.0 — rota `import`: portal da fenda gotico-arcano esculpido (art/scripts/make_portal.py)
+# GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
+# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
+schema: forge3d/spec@1
+
+projeto: muralha
+perfil: roblox-r15
+destino_exportacao: ~/.local/state/forge3d/saida/muralha_portal
+estilo_global: lowpoly_lit
+
+politica:
+  falha: continuar
+  custo_max_min: 5
+  seed_base: 20261113
+
+lote:
+  - id: prop.rift_portal.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/prop_rift_portal.glb
+    altura_metros: 3.6548   # 13.053 studs
+    pivot: base
+    limite_triangulos: 2000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, portal, rift]

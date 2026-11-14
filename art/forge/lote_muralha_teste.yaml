@@ -1,0 +1,32 @@
+# Teste Forge3D 0.6.0 — muralha do bastiao (rota mesh: concept SD1.5 -> TripoSR -> bake).
+# Saida no sandbox do Forge3D (nao toca no repo). Rodar:
+#   FORGE3D_I23D_REMOVER_FUNDO=1 forge3d run art/forge/lote_muralha_teste.yaml --json
+schema: forge3d/spec@1
+
+projeto: muralha
+perfil: roblox-r15
+destino_exportacao: ~/.local/state/forge3d/saida/muralha_teste
+estilo_global: lowpoly_lit
+
+politica:
+  falha: continuar
+  custo_max_min: 10
+  seed_base: 20261113
+
+lote:
+  - id: wall.bastion.l1.01
+    tipo: prop_estatico
+    rota: mesh
+    prompt: >-
+      stylized low poly medieval castle wall segment with a central arched wooden gatehouse,
+      grey stone blocks, crenellated battlements, warm orange wooden planks and dark iron bands,
+      two short round stone towers at the ends, toy diorama style, three-quarter front view,
+      plain white background, game asset concept art
+    altura_metros: 2.5
+    pivot: base
+    limite_triangulos: 3000
+    material: pbr
+    colisao: convex
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, wall, bastion, teste]

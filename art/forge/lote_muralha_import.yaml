@@ -1,0 +1,81 @@
+# Forge3D 0.6.0 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)
+# entra no mesmo QC (escala, pivo, LOD, colisao, manifesto, indice). Saida no sandbox.
+#   forge3d run art/forge/lote_muralha_import.yaml --json   (ou: bash tools/art-pipeline.sh --only wall)
+# GERADO pelo script: altura_metros = altura medida em studs x 0,28 (perfil roblox-r15).
+schema: forge3d/spec@1
+
+projeto: muralha
+perfil: roblox-r15
+destino_exportacao: ~/.local/state/forge3d/saida/muralha_import
+estilo_global: lowpoly_lit
+
+politica:
+  falha: continuar
+  custo_max_min: 5
+  seed_base: 20261113
+
+lote:
+  - id: wall.bastion.l1.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/wall_bastion_l1.glb
+    altura_metros: 5.0572   # 18.0615 studs
+    pivot: base
+    limite_triangulos: 3000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, wall, bastion, l1]
+
+  - id: wall.bastion.l2.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/wall_bastion_l2.glb
+    altura_metros: 5.0613   # 18.076 studs
+    pivot: base
+    limite_triangulos: 3000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, wall, bastion, l2]
+
+  - id: wall.bastion.l3.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/wall_bastion_l3.glb
+    altura_metros: 5.0574   # 18.0622 studs
+    pivot: base
+    limite_triangulos: 3000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, wall, bastion, l3]
+
+  - id: wall.bastion.l4.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/wall_bastion_l4.glb
+    altura_metros: 5.0611   # 18.0752 studs
+    pivot: base
+    limite_triangulos: 3000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, wall, bastion, l4]
+
+  - id: wall.bastion.l5.01
+    tipo: modulo_cenario
+    rota: import
+    origem: /home/eudespatricio/jogo-roblox/art/export/wall_bastion_l5.glb
+    altura_metros: 5.0621   # 18.079 studs
+    pivot: base
+    limite_triangulos: 3000
+    material: opaque
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, wall, bastion, l5]

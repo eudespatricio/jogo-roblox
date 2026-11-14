@@ -25,6 +25,10 @@ VisualTheme.PALETTE = table.freeze({
 	stone = { 92, 96, 102 },
 	stoneDark = { 52, 56, 62 },
 	white = { 245, 245, 245 },
+	-- Azul glacial estritamente > 200 deg HSV (lei cromatica: nunca 160-195 deg teal) e piche escuro.
+	frost = { 89, 166, 230 },
+	frostBright = { 160, 215, 255 },
+	tarDark = { 26, 24, 28 },
 })
 
 VisualTheme.HEX = table.freeze({
@@ -89,7 +93,7 @@ VisualTheme.ENEMIES = table.freeze({
 		color = { 20, 184, 166 },
 		dark = { 10, 74, 70 },
 		scale = 0.85,
-		parts = 6,
+		parts = 8,
 	},
 	brute = {
 		label = "BRUTO",
@@ -103,7 +107,7 @@ VisualTheme.ENEMIES = table.freeze({
 		color = { 45, 212, 191 },
 		dark = { 15, 118, 110 },
 		scale = 0.65,
-		parts = 5,
+		parts = 8,
 	},
 })
 
@@ -126,6 +130,11 @@ VisualTheme.VFX = table.freeze({
 	maxImpactParts = 8,
 	maxDustParts = 10,
 	impactLifetime = 0.55,
+	quality = table.freeze({
+		High = table.freeze({ particleScale = 1.0, dynamicLights = true }),
+		Mid = table.freeze({ particleScale = 0.6, dynamicLights = true }),
+		Low = table.freeze({ particleScale = 0.25, dynamicLights = false }),
+	}),
 })
 
 VisualTheme.UI = table.freeze({
@@ -161,6 +170,32 @@ VisualTheme.BUDGET = table.freeze({
 	arenaParts = 160,
 	maxUnits = 150,
 	drawCalls = 500,
+})
+
+VisualTheme.GRID_TILES = table.freeze({
+	count = 25,
+	size = table.freeze({ 7.6, 0.05, 7.6 }),
+	y = 0.355,
+})
+
+VisualTheme.CHEVRON = table.freeze({
+	size = table.freeze({ 0.65, 0.22, 0.18 }),
+})
+
+VisualTheme.TOUCH = table.freeze({
+	minTargetPx = 44,
+	slopPx = 12,
+})
+
+VisualTheme.PHYSICS_F2 = table.freeze({
+	tiers = table.freeze({
+		Low = 6,
+		Mid = 18,
+		High = 36,
+	}),
+	debrisCanQuery = false,
+	debrisCanTouch = false,
+	gateChunks = 12,
 })
 
 -- Utilitario puro para o cliente: tom mais escuro/claro sem depender de Color3.

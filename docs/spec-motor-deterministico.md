@@ -28,7 +28,7 @@ local Core = require(Shared.sim.core)
 
 local battle = Core.Battle.new({
     seed = 123456789,          -- uint32 derivado do battleId
-    simVersion = 3,            -- v3: 5 tipos; replay v2/v1 é recusado
+    simVersion = 4,            -- v4: disparo real, slow parametrizado, sinergias espaciais; replay v3/v2/v1 e recusado
     wall = {
         hp = 500,
         traps = {
@@ -265,14 +265,14 @@ Se estourar: reduzir unidades visíveis (LOD billboard), nunca a lógica.
 4. **Fuzz:** placements aleatórios não quebram (sem NaN, sem loop infinito).
 5. **Regressão de versão:** `simVersion` antiga não é aceita em reward.
 6. **Aceitação P1:** `sim/acceptance.luau` roda 1.000 seeds × 3, exige hash/resultado idênticos
-   (referência `2489780106`, `simVersion 3`) e 1.000 hashes distintos; está no `check.sh` e no CI.
+   (referência `1793200753`, `simVersion 4`) e 1.000 hashes distintos; está no `check.sh` e no CI.
 7. **Contrato de perfil:** `sim/profile-contract.luau` — schema v2, migração 0→2 e 1→2 com
    fixtures, `contentVersion`, `StartSessionAsync` nil, `EndSession` no leave e recarga sem
    duplicar (store injetado).
 8. **Contrato de analytics:** `sim/analytics-contract.luau` — **34 checagens**: envelope/catálogo/
    limites/PII, serviço (lote 30 s/100, rate limit 10/min, idempotência, teto de sessão), sink
    persistente (DataStore/Memory, idempotência, chunk), `first_win_seconds` com coorte sintética e
-   prova de que montar o evento não altera `hash`/`seed`/`ticks`; usa `sim_version 3`.
+   prova de que montar o evento não altera `hash`/`seed`/`ticks`; usa `sim_version 4`.
 9. **Gate de versões:** `scripts/check-versions.py` compara `SCHEMA_VERSION`, `CONTENT_VERSION`,
    `SIM_VERSION` e o hash de referência com o bloco de [`versoes.md`](versoes.md); divergência falha
    o `check.sh` (GAP-007 fechado na S3.3).
@@ -466,5 +466,32 @@ do catálogo (`content_version`/`content_future`).
 
 **Provas no CI:** `sim/content-contract.luau` 7/7 (alias, futuro, inválido, gate e hash antigo x
 migrado), `sim/profile-contract.luau` 20/20, `sim/walls-contract.luau` 13/13,
-`sim/acceptance.luau` 5/5 e `scripts/check-versions.py` (schema 2 · content 2 · sim 3 · hash
-`2489780106`).
+`sim/acceptance.luau` 5/5 e `scripts/check-versions.py` (schema 2 · content 2 · sim 4 · hash
+`1793200753`).
+
+---
+
+## 17. Matemática v4 — Disparo real, slow por unidade e sinergias espaciais (S8.3, 13/11/2026)
+
+**Versões:** `SCHEMA_VERSION 2` · `CONTENT_VERSION 2` · `SIM_VERSION 4` · `DEFAULT_POWER_PCT = 270` · hash de referência `1793200753` (seed 42).
+
+**Mudanças na simulação (`src/shared/sim/core.luau`):**
+
+1. **Disparo real de armadilha:** `Battle:applyTrap(trap)` retorna `boolean` (`true` apenas quando atinge `>= 1` alvo). Em `Battle:Step()`, `trap.cd` só é reiniciado para `trap.baseCd` quando `applyTrap(trap)` retorna `true` (armadilhas prontas aguardam alvo sem desperdiçar cooldown).
+2. **Slow parametrizado e compatível com splash:** `uSlowPct[i]` guarda `TRAP[trap.type].slowPct` por unidade; `Battle:Step()` usa `self.uSlowPct[i]` em vez do literal `55`, e `applyStatus` aplica `slow` também no ramo `def.splash`.
+3. **Sinergias espaciais em inteiro (`MILLI = 1000`):**
+   - **Bateria Cruzada:** cada `archer` ortogonalmente adjacente (`|dr| + |dc| == 1`) reduz `trap.baseCd` do `archer` em `-1` tick (cap `-2` ticks, piso `8` ticks).
+   - **Piche Incendiário:** `tar` aplica `self.uTarUntil[i] = self.tick + 30`; acertos de `cannon` e `catapult` enquanto `self.tick <= self.uTarUntil[i]` causam `math.floor(dmg * 1250 / 1000)`.
+   - **Choque Térmico:** `frost` aplica `self.uFrostUntil[i] = self.tick + def.slowTicks`; `cannon` enquanto `self.tick <= self.uFrostUntil[i]` causa `math.floor(dmg * 1200 / 1000)` sem consumir o `slow`.
+4. **Imutabilidade e tuning vivo:** `Core.UNIT`, `Core.UNIT_NAMES`, `Core.TRAP`, `Core.TRAP_NAMES` e `Core.TUNING` recebem `table.freeze` recursivo; `Core.setTuning(patch)` substitui `Core.TUNING` por uma nova tabela congelada e o motor lê `Core.TUNING` ao vivo. `Battle:CheckIntegers()` valida também `uSlowPct`, `uTarUntil`, `uFrostUntil` e `baseCd`.
+
+---
+
+## 18. Matemática v6 — Mira circular 360° da torre Arqueira (13/11/2026)
+
+**Versões:** `SCHEMA_VERSION 3` · `CONTENT_VERSION 3` · `SIM_VERSION 6` · `DEFAULT_POWER_PCT = 270` · hash de referência `1245379674` (seed 42, `62,6%` defensor em 1.000 seeds).
+
+**Mudanças na simulação (`src/shared/sim/core.luau`):**
+
+1. **Área circular 360° (`def.omni = true`):** `archer` usa `{ dmg = 1400, cd = 10, range = 2500, omni = true }` e seleciona o inimigo vivo mais avançado (`self.uX[i]` mínimo) dentro do disco inteiro `dx * dx + dy * dy <= range * range` (sem float/sqrt), alcançando lanes vizinhas e inimigos que ultrapassaram a torre.
+2. **Demais tipos preservados:** `cannon`, `catapult`, `frost` e `tar` mantêm seleção direcional frontal por `LANE_REACH`.

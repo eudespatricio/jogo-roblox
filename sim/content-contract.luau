@@ -21,19 +21,30 @@ end
 local function migrated()
 	local profile, err = ProfileSchema.migrate(fixtureV1)
 	assert(profile ~= nil, "migracao de schema falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 2, "schemaVersion != 2")
-	assert(profile.contentVersion == 1, "contentVersion legado != 1")
+	assert(profile.schemaVersion == 3, "schemaVersion != 3")
+	profile.contentVersion = 1
 	return profile
 end
 
-check("catalogo v2, 5 tipos e politica de simVersion", function()
-	assert(TrapCatalog.CONTENT_VERSION == 2, "CONTENT_VERSION != 2")
-	assert(Core.SIM_VERSION == 3, "SIM_VERSION != 3")
+check("catalogo v3, 5 tipos, WALL_LEVELS e politica de simVersion", function()
+	assert(TrapCatalog.CONTENT_VERSION == 3, "CONTENT_VERSION != 3")
+	assert(Core.SIM_VERSION == 6, "SIM_VERSION != 6")
+	assert(TrapCatalog.MAX_LEVEL == 5, "MAX_LEVEL != 5")
+	assert(TrapCatalog.MAX_WALL_LEVEL == 5, "MAX_WALL_LEVEL != 5")
 	assert(#TrapCatalog.TRAP_IDS == 5, "esperava 5 tipos: " .. #TrapCatalog.TRAP_IDS)
 	assert(TrapCatalog.TRAPS.tar ~= nil, "tar ausente")
 	assert(TrapCatalog.TRAPS.oil == nil, "oil deveria ter sido renomeada")
 	assert(TrapCatalog.TRAP_ALIASES.oil == "tar", "alias oil -> tar ausente")
 	assert(TrapCatalog.TRAPS.catapult ~= nil, "catapult ausente")
+	assert(TrapCatalog.GOLD_SINKS.wall == true, "GOLD_SINKS sem wall")
+	assert(#TrapCatalog.WALL_LEVELS == #Core.WALL_LEVELS, "WALL_LEVELS len != Core")
+	for lv = 1, TrapCatalog.MAX_WALL_LEVEL do
+		local c = TrapCatalog.WALL_LEVELS[lv]
+		local s = Core.WALL_LEVELS[lv]
+		assert(c.hp == s.hp and c.trapLimit == s.trapLimit, "paridade WALL_LEVELS[" .. lv .. "]")
+	end
+	assert(TrapCatalog.wallUpgradeCost(1) == 150, "wallUpgradeCost(1) != 150")
+	assert(TrapCatalog.wallUpgradeCost(5) == nil, "wallUpgradeCost(5) != nil")
 
 	local names = {}
 	for _, trapId in ipairs(Core.TRAP_NAMES) do
@@ -54,23 +65,23 @@ check("ensureProfileContent repara oil -> tar e sobe a versao", function()
 	local ok, err, changed = TrapCatalog.ensureProfileContent(profile)
 	assert(ok, tostring(err))
 	assert(changed == true, "deveria ter mudado")
-	assert(profile.contentVersion == 2, "contentVersion nao subiu")
+	assert(profile.contentVersion == 3, "contentVersion nao subiu")
 	assert(profile.wall.cells.r1c1.trap == "tar", "oil nao virou tar")
 	assert(profile.wall.cells.r1c1.level == 2, "level perdido no repair")
 
 	local okAgain, errAgain, changedAgain = TrapCatalog.ensureProfileContent(profile)
 	assert(okAgain, tostring(errAgain))
 	assert(changedAgain == false, "segunda migracao deveria ser no-op")
-	assert(profile.contentVersion == 2, "versao mudou no no-op")
+	assert(profile.contentVersion == 3, "versao mudou no no-op")
 end)
 
 check("contentVersion futura e recusada sem mutar", function()
 	local profile = migrated()
-	profile.contentVersion = 3
+	profile.contentVersion = 4
 	local ok, err, changed = TrapCatalog.ensureProfileContent(profile)
 	assert(not ok and err == "content_future", tostring(err))
 	assert(changed == false, "mutou perfil futuro")
-	assert(profile.contentVersion == 3, "versao futura foi alterada")
+	assert(profile.contentVersion == 4, "versao futura foi alterada")
 	assert(profile.wall.cells.r1c1.trap == "oil", "reparou perfil futuro")
 end)
 
@@ -89,7 +100,7 @@ end)
 
 check("trap desconhecida falha fechado e nao muta", function()
 	local profile = migrated()
-	profile.wall.cells.r2c1 = { trap = "tesla", level = 1 }
+	profile.wall.cells.r2c1 = { trap = "tesla", level = 1, x = 2000, y = 1500 }
 	local ok, err, changed = TrapCatalog.ensureProfileContent(profile)
 	assert(not ok, "aceitou trap desconhecida")
 	assert(string.find(tostring(err), "tesla", 1, true) ~= nil, tostring(err))
@@ -109,7 +120,7 @@ check("WallService exige contentVersion do catalogo", function()
 	assert(wallOk, tostring(wallErr))
 end)
 
-check("migracao 1->2 + conteudo preserva o hash da parede", function()
+check("migracao 1->3 + conteudo preserva o hash da parede", function()
 	local profile = migrated()
 	local ok, err = TrapCatalog.ensureProfileContent(profile)
 	assert(ok, tostring(err))
@@ -128,12 +139,22 @@ check("migracao 1->2 + conteudo preserva o hash da parede", function()
 			:Run().hash
 	end
 
-	-- O motor v3 nao conhece mais `oil`; injeta o alias so no teste para simular a
-	-- parede antiga (mesmas estatisticas de `tar`) e limpa em seguida.
-	Core.TRAP.oil = Core.TRAP.tar
-	local oldOk, oldHash = pcall(hashOf, oldWall)
-	Core.TRAP.oil = nil
-	assert(oldOk, tostring(oldHash))
+	-- Core.TRAP e congelada; resolve aliases legados via TrapCatalog sem mutar Core.TRAP.
+	assert(table.isfrozen(Core.TRAP), "Core.TRAP deveria estar congelada")
+	local rejectedLegacy = pcall(hashOf, oldWall)
+	assert(not rejectedLegacy, "motor deveria recusar tipo legado 'oil'")
+	local aliasedOldWall = {
+		hp = oldWall.hp,
+		traps = {},
+	}
+	for _, trap in ipairs(oldWall.traps) do
+		aliasedOldWall.traps[#aliasedOldWall.traps + 1] = {
+			cell = trap.cell,
+			type = TrapCatalog.TRAP_ALIASES[trap.type] or trap.type,
+			level = trap.level,
+		}
+	end
+	local oldHash = hashOf(aliasedOldWall)
 	assert(oldHash == hashOf(newWall), "migracao mudou o hash da parede")
 end)
 

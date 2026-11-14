@@ -1,38 +1,66 @@
 --!strict
--- Schema v1 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
+-- Schema v3 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
 -- Puro Luau (nenhuma API do Roblox): roda no CLI em sim/profile-contract.luau e no servidor.
--- Regras: campo novo entra em newProfile E em sanitizeV1; campo desconhecido nunca e salvo
+-- Regras: campo novo entra em newProfile E em sanitizeCurrent; campo desconhecido nunca e salvo
 -- (a whitelist roda em todo load); a chave do perfil e UserId, nunca nome; nada de PII no Data.
 
 local ProfileSchema = {}
 
-ProfileSchema.SCHEMA_VERSION = 2
+ProfileSchema.SCHEMA_VERSION = 3
 ProfileSchema.STORE_NAME = "MuralhaProfile_v1"
 ProfileSchema.SECONDS_PER_DAY = 86400
--- Versao de conteudo gravada no perfil quando o schema v2 nasceu. O catalogo atual e
--- quem manda no gate (TrapCatalog.CONTENT_VERSION); o schema so valida a faixa.
-ProfileSchema.DEFAULT_CONTENT_VERSION = 1
+-- Versao de conteudo padrao do schema v3. O catalogo atual (TrapCatalog.CONTENT_VERSION)
+-- manda no gate de conteudo; o schema valida a faixa >= 1.
+ProfileSchema.DEFAULT_CONTENT_VERSION = 3
 
--- Grade do MVP (Q2, 09/11/2026): 5x5, N=5 ativas, colocacao livre. 7 colunas e expansao por
--- nivel, entao e dado do perfil, nao codigo.
+-- Grade base 5x5 e arena de colocacao livre (milli-unidades, paridade com Core.ARENA).
 ProfileSchema.GRID_WIDTH = 5
 ProfileSchema.MAX_GRID_WIDTH = 7
 ProfileSchema.GRID_HEIGHT = 5
 ProfileSchema.ACTIVE_TRAP_LIMIT = 5
-ProfileSchema.MAX_ACTIVE_TRAP_LIMIT = 25
+ProfileSchema.MIN_ACTIVE_TRAP_LIMIT = 5
+ProfileSchema.MAX_ACTIVE_TRAP_LIMIT = 7
 ProfileSchema.MAX_TRAP_LEVEL = 5
+ProfileSchema.MAX_WALL_LEVEL = 5
 ProfileSchema.MAX_CELLS = ProfileSchema.MAX_ACTIVE_TRAP_LIMIT
+ProfileSchema.MAX_SLOT_LENGTH = 16
 ProfileSchema.MAX_COSMETICS = 200
 ProfileSchema.MAX_GOLD = 1000000000
 ProfileSchema.MAX_COUNTER = 9007199254740991
 ProfileSchema.MAX_ID_LENGTH = 48
 
-export type Cell = { trap: string, level: number }
+ProfileSchema.ARENA = table.freeze({
+	xMin = 1000,
+	xMax = 9000,
+	yMin = 500,
+	yMax = 4500,
+	step = 250,
+	minSpacing = 1000,
+})
+
+ProfileSchema.COLUMN_X = table.freeze({ 2000, 3500, 5000, 6500, 8000 })
+
+ProfileSchema.EQUIPPED_DEFAULTS = table.freeze({
+	theme = "theme_default",
+	hordeSkin = "horde_default",
+	finisher = "finisher_default",
+	commander = "cmd_vorn",
+})
+
+export type Cell = { trap: string, level: number, x: number, y: number }
 
 export type Wall = {
+	level: number,
 	gridWidth: number,
 	activeTrapLimit: number,
 	cells: { [string]: Cell },
+}
+
+export type Equipped = {
+	theme: string,
+	hordeSkin: string,
+	finisher: string,
+	commander: string,
 }
 
 export type League = { points: number, season: number }
@@ -54,6 +82,7 @@ export type Profile = {
 	gold: number,
 	league: League,
 	cosmetics: { [string]: boolean },
+	equipped: Equipped,
 	stats: Stats,
 }
 
@@ -83,10 +112,19 @@ ProfileSchema.PII_KEYS = {
 	username = true,
 }
 
-local TOP_FIELDS =
-	{ "schemaVersion", "contentVersion", "wall", "gold", "league", "cosmetics", "stats" }
-local WALL_FIELDS = { "gridWidth", "activeTrapLimit", "cells" }
-local CELL_FIELDS = { "trap", "level" }
+local TOP_FIELDS = {
+	"schemaVersion",
+	"contentVersion",
+	"wall",
+	"gold",
+	"league",
+	"cosmetics",
+	"equipped",
+	"stats",
+}
+local WALL_FIELDS = { "level", "gridWidth", "activeTrapLimit", "cells" }
+local CELL_FIELDS = { "trap", "level", "x", "y" }
+local EQUIPPED_FIELDS = { "theme", "hordeSkin", "finisher", "commander" }
 local LEAGUE_FIELDS = { "points", "season" }
 local STATS_FIELDS = {
 	"raids",
@@ -109,14 +147,25 @@ end
 local TOP_SET = fieldSet(TOP_FIELDS)
 local WALL_SET = fieldSet(WALL_FIELDS)
 local CELL_SET = fieldSet(CELL_FIELDS)
+local EQUIPPED_SET = fieldSet(EQUIPPED_FIELDS)
 local LEAGUE_SET = fieldSet(LEAGUE_FIELDS)
 local STATS_SET = fieldSet(STATS_FIELDS)
+
+local function newEquipped(): Equipped
+	return {
+		theme = ProfileSchema.EQUIPPED_DEFAULTS.theme,
+		hordeSkin = ProfileSchema.EQUIPPED_DEFAULTS.hordeSkin,
+		finisher = ProfileSchema.EQUIPPED_DEFAULTS.finisher,
+		commander = ProfileSchema.EQUIPPED_DEFAULTS.commander,
+	}
+end
 
 local function newProfile(): Profile
 	return {
 		schemaVersion = ProfileSchema.SCHEMA_VERSION,
 		contentVersion = ProfileSchema.DEFAULT_CONTENT_VERSION,
 		wall = {
+			level = 1,
 			gridWidth = ProfileSchema.GRID_WIDTH,
 			activeTrapLimit = ProfileSchema.ACTIVE_TRAP_LIMIT,
 			cells = {},
@@ -124,6 +173,7 @@ local function newProfile(): Profile
 		gold = 0,
 		league = { points = 0, season = 1 },
 		cosmetics = {},
+		equipped = newEquipped(),
 		stats = {
 			raids = 0,
 			defenses = 0,
@@ -172,11 +222,58 @@ local function isIdString(value: any, maxLen: number): boolean
 	return string.match(s, "^[%w_%.%-]+$") ~= nil
 end
 
+function ProfileSchema.isValidSlot(slot: any): boolean
+	if type(slot) ~= "string" then
+		return false
+	end
+	local s = slot :: string
+	if #s == 0 or #s > ProfileSchema.MAX_SLOT_LENGTH then
+		return false
+	end
+	if string.match(s, "^r%d+c%d+$") ~= nil then
+		local r, c = string.match(s, "^r(%d+)c(%d+)$")
+		local rn = tonumber(r) :: number
+		local cn = tonumber(c) :: number
+		return rn >= 1
+			and rn <= ProfileSchema.GRID_HEIGHT
+			and cn >= 1
+			and cn <= ProfileSchema.MAX_GRID_WIDTH
+			and string.format("r%dc%d", rn, cn) == s
+	end
+	return string.match(s, "^[a-z0-9_]+$") ~= nil
+end
+
+function ProfileSchema.validatePosition(x: any, y: any): (boolean, string?)
+	if not isFiniteInteger(x) or not isFiniteInteger(y) then
+		return false, "posicao nao e inteira"
+	end
+	local nx = x :: number
+	local ny = y :: number
+	if
+		nx < ProfileSchema.ARENA.xMin
+		or nx > ProfileSchema.ARENA.xMax
+		or ny < ProfileSchema.ARENA.yMin
+		or ny > ProfileSchema.ARENA.yMax
+	then
+		return false, "posicao fora da arena"
+	end
+	if nx % ProfileSchema.ARENA.step ~= 0 or ny % ProfileSchema.ARENA.step ~= 0 then
+		return false, "posicao fora da grade de " .. tostring(ProfileSchema.ARENA.step)
+	end
+	return true, nil
+end
+
+function ProfileSchema.tooClose(ax: number, ay: number, bx: number, by: number): boolean
+	return math.abs(ax - bx) < ProfileSchema.ARENA.minSpacing
+		and math.abs(ay - by) < ProfileSchema.ARENA.minSpacing
+end
+
 local function cellKeyOk(key: any, gridWidth: number): boolean
 	if type(key) ~= "string" then
 		return false
 	end
-	local rowText, colText = string.match(key :: string, "^r(%d+)c(%d+)$")
+	local text = key :: string
+	local rowText, colText = string.match(text, "^r(%d+)c(%d+)$")
 	if rowText == nil or colText == nil then
 		return false
 	end
@@ -188,7 +285,27 @@ local function cellKeyOk(key: any, gridWidth: number): boolean
 	if col < 1 or col > gridWidth then
 		return false
 	end
-	return true
+	return string.format("r%dc%d", row, col) == text
+end
+
+function ProfileSchema.cellToPos(cell: any): (number?, number?)
+	if type(cell) ~= "string" then
+		return nil, nil
+	end
+	local text = cell :: string
+	local rowText, colText = string.match(text, "^r(%d+)c(%d+)$")
+	if rowText == nil or colText == nil then
+		return nil, nil
+	end
+	local row = tonumber(rowText) :: number
+	local col = tonumber(colText) :: number
+	if row < 1 or row > ProfileSchema.GRID_HEIGHT or col < 1 or col > ProfileSchema.GRID_WIDTH then
+		return nil, nil
+	end
+	if string.format("r%dc%d", row, col) ~= text then
+		return nil, nil
+	end
+	return ProfileSchema.COLUMN_X[col], row * 1000 - 500
 end
 
 local function checkForeignKeys(
@@ -219,6 +336,13 @@ local function validateWall(wall: any): (boolean, string?)
 	if not okKeys then
 		return false, errKeys
 	end
+	if not isFiniteInteger(wall.level) then
+		return false, "wall.level nao e inteiro"
+	end
+	local wallLevel = wall.level :: number
+	if wallLevel < 1 or wallLevel > ProfileSchema.MAX_WALL_LEVEL then
+		return false, "wall.level fora de [1," .. tostring(ProfileSchema.MAX_WALL_LEVEL) .. "]"
+	end
 	if not isFiniteInteger(wall.gridWidth) then
 		return false, "wall.gridWidth nao e inteiro"
 	end
@@ -230,20 +354,29 @@ local function validateWall(wall: any): (boolean, string?)
 		return false, "wall.activeTrapLimit nao e inteiro"
 	end
 	local limit = wall.activeTrapLimit :: number
-	if limit < 1 or limit > ProfileSchema.MAX_ACTIVE_TRAP_LIMIT then
-		return false, "wall.activeTrapLimit fora de [1,25]"
+	if
+		limit < ProfileSchema.MIN_ACTIVE_TRAP_LIMIT
+		or limit > ProfileSchema.MAX_ACTIVE_TRAP_LIMIT
+	then
+		return false,
+			string.format(
+				"wall.activeTrapLimit fora de [%d,%d]",
+				ProfileSchema.MIN_ACTIVE_TRAP_LIMIT,
+				ProfileSchema.MAX_ACTIVE_TRAP_LIMIT
+			)
 	end
 	if type(wall.cells) ~= "table" then
 		return false, "wall.cells ausente"
 	end
 	local count = 0
+	local placed: { { slot: string, x: number, y: number } } = {}
 	for key, cell in pairs(wall.cells) do
 		count += 1
-		if count > ProfileSchema.MAX_CELLS then
-			return false, "wall.cells acima de " .. tostring(ProfileSchema.MAX_CELLS)
+		if count > limit then
+			return false, "wall.cells acima de " .. tostring(limit)
 		end
-		if not cellKeyOk(key, gridWidth) then
-			return false, "wall.cells: chave invalida (" .. tostring(key) .. ")"
+		if not ProfileSchema.isValidSlot(key) then
+			return false, "wall.cells: slot invalido (" .. tostring(key) .. ")"
 		end
 		if type(cell) ~= "table" then
 			return false, "wall.cells." .. tostring(key) .. " nao e tabela"
@@ -261,6 +394,41 @@ local function validateWall(wall: any): (boolean, string?)
 		local level = cell.level :: number
 		if level < 1 or level > ProfileSchema.MAX_TRAP_LEVEL then
 			return false, "wall.cells." .. tostring(key) .. ".level fora de [1,5]"
+		end
+		local okPos, errPos = ProfileSchema.validatePosition(cell.x, cell.y)
+		if not okPos then
+			return false, "wall.cells." .. tostring(key) .. ": " .. tostring(errPos)
+		end
+		local cx = cell.x :: number
+		local cy = cell.y :: number
+		for _, other in ipairs(placed) do
+			if ProfileSchema.tooClose(cx, cy, other.x, other.y) then
+				return false,
+					string.format(
+						"wall.cells.%s muito perto de %s (%d,%d)",
+						tostring(key),
+						other.slot,
+						cx,
+						cy
+					)
+			end
+		end
+		placed[#placed + 1] = { slot = key :: string, x = cx, y = cy }
+	end
+	return true, nil
+end
+
+local function validateEquipped(equipped: any): (boolean, string?)
+	if type(equipped) ~= "table" then
+		return false, "equipped ausente"
+	end
+	local okKeys, errKeys = checkForeignKeys(equipped, EQUIPPED_SET, "equipped")
+	if not okKeys then
+		return false, errKeys
+	end
+	for _, field in ipairs(EQUIPPED_FIELDS) do
+		if not isIdString(equipped[field], ProfileSchema.MAX_ID_LENGTH) then
+			return false, "equipped." .. field .. " invalido"
 		end
 	end
 	return true, nil
@@ -323,7 +491,7 @@ local function validateStats(stats: any): (boolean, string?)
 	return true, nil
 end
 
--- Valida o perfil inteiro contra o schema v1. Retorna (ok, erro) em vez de lancar: o chamador
+-- Valida o perfil inteiro contra o schema v3. Retorna (ok, erro) em vez de lancar: o chamador
 -- decide entre migrar, descartar ou recusar a sessao.
 function ProfileSchema.validate(data: any): (boolean, string?)
 	if type(data) ~= "table" then
@@ -366,6 +534,10 @@ function ProfileSchema.validate(data: any): (boolean, string?)
 	if not okCosmetics then
 		return false, errCosmetics
 	end
+	local okEquipped, errEquipped = validateEquipped(data.equipped)
+	if not okEquipped then
+		return false, errEquipped
+	end
 	local okStats, errStats = validateStats(data.stats)
 	if not okStats then
 		return false, errStats
@@ -374,8 +546,8 @@ function ProfileSchema.validate(data: any): (boolean, string?)
 end
 
 -- ---------------------------------------------------------------- saneamento e migracao
-local function sanitizeCell(key: string, cell: any, gridWidth: number): Cell?
-	if not cellKeyOk(key, gridWidth) or type(cell) ~= "table" then
+local function sanitizeCell(slot: string, cell: any): Cell?
+	if not ProfileSchema.isValidSlot(slot) or type(cell) ~= "table" then
 		return nil
 	end
 	if not isIdString(cell.trap, ProfileSchema.MAX_ID_LENGTH) then
@@ -384,18 +556,19 @@ local function sanitizeCell(key: string, cell: any, gridWidth: number): Cell?
 	if not isFiniteInteger(cell.level) then
 		return nil
 	end
+	if not ProfileSchema.validatePosition(cell.x, cell.y) then
+		return nil
+	end
 	local level = clampInt(cell.level :: number, 1, ProfileSchema.MAX_TRAP_LEVEL)
-	return { trap = cell.trap :: string, level = level }
+	return {
+		trap = cell.trap :: string,
+		level = level,
+		x = cell.x :: number,
+		y = cell.y :: number,
+	}
 end
 
--- Reconstroi um perfil v1 valido a partir de qualquer tabela: so entra o que o schema
--- reconhece e cabe na faixa. E o que roda em todo load, entao lixo/PII nunca e persistido.
-local function sanitizeCurrent(data: any): Profile
-	local profile = newProfile()
-	if type(data) ~= "table" then
-		return profile
-	end
-
+local function sanitizeCommonScalars(profile: any, data: any): ()
 	if isFiniteInteger(data.gold) then
 		profile.gold = clampInt(data.gold :: number, 0, ProfileSchema.MAX_GOLD)
 	end
@@ -440,43 +613,6 @@ local function sanitizeCurrent(data: any): Profile
 		end
 	end
 
-	local wall = data.wall
-	if type(wall) == "table" then
-		if isFiniteInteger(wall.gridWidth) then
-			profile.wall.gridWidth = clampInt(
-				wall.gridWidth :: number,
-				ProfileSchema.GRID_WIDTH,
-				ProfileSchema.MAX_GRID_WIDTH
-			)
-		end
-		if isFiniteInteger(wall.activeTrapLimit) then
-			profile.wall.activeTrapLimit =
-				clampInt(wall.activeTrapLimit :: number, 1, ProfileSchema.MAX_ACTIVE_TRAP_LIMIT)
-		end
-		local cells = wall.cells
-		if type(cells) == "table" then
-			-- ordem deterministica: o resultado da migracao nao pode depender da hash
-			local keys: { string } = {}
-			for key in pairs(cells) do
-				if type(key) == "string" then
-					table.insert(keys, key :: string)
-				end
-			end
-			table.sort(keys)
-			local copiedCells = 0
-			for _, key in ipairs(keys) do
-				if copiedCells >= ProfileSchema.MAX_CELLS then
-					break
-				end
-				local cell = sanitizeCell(key, cells[key], profile.wall.gridWidth)
-				if cell ~= nil then
-					profile.wall.cells[key] = cell
-					copiedCells += 1
-				end
-			end
-		end
-	end
-
 	local cosmetics = data.cosmetics
 	if type(cosmetics) == "table" then
 		local keys: { string } = {}
@@ -500,6 +636,80 @@ local function sanitizeCurrent(data: any): Profile
 			end
 		end
 	end
+end
+
+-- Reconstroi um perfil v3 valido a partir de qualquer tabela: so entra o que o schema
+-- reconhece e cabe na faixa. E o que roda em todo load, entao lixo/PII nunca e persistido.
+local function sanitizeCurrent(data: any): Profile
+	local profile = newProfile()
+	if type(data) ~= "table" then
+		return profile
+	end
+
+	sanitizeCommonScalars(profile, data)
+
+	local equipped = data.equipped
+	if type(equipped) == "table" then
+		for _, field in ipairs(EQUIPPED_FIELDS) do
+			if isIdString(equipped[field], ProfileSchema.MAX_ID_LENGTH) then
+				(profile.equipped :: any)[field] = equipped[field] :: string
+			end
+		end
+	end
+
+	local wall = data.wall
+	if type(wall) == "table" then
+		if isFiniteInteger(wall.level) then
+			profile.wall.level = clampInt(wall.level :: number, 1, ProfileSchema.MAX_WALL_LEVEL)
+		end
+		if isFiniteInteger(wall.gridWidth) then
+			profile.wall.gridWidth = clampInt(
+				wall.gridWidth :: number,
+				ProfileSchema.GRID_WIDTH,
+				ProfileSchema.MAX_GRID_WIDTH
+			)
+		end
+		if isFiniteInteger(wall.activeTrapLimit) then
+			profile.wall.activeTrapLimit = clampInt(
+				wall.activeTrapLimit :: number,
+				ProfileSchema.MIN_ACTIVE_TRAP_LIMIT,
+				ProfileSchema.MAX_ACTIVE_TRAP_LIMIT
+			)
+		end
+		local cells = wall.cells
+		if type(cells) == "table" then
+			-- ordem deterministica: o resultado da migracao nao pode depender da hash
+			local keys: { string } = {}
+			for key in pairs(cells) do
+				if type(key) == "string" then
+					table.insert(keys, key :: string)
+				end
+			end
+			table.sort(keys)
+			local copiedCells = 0
+			local placed: { { x: number, y: number } } = {}
+			for _, key in ipairs(keys) do
+				if copiedCells >= profile.wall.activeTrapLimit then
+					break
+				end
+				local cell = sanitizeCell(key, cells[key])
+				if cell ~= nil then
+					local overlaps = false
+					for _, other in ipairs(placed) do
+						if ProfileSchema.tooClose(cell.x, cell.y, other.x, other.y) then
+							overlaps = true
+							break
+						end
+					end
+					if not overlaps then
+						profile.wall.cells[key] = cell
+						placed[#placed + 1] = { x = cell.x, y = cell.y }
+						copiedCells += 1
+					end
+				end
+			end
+		end
+	end
 
 	if isFiniteInteger(data.contentVersion) then
 		profile.contentVersion =
@@ -510,11 +720,63 @@ local function sanitizeCurrent(data: any): Profile
 	return profile
 end
 
--- Forma v1 (sem contentVersion) usada apenas pela migracao 0 -> 1.
+-- Forma v1 (sem contentVersion, cells rXcY) usada apenas pela migracao 0 -> 1.
 local function sanitizeV1(data: any): any
-	local profile: any = sanitizeCurrent(data)
+	local profile: any = newProfile()
 	profile.schemaVersion = 1
 	profile.contentVersion = nil
+	profile.equipped = nil
+	profile.wall = {
+		gridWidth = ProfileSchema.GRID_WIDTH,
+		activeTrapLimit = ProfileSchema.ACTIVE_TRAP_LIMIT,
+		cells = {},
+	}
+	if type(data) ~= "table" then
+		return profile
+	end
+	sanitizeCommonScalars(profile, data)
+	local wall = data.wall
+	if type(wall) == "table" then
+		if isFiniteInteger(wall.gridWidth) then
+			profile.wall.gridWidth = clampInt(
+				wall.gridWidth :: number,
+				ProfileSchema.GRID_WIDTH,
+				ProfileSchema.MAX_GRID_WIDTH
+			)
+		end
+		if isFiniteInteger(wall.activeTrapLimit) then
+			profile.wall.activeTrapLimit = clampInt(wall.activeTrapLimit :: number, 1, 25)
+		end
+		local cells = wall.cells
+		if type(cells) == "table" then
+			local keys: { string } = {}
+			for key in pairs(cells) do
+				if type(key) == "string" then
+					table.insert(keys, key :: string)
+				end
+			end
+			table.sort(keys)
+			local copied = 0
+			for _, key in ipairs(keys) do
+				if copied >= 25 then
+					break
+				end
+				local rawCell = cells[key]
+				if
+					cellKeyOk(key, profile.wall.gridWidth)
+					and type(rawCell) == "table"
+					and isIdString(rawCell.trap, ProfileSchema.MAX_ID_LENGTH)
+					and isFiniteInteger(rawCell.level)
+				then
+					profile.wall.cells[key] = {
+						trap = rawCell.trap :: string,
+						level = clampInt(rawCell.level :: number, 1, ProfileSchema.MAX_TRAP_LEVEL),
+					}
+					copied += 1
+				end
+			end
+		end
+	end
 	return profile
 end
 
@@ -522,7 +784,7 @@ end
 local MIGRATIONS: { [number]: (data: any) -> any } = {}
 
 -- 0 -> 1: dados escreveram antes do schemaVersion existir. Copia so o que o v1 reconhece;
--- campos do prototipo (`coins`, `hackAttempt`, PII) ficam de fora. Grade do MVP e do template.
+-- campos do prototipo (`coins`, `hackAttempt`, PII) ficam de fora.
 MIGRATIONS[0] = function(data: any): any
 	return sanitizeV1(data)
 end
@@ -536,11 +798,86 @@ MIGRATIONS[1] = function(data: any): any
 			copy[key] = value
 		end
 	end
-	copy.contentVersion = ProfileSchema.DEFAULT_CONTENT_VERSION
+	copy.schemaVersion = 2
+	copy.contentVersion = 1
 	return copy
 end
 
--- Migra e devolve um perfil v2 valido. Versao futura (build mais novo) e recusada: nao
+-- 2 -> 3: P2 muralha livre (x, y), tiers de muralha (level 1..5), limite 5..7, equipped e contentVersion=3.
+-- Preserva os campos existentes; mapeia rXcY -> (COLUMN_X[col], row*1000-500).
+MIGRATIONS[2] = function(data: any): any
+	local copy: any = {}
+	if type(data) == "table" then
+		for key, value in pairs(data) do
+			copy[key] = value
+		end
+	end
+
+	local oldWall = if type(copy.wall) == "table" then copy.wall else {}
+	local newCells: { [string]: Cell } = {}
+	local count = 0
+	if type(oldWall.cells) == "table" then
+		local keys: { string } = {}
+		for key in pairs(oldWall.cells) do
+			if type(key) == "string" then
+				table.insert(keys, key :: string)
+			end
+		end
+		table.sort(keys)
+		for _, key in ipairs(keys) do
+			local raw = oldWall.cells[key]
+			if type(raw) == "table" and isIdString(raw.trap, ProfileSchema.MAX_ID_LENGTH) then
+				local level = if isFiniteInteger(raw.level)
+					then clampInt(raw.level :: number, 1, ProfileSchema.MAX_TRAP_LEVEL)
+					else 1
+				local cx, cy = ProfileSchema.cellToPos(key)
+				if cx ~= nil and cy ~= nil then
+					newCells[key] = { trap = raw.trap :: string, level = level, x = cx, y = cy }
+					count += 1
+				elseif
+					ProfileSchema.isValidSlot(key)
+					and ProfileSchema.validatePosition(raw.x, raw.y)
+				then
+					newCells[key] = {
+						trap = raw.trap :: string,
+						level = level,
+						x = raw.x :: number,
+						y = raw.y :: number,
+					}
+					count += 1
+				end
+			end
+		end
+	end
+
+	local limit = clampInt(
+		math.max(ProfileSchema.MIN_ACTIVE_TRAP_LIMIT, count),
+		ProfileSchema.MIN_ACTIVE_TRAP_LIMIT,
+		ProfileSchema.MAX_ACTIVE_TRAP_LIMIT
+	)
+	local gridWidth = if isFiniteInteger(oldWall.gridWidth)
+		then clampInt(
+			oldWall.gridWidth :: number,
+			ProfileSchema.GRID_WIDTH,
+			ProfileSchema.MAX_GRID_WIDTH
+		)
+		else ProfileSchema.GRID_WIDTH
+
+	copy.wall = {
+		level = 1,
+		gridWidth = gridWidth,
+		activeTrapLimit = limit,
+		cells = newCells,
+	}
+	copy.contentVersion = ProfileSchema.DEFAULT_CONTENT_VERSION
+	if type(copy.equipped) ~= "table" then
+		copy.equipped = newEquipped()
+	end
+	copy.schemaVersion = 3
+	return copy
+end
+
+-- Migra e devolve um perfil v3 valido. Versao futura (build mais novo) e recusada: nao
 -- sobrescrever dado que este servidor nao entende. Nunca muta a tabela recebida.
 function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, string?)
 	local version: number

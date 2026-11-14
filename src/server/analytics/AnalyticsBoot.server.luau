@@ -1,7 +1,10 @@
 --!nonstrict
 -- S7: liga o AnalyticsService ao servidor. O servico e puro; aqui ficam o relogio, o UUID,
 -- o contexto do jogador (player_id com salt, nunca UserId cru), o sink e o ciclo de sessao
--- (join/leave/shutdown). O envelope e validado pelo contrato v1 antes de entrar no lote.
+-- (join/leave/shutdown). O envelope e validado pelo contrato v2 antes de entrar no lote.
+-- Nao ha remote de analytics do cliente: eventos de cliente passam por emitClient, que recusa
+-- server_only (v2: trap_moved, wall_upgraded, cosmetic_equipped). O store segue
+-- `MuralhaAnalytics_v1` (nome de chave, nao versao do schema; o coletor aceita v1 e v2).
 --
 -- Sink (GAP-012): producao usa DataStore em lote (`MuralhaAnalytics_v1`); Studio usa Memory
 -- por padrao. ServerStorage.AnalyticsSink = "DataStore" | "Memory" | "Null" forca o modo.
@@ -17,6 +20,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AnalyticsTypes = require(Shared:WaitForChild("analytics"):WaitForChild("AnalyticsTypes"))
+local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
 local ProfileSchema = require(Shared:WaitForChild("data"):WaitForChild("ProfileSchema"))
 
 local ProfileRegistry =
@@ -64,13 +68,7 @@ local function newUuid(): string
 end
 
 local function normalizeLocale(raw: any): string
-	if type(raw) == "string" then
-		local language, region = string.match(string.lower(raw), "^(%a%a)[-_](%a%a)$")
-		if language ~= nil and region ~= nil then
-			return language .. "-" .. string.upper(region)
-		end
-	end
-	return "pt-BR"
+	return I18n.toAnalyticsLocale(raw)
 end
 
 local function platformFor(player: Player): string

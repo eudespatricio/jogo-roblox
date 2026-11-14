@@ -1,4 +1,4 @@
---!nonstrict
+--!strict
 -- S5: cena de abertura com DEFENDER, timeout roteirizado e retry.
 -- O estado/tempos sao puros (DropInState); a batalha do press e real (Core, seed 4, muralha
 -- pre-montada com catapulta). O visual da cena e local no cliente; o servidor e a verdade.
@@ -27,7 +27,7 @@ local REMOTES_NAME = "MuralhaRemotes"
 local DROPIN_SEED = 4
 local RUN_TICKS = 100
 local WAVE = { count = 12, spawnEveryTicks = 8 }
-local REWARD_GOLD = 3
+local STARTER_GOLD = 40
 
 local function newUuid(): string
 	local raw = string.lower(HttpService:GenerateGUID(false))
@@ -76,13 +76,14 @@ end
 -- A fabrica evita que uma rodada mute a parede da proxima.
 local function prebuiltWall(): any
 	return {
+		level = 1,
 		hp = 500,
 		traps = {
-			{ cell = "r1c3", type = "archer", level = 1 },
-			{ cell = "r2c3", type = "tar", level = 1 },
-			{ cell = "r3c3", type = "catapult", level = 1 },
-			{ cell = "r4c3", type = "frost", level = 1 },
-			{ cell = "r5c3", type = "cannon", level = 1 },
+			{ cell = "r1c3", type = "archer", level = 1, x = 5000, y = 500 },
+			{ cell = "r2c3", type = "tar", level = 1, x = 5000, y = 1500 },
+			{ cell = "r3c3", type = "catapult", level = 1, x = 5000, y = 2500 },
+			{ cell = "r4c3", type = "frost", level = 1, x = 5000, y = 3500 },
+			{ cell = "r5c3", type = "cannon", level = 1, x = 5000, y = 4500 },
 		},
 	}
 end
@@ -134,8 +135,15 @@ local function logShown(session: any, player: Player, msSinceJoin: number): ()
 		warn("[dropin] shown props invalidas: " .. tostring(err))
 		return
 	end
-	session.shownLogged = true
-	logAnalytics(player, "dropin_shown", props)
+	local event, emitErr = AnalyticsService.emit(player, "dropin_shown", props)
+	if event ~= nil then
+		session.shownLogged = true
+	elseif emitErr == "not_started" then
+		session.shownLogged = true
+		print(DropInTelemetry.format("dropin_shown", props))
+	elseif emitErr ~= "no_session" then
+		warn("[dropin] analytics dropin_shown recusado: " .. tostring(emitErr))
+	end
 end
 
 local function logPressed(player: Player, msSinceJoin: number): ()
@@ -147,8 +155,8 @@ local function logPressed(player: Player, msSinceJoin: number): ()
 	logAnalytics(player, "dropin_pressed", props)
 end
 
--- Recompensa do GDD §2: +3 ouro ao limpar a onda. Fonte "defense" (taxonomia v1); a
--- mutacao passa pelo WallService (gold + evento gold_earned) e o ProfileStore autosalva.
+-- Starter grant unico (AUD-05): +40 ouro ao limpar a onda apenas na 1a defesa (defenses == 0),
+-- comprando a 1a armadilha (archer). Veteranos (defenses > 0) recebem 0g e seguem para DropInDone.
 local function grantReward(player: Player): boolean
 	for _ = 1, 100 do
 		if player.Parent ~= Players then
@@ -156,9 +164,17 @@ local function grantReward(player: Player): boolean
 		end
 		local profileSession = ProfileRegistry.get(player)
 		if profileSession ~= nil and type(profileSession.Data) == "table" then
+			local data = profileSession.Data
+			if type(data.stats) ~= "table" or type(data.stats.defenses) ~= "number" then
+				warn("[dropin] starter grant: profile.stats.defenses invalido")
+				return false
+			end
+			if data.stats.defenses ~= 0 then
+				return true
+			end
 			local serviceOk, service = pcall(function()
 				return WallService.new({
-					profile = profileSession.Data,
+					profile = data,
 					schema = ProfileSchema,
 					catalog = TrapCatalog,
 					emit = function(name: string, props: { [string]: any })
@@ -170,12 +186,13 @@ local function grantReward(player: Player): boolean
 				warn("[dropin] reward: WallService.new falhou: " .. tostring(service))
 				return false
 			end
-			local result, err = service.creditGold(REWARD_GOLD, "defense", nil)
+			data.stats.defenses = 1
+			local result, err = service.creditGold(STARTER_GOLD, "defense", nil)
 			if result == nil then
-				warn("[dropin] reward recusado: " .. tostring(err))
+				warn("[dropin] starter grant recusado: " .. tostring(err))
 				return false
 			end
-			print(string.format("[dropin] +%d ouro gold=%d", REWARD_GOLD, result.gold))
+			print(string.format("[dropin] +%d ouro gold=%d", STARTER_GOLD, result.gold))
 			return true
 		end
 		task.wait(0.1)
@@ -242,7 +259,7 @@ local function snapshotFor(player: Player, logShownEvent: boolean?): any
 		)
 	end
 
-	local snapshot = DropInState.snapshot(session.state, now)
+	local snapshot: { [string]: any } = DropInState.snapshot(session.state, now) :: any
 	snapshot.msSinceJoin = now - session.joinAtMs
 	snapshot.joinAtMs = session.joinAtMs
 	return snapshot

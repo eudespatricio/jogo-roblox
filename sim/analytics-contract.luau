@@ -1,11 +1,12 @@
 --!nonstrict
--- Contrato de analytics v1 (P0): envelope, catalogo, limites, anti-PII e integracao com o motor.
+-- Contrato de analytics v2 (P2 onda 1; v1 = P0): envelope, catalogo, limites, anti-PII e integracao com o motor.
 -- Roda no Luau CLI: luau sim/analytics-contract.luau
 -- Regra dura: nenhum evento altera o BattleResult nem o hash (o servidor emite depois do hash).
 local Core = require("../src/shared/sim/core")
 local Analytics = require("../src/shared/analytics/AnalyticsTypes")
 local AnalyticsService = require("../src/server/analytics/AnalyticsService")
 local AnalyticsDataStoreSink = require("../src/server/analytics/AnalyticsDataStoreSink")
+local I18n = require("../src/shared/i18n/I18n")
 
 local failures = {}
 local checks = 0
@@ -48,7 +49,7 @@ end
 
 -- ---------------------------------------------------------------- contexto e fixtures
 local BATTLE_ID = "b7e2c9d4-1a3f-4c58-9e6b-0d2f4a6c8e10"
-local BATTLE_HASH = 2489780106
+local BATTLE_HASH = 1245379674
 local HASH32 = "3f7a9c1e5b2d4f608a1c3e5b7d9f0a2c"
 local CODE_HASH = "9d1e2f3a4b5c6d7e8f9012345678abcd"
 local EVENT_ID = "5f0c1e6a-9b2d-4c3f-8a71-2d4e6f8a0b1c"
@@ -86,14 +87,14 @@ local PROPS = {
 	battle_started = {
 		battle_id = BATTLE_ID,
 		seed = 42,
-		sim_version = 3,
+		sim_version = 5,
 		grid_width = 5,
 		traps_count = 5,
 	},
 	battle_finished = {
 		battle_id = BATTLE_ID,
 		seed = 42,
-		sim_version = 3,
+		sim_version = 5,
 		result_hash = BATTLE_HASH,
 		winner = "defender",
 		wall_hp = 45,
@@ -105,8 +106,19 @@ local PROPS = {
 	-- 2.3 economia
 	gold_earned = { amount = 120, source = "raid", battle_id = BATTLE_ID },
 	gold_spent = { amount = 80, sink = "trap" },
-	trap_placed = { trap_id = "cannon", cell = "r1c3", cost = 40 },
-	upgrade_bought = { target = "wall_segment_2", level = 2, cost = 150 },
+	trap_placed = { trap_id = "cannon", cost = 40, x = 5000, y = 2500, level = 1 },
+	upgrade_bought = { target = "t2", level = 2, cost = 150 },
+	trap_moved = {
+		slot = "t1",
+		trap_id = "cannon",
+		level = 2,
+		from_x = 5000,
+		from_y = 500,
+		x = 3500,
+		y = 1000,
+	},
+	wall_upgraded = { from_level = 1, level = 2, cost = 150 },
+	cosmetic_equipped = { slot = "theme", cosmetic_id = "theme_default" },
 	league_changed = { ["from"] = 10, to = 7, delta = -3 },
 	blueprint_earned = { blueprint_id = "frost_blueprint", rarity = "rare", source = "raid" },
 	-- 2.4 monetizacao
@@ -147,12 +159,15 @@ local function validEvent(name)
 end
 
 -- ---------------------------------------------------------------- catalogo
-check("catalogo: schema 1 e 31 eventos da taxonomia", function()
-	assert(Analytics.SCHEMA_VERSION == 1, "schema_version deveria ser 1")
+check("catalogo: schema 2 e 34 eventos da taxonomia", function()
+	assert(Analytics.SCHEMA_VERSION == 2, "schema_version deveria ser 2")
+	assert(AnalyticsService.SCHEMA_VERSION == 2, "AnalyticsService.SCHEMA_VERSION deveria ser 2")
+	local collector = Analytics.COLLECTOR_SCHEMA_VERSIONS
+	assert(#collector == 2 and collector[1] == 1 and collector[2] == 2, "coletor aceita v1 e v2")
 	local names = Analytics.eventNames()
-	assert(#names == 31, "esperava 31 eventos: " .. tostring(#names))
+	assert(#names == 34, "esperava 34 eventos: " .. tostring(#names))
 	assert(#fixtureErrors == 0, "fixtures invalidas: " .. table.concat(fixtureErrors, " | "))
-	assert(countKeys(FIXTURES) == 31, "fixtures: " .. tostring(countKeys(FIXTURES)))
+	assert(countKeys(FIXTURES) == 34, "fixtures: " .. tostring(countKeys(FIXTURES)))
 	assert(Analytics.MAX_EVENTS_PER_SESSION == 200, "teto de eventos/sessao")
 	assert(Analytics.MAX_CLIENT_EVENTS_PER_MINUTE == 10, "rate limit de cliente")
 	assert(Analytics.MAX_FREE_STRING == 256, "limite de string livre")
@@ -269,7 +284,8 @@ check("envelope: enums, formatos e limites", function()
 		{ "server_id", "xyz" },
 		{ "place_version", string.rep("a", 65) },
 		{ "is_age_checked", "false" },
-		{ "schema_version", 2 },
+		{ "schema_version", 1 },
+		{ "schema_version", 3 },
 		{ "ts", 0 },
 		{ "experiment", string.rep("a", 65) },
 	}
@@ -321,19 +337,19 @@ check("lote: validateAll aponta o indice do invalido", function()
 end)
 
 -- ---------------------------------------------------------------- motor
-check("BattleResult expoe seed e simVersion 3 com o hash novo", function()
+check("BattleResult expoe seed e simVersion 6 com o hash de referencia", function()
 	local result = Core.Run(42)
-	assert(result.hash == 2489780106, "hash mudou: " .. tostring(result.hash))
+	assert(result.hash == 1245379674, "hash mudou: " .. tostring(result.hash))
 	assert(result.seed == 42, "seed ausente no resultado: " .. tostring(result.seed))
 	assert(result.simVersion == Core.SIM_VERSION, "simVersion divergente")
-	assert(Core.SIM_VERSION == 3, "simVersion deveria ser 3 (5 tipos)")
+	assert(Core.SIM_VERSION == 6, "simVersion deveria ser 6")
 
 	local event, err = Analytics.battleFinished(CTX, BATTLE_ID, result)
 	assert(event ~= nil, "evento de batalha invalido: " .. tostring(err))
 	assert(event.battle_id == BATTLE_ID, "battle_id perdido")
 	assert(event.seed == 42, "seed nao foi para o evento")
 	assert(event.sim_version == Core.SIM_VERSION, "sim_version nao foi para o evento")
-	assert(event.result_hash == 2489780106, "hash nao foi para o evento")
+	assert(event.result_hash == 1245379674, "hash nao foi para o evento")
 	assert(event.duration_ms == result.ticks * 50, "duracao derivada errada")
 	assert(event.winner == result.winner and event.ticks == result.ticks, "resultado nao copiado")
 end)
@@ -344,7 +360,7 @@ check("analytics nao altera o resultado da batalha", function()
 	assert(Analytics.validate(event), "evento invalido")
 	local after = Core.Run(42)
 	assert(before.hash == after.hash, "hash mudou depois do evento")
-	assert(before.hash == 2489780106, "hash de referencia mudou")
+	assert(before.hash == 1245379674, "hash de referencia mudou")
 	assert(before.winner == after.winner, "vencedor mudou")
 	assert(before.ticks == after.ticks and before.leaked == after.leaked, "estado mudou")
 	assert(before.wallHp == after.wallHp, "wallHp mudou")
@@ -497,7 +513,7 @@ local function newService(options)
 	return service, record, clock
 end
 
-check("servico: os 31 eventos do catalogo validam e chegam ao sink", function()
+check("servico: os 34 eventos do catalogo validam e chegam ao sink", function()
 	local service, record = newService()
 	local session, beginErr = service.beginSession(1, sessionFields())
 	assert(session ~= nil, tostring(beginErr))
@@ -508,7 +524,7 @@ check("servico: os 31 eventos do catalogo validam e chegam ao sink", function()
 		accepted += 1
 	end
 	local flushed = service.flush("test")
-	assert(flushed == accepted + 1, "flush deveria levar session_start + 31 eventos")
+	assert(flushed == accepted + 1, "flush deveria levar session_start + 34 eventos")
 	assert(#record.events == accepted + 1, "sink recebeu " .. tostring(#record.events))
 	for _, event in ipairs(record.events) do
 		local ok, err = Analytics.validate(event)
@@ -603,11 +619,20 @@ check("teto de 200: funil/monetizacao passam, economia nao", function()
 	local service = newService()
 	assert(service.beginSession(1, sessionFields()) ~= nil, "beginSession")
 	for _ = 1, 199 do
-		assert(service.emit(1, "trap_placed", { trap_id = "archer", cell = "r1c3", cost = 40 }))
+		assert(
+			service.emit(
+				1,
+				"trap_placed",
+				{ trap_id = "archer", cost = 40, x = 5000, y = 500, level = 1 }
+			)
+		)
 	end
 	assert(service.getStats().accepted == 200, "accepted=" .. tostring(service.getStats().accepted))
-	local blocked, blockedErr =
-		service.emit(1, "trap_placed", { trap_id = "archer", cell = "r1c3", cost = 40 })
+	local blocked, blockedErr = service.emit(
+		1,
+		"trap_placed",
+		{ trap_id = "archer", cost = 40, x = 5000, y = 500, level = 1 }
+	)
 	assert(blocked == nil and blockedErr == "session_cap", tostring(blockedErr))
 	local priority = service.emit(1, "purchase_complete", PROPS.purchase_complete)
 	assert(priority ~= nil, "monetizacao deveria passar acima do teto")
@@ -760,7 +785,7 @@ check("analytics nao altera BattleResult nem o hash", function()
 	assert(deepEqual(before, snapshot), "o servico mutou o BattleResult")
 	local after = Core.Run(42)
 	assert(deepEqual(before, after), "hash/resultado mudou depois do evento")
-	assert(after.hash == 2489780106, "hash de referencia mudou")
+	assert(after.hash == 1245379674, "hash de referencia mudou")
 end)
 
 check("servico sem boot recusa sem quebrar", function()
@@ -889,6 +914,59 @@ check("sink DataStore integra com AnalyticsService", function()
 	assert(store.writes == 1, "sink nao recebeu o lote")
 	local stats = service.getStats()
 	assert(stats.flushed == 2, "flushed=" .. tostring(stats.flushed))
+end)
+
+check("normalizacao de locale LATAM/Roblox para ll-CC v1", function()
+	local cases = {
+		{ "es-419", "es-MX" },
+		{ "ES-419", "es-MX" },
+		{ "es_419", "es-MX" },
+		{ "es", "es-MX" },
+		{ "es-ES", "es-ES" },
+		{ "es_mx", "es-MX" },
+		{ "en", "en-US" },
+		{ "en-US", "en-US" },
+		{ "en_gb", "en-GB" },
+		{ "pt", "pt-BR" },
+		{ "pt-BR", "pt-BR" },
+		{ "pt_br", "pt-BR" },
+		{ "fr-FR", "fr-FR" },
+		{ "fr", "pt-BR" },
+		{ "", "pt-BR" },
+		{ nil, "pt-BR" },
+		{ 123, "pt-BR" },
+		{ "invalid-locale", "pt-BR" },
+	}
+	for _, item in ipairs(cases) do
+		local normalized = I18n.toAnalyticsLocale(item[1])
+		assert(
+			normalized == item[2],
+			string.format(
+				"toAnalyticsLocale(%s) = %s != %s",
+				tostring(item[1]),
+				normalized,
+				item[2]
+			)
+		)
+		local ctx = clone(CTX)
+		ctx.locale = normalized
+		local event, err = Analytics.newEvent(ctx, "session_start", PROPS.session_start)
+		assert(
+			event ~= nil,
+			"locale normalizado rejeitado: " .. normalized .. " :: " .. tostring(err)
+		)
+	end
+
+	local rawEs419 = clone(CTX)
+	rawEs419.locale = "es-419"
+	local badEvent = Analytics.newEvent(rawEs419, "session_start", PROPS.session_start)
+	assert(badEvent == nil, "AnalyticsTypes nao deveria aceitar es-419 cru")
+
+	local service = newService()
+	local startEvent, beginErr =
+		service.beginSession(1, sessionFields({ locale = I18n.toAnalyticsLocale("es-419") }))
+	assert(startEvent ~= nil, tostring(beginErr))
+	assert(startEvent.locale == "es-MX", "locale da sessao deveria ser es-MX")
 end)
 
 print(string.format("contrato de analytics: %d checagens, %d falhas", checks, #failures))

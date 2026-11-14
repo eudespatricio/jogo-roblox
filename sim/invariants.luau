@@ -1,5 +1,5 @@
 --!nonstrict
--- Invariantes executaveis da Muralha (matematica v2: grade 5x5, N=5, colocacao livre).
+-- Invariantes executaveis da Muralha (matematica v5: posicoes livres, Nv1..Nv5, L1..L5, disparo real e sinergias).
 -- Roda no Luau CLI e falha o processo se qualquer regra de negocio for violada:
 --   luau sim/invariants.luau
 local Core = require("../src/shared/sim/core")
@@ -95,7 +95,7 @@ check("I5 resultado consistente", function()
 		assert(r.ticks > 0 and r.ticks <= Core.MAX_TICKS, "ticks fora do cap")
 		assert(r.spawned <= 70, "spawnou mais que a onda")
 		assert(r.traps == 5, "loadout padrao deveria ter 5 ativas")
-		assert(r.simVersion == 3, "simVersion deveria ser 3")
+		assert(r.simVersion == 6, "simVersion deveria ser 6")
 		assert(r.hash == math.floor(r.hash), "hash fracionario")
 	end
 end)
@@ -211,6 +211,395 @@ check("I11 loadout invalido e recusado", function()
 		wave = { count = 70 },
 	})
 	assert(empty:Run().traps == 0, "parede sem armadilhas deveria rodar")
+end)
+
+-- I12: disparo real, slow parametrizado/splash e sinergias espaciais
+check("I12 disparo real, slow e sinergias espaciais", function()
+	Core.setTuning({ powerPct = 50 })
+	local ok, err = pcall(function()
+		local probe = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { traps = {} },
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		probe:Step()
+		local lane = probe.uLane[1]
+		local startHp = probe.uHp[1]
+		local baseSpeed = probe.uBaseSpeed[1]
+
+		-- 1) Disparo real: cannon em c1 (x=2000, range=2200 -> uX<=4200) nao gasta cd no vazio
+		local smart = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = {
+				traps = { { cell = string.format("r%dc1", lane), type = "cannon", level = 1 } },
+			},
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		local firedTick = nil
+		for _ = 1, 100 do
+			smart:Step()
+			if smart.traps[1].cd > 0 then
+				firedTick = smart.tick
+				break
+			end
+			assert(smart.traps[1].cd == 0, "cannon gastou cd sem alvo")
+			assert(smart.uHp[1] == startHp, "dano sem disparo")
+		end
+		assert(firedTick ~= nil and firedTick > 10, "cannon deveria esperar alvo entrar no alcance")
+		assert(smart.traps[1].cd == smart.traps[1].baseCd, "cd nao resetou para baseCd")
+		local cannonDmg = startHp - smart.uHp[1]
+		assert(cannonDmg > 0, "cannon nao causou dano ao disparar")
+
+		-- 2) Bateria Cruzada: archer ortogonalmente adjacente -1t cd, cap -2t, piso 8t
+		local soloArcher = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { traps = { { cell = "r1c1", type = "archer", level = 1 } } },
+			wave = { count = 0 },
+		})
+		assert(soloArcher.traps[1].baseCd == 10, "archer isolada baseCd != 10")
+
+		local crossBattery = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = {
+				traps = {
+					{ cell = "r2c2", type = "archer", level = 1 },
+					{ cell = "r1c2", type = "archer", level = 1 },
+					{ cell = "r3c2", type = "archer", level = 1 },
+					{ cell = "r2c1", type = "archer", level = 1 },
+					{ cell = "r2c3", type = "archer", level = 1 },
+				},
+			},
+			wave = { count = 0 },
+		})
+		-- v5: ordem canonica (y, x) -> [1]=r1c2, [2]=r2c1, [3]=r2c2 (centro), [4]=r2c3, [5]=r3c2
+		assert(crossBattery.traps[3].baseCd == 8, "centro da cruz deveria bater cap/piso 8t")
+		assert(crossBattery.traps[1].baseCd == 9, "vizinho com 1 archer deveria ter baseCd 9t")
+
+		-- 3) Piche Incendiario: tar marca uTarUntil=tick+30; cannon e catapult causam *1250/1000
+		local tarOnly = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { traps = { { cell = string.format("r%dc5", lane), type = "tar", level = 1 } } },
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		while (tarOnly.uTarUntil[1] or 0) == 0 and tarOnly.tick < 50 do
+			tarOnly:Step()
+		end
+		assert(tarOnly.uTarUntil[1] == tarOnly.tick + 30, "tar nao aplicou uTarUntil=tick+30")
+
+		local tarCannon = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			-- v5: ordem canonica (y, x) poe o cannon (c3) antes do tar (c5) -> traps[1]
+			wall = {
+				traps = {
+					{ cell = string.format("r%dc5", lane), type = "tar", level = 1 },
+					{ cell = string.format("r%dc3", lane), type = "cannon", level = 1 },
+				},
+			},
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		local prevHp = startHp
+		while tarCannon.traps[1].cd == 0 and tarCannon.tick < 100 do
+			prevHp = tarCannon.uHp[1] or startHp
+			tarCannon:Step()
+		end
+		assert(tarCannon.traps[1].cd > 0, "cannon nao disparou com tar")
+		assert(tarCannon.tick <= tarCannon.uTarUntil[1], "uTarUntil expirou antes do cannon")
+		local tarCannonHit = prevHp - tarCannon.uHp[1]
+		assert(
+			tarCannonHit == math.floor(cannonDmg * 1250 / 1000),
+			"Piche Incendiario (cannon) divergiu: " .. tostring(tarCannonHit)
+		)
+
+		local catapultOnly = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = {
+				traps = { { cell = string.format("r%dc3", lane), type = "catapult", level = 1 } },
+			},
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		while catapultOnly.traps[1].cd == 0 and catapultOnly.tick < 100 do
+			catapultOnly:Step()
+		end
+		local catapultDmg = startHp - catapultOnly.uHp[1]
+
+		local tarCatapult = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = {
+				traps = {
+					{ cell = string.format("r%dc5", lane), type = "tar", level = 1 },
+					{ cell = string.format("r%dc3", lane), type = "catapult", level = 1 },
+				},
+			},
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		prevHp = startHp
+		while tarCatapult.traps[1].cd == 0 and tarCatapult.tick < 100 do
+			prevHp = tarCatapult.uHp[1] or startHp
+			tarCatapult:Step()
+		end
+		assert(tarCatapult.traps[1].cd > 0, "catapult nao disparou com tar")
+		assert(tarCatapult.tick <= tarCatapult.uTarUntil[1], "uTarUntil expirou antes da catapult")
+		local tarCatapultHit = prevHp - tarCatapult.uHp[1]
+		assert(
+			tarCatapultHit == math.floor(catapultDmg * 1250 / 1000),
+			"Piche Incendiario (catapult) divergiu: " .. tostring(tarCatapultHit)
+		)
+
+		-- 4) Choque Termico + uSlowPct: frost marca uFrostUntil, cannon causa *1200/1000 sem consumir slow
+		local frostCannon = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = {
+				traps = {
+					{ cell = string.format("r%dc5", lane), type = "frost", level = 1 },
+					{ cell = string.format("r%dc4", lane), type = "cannon", level = 1 },
+				},
+			},
+			wave = { count = 1, spawnEveryTicks = 1 },
+		})
+		frostCannon:Step()
+		assert(
+			frostCannon.uSlowUntil[1] == 1 + Core.TRAP.frost.slowTicks,
+			"frost nao aplicou uSlowUntil"
+		)
+		assert(frostCannon.uSlowPct[1] == Core.TRAP.frost.slowPct, "frost nao gravou uSlowPct")
+		assert(
+			frostCannon.uFrostUntil[1] == 1 + Core.TRAP.frost.slowTicks,
+			"frost nao gravou uFrostUntil"
+		)
+		assert(
+			frostCannon.uX[1] == 10000 - math.floor(baseSpeed * Core.TRAP.frost.slowPct / 100),
+			"velocidade com uSlowPct incorreta"
+		)
+		prevHp = frostCannon.uHp[1]
+		while frostCannon.traps[1].cd == 0 and frostCannon.tick < 100 do
+			prevHp = frostCannon.uHp[1]
+			frostCannon:Step()
+		end
+		assert(frostCannon.traps[1].cd > 0, "cannon nao disparou com frost")
+		assert(
+			frostCannon.uSlowUntil[1] >= frostCannon.tick,
+			"slow nao deve ser consumido pelo cannon"
+		)
+		assert(frostCannon.uFrostUntil[1] >= frostCannon.tick, "uFrostUntil nao deve ser consumido")
+		local frostCannonHit = prevHp - frostCannon.uHp[1]
+		assert(
+			frostCannonHit == math.floor(cannonDmg * 1200 / 1000),
+			"Choque Termico divergiu: " .. tostring(frostCannonHit)
+		)
+	end)
+	Core.setTuning({ powerPct = Core.DEFAULT_POWER_PCT })
+	assert(ok, err)
+end)
+
+-- I13: imutabilidade de tabelas estaticas e Core.setTuning
+check("I13 tabelas congeladas e Core.setTuning", function()
+	assert(table.isfrozen(Core.UNIT), "Core.UNIT nao congelada")
+	assert(table.isfrozen(Core.UNIT.runner), "Core.UNIT.runner nao congelada")
+	assert(table.isfrozen(Core.TRAP), "Core.TRAP nao congelada")
+	assert(table.isfrozen(Core.TRAP.archer), "Core.TRAP.archer nao congelada")
+	assert(table.isfrozen(Core.TRAP_NAMES), "Core.TRAP_NAMES nao congelada")
+	assert(table.isfrozen(Core.TUNING), "Core.TUNING nao congelada")
+
+	assert(not pcall(function()
+		Core.TRAP.oil = Core.TRAP.tar
+	end), "permitiu mutar Core.TRAP")
+	assert(not pcall(function()
+		Core.TRAP.archer.dmg = 1
+	end), "permitiu mutar Core.TRAP.archer")
+	assert(not pcall(function()
+		Core.TUNING.powerPct = 1
+	end), "permitiu mutar Core.TUNING")
+
+	local baseHash = Core.Run(42).hash
+	local updated = Core.setTuning({ powerPct = 150 })
+	assert(updated.powerPct == 150 and Core.TUNING.powerPct == 150, "setTuning nao atualizou")
+	assert(table.isfrozen(Core.TUNING), "novo Core.TUNING nao congelado")
+	local tunedHash = Core.Run(42).hash
+	assert(tunedHash ~= baseHash, "setTuning nao refletiu ao vivo no motor")
+
+	Core.setTuning({ powerPct = Core.DEFAULT_POWER_PCT })
+	assert(Core.Run(42).hash == baseHash, "restaurar DEFAULT_POWER_PCT mudou hash")
+
+	assert(not pcall(Core.setTuning, { powerPct = 0 }), "aceitou powerPct=0")
+	assert(not pcall(Core.setTuning, { powerPct = 1.5 }), "aceitou powerPct fracionario")
+	assert(not pcall(Core.setTuning, { leakScalePct = -1 }), "aceitou leakScalePct negativo")
+end)
+
+-- I15 (v5): colocacao livre — posicao/grade/espacamento, ordem canonica e alcance lateral
+check("I15 colocacao livre (posicao, espacamento, ordem, alcance lateral)", function()
+	local function battle(traps, count)
+		return Core.Battle.new({
+			seed = 7,
+			simVersion = Core.SIM_VERSION,
+			wall = { traps = traps },
+			wave = { count = count or 0 },
+		})
+	end
+	-- celula legada == centro da celula
+	local cx, cy = Core.cellToPos("r2c3")
+	assert(cx == 5000 and cy == 1500, "cellToPos r2c3 != (5000,1500)")
+	assert(Core.posToCell(5000, 1500) == "r2c3", "posToCell nao inverte")
+	assert(Core.posToCell(5250, 1500) == nil, "posToCell aceitou fora do centro")
+	local byCell = Core.Run(42).hash
+	local posWall = Core.defaultWall()
+	for _, trap in ipairs(posWall.traps) do
+		trap.cell = nil
+	end
+	local byPos = Core.Battle
+		.new({ seed = 42, simVersion = Core.SIM_VERSION, wall = posWall, wave = { count = 70 } })
+		:Run().hash
+	assert(byPos == byCell, "posicao do centro divergiu da celula legada")
+	-- ordem de entrada nao muda o replay
+	local shuffled = Core.defaultWall()
+	local rev = {}
+	for i = #shuffled.traps, 1, -1 do
+		rev[#rev + 1] = shuffled.traps[i]
+	end
+	shuffled.traps = rev
+	local byRev = Core.Battle
+		.new({ seed = 42, simVersion = Core.SIM_VERSION, wall = shuffled, wave = { count = 70 } })
+		:Run().hash
+	assert(byRev == byCell, "ordem de entrada mudou o hash")
+	-- validacao: limites, grade, espacamento, cell x posicao
+	assert(not pcall(battle, { { type = "archer", x = 900, y = 500 } }), "aceitou x < xMin")
+	assert(not pcall(battle, { { type = "archer", x = 9250, y = 500 } }), "aceitou x > xMax")
+	assert(not pcall(battle, { { type = "archer", x = 5000, y = 4750 } }), "aceitou y > yMax")
+	assert(not pcall(battle, { { type = "archer", x = 5100, y = 500 } }), "aceitou fora da grade")
+	assert(not pcall(battle, { { type = "archer", x = 5000.5, y = 500 } }), "aceitou float")
+	assert(
+		not pcall(
+			battle,
+			{ { type = "archer", x = 5000, y = 500 }, { type = "frost", x = 5750, y = 1250 } }
+		),
+		"aceitou espacamento < minSpacing"
+	)
+	assert(
+		pcall(
+			battle,
+			{ { type = "archer", x = 5000, y = 500 }, { type = "frost", x = 6000, y = 1250 } }
+		),
+		"recusou espacamento == minSpacing"
+	)
+	assert(
+		not pcall(battle, { { cell = "r1c1", type = "archer", x = 3500, y = 500 } }),
+		"aceitou cell e posicao divergentes"
+	)
+	-- alcance lateral: centro da lane alcanca so a lane; divisa alcanca as duas
+	local center = battle({ { type = "cannon", x = 2000, y = 1500 } })
+	local border = battle({ { type = "cannon", x = 2000, y = 1000 } })
+	for _, b in ipairs({ center, border }) do
+		b.uCount = 2
+		for i, lane in ipairs({ 1, 2 }) do
+			b.uHp[i] = 1000 * Core.MILLI
+			b.uX[i] = 3500
+			b.uY[i] = Core.laneY(lane)
+			b.uLane[i] = lane
+			b.uBaseSpeed[i] = 0
+			b.uSlowUntil[i], b.uSlowPct[i], b.uTarUntil[i], b.uFrostUntil[i] = 0, 100, 0, 0
+			b.uLeak[i] = 0
+		end
+	end
+	assert(center:applyTrap(center.traps[1]), "centro nao disparou")
+	assert(
+		center.uHp[1] == 1000 * Core.MILLI and center.uHp[2] < 1000 * Core.MILLI,
+		"centro errou a lane"
+	)
+	-- v6: archer atinge area circular 360 graus (omni), inclusive em lane vizinha e atras
+	local omni = battle({ { type = "archer", x = 5000, y = 2500 } })
+	omni.uCount = 2
+	omni.uHp[1], omni.uX[1], omni.uY[1], omni.uLane[1] = 1000 * Core.MILLI, 2000, 500, 1
+	omni.uHp[2], omni.uX[2], omni.uY[2], omni.uLane[2] = 1000 * Core.MILLI, 3500, 1500, 2
+	for i = 1, 2 do
+		omni.uBaseSpeed[i] = 0
+		omni.uSlowUntil[i], omni.uSlowPct[i], omni.uTarUntil[i], omni.uFrostUntil[i] = 0, 100, 0, 0
+		omni.uLeak[i] = 0
+	end
+	assert(omni:applyTrap(omni.traps[1]), "archer omni nao disparou em area 360")
+	assert(
+		omni.uHp[1] == 1000 * Core.MILLI and omni.uHp[2] < 1000 * Core.MILLI,
+		"archer omni deveria atingir unidade dentro do raio 360 e ignorar fora do raio"
+	)
+	local splash = battle({ { type = "catapult", x = 2000, y = 1000 } })
+	splash.uCount = 2
+	for i, lane in ipairs({ 1, 2 }) do
+		splash.uHp[i] = 1000 * Core.MILLI
+		splash.uX[i] = 4000
+		splash.uY[i] = Core.laneY(lane)
+		splash.uLane[i] = lane
+		splash.uTarUntil[i], splash.uFrostUntil[i], splash.uSlowUntil[i], splash.uSlowPct[i] =
+			0, 0, 0, 100
+	end
+	assert(splash:applyTrap(splash.traps[1]), "catapult na divisa nao disparou")
+	assert(
+		splash.uHp[1] < 1000 * Core.MILLI and splash.uHp[2] < 1000 * Core.MILLI,
+		"catapult na divisa deveria alcancar as duas lanes"
+	)
+	local ok, idx = border:CheckIntegers()
+	assert(ok, "inteiros quebrados " .. tostring(idx))
+end)
+
+-- I16 (v5): muralha Nv1..Nv5 (hp/limite) e armadilhas L1..L5
+check("I16 muralha Nv1..Nv5 e armadilhas L4/L5", function()
+	local expected = { { 500, 5 }, { 650, 5 }, { 800, 6 }, { 1000, 6 }, { 1250, 7 } }
+	assert(#Core.WALL_LEVELS == 5 and table.isfrozen(Core.WALL_LEVELS), "WALL_LEVELS")
+	for lvl, pair in ipairs(expected) do
+		local def = Core.WALL_LEVELS[lvl]
+		assert(def.hp == pair[1] and def.trapLimit == pair[2], "Nv" .. lvl .. " divergiu")
+		local b = Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { level = lvl, traps = {} },
+			wave = { count = 0 },
+		})
+		assert(b.wallHp == pair[1] * Core.MILLI, "hp do Nv" .. lvl .. " nao aplicado")
+	end
+	local function traps(n)
+		local list = {}
+		for i = 1, n do
+			list[i] = { type = "archer", x = 1000 + (i - 1) * 1000, y = 500 }
+		end
+		return list
+	end
+	local function build(level, n)
+		return Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { level = level, traps = traps(n) },
+			wave = { count = 0 },
+		})
+	end
+	assert(pcall(build, 1, 5) and not pcall(build, 1, 6), "Nv1 limite 5")
+	assert(pcall(build, 3, 6) and not pcall(build, 3, 7), "Nv3 limite 6")
+	assert(pcall(build, 5, 7) and not pcall(build, 5, 8), "Nv5 limite 7")
+	assert(not pcall(build, 6, 1) and not pcall(build, 0, 1), "aceitou Nv fora de [1,5]")
+	-- L1..L3 iguais a v4 (100/120/140, sem bonus de cd); L4/L5 novos
+	local function trapAt(level)
+		return Core.Battle.new({
+			seed = 1,
+			simVersion = Core.SIM_VERSION,
+			wall = { traps = { { type = "cannon", level = level, x = 5000, y = 500 } } },
+			wave = { count = 0 },
+		}).traps[1]
+	end
+	assert(
+		trapAt(3).baseCd == 28 and trapAt(4).baseCd == 27 and trapAt(5).baseCd == 26,
+		"cd L3..L5"
+	)
+	assert(not pcall(trapAt, 6), "aceitou L6")
+	local pct = Core.LEVEL_DMG_PCT
+	assert(pct[1] == 100 and pct[2] == 120 and pct[3] == 140, "L1..L3 mudaram")
+	assert(pct[4] > pct[3] and pct[5] > pct[4], "L4/L5 nao escalam")
+	assert(Core.validateWall(Core.defaultWall()), "validateWall recusou defaultWall")
+	assert(not Core.validateWall({ level = 1, traps = traps(6) }), "validateWall aceitou 6 no Nv1")
 end)
 
 print(string.format("invariantes: %d checagens, %d falhas", checks, #failures))

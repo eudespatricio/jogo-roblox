@@ -8,12 +8,17 @@
 
 local TrapCatalog = {}
 
-TrapCatalog.CONTENT_VERSION = 2
+-- v3 (13/11/2026, P2): MAX_LEVEL 3 -> 5, tiers da muralha Nv1..Nv5 (WALL_LEVELS) e sink "wall".
+TrapCatalog.CONTENT_VERSION = 3
 TrapCatalog.POINTS_PER_LEAGUE = 100
-TrapCatalog.MAX_LEVEL = 3
+TrapCatalog.MAX_LEVEL = 5
+TrapCatalog.MAX_WALL_LEVEL = 5
 
 export type TrapDef = { cost: number, upgrade: number, unlockLeague: number }
 export type Catalog = { [string]: TrapDef }
+-- Tier da muralha: custo em ouro para CHEGAR neste nivel (Nv1 = 0) e liga minima.
+-- hp/limite ativo moram em Core.WALL_LEVELS (matematica da batalha); o contrato prova paridade.
+export type WallLevelDef = { cost: number, unlockLeague: number, hp: number, trapLimit: number }
 
 local TRAPS: Catalog = {
 	archer = { cost = 40, upgrade = 30, unlockLeague = 1 },
@@ -32,7 +37,35 @@ TrapCatalog.TRAP_ALIASES = table.freeze({
 	oil = "tar",
 })
 TrapCatalog.GOLD_SOURCES = table.freeze({ raid = true, defense = true, daily = true })
-TrapCatalog.GOLD_SINKS = table.freeze({ trap = true, upgrade = true })
+TrapCatalog.GOLD_SINKS = table.freeze({ trap = true, upgrade = true, wall = true })
+
+-- Tiers estruturais (docs/skills-tiers-e-modos.md §2.3; custo em docs/economia-muralha.md).
+local WALL_LEVELS: { WallLevelDef } = {
+	table.freeze({ cost = 0, unlockLeague = 1, hp = 500, trapLimit = 5 }),
+	table.freeze({ cost = 150, unlockLeague = 1, hp = 650, trapLimit = 5 }),
+	table.freeze({ cost = 350, unlockLeague = 3, hp = 800, trapLimit = 6 }),
+	table.freeze({ cost = 700, unlockLeague = 4, hp = 1000, trapLimit = 6 }),
+	table.freeze({ cost = 1200, unlockLeague = 5, hp = 1250, trapLimit = 7 }),
+}
+TrapCatalog.WALL_LEVELS = table.freeze(WALL_LEVELS)
+
+-- Custo do upgrade de armadilha do nivel `level` para `level + 1` (upgrade * nivel atual).
+function TrapCatalog.upgradeCost(trapId: string, level: number): number?
+	local def = TrapCatalog.TRAPS[trapId]
+	if def == nil or level < 1 or level >= TrapCatalog.MAX_LEVEL then
+		return nil
+	end
+	return def.upgrade * level
+end
+
+-- Custo para subir a muralha do nivel `level` para `level + 1` (nil se ja esta no teto).
+function TrapCatalog.wallUpgradeCost(level: number): number?
+	local nextDef = TrapCatalog.WALL_LEVELS[level + 1]
+	if level < 1 or nextDef == nil then
+		return nil
+	end
+	return nextDef.cost
+end
 
 local function isInteger(value: any): boolean
 	if type(value) ~= "number" then
@@ -56,12 +89,16 @@ end
 -- sobe `contentVersion` e falha fechado se o perfil veio de um catalogo futuro ou tem id
 -- desconhecido (nao apaga celula sem decisao explicita). Devolve (ok, erro, mudou).
 function TrapCatalog.ensureProfileContent(profile: any): (boolean, string?, boolean)
-	if
-		type(profile) ~= "table"
-		or type(profile.wall) ~= "table"
-		or type(profile.wall.cells) ~= "table"
-	then
-		return false, "perfil sem wall.cells", false
+	-- schema v3: wall.traps (id -> {trap, level, x, y}); schema <= 2: wall.cells (rXcY -> cell).
+	local container = nil
+	if type(profile) == "table" and type(profile.wall) == "table" then
+		container = profile.wall.traps
+		if type(container) ~= "table" then
+			container = profile.wall.cells
+		end
+	end
+	if type(container) ~= "table" then
+		return false, "perfil sem wall.traps/wall.cells", false
 	end
 	local version = profile.contentVersion
 	if not isInteger(version) or (version :: number) < 1 then
@@ -74,7 +111,7 @@ function TrapCatalog.ensureProfileContent(profile: any): (boolean, string?, bool
 
 	local keys: { string } = {}
 	local changes: { [string]: string } = {}
-	for cell, data in pairs(profile.wall.cells) do
+	for cell, data in pairs(container) do
 		if type(cell) ~= "string" or type(data) ~= "table" or type(data.trap) ~= "string" then
 			return false, "cell invalida", false
 		end
@@ -93,7 +130,7 @@ function TrapCatalog.ensureProfileContent(profile: any): (boolean, string?, bool
 	for _, cell in ipairs(keys) do
 		local alias = changes[cell]
 		if alias ~= nil then
-			profile.wall.cells[cell].trap = alias
+			container[cell].trap = alias
 			changed = true
 		end
 	end
@@ -159,7 +196,25 @@ function TrapCatalog.validate(): (boolean, string?)
 			return false, "GOLD_SOURCES sem " .. source
 		end
 	end
-	for _, sink in ipairs({ "trap", "upgrade" }) do
+	if #TrapCatalog.WALL_LEVELS ~= TrapCatalog.MAX_WALL_LEVEL then
+		return false, "WALL_LEVELS != MAX_WALL_LEVEL"
+	end
+	for index, wallDef in ipairs(TrapCatalog.WALL_LEVELS) do
+		if
+			not isInteger(wallDef.cost)
+			or wallDef.cost < 0
+			or (index > 1 and wallDef.cost < 1)
+			or not isInteger(wallDef.unlockLeague)
+			or wallDef.unlockLeague < 1
+			or not isInteger(wallDef.hp)
+			or wallDef.hp < 1
+			or not isInteger(wallDef.trapLimit)
+			or wallDef.trapLimit < 1
+		then
+			return false, "WALL_LEVELS[" .. index .. "] invalido"
+		end
+	end
+	for _, sink in ipairs({ "trap", "upgrade", "wall" }) do
 		if TrapCatalog.GOLD_SINKS[sink] ~= true then
 			return false, "GOLD_SINKS sem " .. sink
 		end

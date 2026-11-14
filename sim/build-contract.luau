@@ -105,9 +105,14 @@ check("snapshot do protocolo e defensivo", function()
 	local snapshot = BuildProtocol.snapshot(profile, TrapCatalog, GridLayout)
 	assert(snapshot ~= nil, "snapshot nil")
 	assert(snapshot.gold == 500, "gold")
-	assert(snapshot.contentVersion == 2, "contentVersion")
+	assert(snapshot.contentVersion == 3, "contentVersion")
+	assert(snapshot.wallLevel == 1 and snapshot.wallHp == 500, "wallLevel/wallHp")
+	assert(snapshot.activeTrapLimit == 5 and snapshot.maxTrapLevel == 5, "limits")
+	assert(snapshot.equipped.theme == "theme_default", "equipped")
+	assert(#snapshot.wallLevels == 5, "wallLevels")
 	assert(snapshot.cells.r1c1.trap == "tar", "tar")
 	assert(snapshot.cells.r1c1.level == 2, "level")
+	assert(snapshot.cells.r1c1.x == 2000 and snapshot.cells.r1c1.y == 500, "r1c1 x/y")
 	assert(snapshot.league == 1, "liga")
 	assert(#snapshot.catalog == 5, "catalogo: " .. #snapshot.catalog)
 	local catapult = nil
@@ -252,7 +257,7 @@ check("intencao do cliente -> request -> WallService", function()
 	BuildClientState.setSnapshot(state, BuildProtocol.snapshot(profile, TrapCatalog, GridLayout))
 	assert(BuildClientState.upgradeCost(state, "r3c3") == 60, "UI deveria exibir 60 no L2")
 	local low, high = BuildClientState.upgradeRange(BuildClientState.catalogEntry(state, "archer"))
-	assert(low == 30 and high == 60, "faixa 30/60")
+	assert(low == 30 and high == 120, "faixa 30/120")
 
 	assert(BuildClientState.setMode(state, "remove"), "nao trocou para remove")
 	local removeIntent = assert(BuildClientState.intent(state, "r3c3", GridLayout))
@@ -386,6 +391,173 @@ check("layout recusa tela impossivel", function()
 	assert(BuildLayout.compute(200, 200) == nil, "aceitou 200x200")
 	assert(BuildLayout.compute(0, 800) == nil, "aceitou largura 0")
 	assert(BuildLayout.compute(375, 200) == nil, "aceitou altura < 300")
+end)
+
+check(
+	"arenaPosToWorld e worldToArenaPos fazem ida-e-volta nos 25 centros e quantizam step 250",
+	function()
+		for _, cell in ipairs(GridLayout.allCells()) do
+			local ax, ay = GridLayout.cellToArenaPos(cell)
+			local wx, wy, wz = GridLayout.arenaPosToWorld(ax :: number, ay :: number)
+			local cx, cy, cz = GridLayout.cellToWorld(cell)
+			assert(wx == cx and wy == cy and wz == cz, "divergencia mundo em " .. cell)
+			local rx, ry = GridLayout.worldToArenaPos({ X = wx, Y = wy, Z = wz })
+			assert(rx == ax and ry == ay, "roundtrip falhou em " .. cell)
+		end
+		local qx, qy = GridLayout.worldToArenaPos(0.5, 0.2)
+		assert(qx % 250 == 0 and qy % 250 == 0, "nao quantizou para 250")
+		local cx1, cy1 = GridLayout.worldToArenaPos(-999, 999)
+		assert(cx1 == 1000 and cy1 == 4500, "nao clampou na arena")
+	end
+)
+
+check("protocolo P2: place livre, move, upgrade_wall e equip_cosmetic", function()
+	local profile = ProfileSchema.template()
+	profile.contentVersion = TrapCatalog.CONTENT_VERSION
+	profile.gold = 1000
+	profile.cosmetics.theme_obsidian = true
+	local service =
+		WallService.new({ profile = profile, schema = ProfileSchema, catalog = TrapCatalog })
+
+	local placeReq =
+		assert(BuildProtocol.validateRequest(GridLayout, "place", "archer", "", 1250, 750))
+	local placed, placeErr = BuildProtocol.apply(service, placeReq)
+	assert(placed ~= nil, tostring(placeErr))
+	assert(placed.slot == "t1" and profile.wall.cells.t1.x == 1250, "placeAt via protocol")
+
+	local moveReq = assert(BuildProtocol.validateRequest(GridLayout, "move", "", "t1", 2500, 1500))
+	local moved, moveErr = BuildProtocol.apply(service, moveReq)
+	assert(moved ~= nil, tostring(moveErr))
+	assert(profile.wall.cells.t1.x == 2500 and profile.wall.cells.t1.y == 1500, "move via protocol")
+
+	local wallReq = assert(BuildProtocol.validateRequest(GridLayout, "upgrade_wall", nil, nil))
+	local upWall, upErr = BuildProtocol.apply(service, wallReq)
+	assert(upWall ~= nil, tostring(upErr))
+	assert(profile.wall.level == 2, "upgrade_wall via protocol")
+
+	local eqReq = assert(
+		BuildProtocol.validateRequest(GridLayout, "equip_cosmetic", "theme", "theme_obsidian")
+	)
+	local eqRes, eqErr = BuildProtocol.apply(service, eqReq)
+	assert(eqRes ~= nil, tostring(eqErr))
+	assert(profile.equipped.theme == "theme_obsidian", "equip_cosmetic via protocol")
+
+	local state = BuildClientState.new()
+	BuildClientState.setSnapshot(state, BuildProtocol.snapshot(profile, TrapCatalog, GridLayout))
+	BuildClientState.selectTrap(state, "archer")
+	local intentAt = assert(BuildClientState.intentAt(state, 5000, 2500, GridLayout))
+	assert(intentAt.action == "place" and intentAt.x == 5000 and intentAt.y == 2500, "intentAt")
+	local intentMove = assert(BuildClientState.intentMove(state, "t1", 3500, 2500, GridLayout))
+	assert(intentMove.action == "move" and intentMove.slot == "t1", "intentMove")
+end)
+
+check("hud periferico mobile + safe insets: 9 viewports sem sobreposicao", function()
+	local function overlapsRect(a, b)
+		if a.w <= 0 or a.h <= 0 or b.w <= 0 or b.h <= 0 then
+			return false
+		end
+		return a.x < (b.x + b.w) and (a.x + a.w) > b.x and a.y < (b.y + b.h) and (a.y + a.h) > b.y
+	end
+	local function insideViewport(r, w, h)
+		return r.x >= 0 and r.y >= 0 and (r.x + r.w) <= w and (r.y + r.h) <= h
+	end
+
+	local cases = {
+		{ w = 667, h = 375 },
+		{ w = 800, h = 360 },
+		{ w = 812, h = 375 },
+		{ w = 734, h = 372 },
+		{ w = 375, h = 812 },
+		{ w = 320, h = 568 },
+		{ w = 720, h = 1280 },
+		{ w = 1280, h = 720 },
+		{ w = 1920, h = 1080 },
+		{ w = 667, h = 375, insets = { unibarLeftW = 148, topRightW = 56, unibarH = 44 } },
+	}
+
+	for _, c in ipairs(cases) do
+		local label = string.format("%dx%d", c.w, c.h)
+		local hud = BuildLayout.computeHud(c.w, c.h, c.insets)
+		local unibarW = if c.insets and c.insets.unibarLeftW then c.insets.unibarLeftW else 180
+		local topRightW = if c.insets and c.insets.topRightW then c.insets.topRightW else 0
+		local unibarH = if c.insets and c.insets.unibarH then c.insets.unibarH else 44
+		local unibarRect = { x = 0, y = 0, w = unibarW, h = unibarH }
+		local topRightRect = { x = c.w - topRightW, y = 0, w = topRightW, h = unibarH }
+
+		assert(
+			hud.goldPill.w <= 124,
+			label .. " goldPill larga demais: " .. tostring(hud.goldPill.w)
+		)
+		assert(hud.trapCardW >= 44 and hud.trapCardH >= 44, label .. " trapCard < 44")
+
+		local allInteractive = {
+			{ "goldPill", hud.goldPill },
+			{ "wallPill", hud.wallPill },
+			{ "camBtn", hud.camBtn },
+			{ "muteBtn", hud.muteBtn },
+			{ "comboBtn", hud.comboBtn },
+			{ "localeBtn", hud.localeBtn },
+			{ "toolsDock", hud.toolsDock },
+			{ "trapDock", hud.trapDock },
+			{ "defendBtn", hud.defendBtn },
+			{ "attackBtn", hud.attackBtn },
+			{ "combatTopPill", hud.combatTopPill },
+			{ "combatCamBtn", hud.combatCamBtn },
+			{ "combatSpeedBtn", hud.combatSpeedBtn },
+			{ "combatCloseBtn", hud.combatCloseBtn },
+			{ "combatResultCard", hud.combatResultCard },
+		}
+		for _, pair in ipairs(allInteractive) do
+			local name, r = pair[1], pair[2]
+			assert(r.h >= 44 and r.w >= 44, label .. " " .. name .. " < 44")
+			assert(insideViewport(r, c.w, c.h), label .. " " .. name .. " fora da tela")
+		end
+
+		local buildSet = {
+			{ "unibar", unibarRect },
+			{ "topRight", topRightRect },
+			{ "goldPill", hud.goldPill },
+			{ "wallPill", hud.wallPill },
+			{ "utilityCluster", hud.utilityCluster },
+			{ "toolsDock", hud.toolsDock },
+			{ "trapDock", hud.trapDock },
+			{ "defendBtn", hud.defendBtn },
+			{ "attackBtn", hud.attackBtn },
+		}
+		for i = 1, #buildSet - 1 do
+			for j = i + 1, #buildSet do
+				assert(
+					not overlapsRect(buildSet[i][2], buildSet[j][2]),
+					label .. " build overlap " .. buildSet[i][1] .. " vs " .. buildSet[j][1]
+				)
+			end
+		end
+
+		local combatSet = {
+			{ "unibar", unibarRect },
+			{ "topRight", topRightRect },
+			{ "combatTopPill", hud.combatTopPill },
+			{ "combatCamBtn", hud.combatCamBtn },
+			{ "combatSpeedBtn", hud.combatSpeedBtn },
+			{ "combatCloseBtn", hud.combatCloseBtn },
+		}
+		for i = 1, #combatSet - 1 do
+			for j = i + 1, #combatSet do
+				assert(
+					not overlapsRect(combatSet[i][2], combatSet[j][2]),
+					label .. " combat overlap " .. combatSet[i][1] .. " vs " .. combatSet[j][1]
+				)
+			end
+		end
+	end
+
+	local iphoneSE = BuildLayout.computeHud(667, 375)
+	assert(iphoneSE.clearArenaRatio >= 0.75, "667x375 clearArenaRatio < 0.75")
+	assert(iphoneSE.clearCenterHeight >= 250, "667x375 clearCenterHeight < 250")
+
+	local iphoneX = BuildLayout.computeHud(812, 375)
+	assert(iphoneX.clearArenaRatio >= 0.80, "812x375 clearArenaRatio < 0.80")
+	assert(iphoneX.clearCenterHeight >= 250, "812x375 clearCenterHeight < 250")
 end)
 
 print(string.format("contrato de build: %d checagens, %d falhas", checks, #failures))

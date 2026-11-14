@@ -92,7 +92,7 @@ function BuildGrid.init(): ()
 end
 
 local function markerFor(cell: string): BasePart
-	local existing = trapParts[cell]
+	local existing: BasePart? = trapParts[cell]
 	if existing ~= nil and existing.Parent ~= nil then
 		return existing
 	end
@@ -116,16 +116,31 @@ end
 
 -- Atualiza os marcadores a partir de `profile.wall.cells`. Idempotente: chamar de novo
 -- com a mesma parede nao cria pecas duplicadas.
-function BuildGrid.refresh(cells: { [string]: { trap: string, level: number } }): ()
+function BuildGrid.refresh(
+	cells: { [string]: { trap: string, level: number, x: number?, y: number? } }
+): ()
 	BuildGrid.init()
 	local alive: { [string]: boolean } = {}
-	for cell, data in pairs(cells) do
-		local row, col = GridLayout.parseCell(cell)
-		if row ~= nil and col ~= nil then
-			alive[cell] = true
-			local x, y, z = GridLayout.cellPosition(row, col)
-			local part = markerFor(cell)
-			part.Position = Vector3.new(x, y + 1.2, z)
+	for slot, data in pairs(cells) do
+		local wx: number?
+		local wy: number?
+		local wz: number?
+		if type(data.x) == "number" and type(data.y) == "number" then
+			wx, wy, wz = GridLayout.arenaPosToWorld(data.x, data.y)
+		else
+			wx, wy, wz = GridLayout.cellCenter(slot)
+		end
+		if wx ~= nil and wy ~= nil and wz ~= nil then
+			alive[slot] = true
+			local part = markerFor(slot)
+			part.Position = Vector3.new(wx, wy + 1.2, wz)
+			part:SetAttribute("Slot", slot)
+			if type(data.x) == "number" then
+				part:SetAttribute("ArenaX", data.x)
+			end
+			if type(data.y) == "number" then
+				part:SetAttribute("ArenaY", data.y)
+			end
 			local color = GridLayout.colorFor(data.trap)
 			if color ~= nil then
 				part.Color = Color3.fromRGB(

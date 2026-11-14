@@ -1,13 +1,9 @@
 --!nonstrict
--- S6 (scaffold): raid assíncrona contra uma muralha fantasma + BattleLog separado + replay.
--- A parede fantasma e montada por um perfil sintetico e passa por WallService.toBattleWall
--- (unica ponte perfil->motor). O replay roda o MESMO seed/muralha/wave e compara o hash antes
--- de creditar; divergencia vira battle_divergence e nao paga.
---
--- BattleLog: uma chave por battle_id, store separado (DataStore em producao; memoria no Studio).
--- Recompensa: creditGold(..., "raid", battle_id) uma vez; claim idempotente no store.
--- Telemetria: os pontos passam pelo AnalyticsService (S7), que monta o envelope e valida o
--- contrato v1; [analytics] e o log de debug do servico.
+-- S6/S8.1: raid assincrona contra fantasma shardado por liga + BotPhantoms + BattleLog em
+-- escrita unica + replay deterministico + lock busy durante RaidReplay.SECONDS.
+-- A parede fantasma passa por WallService.toBattleWall (unica ponte perfil->motor).
+-- O replay roda o MESMO seed/muralha/wave e compara o hash antes de creditar; divergencia
+-- vira battle_divergence e nao paga.
 
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
@@ -19,6 +15,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local raidModules = Shared:WaitForChild("raid")
 local BattleLog = require(raidModules:WaitForChild("BattleLog"))
+local BotPhantoms = require(raidModules:WaitForChild("BotPhantoms"))
 local RaidReplay = require(raidModules:WaitForChild("RaidReplay"))
 local RaidTelemetry = require(raidModules:WaitForChild("RaidTelemetry"))
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
@@ -33,7 +30,6 @@ local AnalyticsService =
 	require(script.Parent.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
 
 local REMOTES_NAME = "MuralhaRemotes"
-local RAID_REWARD_GOLD = 5
 local RAID_SPEED = 1
 
 local function ensureRemotes(): Folder
@@ -56,6 +52,16 @@ if raidStart == nil or raidStart.ClassName ~= "RemoteFunction" then
 	raidStart = Instance.new("RemoteFunction")
 	raidStart.Name = "RaidStart"
 	raidStart.Parent = remotes
+end
+
+local raidEvent = remotes:FindFirstChild("RaidEvent")
+if raidEvent == nil or raidEvent.ClassName ~= "RemoteEvent" then
+	if raidEvent ~= nil then
+		raidEvent:Destroy()
+	end
+	raidEvent = Instance.new("RemoteEvent")
+	raidEvent.Name = "RaidEvent"
+	raidEvent.Parent = remotes
 end
 
 ReplicatedStorage:SetAttribute("RaidEnabled", true)
@@ -110,21 +116,37 @@ print(
 		.. PhantomStore.STORE_NAME
 )
 
-local busy: { [Player]: boolean } = {}
+type ActiveRaid = {
+	battleId: string,
+	token: number,
+	divergenceReported: boolean,
+}
 
--- Snapshot real: a muralha do perfil passa por toBattleWall e guarda hp/traps.
-local function snapshotFromProfile(player: Player, profile: any): (any?, string?)
-	local wall, wallErr = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog, 500)
+local busy: { [Player]: boolean } = {}
+local activeRaid: { [Player]: ActiveRaid } = {}
+local raidToken = 0
+
+-- Snapshot real sem PII: a muralha do perfil passa por toBattleWall e guarda apenas
+-- ownerHash (8 hex), league, level, hp e traps.
+local function snapshotFromProfile(profile: any, ownerHash: string, league: number): (any?, string?)
+	local wall, wallErr = WallService.toBattleWall(profile, ProfileSchema, TrapCatalog)
 	if wall == nil then
 		return nil, wallErr
 	end
 	local traps = {}
 	for index, trap in ipairs(wall.traps) do
-		traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+		traps[index] = {
+			cell = trap.cell,
+			type = trap.type,
+			level = trap.level,
+			x = trap.x,
+			y = trap.y,
+		}
 	end
 	return {
-		ownerId = player.UserId,
-		ownerName = player.Name,
+		ownerHash = ownerHash,
+		league = league,
+		level = wall.level,
 		hp = wall.hp,
 		traps = traps,
 		contentVersion = TrapCatalog.CONTENT_VERSION,
@@ -136,17 +158,23 @@ end
 local function wallFromSnapshot(snapshot: any): any
 	local traps = {}
 	for index, trap in ipairs(snapshot.traps) do
-		traps[index] = { cell = trap.cell, type = trap.type, level = trap.level }
+		traps[index] = {
+			cell = trap.cell,
+			type = trap.type,
+			level = trap.level,
+			x = trap.x,
+			y = trap.y,
+		}
 	end
-	return { hp = snapshot.hp, traps = traps }
+	return { level = snapshot.level, hp = snapshot.hp, traps = traps }
 end
 
-local function runBattle(seed: number, wall: any): any
+local function runBattle(seed: number, wall: any, waveSpec: BotPhantoms.WaveSpec): any
 	local battle = Core.Battle.new({
 		seed = seed,
 		simVersion = Core.SIM_VERSION,
 		wall = wall,
-		wave = { count = 70 },
+		wave = waveSpec,
 	})
 	return battle:Run()
 end
@@ -166,9 +194,14 @@ local function logEvent(player: Player, name: string, props: any): ()
 	end
 end
 
-local function creditRaid(player: Player, battleId: string, amount: number): (boolean, number?)
+local function creditRaid(
+	player: Player,
+	battleId: string,
+	amount: number,
+	source: string?
+): (boolean, number?)
 	if amount <= 0 then
-		return true, 0
+		return true, nil
 	end
 	local profileSession = ProfileRegistry.get(player)
 	if profileSession == nil or type(profileSession.Data) ~= "table" then
@@ -189,7 +222,7 @@ local function creditRaid(player: Player, battleId: string, amount: number): (bo
 		warn("[raid] creditGold: WallService.new falhou: " .. tostring(service))
 		return false, nil
 	end
-	local result, err = service.creditGold(amount, "raid", battleId)
+	local result, err = service.creditGold(amount, source or "raid", battleId)
 	if result == nil then
 		warn("[raid] creditGold recusado: " .. tostring(err))
 		return false, nil
@@ -197,11 +230,17 @@ local function creditRaid(player: Player, battleId: string, amount: number): (bo
 	return true, result.gold
 end
 
-local function startRaid(player: Player): any
+local function clearBusy(player: Player): ()
+	activeRaid[player] = nil
+	busy[player] = nil
+end
+
+local function startRaid(player: Player, rawOpts: any): any
 	if busy[player] == true then
 		return { ok = false, err = "busy" }
 	end
 	busy[player] = true
+	local isDefend = type(rawOpts) == "table" and rawOpts.mode == "defend"
 	local ok, response = pcall(function()
 		local battleId = string.lower(HttpService:GenerateGUID(false))
 		local battleKey = BattleLog.keyFor(battleId)
@@ -213,29 +252,93 @@ local function startRaid(player: Player): any
 		if profileSession == nil or type(profileSession.Data) ~= "table" then
 			return { ok = false, err = "profile" }
 		end
-		local currentSnapshot, currentErr = snapshotFromProfile(player, profileSession.Data)
+		local profile = profileSession.Data
+		local myLeague = TrapCatalog.leagueOf(profile.league.points)
+		local shardLeague = math.clamp(myLeague, PhantomStore.MIN_LEAGUE, PhantomStore.MAX_LEAGUE)
+		local myHash = PhantomStore.hashOwner(player.UserId)
+		local mySlot = (math.floor(math.abs(player.UserId)) % PhantomStore.SLOTS_PER_LEAGUE) + 1
+
+		local currentSnapshot, currentErr = snapshotFromProfile(profile, myHash, shardLeague)
 		if currentSnapshot == nil then
 			return { ok = false, err = "phantom: " .. tostring(currentErr) }
 		end
-		-- Publica a muralha ATUAL antes de escolher o alvo. Antes o alvo era lido
-		-- primeiro e ficava uma rodada atras: o archer recem-colocado so aparecia
-		-- no replay seguinte. Publicar primeiro mantem o replay sincronizado com
-		-- o build que o jogador acabou de fazer.
-		local storedPhantom, phantomStoreErr = phantomStore.put(currentSnapshot)
-		if not storedPhantom then
-			warn("[raid] nao publicou fantasma: " .. tostring(phantomStoreErr))
+
+		if #currentSnapshot.traps > 0 then
+			local storedPhantom, phantomStoreErr = phantomStore.put(currentSnapshot, mySlot)
+			if not storedPhantom then
+				warn("[raid] nao publicou fantasma: " .. tostring(phantomStoreErr))
+			end
 		end
-		-- O alvo e a snapshot recem-publicada: garante que o replay mostre o archer
-		-- colocado agora, sem depender de consistencia imediata do DataStore.
-		local target = currentSnapshot
+
+		local target: any
+		local isBot = false
+		local targetLeague: number
+		local phantomLabel: string
+		local myWallLevel = tonumber(currentSnapshot.level) or 1
+		local myTrapCount = #currentSnapshot.traps
+		if isDefend then
+			target = currentSnapshot
+			targetLeague = shardLeague
+			phantomLabel = string.format("Lv%d", myWallLevel)
+		else
+			local matchLeague = BotPhantoms.matchLeague(shardLeague, myWallLevel, myTrapCount)
+			local matched, matchErr = phantomStore.getForLeague(matchLeague, myHash, seed)
+			if matchErr ~= nil then
+				warn("[raid] busca fantasma falhou: " .. tostring(matchErr))
+			end
+
+			if matched ~= nil then
+				local rivalLevel = tonumber(matched.level) or matchLeague
+				local rivalTrapCap = math.max(2, myTrapCount + 1)
+				if
+					matched.ownerHash == myHash
+					or rivalLevel > matchLeague
+					or #matched.traps > rivalTrapCap
+				then
+					matched = nil
+				end
+			end
+
+			target = matched
+			if target == nil then
+				isBot = true
+				local botWall = BotPhantoms.pick(matchLeague, seed)
+				target = {
+					ownerHash = "bot",
+					league = matchLeague,
+					level = botWall.level,
+					hp = botWall.hp,
+					traps = botWall.traps,
+				}
+			end
+
+			targetLeague = math.clamp(
+				tonumber(target.league) or matchLeague,
+				PhantomStore.MIN_LEAGUE,
+				PhantomStore.MAX_LEAGUE
+			)
+			phantomLabel = if isBot
+				then string.format("Bot L%d", targetLeague)
+				else string.format(
+					"L%d#%s",
+					targetLeague,
+					string.sub(tostring(target.ownerHash), 1, 4)
+				)
+		end
+
 		local wall = wallFromSnapshot(target)
+		local waveSpec =
+			BotPhantoms.waveFor(targetLeague, isDefend, #wall.traps, tonumber(wall.level) or 1)
 		print(
 			string.format(
-				"[raid] phantom owner=%s traps=%d hp=%d content=v%d store=%s",
-				tostring(target.ownerName),
-				#target.traps,
+				"[raid] %s hash=%s league=%d traps=%d hp=%d wave=%d bot=%s store=%s",
+				if isDefend then "defend" else "phantom",
+				tostring(target.ownerHash),
+				targetLeague,
+				#wall.traps,
 				target.hp,
-				target.contentVersion,
+				waveSpec.count,
+				tostring(isBot),
 				phantomMock and "Mock" or "DataStore"
 			)
 		)
@@ -247,14 +350,14 @@ local function startRaid(player: Player): any
 			#wall.traps
 		)
 		logEvent(player, "battle_started", startedProps)
-		logEvent(
-			player,
-			"raid_start",
-			{ battle_id = battleId, mode = "phantom", speed = RAID_SPEED }
-		)
+		logEvent(player, "raid_start", {
+			battle_id = battleId,
+			mode = if isDefend then "defense" else "phantom",
+			speed = RAID_SPEED,
+		})
 
-		local result = runBattle(seed, wall)
-		local replay = runBattle(seed, wallFromSnapshot(target))
+		local result = runBattle(seed, wall, waveSpec)
+		local replay = runBattle(seed, wallFromSnapshot(target), waveSpec)
 		local replayOk, replayErr, expectedHash, actualHash = RaidReplay.verify(result, replay)
 		if not replayOk then
 			local divergence = RaidTelemetry.divergenceProps(battleId, expectedHash, actualHash)
@@ -275,7 +378,10 @@ local function startRaid(player: Player): any
 			"raid_end",
 			{ battle_id = battleId, result = result.winner, duration_s = result.ticks * 0.05 }
 		)
-		if result.winner == "attacker" then
+		local playerWon = if isDefend
+			then result.winner == "defender"
+			else result.winner == "attacker"
+		if playerWon then
 			local firstWin, firstWinErr = AnalyticsService.emitFirstWin(player, battleId)
 			if
 				firstWin == nil
@@ -283,6 +389,43 @@ local function startRaid(player: Player): any
 				and firstWinErr ~= "not_started"
 			then
 				warn("[raid] first_win recusado: " .. tostring(firstWinErr))
+			end
+		end
+
+		local baseGold = 15 + 3 * targetLeague
+		local raidsNow = profile.stats.raids
+		local fatiguePct = if raidsNow < 10 then 100 elseif raidsNow < 25 then 50 else 25
+		local winGold = math.max(5, math.floor(baseGold * fatiguePct / 100))
+		local rewardGold = if playerWon then winGold elseif raidsNow < 3 then 5 else 0
+
+		local oldPoints = profile.league.points
+		local oldLeague = TrapCatalog.leagueOf(oldPoints)
+		profile.stats.raids += 1
+		local newPoints = oldPoints
+		if playerWon then
+			profile.stats.wins += 1
+			newPoints = oldPoints + (if isDefend then 15 else 25)
+		elseif not isDefend and oldLeague >= 3 then
+			newPoints = math.max((oldLeague - 1) * 100, oldPoints - 10)
+		end
+		profile.league.points = newPoints
+		local newLeague = TrapCatalog.leagueOf(newPoints)
+		if newLeague ~= oldLeague then
+			logEvent(player, "league_changed", {
+				from = oldLeague,
+				to = newLeague,
+				delta = newPoints - oldPoints,
+			})
+		end
+
+		local rewarded = true
+		local creditedGold = 0
+		local goldAfter: number? = nil
+		if rewardGold > 0 then
+			rewarded, goldAfter =
+				creditRaid(player, battleId, rewardGold, if isDefend then "defense" else "raid")
+			if rewarded then
+				creditedGold = rewardGold
 			end
 		end
 
@@ -297,6 +440,14 @@ local function startRaid(player: Player): any
 		)
 		if record == nil then
 			return { ok = false, err = "battlelog: " .. tostring(recordErr) }
+		end
+		if rewarded then
+			local markedRecord, markErr = BattleLog.markRewarded(record, creditedGold)
+			if markedRecord == nil then
+				warn("[raid] nao montou reward no BattleLog: " .. tostring(markErr))
+			else
+				record = markedRecord
+			end
 		end
 		local replayable, replayErrLog = BattleLog.isReplayable(record, TrapCatalog.CONTENT_VERSION)
 		if not replayable then
@@ -318,39 +469,15 @@ local function startRaid(player: Player): any
 			}
 		end
 
-		local rewardGold = 0
-		if result.winner == "attacker" then
-			rewardGold = RAID_REWARD_GOLD
-		end
-		local rewarded = true
-		local creditedGold = 0
-		local goldAfter = nil
-		if rewardGold > 0 then
-			rewarded, goldAfter = creditRaid(player, battleId, rewardGold)
-			if rewarded then
-				creditedGold = rewardGold
-			end
-		end
-		local finalLog = stored
-		if rewarded then
-			local marked, markErr = logStore.markRewarded(battleId, creditedGold)
-			if marked == nil then
-				warn("[raid] nao marcou recompensa: " .. tostring(markErr))
-			else
-				finalLog = marked
-			end
-		end
-		if finalLog ~= nil then
-			print(
-				string.format(
-					"[raid] battlelog battle_id=%s content=v%d reward=%d hash=%d",
-					finalLog.battleId,
-					finalLog.contentVersion,
-					finalLog.rewardGold,
-					finalLog.resultHash
-				)
+		print(
+			string.format(
+				"[raid] battlelog battle_id=%s content=v%d reward=%d hash=%d",
+				stored.battleId,
+				stored.contentVersion,
+				stored.rewardGold,
+				stored.resultHash
 			)
-		end
+		)
 		-- S6: espelha o ouro no atributo para a UI de build reabrir o snapshot (o modal de raid
 		-- nao e dono do topo do build).
 		if goldAfter ~= nil then
@@ -360,6 +487,8 @@ local function startRaid(player: Player): any
 
 		return {
 			ok = true,
+			mode = if isDefend then "defend" else "raid",
+			playerWon = playerWon,
 			battleId = battleId,
 			seed = seed,
 			resultHash = result.hash,
@@ -371,33 +500,102 @@ local function startRaid(player: Player): any
 			rewardGold = creditedGold,
 			replaySeconds = RaidReplay.SECONDS,
 			wall = wall,
-			phantomName = target.ownerName,
-			waveCount = 70,
+			phantomName = phantomLabel,
+			waveCount = waveSpec.count,
+			spawnEveryTicks = waveSpec.spawnEveryTicks,
 			simVersion = Core.SIM_VERSION,
-			record = finalLog,
+			record = stored,
 		}
 	end)
-	busy[player] = nil
-	if not ok then
-		warn("[raid] start falhou: " .. tostring(response))
-		return { ok = false, err = "internal" }
+
+	if not ok or type(response) ~= "table" or response.ok ~= true then
+		clearBusy(player)
+		if not ok then
+			warn("[raid] start falhou: " .. tostring(response))
+			return { ok = false, err = "internal" }
+		end
+		return response
 	end
+
+	raidToken += 1
+	local token = raidToken
+	activeRaid[player] = {
+		battleId = tostring(response.battleId or ""),
+		token = token,
+		divergenceReported = false,
+	}
+	task.delay(math.max(RaidReplay.SECONDS, 75), function()
+		local current = activeRaid[player]
+		if current ~= nil and current.token == token then
+			clearBusy(player)
+		end
+	end)
+
 	return response
 end
 
-raidStart.OnServerInvoke = function(player: Player)
-	return startRaid(player)
+raidStart.OnServerInvoke = function(player: Player, opts: any)
+	return startRaid(player, opts)
 end
 
+(raidEvent :: RemoteEvent).OnServerEvent:Connect(function(player: Player, action: any, payload: any)
+	if type(action) ~= "string" then
+		return
+	end
+	if action == "close" then
+		local current = activeRaid[player]
+		if current == nil then
+			busy[player] = nil
+			return
+		end
+		if
+			type(payload) ~= "table"
+			or payload.battleId == nil
+			or payload.battleId == current.battleId
+		then
+			clearBusy(player)
+		end
+		return
+	end
+	if action == "divergence" then
+		local current = activeRaid[player]
+		if current == nil or current.divergenceReported then
+			return
+		end
+		if type(payload) ~= "table" then
+			return
+		end
+		local battleId = if type(payload.battleId) == "string"
+			then payload.battleId
+			else current.battleId
+		if battleId ~= current.battleId then
+			return
+		end
+		local expectedHash = if payload.expectedHash ~= nil
+			then payload.expectedHash
+			else payload.expected_hash
+		local actualHash = if payload.actualHash ~= nil
+			then payload.actualHash
+			else payload.actual_hash
+		local props, propsErr = RaidTelemetry.divergenceProps(battleId, expectedHash, actualHash)
+		if props == nil then
+			warn("[raid] divergence payload invalido: " .. tostring(propsErr))
+			return
+		end
+		current.divergenceReported = true
+		logEvent(player, "battle_divergence", props)
+	end
+end)
+
 Players.PlayerRemoving:Connect(function(player: Player)
-	busy[player] = nil
+	clearBusy(player)
 end)
 
 print(
 	string.format(
-		"[raid] servidor pronto store=%s reward=%d sim=%d",
+		"[raid] servidor pronto store=%s phantomSlots=%d sim=%d",
 		useMock and "Mock" or "DataStore",
-		RAID_REWARD_GOLD,
+		PhantomStore.SLOTS_PER_LEAGUE,
 		Core.SIM_VERSION
 	)
 )

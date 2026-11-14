@@ -2,23 +2,34 @@
   "className": "Part",
   "properties": {
     "Size": [
-      512,
-      8,
-      512
+      2048,
+      12,
+      2048
     ],
-    "Position": [
+    "CFrame": [
+      -180,
+      -6.2,
+      -100,
+      1,
       0,
-      -4,
-      0
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1
     ],
     "Anchored": true,
     "Locked": true,
+    "CanQuery": false,
     "Color": [
-      0.4,
-      0.39,
-      0.36
+      0.255,
+      0.345,
+      0.196
     ],
-    "Material": "SmoothPlastic",
+    "Material": "LeafyGrass",
+    "Reflectance": 0,
     "TopSurface": "Smooth",
     "BottomSurface": "Smooth",
     "LeftSurface": "Smooth",

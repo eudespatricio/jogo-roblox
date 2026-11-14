@@ -8,6 +8,27 @@ local BuildHud = {}
 
 BuildHud.FPS_WINDOW = 0.5
 
+local I18n: any = nil
+do
+	if typeof(script) == "Instance" then
+		local parent = (script :: any).Parent
+		local sharedRoot = if parent ~= nil then parent.Parent else nil
+		local i18nDir = if sharedRoot ~= nil then sharedRoot:FindFirstChild("i18n") else nil
+		local mod = if i18nDir ~= nil then i18nDir:FindFirstChild("I18n") else nil
+		if mod ~= nil then
+			local ok, loaded = pcall(require :: any, mod)
+			if ok then
+				I18n = loaded
+			end
+		end
+	else
+		local ok, loaded = pcall(require :: any, "../i18n/I18n")
+		if ok then
+			I18n = loaded
+		end
+	end
+end
+
 export type Hud = {
 	frames: number,
 	window: number,
@@ -80,15 +101,42 @@ BuildHud.MODE_LABELS = table.freeze({
 	place = "COLOCAR",
 	remove = "REMOVER",
 	upgrade = "UPGRADE",
+	move = "MOVER",
 })
 
+local MODE_KEYS: { [string]: string } = {
+	place = "mode_place",
+	remove = "mode_remove",
+	upgrade = "mode_upgrade",
+	move = "mode_move",
+}
+
 -- "COLOCAR · ARQUEIRO" ou "REMOVER"; trapLabel nil/"" cai no modo puro.
-function BuildHud.formatSelection(mode: string, trapLabel: string?): string
-	local label = BuildHud.MODE_LABELS[mode] or mode
-	if mode == "place" and type(trapLabel) == "string" and trapLabel ~= "" then
+-- Quando locale == nil, preserva MODE_LABELS ("UPGRADE") para sim/build-contract.luau.
+function BuildHud.formatSelection(mode: string, trapLabel: string?, locale: string?): string
+	local label: string
+	if locale ~= nil and I18n ~= nil and MODE_KEYS[mode] ~= nil then
+		label = I18n.t(locale, MODE_KEYS[mode])
+	else
+		label = BuildHud.MODE_LABELS[mode] or mode
+	end
+	if (mode == "place" or mode == "move") and type(trapLabel) == "string" and trapLabel ~= "" then
 		return label .. " · " .. trapLabel
 	end
 	return label
+end
+
+function BuildHud.formatHeader(gold: number, league: number, locale: string?): string
+	if I18n ~= nil then
+		local loc = I18n.resolveLocale(locale)
+		return string.format(
+			"%s · %s · L%d",
+			I18n.t(loc, "game_title"),
+			I18n.t(loc, "hud_gold", gold),
+			league
+		)
+	end
+	return string.format("%d · L%d", gold, league)
 end
 
 return BuildHud

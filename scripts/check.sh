@@ -9,8 +9,8 @@ source scripts/env.sh
 
 echo "== versoes (fonte x docs) =="
 VERSIONS="$(python3 scripts/check-versions.py --values)"
-read -r SCHEMA_VERSION CONTENT_VERSION SIM_VERSION SIM_HASH <<< "$VERSIONS"
-echo "  schema=$SCHEMA_VERSION content=$CONTENT_VERSION sim=$SIM_VERSION hash=$SIM_HASH"
+read -r SCHEMA_VERSION CONTENT_VERSION SIM_VERSION SIM_HASH ANALYTICS_VERSION <<< "$VERSIONS"
+echo "  schema=$SCHEMA_VERSION content=$CONTENT_VERSION sim=$SIM_VERSION hash=$SIM_HASH analytics=$ANALYTICS_VERSION"
 
 mkdir -p build
 
@@ -23,8 +23,14 @@ stylua --check sim src tools/coop-net-sim.luau
 echo "== globalTypes (luau-lsp) =="
 bash scripts/fetch-roblox-types.sh
 
+echo "== sourcemap =="
+rojo sourcemap default.project.json -o sourcemap.json
+
 echo "== luau-lsp analyze =="
-luau-lsp analyze --platform=standard --definitions=.tools/globalTypes.d.luau sim src/shared/sim src/shared/data src/shared/analytics src/shared/visual src/shared/build src/shared/dropin src/shared/raid src/server/analytics/AnalyticsService.luau src/server/analytics/AnalyticsDataStoreSink.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau tools/coop-net-sim.luau
+luau-lsp analyze --platform=standard --definitions=.tools/globalTypes.d.luau sim src/shared/sim src/shared/data src/shared/analytics src/shared/visual src/shared/build src/shared/dropin src/shared/raid src/shared/i18n src/server/analytics/AnalyticsService.luau src/server/analytics/AnalyticsDataStoreSink.luau src/server/data src/server/walls/WallService.luau src/server/Main.server.luau tools/coop-net-sim.luau
+
+echo "== luau-lsp roblox (src completo) =="
+luau-lsp analyze --platform=roblox --sourcemap=sourcemap.json --definitions=.tools/globalTypes.d.luau src
 
 echo "== invariantes =="
 luau sim/invariants.luau
@@ -64,12 +70,10 @@ luau tools/coop-net-sim.luau
 
 echo "== i18n (PT-BR / EN / ES) =="
 python3 tools/check-i18n.py
+luau sim/i18n-contract.luau
 
 echo "== benchmark (poc) =="
 luau sim/poc.luau | grep -E "hash=|por batalha|seeds="
-
-echo "== sourcemap =="
-rojo sourcemap default.project.json -o sourcemap.json
 
 echo "== contexto =="
 python3 skills/context-recovery/scan_repo.py --root . --check

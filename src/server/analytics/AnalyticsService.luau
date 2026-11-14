@@ -1,11 +1,12 @@
 --!strict
--- Servico de analytics da S7: envelope v1, lote (30 s/100), rate limit de cliente (10/min),
+-- Servico de analytics da S7: envelope v2 (P2), lote (30 s/100), rate limit de cliente (10/min),
 -- idempotencia por event_id e sink Null. Puro Luau (nenhuma API do Roblox): o boot
 -- (AnalyticsBoot.server.luau) injeta relogio/UUID/contexto e o contrato roda no CLI
 -- (sim/analytics-contract.luau). Nada aqui toca o motor: eventos de batalha sao montados
 -- DEPOIS do hash e nao entram no BattleResult.
 --
--- Regras da taxonomia v1 (docs/taxonomia-analytics.md):
+-- Regras da taxonomia v1/v2 (docs/taxonomia-analytics.md):
+--   * eventos server_only (v2: trap_moved, wall_upgraded, cosmetic_equipped) nunca vem do cliente;
 --   * todo evento e validado antes de entrar no buffer; invalido e descartado;
 --   * lote sai a cada 30 s ou 100 eventos, e no leave (best effort, nunca bloqueia gameplay);
 --   * cliente tem 10 eventos/min; o excedente vira client_error(code=rate_limited) uma vez;
@@ -14,7 +15,7 @@
 
 local AnalyticsService = {}
 
-AnalyticsService.SCHEMA_VERSION = 1
+AnalyticsService.SCHEMA_VERSION = 2
 AnalyticsService.FLUSH_INTERVAL_MS = 30000
 AnalyticsService.MAX_BATCH = 100
 AnalyticsService.MAX_BUFFER = 500
@@ -132,6 +133,9 @@ local CLIENT_EVENTS: { [string]: boolean } = {
 	replay_started = true,
 	replay_watched = true,
 }
+
+-- Exposto para o contrato provar que nenhum evento server_only vaza para o cliente.
+AnalyticsService.CLIENT_EVENTS = CLIENT_EVENTS
 
 local MONETIZATION_EVENTS: { [string]: boolean } = {
 	age_check_prompt = true,
@@ -622,7 +626,8 @@ function AnalyticsService.new(options: Options): Controller
 			stats.rejected += 1
 			return nil, "no_session"
 		end
-		if CLIENT_EVENTS[name] ~= true then
+		local serverOnly = types.isServerOnly ~= nil and types.isServerOnly(name)
+		if serverOnly or CLIENT_EVENTS[name] ~= true then
 			stats.rejected += 1
 			return nil, "server_only"
 		end

@@ -1,13 +1,19 @@
 --!strict
--- Contrato de analytics v1: envelope, catalogo de eventos, limites e anti-PII.
--- Fonte de verdade: docs/taxonomia-analytics.md (aprovada em 09/11/2026).
+-- Contrato de analytics v2: envelope, catalogo de eventos, limites e anti-PII.
+-- Fonte de verdade: docs/taxonomia-analytics.md (v1 aprovada em 09/11/2026; v2 = P2 onda 1:
+-- muralha livre x/y, trap_moved, wall_upgraded, cosmetic_equipped; 31 -> 34 eventos).
 -- Puro Luau (nenhuma API do Roblox): o validador roda no CLI em sim/analytics-contract.luau
 -- e no servidor. Analytics nunca entra no estado da simulacao nem no hash: o servidor emite
 -- `battle_finished` DEPOIS de calcular o BattleResult.
 
 local AnalyticsTypes = {}
 
-AnalyticsTypes.SCHEMA_VERSION = 1
+AnalyticsTypes.SCHEMA_VERSION = 2
+-- Durante o rollout o coletor externo aceita v1 e v2 (servidores antigos ainda emitem v1).
+-- O validador local so aceita a versao corrente: cada servidor emite uma versao so.
+AnalyticsTypes.COLLECTOR_SCHEMA_VERSIONS = { 1, 2 }
+-- Coordenadas da arena em milli-unidades (Core.ARENA cabe com folga em 0..20000).
+AnalyticsTypes.MAX_COORD = 20000
 AnalyticsTypes.MAX_EVENT_NAME = 48
 AnalyticsTypes.MAX_FREE_STRING = 256
 AnalyticsTypes.MAX_EXPERIMENT = 64
@@ -96,6 +102,19 @@ AnalyticsTypes.PII_KEYS = {
 local PLATFORMS = { "mobile", "pc", "console", "vr" }
 local DEVICE_TIERS = { "low", "mid", "high" }
 local WINNERS = { "defender", "attacker" }
+local COORD = int(0, AnalyticsTypes.MAX_COORD)
+
+-- Eventos que so o servidor emite (v2). O servico recusa estes nomes vindos do cliente mesmo
+-- que alguem os coloque na lista de eventos de cliente por engano.
+AnalyticsTypes.SERVER_ONLY = {
+	trap_moved = true,
+	wall_upgraded = true,
+	cosmetic_equipped = true,
+} :: { [string]: boolean }
+
+function AnalyticsTypes.isServerOnly(name: string): boolean
+	return AnalyticsTypes.SERVER_ONLY[name] == true
+end
 
 -- Envelope comum (taxonomia §1). A ordem importa: a mensagem de erro e deterministica.
 export type EnvelopeField = { field: string, spec: PropSpec, required: boolean }
@@ -204,16 +223,43 @@ local CATALOG: { [string]: CatalogEntry } = {
 	}),
 	gold_spent = catalogEvent({
 		prop("amount", int(0, nil)),
-		prop("sink", oneOf({ "trap", "upgrade", "repair" })),
+		prop("sink", oneOf({ "trap", "upgrade", "repair", "wall" })),
 	}),
+	-- v2: posicao livre (x/y milli) + nivel; `slot`/`cell` sao metadados opcionais.
 	trap_placed = catalogEvent({
 		prop("trap_id", str(32, "id")),
-		prop("cell", str(16, "id")),
 		prop("cost", int(0, nil)),
+		prop("x", COORD),
+		prop("y", COORD),
+		prop("level", int(1, 5)),
+	}, {
+		prop("slot", str(16, "id")),
+		prop("cell", str(16, "id")),
 	}),
+	-- v2: `target` e o slot da armadilha; trap_id/x/y sao opcionais.
 	upgrade_bought = catalogEvent({
 		prop("target", str(64, "id")),
 		prop("level", int(1, 5)),
+		prop("cost", int(0, nil)),
+	}, {
+		prop("trap_id", str(32, "id")),
+		prop("x", COORD),
+		prop("y", COORD),
+	}),
+	-- v2 (server_only): mover e gratis; registra origem e destino.
+	trap_moved = catalogEvent({
+		prop("slot", str(16, "id")),
+		prop("trap_id", str(32, "id")),
+		prop("level", int(1, 5)),
+		prop("from_x", COORD),
+		prop("from_y", COORD),
+		prop("x", COORD),
+		prop("y", COORD),
+	}),
+	-- v2 (server_only): nivel da muralha sobe exatamente 1 (validado em validate).
+	wall_upgraded = catalogEvent({
+		prop("from_level", int(1, 4)),
+		prop("level", int(2, 5)),
 		prop("cost", int(0, nil)),
 	}),
 	league_changed = catalogEvent({
@@ -227,6 +273,13 @@ local CATALOG: { [string]: CatalogEntry } = {
 		prop("source", str(32, "id")),
 	}),
 	-- 2.4 monetizacao
+	-- v2 (server_only): troca de cosmetico equipado (nunca entra no BattleResult).
+	cosmetic_equipped = catalogEvent({
+		prop("slot", oneOf({ "theme", "hordeSkin", "finisher", "commander" })),
+		prop("cosmetic_id", str(48, "id")),
+	}, {
+		prop("rarity", str(24, "id")),
+	}),
 	offer_shown = catalogEvent({
 		prop("offer_id", str(64, "id")),
 		prop("price_robux", int(0, nil)),
@@ -530,6 +583,9 @@ function AnalyticsTypes.validate(event: any): (boolean, string?)
 				return false, err
 			end
 		end
+	end
+	if name == "wall_upgraded" and event.level ~= event.from_level + 1 then
+		return false, "wall_upgraded: level deve ser from_level + 1"
 	end
 	local allowed = entry.allowed :: { [string]: boolean }
 	for key in pairs(event) do

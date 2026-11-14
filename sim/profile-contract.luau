@@ -7,6 +7,7 @@ local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local ProfileService = require("../src/server/data/ProfileService")
 local fixtureV0 = require("./fixtures/profile-v0")
 local fixtureV1 = require("./fixtures/profile-v1")
+local fixtureV2 = require("./fixtures/profile-v2")
 
 local failures = {}
 local checks = 0
@@ -124,17 +125,26 @@ local function newController(store, options)
 end
 
 -- ---------------------------------------------------------------- template e validacao
-check("template v2 e JSON-safe", function()
+check("template v3 e JSON-safe", function()
 	local profile = ProfileSchema.template()
 	assert(profile.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion errado")
+	assert(profile.schemaVersion == 3, "SCHEMA_VERSION != 3")
 	assert(profile.contentVersion == ProfileSchema.DEFAULT_CONTENT_VERSION, "contentVersion errado")
-	assert(profile.wall.gridWidth == 5 and profile.wall.activeTrapLimit == 5, "grade fora do Q2")
+	assert(profile.wall.level == 1, "wall.level inicial != 1")
+	assert(profile.wall.gridWidth == 5 and profile.wall.activeTrapLimit == 5, "grade fora do P2")
+	assert(
+		profile.equipped.theme == "theme_default"
+			and profile.equipped.hordeSkin == "horde_default"
+			and profile.equipped.finisher == "finisher_default"
+			and profile.equipped.commander == "cmd_vorn",
+		"equipped defaults errados"
+	)
 	assert(
 		type(profile.wall.cells) == "table" and next(profile.wall.cells) == nil,
 		"cells nao vazio"
 	)
 	assert(
-		keysOf(profile) == "contentVersion,cosmetics,gold,league,schemaVersion,stats,wall",
+		keysOf(profile) == "contentVersion,cosmetics,equipped,gold,league,schemaVersion,stats,wall",
 		"chaves: " .. keysOf(profile)
 	)
 	local ok, err = ProfileSchema.validate(profile)
@@ -291,20 +301,23 @@ check("isJsonSafe recusa o que o DataStore nao serializa", function()
 	assert(not ProfileSchema.isJsonSafe(sparse), "aceitou array com buraco")
 end)
 
--- ---------------------------------------------------------------- migracao 0 -> 1
-check("migracao 0->2 com fixture preserva o valido e descarta o resto", function()
+-- ---------------------------------------------------------------- migracoes 0 -> 3, 1 -> 3, 2 -> 3
+check("migracao 0->3 com fixture preserva o valido e descarta o resto", function()
 	local original = clone(fixtureV0)
 	local profile, err = ProfileSchema.migrate(fixtureV0)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 2, "schemaVersion nao subiu")
-	assert(profile.contentVersion == 1, "contentVersion legado")
+	assert(profile.schemaVersion == 3, "schemaVersion nao subiu")
+	assert(profile.contentVersion == 3, "contentVersion nao subiu")
 	assert(profile.gold == 120, "gold perdido")
 	assert(profile.league.points == 34, "league.points perdido")
+	assert(profile.wall.level == 1, "wall.level perdido")
 	assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
 	assert(profile.wall.cells.r1c1.trap == "cannon", "trap da cell errada")
+	assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "x/y de r1c1")
 	assert(profile.stats.lastSeenAt == 1762800000, "lastSeenAt perdido")
 	assert(profile.stats.firstSeenAt == 0, "firstSeenAt deveria nascer zerado")
 	assert(profile.cosmetics.banner_default == true, "cosmetico perdido")
+	assert(profile.equipped.commander == "cmd_vorn", "equipped default ausente")
 	assert(profile.coins == nil, "campo do prototipo (coins) sobreviveu")
 	assert(profile.hackAttempt == nil, "campo desconhecido sobreviveu")
 	assert(profile.player_name == nil, "PII sobreviveu")
@@ -317,26 +330,71 @@ check("migracao 0->2 com fixture preserva o valido e descarta o resto", function
 	assert(fixtureV0.gold == 120 and fixtureV0.stats.lastSeenAt == 1762800000, "fixture mutado")
 end)
 
-check("migracao 1->2 adiciona contentVersion sem perder a parede", function()
+check("migracao 1->3 adiciona contentVersion/x/y/equipped sem perder a parede", function()
 	local profile, err = ProfileSchema.migrate(fixtureV1)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
-	assert(profile.schemaVersion == 2, "schemaVersion nao subiu")
-	assert(profile.contentVersion == 1, "contentVersion deveria nascer 1")
+	assert(profile.schemaVersion == 3, "schemaVersion nao subiu")
+	assert(profile.contentVersion == 3, "contentVersion nao subiu")
 	assert(profile.gold == 120, "gold perdido")
 	assert(profile.wall.cells.r1c1 ~= nil, "cell valida perdida")
 	assert(profile.wall.cells.r1c1.trap == "oil", "trap antiga deveria sobreviver ao schema")
+	assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "x/y de r1c1")
 	local ok, validateErr = ProfileSchema.validate(profile)
-	assert(ok, "perfil v2 invalido: " .. tostring(validateErr))
+	assert(ok, "perfil v3 invalido: " .. tostring(validateErr))
+end)
+
+check("migracao 2->3 mapeia rXcY para x/y e adiciona wall.level + equipped", function()
+	local original = clone(fixtureV2)
+	local profile, err = ProfileSchema.migrate(fixtureV2)
+	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
+	assert(profile.schemaVersion == 3, "schemaVersion != 3")
+	assert(profile.contentVersion == 3, "contentVersion != 3")
+	assert(profile.gold == 260, "gold perdido")
+	assert(profile.league.points == 134, "league perdido")
+	assert(profile.wall.level == 1, "wall.level != 1")
+	assert(profile.wall.activeTrapLimit == 5, "activeTrapLimit != 5")
+	assert(profile.wall.cells.r1c1.x == 2000 and profile.wall.cells.r1c1.y == 500, "r1c1 pos")
+	assert(profile.wall.cells.r3c3.x == 5000 and profile.wall.cells.r3c3.y == 2500, "r3c3 pos")
+	assert(profile.equipped.theme == "theme_default", "equipped.theme")
+	assert(keysOf(fixtureV2) == keysOf(original), "fixture v2 mutado")
+	local ok, validateErr = ProfileSchema.validate(profile)
+	assert(ok, "perfil migrado v3 invalido: " .. tostring(validateErr))
 end)
 
 check("migracao de v0 vazio devolve o template", function()
 	local profile, err = ProfileSchema.migrate({}, 0)
 	assert(profile ~= nil, "migracao falhou: " .. tostring(err))
 	assert(
-		profile.schemaVersion == 2 and profile.contentVersion == 1 and profile.gold == 0,
+		profile.schemaVersion == 3 and profile.contentVersion == 3 and profile.gold == 0,
 		"template esperado"
 	)
 	assert(ProfileSchema.validate(profile), "v0 vazio gerou perfil invalido")
+end)
+
+check("validacao v3: slot, coordenadas step 250, tooClose e wall.level", function()
+	local p = ProfileSchema.template()
+	p.wall.level = 5
+	p.wall.activeTrapLimit = 7
+	p.wall.cells.slot_a = { trap = "archer", level = 5, x = 1000, y = 500 }
+	p.wall.cells.slot_b = { trap = "tar", level = 1, x = 2000, y = 500 }
+	local ok, err = ProfileSchema.validate(p)
+	assert(ok, "perfil v3 valido recusado: " .. tostring(err))
+
+	local badSlot = clone(p)
+	badSlot.wall.cells["BAD!"] = { trap = "archer", level = 1, x = 5000, y = 2500 }
+	assert(not ProfileSchema.validate(badSlot), "aceitou slot invalido")
+
+	local badStep = clone(p)
+	badStep.wall.cells.slot_a.x = 1100
+	assert(not ProfileSchema.validate(badStep), "aceitou x fora de step 250")
+
+	local badBounds = clone(p)
+	badBounds.wall.cells.slot_a.y = 4750
+	assert(not ProfileSchema.validate(badBounds), "aceitou y fora da arena")
+
+	local close = clone(p)
+	close.wall.cells.slot_b = { trap = "tar", level = 1, x = 1750, y = 1250 }
+	assert(not ProfileSchema.validate(close), "aceitou armadilhas tooClose")
 end)
 
 check("migracao e idempotente", function()
@@ -419,7 +477,7 @@ check("migra no load e persiste a migracao", function()
 		end,
 	})
 	local session = assert(controller.startSession("User_3"))
-	assert(session.Data.schemaVersion == 2, "nao migrou")
+	assert(session.Data.schemaVersion == 3, "nao migrou")
 	assert(profile.saves == 1, "migracao nao foi salva: " .. tostring(profile.saves))
 	assert(profile.reconciles == 1, "Reconcile nao rodou")
 	assert(infos[1].migrated == true, "info.migrated deveria ser true")

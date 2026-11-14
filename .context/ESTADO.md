@@ -7,25 +7,20 @@
 física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18+). Público 13–34.
 
 ## Fase
-**P1 em pausa (10/11/2026; autorizada em 09/11/2026).** S1–S3.4 fechadas (Modo B 8/8); **S4 fechada**
-(FPS 60/60); **S5 fechada** (drop-in/+3 ouro); **S6.1 fechada** (fantasma real + replay 3D); **S7
-fechada** (telemetria com sink persistente); **S8 fechada** (apresentação visual: diorama, traps/
-horda 3D e UI). A saída da P1 (70% de primeira vitória <60 s) está instrumentada por
-`first_win_seconds`; a série persiste e será medida no teste de 3 semanas. Trabalho pausado para
-dois assuntos separados; P2 bloqueada.
-## Números atuais (10/11/2026)
+**P2 Completa + Playtest v1.1 entregue (13/11/2026).** `Core v6` (Arqueiro circular 360°), `TrapCatalog v3`, `ProfileSchema v3`, `DEFEND + ATTACK` (própria muralha vs rival), luta em tempo real `1×..4×` (`60s` + `REPLAY 20s`), horda alinhada para a muralha + vale contínuo c/ fauna e 97 assets Open Cloud (55 malhas + 42 áudios). **GAP-004/008/015/016 fechados.**
+## Números atuais (13/11/2026)
 | Métrica | Valor |
 |---|---|
 | tick / cap | 0,05s · 1.200 ticks (60s) |
 | estado | 100% inteiro (MILLI = 1000) |
-| custo por batalha | ~1,4 ms (~710 batalhas/s) |
-| determinismo | hash `2489780106` (seed 42, 3 execuções) · `simVersion 3` |
-| acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 68,7% defensor · 1,4s/1.000 |
-| invariantes | 12/12 (`sim/invariants.luau`) |
-| contratos | perfil 20/20 · analytics 34/34 · muralha 13/13 · conteúdo 7/7 · build 14/14 · visual 8/8 · drop-in 8/8 · raid 6/6 |
-| versões | schema 2 · content 2 · sim 3 · hash `2489780106` (`docs/versoes.md`, gate no `check.sh`) |
-| perfil | schema v2 · `contentVersion` · store `MuralhaProfile_v1` · migração 0→2/1→2 com fixtures |
-| analytics | contrato v1 · 31 eventos · envelope + anti-PII · serviço S7 (lote 30s/100, 10/min) · sink DataStore/Memory |
+| custo por batalha | ~1,6 ms (~620 batalhas/s) |
+| determinismo | hash `1245379674` (seed 42, 3 execuções) · `simVersion 6` |
+| acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 62,6% defensor · ~1,6s/1.000 |
+| invariantes | 16/16 (`sim/invariants.luau`) |
+| contratos | perfil 22/22 · analytics 35/35 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 15/15 · drop-in 11/11 · raid 15/15 · i18n 7/7 |
+| versões | schema 3 · content 3 · sim 6 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
+| perfil | schema v3 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0→3/1→3/2→3 |
+| analytics | contrato v2 · `trap_moved`/`wall_upgraded`/`cosmetic_equipped` · sink DataStore/Memory |
 | teste de sessão | Modo A 8/8 + Modo B schema v1 8/8 (09/11) · Modo B schema v2 8/8 (10/11) |
 
 ## Pronto
@@ -34,28 +29,19 @@ dois assuntos separados; P2 bloqueada.
 - Economia/Catálogo/Meta: `modelo-financeiro.xlsx`, `tese-produto-e-economia.md`, `catalogo-itens-e-cosmeticos.md`, `sistemas-jogo-completo.md`.
 - Evidência/Visual/Áudio: `pesquisa-tendencias-2026/jogadores/grade`, `direcao-visual-e-silhuetas.md`, `audio-musica-e-soundscape.md`, `animacoes-fisica-real-e-vfx.md`.
 - Arquitetura/Runbooks: `padroes-engenharia.md` + `arquitetura-e-fluxos.md` + `plano-playtest-v1.md` + `rfcs-p2-e-fechamento-gaps.md` (`RFC-001..009`); S4–S6.1 fechadas.
-- Motor: `src/shared/sim/core.luau` (v3, loadout 5×5/N=5, 5 tipos) + harnesses em `sim/`.
-- Muralha: `TrapCatalog.luau` (5 tipos, aliases) + `WallService.luau` (`toBattleWall`) +
-  `sim/walls-contract.luau`/`content-contract.luau` (13/13 e 7/7); custos em `docs/economia-muralha.md`.
-- Dados: `ProfileSchema.luau` (v2/contentVersion) + `ProfileService.luau` +
-  `ProfileBoot.server.luau` (migração de conteúdo) + `sim/profile-contract.luau` (20/20); Modo B
-  schema v2 8/8 em 10/11/2026 (`docs/teste-sessao-studio.md` §9).
-- Analytics: `AnalyticsTypes.luau` + `AnalyticsService.luau` + `AnalyticsDataStoreSink.luau` +
-  `AnalyticsBoot.server.luau` (emit/lote/rate limit/idempotência; DataStore/Memory) + contrato 34/34;
-  `first_win_seconds` em `docs/teste-s7-studio.md`.
-- Visual S8: `VisualTheme.luau` + `ArenaVisual`/`TrapKit`/`HordeKit`/`Vfx`/`AudioKit`/`UiKit` (diorama,
-  5 traps, 3 silhuetas, UI de cartões) + `sim/visual-contract.luau` (8/8); QA em `docs/teste-s8-studio.md`.
-- Tooling: Rokit + CLI/GUI; CI ativo; doctor; gate de versões (`docs/versoes.md`); ProfileStore vendorizado.
+- Motor: `src/shared/sim/core.luau` (v6, Arqueiro 360°, colocação contínua `ARENA`, `WALL_LEVELS`, `tooClose`) + `sim/`.
+- Muralha: `TrapCatalog.luau` (v3, `MAX_LEVEL=5`, `WALL_LEVELS`) + `WallService.luau` (`placeAt`/`move`/`upgradeWall`/`equipCosmetic`/`toBattleWall`) + `WallController`.
+- Dados: `ProfileSchema.luau` (v3/`equipped`/slots) + `ProfileService.luau` + `ProfileBoot.server.luau` (`22/22`).
+- Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `35/35`) + `I18n.luau` (`62` chaves, `7/7`).
+- Visual P2/Open Cloud: `VisualTheme`/`ArenaVisual` (`ValleyBlendApron` + `PROP_*` + tochas VFX)/`Backdrop`/`AmbientLife` (`55` malhas + `39` SFX + `3` stems BGM), HUD mobile periférico (`DeviceSafeInsets` + `TopbarInset`), `visual-contract`.
+- Tooling: Rokit + CLI/GUI; CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
-- Contexto: `skills/context-recovery/` (protocolo de auditoria portátil).
-- Trial S3.2: classe/trait/raridade executado e revertido; kit inclui `neutral-migration.luau` (GAP-010).
+- Contexto: `skills/context-recovery/` (protocolo de auditoria portátil) + `BotPhantoms`/`PhantomStore` 8-slots.
 
 ## Não pronto
 
-- **P1**: falta medir a saída (70% de primeira vitória <60s) no teste de 3 semanas; instrumento e
-  série persistida prontos. Co-op síncrono, física real híbrida e bosses desbloqueados (13/11) p/ V1.5/P2+.
-- P2 bloqueada; GAP-004/005/008/013..020 abertos (GAP-014/017 antes do teste 3 sem.); ver `docs/gaps.md`.
-- Teste de produto de 3 semanas: roda em paralelo (decisão do diretor em 09/11/2026).
+- QA mobile no Studio publicado sob `userId = 11966727684` (`InsertService:LoadAsset`).
+- GAP-005/013/018/019(F1)/020 abertos (`GAP-004/008/015/016` fechados); ver `docs/gaps.md`.
 
 ## Congelado
 
@@ -63,12 +49,11 @@ dois assuntos separados; P2 bloqueada.
   `A MURALHA` / `WALLBREAKER` / `LA MURALLA`; co-op síncrono + física real híbrida desbloqueados (13/11).
 - Servidor autoritativo + replay determinístico (`seed + commands[]`) + `simVersion`; hash só muda com `simVersion` novo.
 - Regras dos jogadores: nenhuma unidade obrigatória; poder só por gameplay; sem loot box.
-- Schema v2 (com `contentVersion`) + taxonomia v1: mudança só aditiva, com migração/`schema_version`.
+- Schema v3 (com `contentVersion 3` + `equipped`) + taxonomia v2: mudança só aditiva, com migração/`schema_version`.
 
 ## Próximo passo
 
-1. Retomar pelo QA visual mobile e pelo teste de 3 semanas; medir a saída da P1 (70% <60s).
-2. P2 não começa sem autorização.
+1. Publicar place no Studio (conta `11966727684`) para QA mobile e decidir início da Campanha/Bosses (`GAP-018`).
 
 ## Como verificar o estado em 1 minuto
 

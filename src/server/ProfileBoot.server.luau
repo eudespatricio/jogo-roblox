@@ -1,5 +1,5 @@
 --!strict
--- Liga o perfil (ProfileService + schema v2/contentVersion) aos jogadores do servidor.
+-- Liga o perfil (ProfileService + schema v3/contentVersion) aos jogadores do servidor.
 -- Studio usa ProfileStore.Mock por padrao; o atributo booleano `ProfileStoreMock` em
 -- ServerStorage forca o modo (true = Mock, false = DataStore real, precisa de API Services).
 -- Atributo `ProfileSelfTest = true` (so no Studio) roda o teste de sessao automatico:
@@ -29,7 +29,7 @@ local vendorModule = vendorFolder and vendorFolder:FindFirstChild("ProfileStore"
 if vendorModule == nil then
 	error("ProfileStore vendorizado ausente em ServerStorage.Vendor (ver vendor/SOURCE.md)")
 end
-local ProfileStore = require(vendorModule :: ModuleScript)
+local ProfileStore = (require :: any)(vendorModule)
 
 local function resolveUseMock(): boolean
 	local override = ServerStorage:GetAttribute("ProfileStoreMock")
@@ -100,7 +100,7 @@ local function utcStamp(seconds: number): string
 	if seconds <= 0 then
 		return "nunca"
 	end
-	local ok, formatted = pcall(os.date, "!%Y-%m-%dT%H:%M:%SZ", seconds)
+	local ok, formatted = pcall(os.date :: any, "!%Y-%m-%dT%H:%M:%SZ", seconds)
 	if ok and type(formatted) == "string" then
 		return formatted
 	end
@@ -293,6 +293,10 @@ local function loadPlayer(player: Player)
 	ProfileRegistry.set(player, session)
 	player:SetAttribute("ProfileSchemaVersion", session.Data.schemaVersion)
 	player:SetAttribute("ProfileContentVersion", session.Data.contentVersion)
+	player:SetAttribute(
+		"MuralhaWallLevel",
+		if type(session.Data.wall) == "table" then (session.Data.wall.level or 1) else 1
+	)
 	printStoreState()
 	maybeSelfTest(player, key)
 end
