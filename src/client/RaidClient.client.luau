@@ -466,8 +466,6 @@ local coreBadge =
 	makeRewardPill(dropBadgesRow, "CoreBadge", UiKit.color(VisualTheme.PALETTE.amberBright))
 coreBadge.Size = UDim2.new(0.48, -3, 1, 0)
 
-local postMatchUi = PostMatchUi.create(resultCard)
-
 local replayButton = UiKit.button(resultCard, "Replay", "REPLAY")
 replayButton.Position = UDim2.new(0, 14, 1, -54)
 replayButton.Size = UDim2.new(0.47, -14, 0, 44)
@@ -494,6 +492,14 @@ resultCloseCap.Parent = resultCloseButton
 
 local startBattle: (mode: string, extraOpts: { [string]: any }?) -> ()
 local playLogReplay: (entry: any) -> ()
+
+local postMatchUi = PostMatchUi.create(resultCard, {
+	replayButton = replayButton,
+	closeButton = resultCloseButton,
+	onRevenge = function(battleId: string)
+		startBattle("revenge", { battleId = battleId })
+	end,
+})
 
 local campaignUi = CampaignUi.create(root, {
 	fetchState = function()
@@ -1946,6 +1952,11 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 			hashLabel.Text = tostring(result.resultHash)
 			applyResultBadges(result, loc)
 			postMatchUi.render(result.report, loc)
+			postMatchUi.setRevengeTarget(
+				if result.canRevenge == true and type(result.revengeBattleId) == "string"
+					then result.revengeBattleId
+					else nil
+			)
 			replayButton.Visible = true
 			resultCard.Visible = true
 			combatCamButton.Visible = false
@@ -2049,7 +2060,12 @@ playLogReplay = function(entry: any): ()
 	local synthetic = {
 		ok = true,
 		battleId = entry.battleId,
-		mode = role,
+		mode = if role == "defense" then "defend" else role,
+		phantomName = entry.rivalLabel,
+		canRevenge = entry.canRevenge == true,
+		revengeBattleId = if entry.canRevenge == true and type(entry.battleId) == "string"
+			then entry.battleId
+			else nil,
 		seed = entry.seed,
 		simVersion = Core.SIM_VERSION,
 		wall = entry.replayWall,

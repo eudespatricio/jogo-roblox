@@ -587,6 +587,99 @@ local function syncDefenseInbox(player: Player, profile: any): number
 	return added
 end
 
+local function seedMockInboxForQa(player: Player, profile: any): boolean
+	if not RunService:IsStudio() or not inboxStore.isMock then
+		return false
+	end
+	if
+		ServerStorage:GetAttribute("ProfileSelfTest") == true
+		or ServerStorage:GetAttribute("QaSeedRevenge") == false
+	then
+		return false
+	end
+	if player:GetAttribute("DropInDone") ~= true then
+		return false
+	end
+	if type(profile.stats) ~= "table" or (tonumber(profile.stats.defenses) or 0) < 1 then
+		return false
+	end
+	local history = ensureProfileHistory(profile)
+	for _, entry in ipairs(history) do
+		if
+			type(entry) == "table"
+			and entry.role == "defense"
+			and entry.isBot ~= true
+			and entry.rivalHash ~= "bot"
+		then
+			return false
+		end
+	end
+	local myHash = PhantomStore.hashOwner(player.UserId)
+	local pending, peekErr = inboxStore.peek(myHash)
+	if peekErr ~= nil or #pending > 0 then
+		return false
+	end
+	local myPoints = if type(profile.league) == "table"
+		then (tonumber(profile.league.points) or 0)
+		else 0
+	local shardLeague =
+		math.clamp(TrapCatalog.leagueOf(myPoints), PhantomStore.MIN_LEAGUE, PhantomStore.MAX_LEAGUE)
+	local defSnap = snapshotFromProfile(profile, myHash, shardLeague)
+	if defSnap == nil then
+		return false
+	end
+	local defWall = wallFromSnapshot(defSnap)
+	local rivalHash = PhantomStore.hashOwner(player.UserId + 900001)
+	if rivalHash == myHash then
+		rivalHash = PhantomStore.hashOwner(player.UserId + 900002)
+	end
+	local seed = 7700 + shardLeague
+	local rivalBotWall = BotPhantoms.pick(shardLeague, seed)
+	local waveSpec =
+		BotPhantoms.waveFor(shardLeague, false, #defWall.traps, tonumber(defWall.level) or 1)
+	local simRes = runBattle(seed, defWall, waveSpec)
+	local nowTs = os.time()
+	local battleId = string.format("qa_rev_%s_%d", string.sub(myHash, 1, 8), shardLeague)
+	local rec = BattleLog.fromBattle(
+		battleId,
+		simRes,
+		TrapCatalog.CONTENT_VERSION,
+		Core.GRID_WIDTH,
+		#defWall.traps,
+		defWall,
+		nowTs
+	)
+	if rec ~= nil then
+		logStore.put(rec)
+	end
+	local okPush, pushErr = inboxStore.push(myHash, {
+		battleId = battleId,
+		attackerHash = rivalHash,
+		attackerLabel = string.format("L%d#%s", shardLeague, string.sub(rivalHash, 1, 4)),
+		attackerLeague = shardLeague,
+		winner = simRes.winner,
+		goldReward = 0,
+		createdAt = nowTs,
+		resultHash = simRes.hash,
+		seed = seed,
+		attackerWall = toHistoryWall(rivalBotWall),
+		defenderWall = toHistoryWall(defWall),
+		waveSpec = cloneTable(waveSpec),
+	})
+	if okPush then
+		print(
+			string.format(
+				"[qa] mock defense seeded battleId=%s rival=%s (Studio/Mock)",
+				battleId,
+				rivalHash
+			)
+		)
+		return true
+	end
+	warn("[qa] mock defense seed falhou: " .. tostring(pushErr))
+	return false
+end
+
 local function ensureProfileCampaign(profile: any): any
 	if type(profile.campaign) ~= "table" then
 		profile.campaign = ProfileSchema.template().campaign
@@ -1448,6 +1541,11 @@ local function startRaid(player: Player, rawOpts: any): any
 			shardLeague,
 			not isDefend and not isRevenge
 		)
+		if not isDefend and not isRevenge then
+			if seedMockInboxForQa(player, profile) then
+				syncDefenseInbox(player, profile)
+			end
+		end
 		local ftueEv = if isRevenge
 			then (if playerWon then "revenge_won" else "revenge")
 			elseif isDefend then "defend"
@@ -1740,6 +1838,7 @@ battleLogStateRemote.OnServerInvoke = function(player: Player, rawReq: any)
 				gold = tonumber(profile.gold) or 0,
 			}
 		end
+		seedMockInboxForQa(player, profile)
 		syncDefenseInbox(player, profile)
 		player:SetAttribute("MuralhaUnreadLogs", 0)
 		local ftueState = FtueService.notify(player, "log_opened")

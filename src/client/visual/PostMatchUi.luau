@@ -10,24 +10,48 @@ local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTh
 
 local UiKit = require(script.Parent:WaitForChild("UiKit"))
 
+export type PostMatchActionOpts = {
+	replayButton: TextButton,
+	closeButton: TextButton,
+	onRevenge: (battleId: string) -> (),
+}
+
 export type PostMatchUiHandle = {
 	section: Frame,
 	render: (report: any, loc: string) -> (),
+	setRevengeTarget: (battleId: string?) -> (),
 	clear: () -> (),
 	refreshLocale: (loc: string) -> (),
 }
 
 local PostMatchUi = {}
 
-local function addTextConstraint(label: TextLabel, minSize: number, maxSize: number): ()
+local function addTextConstraint(
+	label: TextLabel | TextButton,
+	minSize: number,
+	maxSize: number
+): ()
 	local cap = Instance.new("UITextSizeConstraint")
 	cap.MinTextSize = minSize
 	cap.MaxTextSize = maxSize
 	cap.Parent = label
 end
 
-function PostMatchUi.create(resultCard: Frame): PostMatchUiHandle
+function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?): PostMatchUiHandle
 	local lastReport: any = nil
+	local activeRevengeId: string? = nil
+
+	local revengeButton =
+		UiKit.button(resultCard, "ResultRevenge", I18n.t(UiKit.getLocale(), "cta_revenge"))
+	revengeButton.AnchorPoint = Vector2.new(0.5, 0)
+	revengeButton.Position = UDim2.new(0.5, 0, 1, -54)
+	revengeButton.Size = UDim2.new(0.32, -8, 0, 44)
+	revengeButton.Font = Enum.Font.GothamBlack
+	revengeButton.ZIndex = 19
+	revengeButton.Visible = false
+	UiKit.corner(revengeButton, 10)
+	UiKit.setSelected(revengeButton, true)
+	addTextConstraint(revengeButton, 9, 13)
 
 	local section = Instance.new("Frame")
 	section.Name = "PostMatchSection"
@@ -119,11 +143,37 @@ function PostMatchUi.create(resultCard: Frame): PostMatchUiHandle
 		end
 	end
 
+	local function setRevengeTarget(battleId: string?): ()
+		if actionOpts ~= nil and type(battleId) == "string" and battleId ~= "" then
+			activeRevengeId = battleId
+			revengeButton.Text = I18n.t(UiKit.getLocale(), "cta_revenge")
+			revengeButton.Visible = true
+			actionOpts.replayButton.Size = UDim2.new(0.31, -10, 0, 44)
+			actionOpts.closeButton.Size = UDim2.new(0.31, -10, 0, 44)
+		else
+			activeRevengeId = nil
+			revengeButton.Visible = false
+			if actionOpts ~= nil then
+				actionOpts.replayButton.Size = UDim2.new(0.47, -14, 0, 44)
+				actionOpts.closeButton.Size = UDim2.new(0.47, -14, 0, 44)
+			end
+		end
+	end
+
+	revengeButton.MouseButton1Click:Connect(function()
+		if actionOpts ~= nil and activeRevengeId ~= nil then
+			local targetBattleId = activeRevengeId
+			setRevengeTarget(nil)
+			actionOpts.onRevenge(targetBattleId)
+		end
+	end)
+
 	local function clear(): ()
 		lastReport = nil
 		clearRows()
 		diagBanner.Visible = false
 		section.Visible = false
+		setRevengeTarget(nil)
 	end
 
 	local function render(report: any, loc: string): ()
@@ -250,6 +300,7 @@ function PostMatchUi.create(resultCard: Frame): PostMatchUiHandle
 	end
 
 	local function refreshLocale(loc: string): ()
+		revengeButton.Text = I18n.t(loc, "cta_revenge")
 		if lastReport ~= nil and section.Visible then
 			render(lastReport, loc)
 		end
@@ -258,6 +309,7 @@ function PostMatchUi.create(resultCard: Frame): PostMatchUiHandle
 	return {
 		section = section,
 		render = render,
+		setRevengeTarget = setRevengeTarget,
 		clear = clear,
 		refreshLocale = refreshLocale,
 	}

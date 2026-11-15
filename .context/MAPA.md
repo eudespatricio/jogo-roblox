@@ -24,7 +24,7 @@
 | `docs/tese-produto-e-economia.md` | economia unitária e cenários | decisão de receita |
 | `docs/modelo-financeiro.xlsx` | modelo editável | simular DAU/ARPPU |
 | `src/shared/sim/core.luau` · `DeckCatalog.luau` · `PostMatchReport.luau` | motor v8 (telemetria read-only, voadores, campeões) + DeckCatalog + Pós-Partida | mudança de simulação/relatório |
-| `sim/poc.luau` · `sim/acceptance.luau` · `sim/postmatch-contract.luau` | benchmark, acceptance P1 e contrato Pós-Partida/Vingança/FTUE (`6/6`) | validar performance/hash/v1.5 |
+| `sim/poc.luau` · `sim/acceptance.luau` · `sim/postmatch-contract.luau` | benchmark, acceptance P1 e contrato Pós-Partida/Vingança/FTUE (`7/7`) | validar performance/hash/v1.5 |
 | `sim/invariants.luau` | oráculo executável (20 checagens) | **sempre após editar core** |
 | `sim/audit-bit32.luau` · `audit-mul32.luau` | evidência dos bugs de aritmética | auditar determinismo |
 | `vendor/ProfileStore.luau` | ProfileStore oficial vendorizado (Apache-2.0) + `SOURCE.md` | camada de dados da P0 |

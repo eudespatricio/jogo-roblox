@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local BuildLayout = require(Shared:WaitForChild("build"):WaitForChild("BuildLayout"))
 local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
+local PostMatchReport = require(Shared:WaitForChild("raid"):WaitForChild("PostMatchReport"))
 local VisualTheme = require(Shared:WaitForChild("visual"):WaitForChild("VisualTheme"))
 
 local UiKit = require(script.Parent:WaitForChild("UiKit"))
@@ -212,7 +213,8 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 				)
 				UiKit.stroke(row, rowStrokeColor, 1, 0.35)
 
-				local hasRevengeSlot = role == "defense"
+				local revSpec = PostMatchReport.resolveRevengeUi(entry)
+				local hasRevengeSlot = revSpec.visible
 				local buttonsReserveW = if hasRevengeSlot then 166 else 82
 
 				local topLine = UiKit.label(
@@ -265,20 +267,9 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 				end
 
 				if hasRevengeSlot then
-					local canRevenge = entry.canRevenge == true
-					local reason = tostring(entry.revengeReason or "")
-					local btnLabel: string
-					if canRevenge then
-						btnLabel = I18n.t(loc, "cta_revenge")
-					elseif reason == "bot" then
-						btnLabel = I18n.t(loc, "ui_log_bot")
-					elseif reason == "already_revenged" then
-						btnLabel = I18n.t(loc, "ui_log_revenged")
-					else
-						local hours =
-							math.max(1, math.ceil((tonumber(entry.cooldownLeftSec) or 3600) / 3600))
-						btnLabel = I18n.t(loc, "ui_log_cd", hours)
-					end
+					local btnLabel = if revSpec.cooldownHours ~= nil
+						then I18n.t(loc, revSpec.labelKey, revSpec.cooldownHours)
+						else I18n.t(loc, revSpec.labelKey)
 
 					local revBtn = UiKit.button(row, "RevengeBtn", btnLabel)
 					revBtn.AnchorPoint = Vector2.new(1, 0.5)
@@ -286,7 +277,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 					revBtn.Size = UDim2.fromOffset(82, 44)
 					revBtn.ZIndex = 26
 					addTextCap(revBtn, 9, 12)
-					if canRevenge then
+					if revSpec.canRevenge then
 						UiKit.setSelected(revBtn, true)
 					else
 						revBtn.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.stoneDark)
@@ -294,20 +285,16 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 					end
 
 					revBtn.MouseButton1Click:Connect(function()
-						if canRevenge and type(entry.battleId) == "string" then
+						if revSpec.canRevenge and type(entry.battleId) == "string" then
 							opts.onRevenge(entry.battleId)
-						elseif reason == "bot" then
-							feedbackMessage = I18n.t(UiKit.getLocale(), "toast_revenge_bot")
-							feedbackLabel.Text = feedbackMessage
-						elseif reason == "already_revenged" then
-							feedbackMessage = I18n.t(UiKit.getLocale(), "toast_revenge_used")
-							feedbackLabel.Text = feedbackMessage
-						else
-							local hours = math.max(
-								1,
-								math.ceil((tonumber(entry.cooldownLeftSec) or 3600) / 3600)
-							)
-							feedbackMessage = I18n.t(UiKit.getLocale(), "toast_revenge_cd", hours)
+						elseif revSpec.toastKey ~= nil then
+							local activeLoc = UiKit.getLocale()
+							if revSpec.cooldownHours ~= nil then
+								feedbackMessage =
+									I18n.t(activeLoc, revSpec.toastKey, revSpec.cooldownHours)
+							else
+								feedbackMessage = I18n.t(activeLoc, revSpec.toastKey)
+							end
 							feedbackLabel.Text = feedbackMessage
 						end
 					end)

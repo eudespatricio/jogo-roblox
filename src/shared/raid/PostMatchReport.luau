@@ -54,6 +54,14 @@ export type PostMatchReportData = {
 	diagnosis: DefeatDiagnosis?,
 }
 
+export type RevengeUiSpec = {
+	visible: boolean,
+	canRevenge: boolean,
+	labelKey: string,
+	toastKey: string?,
+	cooldownHours: number?,
+}
+
 local UNIT_TO_DIAG: { [string]: string } = {
 	wisp = "diag_aerial_lane",
 	drake = "diag_aerial_lane",
@@ -261,6 +269,61 @@ function PostMatchReport.fromBattle(battle: any, result: any, trapCatalog: any):
 		traps = reports,
 		sectors = sectors,
 		diagnosis = diagnosis,
+	}
+end
+
+function PostMatchReport.resolveRevengeUi(entry: any): RevengeUiSpec
+	if type(entry) ~= "table" or entry.role ~= "defense" then
+		return {
+			visible = false,
+			canRevenge = false,
+			labelKey = "",
+			toastKey = nil,
+			cooldownHours = nil,
+		}
+	end
+	if entry.canRevenge == true then
+		return {
+			visible = true,
+			canRevenge = true,
+			labelKey = "cta_revenge",
+			toastKey = nil,
+			cooldownHours = nil,
+		}
+	end
+	local reason = tostring(entry.revengeReason or "")
+	if
+		reason == "revenge_bot"
+		or reason == "bot"
+		or reason == "revenge_no_target"
+		or reason == "revenge_self"
+		or entry.isBot == true
+		or entry.rivalHash == "bot"
+	then
+		return {
+			visible = true,
+			canRevenge = false,
+			labelKey = "ui_log_bot",
+			toastKey = "toast_revenge_bot",
+			cooldownHours = nil,
+		}
+	end
+	if reason == "revenge_used" or reason == "already_revenged" or entry.revenged == true then
+		return {
+			visible = true,
+			canRevenge = false,
+			labelKey = "ui_log_revenged",
+			toastKey = "toast_revenge_used",
+			cooldownHours = nil,
+		}
+	end
+	local hours = math.max(1, math.ceil((tonumber(entry.cooldownLeftSec) or 3600) / 3600))
+	return {
+		visible = true,
+		canRevenge = false,
+		labelKey = "ui_log_cd",
+		toastKey = "toast_revenge_cd",
+		cooldownHours = hours,
 	}
 end
 

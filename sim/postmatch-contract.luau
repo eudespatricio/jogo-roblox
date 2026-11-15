@@ -13,6 +13,7 @@ local ProfileSchema = require("../src/shared/data/ProfileSchema")
 local PostMatchReport = require("../src/shared/raid/PostMatchReport")
 local DefenseInboxStore = require("../src/server/raid/DefenseInboxStore")
 local FtueLogic = require("../src/shared/ftue/FtueLogic")
+local I18n = require("../src/shared/i18n/I18n")
 
 local failures: { string } = {}
 local checks = 0
@@ -487,6 +488,97 @@ check(
 		FtueLogic.advance(pFunded, "dropin_cleared", 2000)
 		local okS2, errS2, goldS2 = FtueLogic.skip(pFunded, 2002)
 		assert(okS2 and errS2 == nil and goldS2 == 0, "skip com gold>0 nao deve duplicar fallback")
+	end
+)
+
+-- 7) PostMatchReport.resolveRevengeUi: mapeia server revengeReason e chaves I18n
+check(
+	"PostMatchReport.resolveRevengeUi: mapeia revenge_bot/revenge_used/revenge_cooldown e chaves I18n",
+	function()
+		local function assertI18nExists(key: string, arg: number?): ()
+			for _, loc in ipairs({ "pt", "en", "es" }) do
+				local txt = if arg ~= nil then I18n.t(loc, key, arg) else I18n.t(loc, key)
+				assert(
+					type(txt) == "string" and txt ~= "" and txt ~= key,
+					"chave I18n ausente: " .. key .. " (" .. loc .. ")"
+				)
+			end
+		end
+
+		local atkSpec = PostMatchReport.resolveRevengeUi({ role = "attack", canRevenge = false })
+		assert(atkSpec.visible == false, "attack nao deve exibir slot de vinganca")
+
+		local revOk = PostMatchReport.resolveRevengeUi({
+			role = "defense",
+			canRevenge = true,
+			isBot = false,
+		})
+		assert(
+			revOk.visible and revOk.canRevenge and revOk.labelKey == "cta_revenge",
+			"defesa elegivel deve usar cta_revenge"
+		)
+		assertI18nExists(revOk.labelKey, nil)
+
+		local botSpec = PostMatchReport.resolveRevengeUi({
+			role = "defense",
+			canRevenge = false,
+			revengeReason = "revenge_bot",
+			isBot = true,
+		})
+		assert(
+			botSpec.visible
+				and not botSpec.canRevenge
+				and botSpec.labelKey == "ui_log_bot"
+				and botSpec.toastKey == "toast_revenge_bot",
+			"revenge_bot deve mapear para ui_log_bot/toast_revenge_bot"
+		)
+		assertI18nExists(botSpec.labelKey, nil)
+		assertI18nExists(botSpec.toastKey :: string, nil)
+
+		local usedSpec = PostMatchReport.resolveRevengeUi({
+			role = "defense",
+			canRevenge = false,
+			revengeReason = "revenge_used",
+			revenged = true,
+		})
+		assert(
+			usedSpec.visible
+				and not usedSpec.canRevenge
+				and usedSpec.labelKey == "ui_log_revenged"
+				and usedSpec.toastKey == "toast_revenge_used",
+			"revenge_used deve mapear para ui_log_revenged/toast_revenge_used"
+		)
+		assertI18nExists(usedSpec.labelKey, nil)
+		assertI18nExists(usedSpec.toastKey :: string, nil)
+
+		local cdSpec = PostMatchReport.resolveRevengeUi({
+			role = "defense",
+			canRevenge = false,
+			revengeReason = "revenge_cooldown",
+			cooldownLeftSec = 7200,
+		})
+		assert(
+			cdSpec.visible
+				and not cdSpec.canRevenge
+				and cdSpec.labelKey == "ui_log_cd"
+				and cdSpec.toastKey == "toast_revenge_cd"
+				and cdSpec.cooldownHours == 2,
+			"revenge_cooldown deve calcular 2h e usar ui_log_cd/toast_revenge_cd"
+		)
+		assertI18nExists(cdSpec.labelKey, cdSpec.cooldownHours)
+		assertI18nExists(cdSpec.toastKey :: string, cdSpec.cooldownHours)
+
+		local noTargetSpec = PostMatchReport.resolveRevengeUi({
+			role = "defense",
+			canRevenge = false,
+			revengeReason = "revenge_no_target",
+		})
+		assert(
+			noTargetSpec.visible
+				and not noTargetSpec.canRevenge
+				and noTargetSpec.labelKey == "ui_log_bot",
+			"revenge_no_target deve cair para ui_log_bot"
+		)
 	end
 )
 

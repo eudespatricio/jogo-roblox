@@ -17,7 +17,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 | determinismo | hash `1245379674` (seed 42, 3 execuções) · `simVersion 8` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 62,6% defensor · ~1,6s/1.000 |
 | invariantes | 20/20 (`sim/invariants.luau`) |
-| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 23/23 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 6/6 · i18n 7/7 |
+| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 23/23 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 7/7 · i18n 7/7 |
 | versões | schema 6 · content 3 · sim 8 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
 | perfil | schema v6 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0..5→6 |
 | analytics | contrato v2 (`40` eventos) · `ftue_step`/`ftue_skip`/`revenge_started` · sink DataStore/Memory |
@@ -31,7 +31,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 - Arquitetura/Runbooks: `padroes-engenharia.md` + `arquitetura-e-fluxos.md` + `plano-playtest-v1.md` + `rfcs-p2-e-fechamento-gaps.md` (`RFC-001..009`); S4–S6.1 fechadas.
 - Motor & Pós-Partida: `src/shared/sim/core.luau` (v8, voadores, campeões, telemetria read-only, 5 Bosses, 8 mutadores), `DeckCatalog`, `CampaignCatalog` (25 estágios) e `PostMatchReport`.
 - Muralha & FTUE: `TrapCatalog.luau` (v3, `totalGoldInvested`, `MAX_LEVEL=5`) + `WallService.luau` + `WallController` + `FtueLogic`/`FtueService`/`FtueController`.
-- Dados & Inbox: `ProfileSchema.luau` (v6: `ftue`, `battleHistory`, `revengeCooldowns`) + `ProfileService.luau` + `DefenseInboxStore.luau` (`25/25`, `6/6`).
+- Dados & Inbox: `ProfileSchema.luau` (v6: `ftue`, `battleHistory`, `revengeCooldowns`) + `ProfileService.luau` + `DefenseInboxStore.luau` (`25/25`, `7/7`).
 - Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `36/36`, `40` eventos) + `I18n.luau` (`161` chaves, `7/7`).
 - Visual P2/Open Cloud: `VisualTheme`/`UiAssets`/`CameraFraming`/`PortalThemes`, `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`CampaignUi`, `HordeKit`/`CrowdKit`/`AmbientLife`, `TransitionKit`, 87 cues Open Cloud.
 - Tooling: Rokit + CLI/GUI + Forge3D 0.6.1; CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
