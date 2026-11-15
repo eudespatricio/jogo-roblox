@@ -493,6 +493,7 @@ check("hud periferico mobile + safe insets: 9 viewports sem sobreposicao", funct
 		local allInteractive = {
 			{ "goldPill", hud.goldPill },
 			{ "wallPill", hud.wallPill },
+			{ "logBtn", hud.logBtn },
 			{ "camBtn", hud.camBtn },
 			{ "muteBtn", hud.muteBtn },
 			{ "comboBtn", hud.comboBtn },

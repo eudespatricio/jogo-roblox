@@ -21,7 +21,7 @@ end
 local function migrated()
 	local profile, err = ProfileSchema.migrate(fixtureV1)
 	assert(profile ~= nil, "migracao de schema falhou: " .. tostring(err))
-	assert(profile.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion != 5")
+	assert(profile.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion != 6")
 	profile.contentVersion = 1
 	return profile
 end

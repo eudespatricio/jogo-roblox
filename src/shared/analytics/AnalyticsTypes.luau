@@ -349,6 +349,21 @@ local CATALOG: { [string]: CatalogEntry } = {
 		prop("memory_mb", num(0, nil)),
 		prop("sample_window_s", num(0, nil)),
 	}),
+	-- 2.7 pos-partida e FTUE (GAP-020)
+	ftue_step = catalogEvent({
+		prop("from_step", int(0, 6)),
+		prop("to_step", int(0, 6)),
+		prop("trigger", str(32, "id")),
+		prop("reward_gold", int(0, nil)),
+	}),
+	ftue_skip = catalogEvent({
+		prop("at_step", int(0, 6)),
+		prop("fallback_gold", int(0, nil)),
+	}),
+	revenge_started = catalogEvent({
+		prop("battle_id", str(64, "id")),
+		prop("league", int(1, 7)),
+	}),
 }
 
 -- Funil canonico (taxonomia §3). O contrato garante que todo passo existe no catalogo.

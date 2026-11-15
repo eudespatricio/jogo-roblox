@@ -402,6 +402,16 @@ function Core.posToCell(x, y)
 	return nil
 end
 
+local function posToNearestCell(x, y)
+	local exact = Core.posToCell(x, y)
+	if exact ~= nil then
+		return exact
+	end
+	local row = clampInt(math.floor((y - 500 + 500) / 1000) + 1, 1, Core.GRID_HEIGHT)
+	local col = clampInt(math.floor((x - 1000 + 1000) / 2000) + 1, 1, Core.GRID_WIDTH)
+	return string.format("r%dc%d", row, col)
+end
+
 -- Valida uma posicao isolada (limites + grade). Devolve (ok, erro).
 function Core.validatePosition(x, y)
 	if not isInt(x) or not isInt(y) then
@@ -475,6 +485,7 @@ local function normalizeTraps(traps, trapLimit)
 			label .. ".level fora de [1," .. Core.MAX_TRAP_LEVEL .. "]"
 		)
 		normalized[#normalized + 1] = {
+			cell = trap.cell or posToNearestCell(x, y),
 			type = trap.type,
 			level = level,
 			x = x,
@@ -485,6 +496,7 @@ local function normalizeTraps(traps, trapLimit)
 			baseCd = math.max(MIN_TRAP_CD, TRAP[trap.type].cd - LEVEL_CD_BONUS[level]),
 			jamUntil = 0,
 			frostSlowUntil = 0,
+			crossBattery = 0,
 		}
 	end
 	-- Ordem canonica (y, x): a ordem de entrada nunca muda o replay (igual a (linha, coluna) v2).
@@ -514,6 +526,7 @@ local function normalizeTraps(traps, trapLimit)
 		end
 	end
 	for i, trap in ipairs(normalized) do
+		trap.crossBattery = reductions[i]
 		trap.baseCd = math.max(MIN_TRAP_CD, trap.baseCd - reductions[i])
 	end
 	return normalized
@@ -633,6 +646,18 @@ function Battle.new(spec)
 
 	self.wallLevel = wall.level or 1
 	self.traps = normalizeTraps(wall.traps, levelDef.trapLimit)
+
+	-- Telemetria paralela somente-leitura (nao entra no RNG, estado de hash nem Battle:Result).
+	local trapCount = #self.traps
+	self.tDamageMilli = table.create(trapCount, 0)
+	self.tSynergyMilli = table.create(trapCount, 0)
+	self.tKills = table.create(trapCount, 0)
+	self.tControlTicks = table.create(trapCount, 0)
+	self.laneLeakCount = { 0, 0, 0, 0, 0 }
+	self.laneLeakMilli = { 0, 0, 0, 0, 0 }
+	self.laneFirstLeakTick = { 0, 0, 0, 0, 0 }
+	self.laneUnitLeakMilli = { {}, {}, {}, {}, {} }
+	self.laneUnitLeakCount = { {}, {}, {}, {}, {} }
 
 	local hasExtensions = wave.slices ~= nil
 		or wave.pool ~= nil
@@ -910,7 +935,23 @@ local function isUnitFlying(self, unitIndex)
 	return def ~= nil and def.flying == true
 end
 
+local function recordLeak(self, lane, unitKey, dmgMilli)
+	local l = clampInt(lane or 3, 1, Core.GRID_HEIGHT)
+	local amt = math.max(0, math.floor(dmgMilli or 0))
+	self.laneLeakCount[l] += 1
+	self.laneLeakMilli[l] += amt
+	if self.laneFirstLeakTick[l] == 0 then
+		self.laneFirstLeakTick[l] = self.tick
+	end
+	local key = tostring(unitKey or "runner")
+	local byMilli = self.laneUnitLeakMilli[l]
+	byMilli[key] = (byMilli[key] or 0) + amt
+	local byCount = self.laneUnitLeakCount[l]
+	byCount[key] = (byCount[key] or 0) + 1
+end
+
 local function hitDamage(self, trap, baseDamage, unitIndex)
+	local rawBase = baseDamage
 	local dmg = baseDamage
 	if trap.type == "archer" and isUnitFlying(self, unitIndex) then
 		dmg = math.floor(dmg * 1250 / 1000)
@@ -927,11 +968,12 @@ local function hitDamage(self, trap, baseDamage, unitIndex)
 	local armor = self.uArmorMilli[unitIndex] or 0
 	if armor > 0 then
 		dmg = math.max(1, math.floor(dmg * (MILLI - armor) / MILLI))
+		rawBase = math.max(1, math.floor(rawBase * (MILLI - armor) / MILLI))
 	end
-	return dmg
+	return dmg, rawBase
 end
 
-local function applyStatus(self, trap, def, unitIndex)
+local function applyStatus(self, trap, def, unitIndex, trapIdx)
 	if def.slowPct then
 		local slowTicks = def.slowTicks
 		if self.hasWaveExtensions then
@@ -946,6 +988,9 @@ local function applyStatus(self, trap, def, unitIndex)
 		if slowTicks > 0 then
 			self.uSlowUntil[unitIndex] = self.tick + slowTicks
 			self.uSlowPct[unitIndex] = def.slowPct
+			if trapIdx ~= nil then
+				self.tControlTicks[trapIdx] += slowTicks
+			end
 			if trap.type == "frost" then
 				self.uFrostUntil[unitIndex] = self.tick + slowTicks
 			end
@@ -953,6 +998,9 @@ local function applyStatus(self, trap, def, unitIndex)
 	end
 	if trap.type == "tar" then
 		self.uTarUntil[unitIndex] = self.tick + 30
+		if trapIdx ~= nil then
+			self.tControlTicks[trapIdx] += 30
+		end
 	end
 end
 
@@ -983,7 +1031,7 @@ local function bossInTrapRange(trap, def, boss)
 	return dx >= -2000 and dx <= def.range + 1000
 end
 
-local function hitBossWithShot(self, trap, def, baseDamage, shotId)
+local function hitBossWithShot(self, trap, def, baseDamage, shotId, trapIdx)
 	local boss = self.boss
 	if boss == nil or not boss.alive or boss.hp <= 0 then
 		return false
@@ -993,6 +1041,7 @@ local function hitBossWithShot(self, trap, def, baseDamage, shotId)
 	end
 	boss.lastHitByShotId[shotId] = true
 
+	local rawBase = baseDamage
 	local dmg = baseDamage
 	if (trap.type == "cannon" or trap.type == "catapult") and self.tick <= boss.tarUntil then
 		dmg = math.floor(dmg * 1250 / MILLI)
@@ -1002,12 +1051,21 @@ local function hitBossWithShot(self, trap, def, baseDamage, shotId)
 	end
 	if boss.armorMilli > 0 then
 		dmg = math.max(1, math.floor(dmg * (MILLI - boss.armorMilli) / MILLI))
+		rawBase = math.max(1, math.floor(rawBase * (MILLI - boss.armorMilli) / MILLI))
 	end
 	if boss.state == "VULNERABLE" then
 		dmg = math.max(1, math.floor(dmg * 1300 / MILLI))
+		rawBase = math.max(1, math.floor(rawBase * 1300 / MILLI))
 	end
 
-	boss.hp -= dmg
+	local prevHp = boss.hp
+	boss.hp = prevHp - dmg
+	if trapIdx ~= nil then
+		local effDmg = math.min(prevHp, dmg)
+		local effBase = math.min(prevHp, rawBase)
+		self.tDamageMilli[trapIdx] += effDmg
+		self.tSynergyMilli[trapIdx] += math.max(0, effDmg - effBase)
+	end
 
 	if def.slowPct then
 		local slowTicks = def.slowTicks
@@ -1020,6 +1078,9 @@ local function hitBossWithShot(self, trap, def, baseDamage, shotId)
 		if slowTicks > 0 then
 			boss.slowUntil = self.tick + slowTicks
 			boss.slowPct = def.slowPct
+			if trapIdx ~= nil then
+				self.tControlTicks[trapIdx] += slowTicks
+			end
 			if trap.type == "frost" then
 				boss.frostUntil = self.tick + slowTicks
 			end
@@ -1027,6 +1088,9 @@ local function hitBossWithShot(self, trap, def, baseDamage, shotId)
 	end
 	if trap.type == "tar" then
 		boss.tarUntil = self.tick + 30
+		if trapIdx ~= nil then
+			self.tControlTicks[trapIdx] += 30
+		end
 	end
 
 	local staggerAdd = def.staggerMilli or 0
@@ -1056,11 +1120,14 @@ local function hitBossWithShot(self, trap, def, baseDamage, shotId)
 		boss.hp = 0
 		boss.alive = false
 		self.killed += 1
+		if trapIdx ~= nil then
+			self.tKills[trapIdx] += 1
+		end
 	end
 	return true
 end
 
-function Battle:applyTrap(trap, shotId)
+function Battle:applyTrap(trap, shotId, trapIdx)
 	local def = TRAP[trap.type]
 	local damage = trapDamage(trap)
 	-- faixa lateral pre-calculada no normalize (|uY - y| <= LANE_REACH, sem chamada no laco)
@@ -1087,11 +1154,22 @@ function Battle:applyTrap(trap, shotId)
 				local dx = self.uX[i] - trap.x
 				if dx > 0 and dx <= def.range then
 					hitAny = true
-					self.uHp[i] -= hitDamage(self, trap, damage, i)
-					applyStatus(self, trap, def, i)
+					local prevHp = self.uHp[i]
+					local dmg, rawBase = hitDamage(self, trap, damage, i)
+					self.uHp[i] = prevHp - dmg
+					applyStatus(self, trap, def, i, trapIdx)
+					if trapIdx ~= nil then
+						local effDmg = math.min(prevHp, dmg)
+						local effBase = math.min(prevHp, rawBase)
+						self.tDamageMilli[trapIdx] += effDmg
+						self.tSynergyMilli[trapIdx] += math.max(0, effDmg - effBase)
+					end
 					if self.uHp[i] <= 0 then
 						self.uHp[i] = 0
 						self.killed += 1
+						if trapIdx ~= nil then
+							self.tKills[trapIdx] += 1
+						end
 						if self.uIsChampion[i] then
 							self.championKilled += 1
 						end
@@ -1107,7 +1185,7 @@ function Battle:applyTrap(trap, shotId)
 			for lane = laneLo, laneHi do
 				local ly = Core.laneY(lane)
 				if ly >= yLo and ly <= yHi then
-					if hitBossWithShot(self, trap, def, damage, currentShotId) then
+					if hitBossWithShot(self, trap, def, damage, currentShotId, trapIdx) then
 						hitAny = true
 					end
 				end
@@ -1147,18 +1225,29 @@ function Battle:applyTrap(trap, shotId)
 
 	if canHitBoss then
 		if best == nil or boss.state == "VULNERABLE" or boss.x <= bestX then
-			return hitBossWithShot(self, trap, def, damage, currentShotId)
+			return hitBossWithShot(self, trap, def, damage, currentShotId, trapIdx)
 		end
 	end
 
 	if not best then
 		return false
 	end
-	self.uHp[best] -= hitDamage(self, trap, damage, best)
-	applyStatus(self, trap, def, best)
+	local prevHp = self.uHp[best]
+	local dmg, rawBase = hitDamage(self, trap, damage, best)
+	self.uHp[best] = prevHp - dmg
+	applyStatus(self, trap, def, best, trapIdx)
+	if trapIdx ~= nil then
+		local effDmg = math.min(prevHp, dmg)
+		local effBase = math.min(prevHp, rawBase)
+		self.tDamageMilli[trapIdx] += effDmg
+		self.tSynergyMilli[trapIdx] += math.max(0, effDmg - effBase)
+	end
 	if self.uHp[best] <= 0 then
 		self.uHp[best] = 0
 		self.killed += 1
+		if trapIdx ~= nil then
+			self.tKills[trapIdx] += 1
+		end
 		if self.uIsChampion[best] then
 			self.championKilled += 1
 		end
@@ -1182,6 +1271,7 @@ function Battle:executeBossAbility()
 			end
 		end
 		if boss.x <= 0 then
+			recordLeak(self, boss.laneCenter, boss.bossId, math.max(MILLI, self.wallHp))
 			self.leaked += 1
 			self.wallHp = 0
 		end
@@ -1321,6 +1411,7 @@ function Battle:stepBoss()
 	boss.x -= speedTick
 	if boss.x <= 0 then
 		boss.x = 0
+		recordLeak(self, boss.laneCenter, boss.bossId, math.max(MILLI, self.wallHp))
 		self.leaked += 1
 		self.wallHp = 0
 	end
@@ -1362,12 +1453,12 @@ function Battle:Step()
 			end
 		end
 
-		for _, trap in ipairs(self.traps) do
+		for trapIdx, trap in ipairs(self.traps) do
 			if trap.cd > 0 then
 				trap.cd -= 1
 			end
 			if trap.cd <= 0 then
-				if self:applyTrap(trap) then
+				if self:applyTrap(trap, nil, trapIdx) then
 					trap.cd = trap.baseCd
 				end
 			end
@@ -1384,7 +1475,9 @@ function Battle:Step()
 				if self.uX[i] <= 0 then
 					self.uHp[i] = 0
 					self.leaked += 1
-					self.wallHp -= math.floor(self.uLeak[i] * leakScalePct / 100)
+					local leakDmg = math.floor(self.uLeak[i] * leakScalePct / 100)
+					recordLeak(self, self.uLane[i], self.uType[i], leakDmg)
+					self.wallHp -= leakDmg
 				end
 			end
 		end
@@ -1437,7 +1530,7 @@ function Battle:Step()
 		end
 	end
 
-	for _, trap in ipairs(self.traps) do
+	for trapIdx, trap in ipairs(self.traps) do
 		local jammed = trap.jamUntil ~= nil and self.tick <= trap.jamUntil
 		if not jammed then
 			if trap.cd > 0 then
@@ -1445,7 +1538,7 @@ function Battle:Step()
 			end
 			if trap.cd <= 0 then
 				self.nextShotId += 1
-				if self:applyTrap(trap, self.nextShotId) then
+				if self:applyTrap(trap, self.nextShotId, trapIdx) then
 					local cd = trap.baseCd
 					if trap.frostSlowUntil ~= nil and self.tick <= trap.frostSlowUntil then
 						cd = math.floor(cd * 1400 / MILLI)
@@ -1479,7 +1572,9 @@ function Battle:Step()
 				if self.uIsChampion[i] then
 					self.championBreached += 1
 				end
-				self.wallHp -= math.floor(self.uLeak[i] * leakScalePct / 100)
+				local leakDmg = math.floor(self.uLeak[i] * leakScalePct / 100)
+				recordLeak(self, self.uLane[i], self.uType[i], leakDmg)
+				self.wallHp -= leakDmg
 			end
 		end
 	end
@@ -1553,6 +1648,49 @@ function Battle:Result()
 		res.boss = self:BossSnapshot()
 	end
 	return res
+end
+
+function Battle:CombatTelemetry()
+	local trapsOut = {}
+	for idx, trap in ipairs(self.traps) do
+		trapsOut[idx] = {
+			index = idx,
+			cell = trap.cell or posToNearestCell(trap.x, trap.y),
+			type = trap.type,
+			level = trap.level,
+			x = trap.x,
+			y = trap.y,
+			damageDealt = self.tDamageMilli[idx] or 0,
+			synergyDamage = self.tSynergyMilli[idx] or 0,
+			kills = self.tKills[idx] or 0,
+			controlTicks = self.tControlTicks[idx] or 0,
+			crossBattery = trap.crossBattery or 0,
+		}
+	end
+	local lanesOut = {}
+	for lane = 1, Core.GRID_HEIGHT do
+		local byMilli = {}
+		for k, v in pairs(self.laneUnitLeakMilli[lane]) do
+			byMilli[k] = v
+		end
+		local byCount = {}
+		for k, v in pairs(self.laneUnitLeakCount[lane]) do
+			byCount[k] = v
+		end
+		local firstTick = self.laneFirstLeakTick[lane]
+		lanesOut[lane] = {
+			lane = lane,
+			leaks = self.laneLeakCount[lane] or 0,
+			damageMilli = self.laneLeakMilli[lane] or 0,
+			breachedAtTick = if firstTick ~= nil and firstTick > 0 then firstTick else nil,
+			byUnitMilli = byMilli,
+			byUnitCount = byCount,
+		}
+	end
+	return {
+		traps = trapsOut,
+		lanes = lanesOut,
+	}
 end
 
 function Battle:Run()

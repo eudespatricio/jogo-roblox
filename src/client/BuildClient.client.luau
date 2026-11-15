@@ -29,6 +29,7 @@ local TrapKit = require(visual:WaitForChild("TrapKit"))
 local AudioKit = require(visual:WaitForChild("AudioKit"))
 local Vfx = require(visual:WaitForChild("Vfx"))
 local DeckUi = require(visual:WaitForChild("DeckUi"))
+local FtueUi = require(visual:WaitForChild("FtueUi"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -36,6 +37,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local remotes = ReplicatedStorage:WaitForChild("MuralhaRemotes")
 local buildAction = remotes:WaitForChild("BuildAction") :: RemoteFunction
 local buildSnapshot = remotes:WaitForChild("BuildSnapshot") :: RemoteFunction
+local ftueAction = remotes:WaitForChild("FtueAction") :: RemoteFunction
 
 local function waitForDropIn(): ()
 	for _ = 1, 50 do
@@ -1161,6 +1163,18 @@ deckBtn.MouseButton1Click:Connect(function()
 	comboModal.Visible = false
 end)
 
+local ftueUi = FtueUi.create(root, {
+	onSkip = function()
+		local ok, res = pcall(function()
+			return ftueAction:InvokeServer("skip")
+		end)
+		return if ok then res else { ok = false, err = "server_unavailable" }
+	end,
+	onToast = function(msg: string): ()
+		setStatus(msg)
+	end,
+})
+
 -- ---------------------------------------------------------------- layout
 local function positionContextBar(): ()
 	if selectedWorldSlot == nil or not contextTrapBar.Visible then
@@ -1230,6 +1244,7 @@ local function applyLayout(): ()
 	deckBtn.Text = ""
 	deckUi.applyLayout(hudRects)
 	applyRect(toastBanner, hudRects.toastBanner)
+	ftueUi.applyLayout(hudRects)
 
 	trapLayout.Padding = UDim.new(0, hudRects.trapCardGap)
 	for _, card in pairs(trapCards) do
@@ -1752,6 +1767,7 @@ UiKit.onLocaleChanged(function()
 	refreshHeaderLabels(state.snapshot)
 	refreshComboModal()
 	deckUi.refreshLocale()
+	ftueUi.refreshLocale()
 	updateModeButtons()
 	refreshSelection()
 	updateCardAffordability()

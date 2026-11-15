@@ -147,6 +147,10 @@ local PROPS = {
 	client_error = { code = "render_fail", context_hash = CODE_HASH },
 	server_error = { code = "datastore_timeout", context_hash = CODE_HASH },
 	perf_sample = { fps_p50 = 58.5, fps_p95 = 44, memory_mb = 320.5, sample_window_s = 60 },
+	-- 2.7 pos-partida e FTUE (GAP-020)
+	ftue_step = { from_step = 0, to_step = 1, trigger = "dropin_cleared", reward_gold = 0 },
+	ftue_skip = { at_step = 1, fallback_gold = 40 },
+	revenge_started = { battle_id = BATTLE_ID, league = 2 },
 }
 
 local FIXTURES = {}
@@ -167,15 +171,15 @@ local function validEvent(name)
 end
 
 -- ---------------------------------------------------------------- catalogo
-check("catalogo: schema 2 e 37 eventos da taxonomia", function()
+check("catalogo: schema 2 e 40 eventos da taxonomia", function()
 	assert(Analytics.SCHEMA_VERSION == 2, "schema_version deveria ser 2")
 	assert(AnalyticsService.SCHEMA_VERSION == 2, "AnalyticsService.SCHEMA_VERSION deveria ser 2")
 	local collector = Analytics.COLLECTOR_SCHEMA_VERSIONS
 	assert(#collector == 2 and collector[1] == 1 and collector[2] == 2, "coletor aceita v1 e v2")
 	local names = Analytics.eventNames()
-	assert(#names == 37, "esperava 37 eventos: " .. tostring(#names))
+	assert(#names == 40, "esperava 40 eventos: " .. tostring(#names))
 	assert(#fixtureErrors == 0, "fixtures invalidas: " .. table.concat(fixtureErrors, " | "))
-	assert(countKeys(FIXTURES) == 37, "fixtures: " .. tostring(countKeys(FIXTURES)))
+	assert(countKeys(FIXTURES) == 40, "fixtures: " .. tostring(countKeys(FIXTURES)))
 	assert(Analytics.MAX_EVENTS_PER_SESSION == 200, "teto de eventos/sessao")
 	assert(Analytics.MAX_CLIENT_EVENTS_PER_MINUTE == 10, "rate limit de cliente")
 	assert(Analytics.MAX_FREE_STRING == 256, "limite de string livre")

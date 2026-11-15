@@ -7,7 +7,7 @@
 física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18+). Público 13–34.
 
 ## Fase
-**P2 + Playtest v1.4 (14/11/2026).** Horde Deck customizável (5 facções, 13 cartas, DeckUi, slots de esquadrão, aposta de campeão), `Core v8` (voadores espectro/draconato imunes a piso, Arqueiro +25% antiaéreo, campeão 2.2x HP), `ProfileSchema v5` (horde deck/cards/cores), 133 chaves I18n sincronizadas (PT/EN/ES).
+**P2 + Playtest v1.5 (14/11/2026).** Pacote Pós-Partida (`GAP-020`): `PostMatchReport`/`PostMatchUi` (DPS/eficiência ouro/MVP/setores `A-P-B`/diagnóstico `diag_*`), `DefenseInboxStore` (`MuralhaInbox_v1` zero-PII) + `BattleLogUi` + Vingança (`24h` cooldown), FTUE guiado (`0..6`, `FtueLogic`/`FtueService`/`FtueUi`), `ProfileSchema v6`, `Analytics v2` (`40` eventos) e `161` chaves I18n (PT/EN/ES).
 ## Números atuais (14/11/2026)
 | Métrica | Valor |
 |---|---|
@@ -16,11 +16,11 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 | custo por batalha | ~1,6 ms (~620 batalhas/s) |
 | determinismo | hash `1245379674` (seed 42, 3 execuções) · `simVersion 8` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 62,6% defensor · ~1,6s/1.000 |
-| invariantes | 19/19 (`sim/invariants.luau`) |
-| contratos | perfil 23/23 · analytics 35/35 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 22/22 · drop-in 11/11 · raid 15/15 · campanha 6/6 · i18n 7/7 |
-| versões | schema 5 · content 3 · sim 8 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
-| perfil | schema v5 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0..4→5 |
-| analytics | contrato v2 · `trap_moved`/`wall_upgraded`/`cosmetic_equipped` · sink DataStore/Memory |
+| invariantes | 20/20 (`sim/invariants.luau`) |
+| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 23/23 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 6/6 · i18n 7/7 |
+| versões | schema 6 · content 3 · sim 8 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
+| perfil | schema v6 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0..5→6 |
+| analytics | contrato v2 (`40` eventos) · `ftue_step`/`ftue_skip`/`revenge_started` · sink DataStore/Memory |
 | teste de sessão | Modo A 8/8 + Modo B schema v1 8/8 (09/11) · Modo B schema v2 8/8 (10/11) |
 
 ## Pronto
@@ -29,11 +29,11 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 - Economia/Catálogo/Meta: `modelo-financeiro.xlsx`, `tese-produto-e-economia.md`, `catalogo-itens-e-cosmeticos.md`, `sistemas-jogo-completo.md`.
 - Evidência/Visual/Áudio: `pesquisa-tendencias-2026/jogadores/grade`, `direcao-visual-e-silhuetas.md`, `audio-musica-e-soundscape.md`, `animacoes-fisica-real-e-vfx.md`.
 - Arquitetura/Runbooks: `padroes-engenharia.md` + `arquitetura-e-fluxos.md` + `plano-playtest-v1.md` + `rfcs-p2-e-fechamento-gaps.md` (`RFC-001..009`); S4–S6.1 fechadas.
-- Motor: `src/shared/sim/core.luau` (v7, Arqueiro 360°, 6 classes, 5 Bosses multi-lane, 8 mutadores) + `src/shared/campaign/CampaignCatalog.luau` (5 Atos × 5 estágios).
-- Muralha: `TrapCatalog.luau` (v3, `MAX_LEVEL=5`, `WALL_LEVELS`) + `WallService.luau` (`placeAt`/`move`/`upgradeWall`/`equipCosmetic`/`toBattleWall`) + `WallController`.
-- Dados: `ProfileSchema.luau` (v4/campanha Normal+Nightmare/3★/marcos) + `ProfileService.luau` + `ProfileBoot.server.luau` (`23/23`).
-- Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `35/35`) + `I18n.luau` (`133` chaves, `7/7`).
-- Visual P2/Open Cloud: `VisualTheme`/`UiAssets`/`CameraFraming`/`PortalThemes` (5 Portais de Campanha `PORTAL_act1..act5` + `LOWPOLY_PALETTE_TEXTURE_ID`, Fan Manifold 5 trilhas, `Vfx.portalBreach`), `BootLoading`, `TransitionKit`, `HordeKit`/`CrowdKit`/`AmbientLife`, `CampaignUi`, 87 cues Open Cloud (5 BGM + 30 VO PT/EN/ES + 52 SFX/stingers).
+- Motor & Pós-Partida: `src/shared/sim/core.luau` (v8, voadores, campeões, telemetria read-only, 5 Bosses, 8 mutadores), `DeckCatalog`, `CampaignCatalog` (25 estágios) e `PostMatchReport`.
+- Muralha & FTUE: `TrapCatalog.luau` (v3, `totalGoldInvested`, `MAX_LEVEL=5`) + `WallService.luau` + `WallController` + `FtueLogic`/`FtueService`/`FtueController`.
+- Dados & Inbox: `ProfileSchema.luau` (v6: `ftue`, `battleHistory`, `revengeCooldowns`) + `ProfileService.luau` + `DefenseInboxStore.luau` (`25/25`, `6/6`).
+- Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `36/36`, `40` eventos) + `I18n.luau` (`161` chaves, `7/7`).
+- Visual P2/Open Cloud: `VisualTheme`/`UiAssets`/`CameraFraming`/`PortalThemes`, `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`CampaignUi`, `HordeKit`/`CrowdKit`/`AmbientLife`, `TransitionKit`, 87 cues Open Cloud.
 - Tooling: Rokit + CLI/GUI + Forge3D 0.6.1; CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil) + `BotPhantoms`/`PhantomStore` 8-slots.
@@ -41,7 +41,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 ## Não pronto
 
 - QA mobile no Studio publicado sob `userId = 11966727684` (`InsertService:LoadAsset`).
-- GAP-005/013/018(co-op 20 Hz)/019(F1/5 temas)/020 abertos; ver `docs/gaps.md`.
+- GAP-005/013/018(co-op 20 Hz)/019(F1/5 temas)/020(loja/passe/badges/settings) abertos; ver `docs/gaps.md`.
 
 ## Congelado
 
@@ -49,11 +49,11 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
   `A MURALHA` / `WALLBREAKER` / `LA MURALLA`; co-op síncrono + física real híbrida desbloqueados (13/11).
 - Servidor autoritativo + replay determinístico (`seed + commands[]`) + `simVersion`; hash só muda com `simVersion` novo.
 - Regras dos jogadores: nenhuma unidade obrigatória; poder só por gameplay; sem loot box.
-- Schema v5 (com `contentVersion 3` + `equipped` + `campaign` + `horde`) + taxonomia v2: mudança só aditiva, com migração/`schema_version`.
+- Schema v6 (com `contentVersion 3` + `equipped` + `campaign` + `horde` + `ftue` + `battleHistory`/`revengeCooldowns`) + taxonomia v2: mudança só aditiva.
 
 ## Próximo passo
 
-1. Publicar place no Studio (conta `11966727684`) para QA mobile de Campanha/5 Bosses, Torcida, câmera `wall` e Mix SFX/BGM.
+1. Publicar place no Studio (conta `11966727684`) para QA mobile de Pós-Partida, BattleLog/Vingança, FTUE `0..6`, DeckUi e Campanha/5 Bosses.
 
 ## Como verificar o estado em 1 minuto
 

@@ -441,6 +441,7 @@ check("hud periferico mobile: minTouch >= 44, arena livre e combatTopPill compac
 			hud.combatBossPill.h <= 48 and hud.combatBossPill.y == hud.combatTopPill.y,
 			string.format("%dx%d combatBossPill fora da faixa superior", vp.w, vp.h)
 		)
+		assert(hud.logBtn.h >= VisualTheme.UI.minTouch, "logBtn < minTouch")
 		assert(hud.camBtn.h >= VisualTheme.UI.minTouch, "camBtn < minTouch")
 		assert(hud.muteBtn.h >= VisualTheme.UI.minTouch, "muteBtn < minTouch")
 		assert(hud.comboBtn.h >= VisualTheme.UI.minTouch, "comboBtn < minTouch")

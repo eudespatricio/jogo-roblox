@@ -15,11 +15,14 @@ local playerGui = player:WaitForChild("PlayerGui")
 local remotes = ReplicatedStorage:WaitForChild("MuralhaRemotes")
 local raidStart = remotes:WaitForChild("RaidStart") :: RemoteFunction
 local raidEvent = remotes:WaitForChild("RaidEvent") :: RemoteEvent
+local battleLogStateRemote = remotes:WaitForChild("BattleLogState") :: RemoteFunction
 local campaignStateRemote = remotes:WaitForChild("CampaignState") :: RemoteFunction
 local campaignClaimRemote = remotes:WaitForChild("CampaignClaim") :: RemoteFunction
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CampaignCatalog = require(Shared:WaitForChild("campaign"):WaitForChild("CampaignCatalog"))
 local Core = require(Shared:WaitForChild("sim"):WaitForChild("core"))
+local TrapCatalog = require(Shared:WaitForChild("data"):WaitForChild("TrapCatalog"))
+local PostMatchReport = require(Shared:WaitForChild("raid"):WaitForChild("PostMatchReport"))
 local BuildLayout = require(Shared:WaitForChild("build"):WaitForChild("BuildLayout"))
 local I18n = require(Shared:WaitForChild("i18n"):WaitForChild("I18n"))
 local PortalThemes = require(Shared:WaitForChild("visual"):WaitForChild("PortalThemes"))
@@ -35,6 +38,8 @@ local HordeKit = require(visual:WaitForChild("HordeKit"))
 local Vfx = require(visual:WaitForChild("Vfx"))
 local AudioKit = require(visual:WaitForChild("AudioKit"))
 local CampaignUi = require(visual:WaitForChild("CampaignUi"))
+local PostMatchUi = require(visual:WaitForChild("PostMatchUi"))
+local BattleLogUi = require(visual:WaitForChild("BattleLogUi"))
 local TransitionKit = require(visual:WaitForChild("TransitionKit"))
 
 for _ = 1, 50 do
@@ -365,14 +370,14 @@ local resultTitle = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.amberBright),
 	Enum.Font.GothamBlack
 )
-resultTitle.Position = UDim2.fromOffset(14, 8)
-resultTitle.Size = UDim2.new(1, -28, 0, 28)
+resultTitle.Position = UDim2.fromOffset(14, 6)
+resultTitle.Size = UDim2.new(1, -28, 0, 22)
 resultTitle.TextXAlignment = Enum.TextXAlignment.Center
 resultTitle.TextScaled = true
 resultTitle.ZIndex = 19
 
-local resultCoin = UiKit.iconCoin(resultCard, 20)
-resultCoin.Position = UDim2.fromOffset(16, 42)
+local resultCoin = UiKit.iconCoin(resultCard, 18)
+resultCoin.Position = UDim2.fromOffset(16, 30)
 resultCoin.ZIndex = 19
 
 local details = UiKit.label(
@@ -382,15 +387,15 @@ local details = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.parchment),
 	Enum.Font.GothamBold
 )
-details.Position = UDim2.fromOffset(42, 40)
-details.Size = UDim2.new(1, -56, 0, 24)
+details.Position = UDim2.fromOffset(40, 29)
+details.Size = UDim2.new(1, -54, 0, 20)
 details.TextYAlignment = Enum.TextYAlignment.Center
 details.TextWrapped = true
 details.TextScaled = true
 details.ZIndex = 19
 local detailsCap = Instance.new("UITextSizeConstraint")
 detailsCap.MinTextSize = 10
-detailsCap.MaxTextSize = 15
+detailsCap.MaxTextSize = 14
 detailsCap.Parent = details
 
 local hashLabel = UiKit.label(
@@ -400,14 +405,14 @@ local hashLabel = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.stone),
 	Enum.Font.Code
 )
-hashLabel.Position = UDim2.fromOffset(14, 66)
-hashLabel.Size = UDim2.new(1, -28, 0, 16)
+hashLabel.Position = UDim2.fromOffset(14, 50)
+hashLabel.Size = UDim2.new(1, -28, 0, 13)
 hashLabel.TextXAlignment = Enum.TextXAlignment.Center
 hashLabel.TextScaled = true
 hashLabel.ZIndex = 19
 local hashCap = Instance.new("UITextSizeConstraint")
-hashCap.MinTextSize = 9
-hashCap.MaxTextSize = 12
+hashCap.MinTextSize = 8
+hashCap.MaxTextSize = 11
 hashCap.Parent = hashLabel
 
 local function makeRewardPill(parent: Instance, name: string, strokeColor: Color3): TextLabel
@@ -435,13 +440,13 @@ end
 
 local champBetPill =
 	makeRewardPill(resultCard, "ChampBetPill", UiKit.color(VisualTheme.PALETTE.amberBright))
-champBetPill.Position = UDim2.fromOffset(14, 86)
-champBetPill.Size = UDim2.new(1, -28, 0, 18)
+champBetPill.Position = UDim2.fromOffset(14, 64)
+champBetPill.Size = UDim2.new(1, -28, 0, 16)
 
 local dropBadgesRow = Instance.new("Frame")
 dropBadgesRow.Name = "DropBadgesRow"
-dropBadgesRow.Position = UDim2.fromOffset(14, 106)
-dropBadgesRow.Size = UDim2.new(1, -28, 0, 18)
+dropBadgesRow.Position = UDim2.fromOffset(14, 82)
+dropBadgesRow.Size = UDim2.new(1, -28, 0, 16)
 dropBadgesRow.BackgroundTransparency = 1
 dropBadgesRow.ZIndex = 19
 dropBadgesRow.Parent = resultCard
@@ -460,6 +465,8 @@ shardBadge.Size = UDim2.new(0.48, -3, 1, 0)
 local coreBadge =
 	makeRewardPill(dropBadgesRow, "CoreBadge", UiKit.color(VisualTheme.PALETTE.amberBright))
 coreBadge.Size = UDim2.new(0.48, -3, 1, 0)
+
+local postMatchUi = PostMatchUi.create(resultCard)
 
 local replayButton = UiKit.button(resultCard, "Replay", "REPLAY")
 replayButton.Position = UDim2.new(0, 14, 1, -54)
@@ -486,6 +493,7 @@ resultCloseCap.MinTextSize = 10
 resultCloseCap.Parent = resultCloseButton
 
 local startBattle: (mode: string, extraOpts: { [string]: any }?) -> ()
+local playLogReplay: (entry: any) -> ()
 
 local campaignUi = CampaignUi.create(root, {
 	fetchState = function()
@@ -504,6 +512,35 @@ local campaignUi = CampaignUi.create(root, {
 		startBattle("campaign", { stageId = stageId, difficulty = difficulty })
 	end,
 })
+
+local battleLogUi = BattleLogUi.create(root, {
+	fetchLogs = function()
+		local ok, res = pcall(function()
+			return battleLogStateRemote:InvokeServer("list")
+		end)
+		return if ok then res else { ok = false, err = "server_down" }
+	end,
+	ackReplay = function()
+		task.spawn(function()
+			pcall(function()
+				battleLogStateRemote:InvokeServer("replay_ack")
+			end)
+		end)
+	end,
+	onReplay = function(entry: any)
+		playLogReplay(entry)
+	end,
+	onRevenge = function(battleId: string)
+		startBattle("revenge", { battleId = battleId })
+	end,
+})
+
+campaignUi.storyButton.MouseButton1Click:Connect(function()
+	battleLogUi.closeModal()
+end)
+battleLogUi.logButton.MouseButton1Click:Connect(function()
+	campaignUi.closeModal()
+end)
 
 local hasActiveBossStage = false
 
@@ -542,6 +579,7 @@ local function applyRaidLayout(): ()
 	applyRect(closeButton, hudRects.combatCloseBtn)
 	applyRect(resultCard, hudRects.combatResultCard)
 	campaignUi.applyLayout(hudRects)
+	battleLogUi.applyLayout(hudRects)
 end
 
 root:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyRaidLayout)
@@ -602,6 +640,8 @@ local function refreshStaticLocale(): ()
 	replayButton.Text = rmsg("replay_btn")
 	title.Text = I18n.t(loc, "game_title") .. " · RAID"
 	campaignUi.refreshLocale()
+	battleLogUi.refreshLocale()
+	postMatchUi.refreshLocale(loc)
 end
 
 refreshStaticLocale()
@@ -745,6 +785,7 @@ local function setBusy(value: boolean): ()
 	defendButton.Visible = visible
 	attackButton.Visible = visible
 	campaignUi.setButtonsVisible(visible)
+	battleLogUi.setButtonsVisible(visible)
 end
 
 local function clearScene(): ()
@@ -863,7 +904,11 @@ local function buildFrames(result: any): (any, any)
 			snapshot()
 		end
 	end
-	return frames, battle:Result()
+	local final = battle:Result()
+	if result.report == nil then
+		result.report = PostMatchReport.fromBattle(battle, final, TrapCatalog)
+	end
+	return frames, final
 end
 
 local function frontKillArenaX(wallTraps: { any }, lane: number): number
@@ -1664,6 +1709,7 @@ local function clearResultBadges(): ()
 	shardBadge.Visible = false
 	coreBadge.Visible = false
 	dropBadgesRow.Visible = false
+	postMatchUi.clear()
 end
 
 local function applyResultBadges(result: any, loc: string): ()
@@ -1705,7 +1751,7 @@ local function applyResultBadges(result: any, loc: string): ()
 	end
 
 	if shardCount > 0 or coreCount > 0 then
-		dropBadgesRow.Position = UDim2.fromOffset(14, if hasChamp then 106 else 90)
+		dropBadgesRow.Position = UDim2.fromOffset(14, if hasChamp then 82 else 65)
 		dropBadgesRow.Visible = true
 	end
 end
@@ -1899,6 +1945,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 			)
 			hashLabel.Text = tostring(result.resultHash)
 			applyResultBadges(result, loc)
+			postMatchUi.render(result.report, loc)
 			replayButton.Visible = true
 			resultCard.Visible = true
 			combatCamButton.Visible = false
@@ -1937,6 +1984,7 @@ end
 local function showModal(): ()
 	player:SetAttribute("MuralhaInRaid", true)
 	campaignUi.closeModal()
+	battleLogUi.closeModal()
 	topHud.Visible = true
 	combatCamButton.Text = UiKit.cameraButtonLabel(nil, true)
 	combatCamButton.Visible = true
@@ -1946,6 +1994,7 @@ local function showModal(): ()
 	defendButton.Visible = false
 	attackButton.Visible = false
 	campaignUi.setButtonsVisible(false)
+	battleLogUi.setButtonsVisible(false)
 	focusRaidCamera()
 end
 
@@ -1975,6 +2024,46 @@ local function hideModal(): ()
 	end, 0.18)
 end
 
+playLogReplay = function(entry: any): ()
+	if busy then
+		return
+	end
+	if type(entry) ~= "table" or type(entry.replayWall) ~= "table" then
+		return
+	end
+	setBusy(true)
+	AudioKit.play("ui_click")
+	showModal()
+	local loc = UiKit.getLocale()
+	title.Text = I18n.t(loc, "ui_log_title")
+	status.Text = rmsg("replay_live")
+	status.TextColor3 = UiKit.color(VisualTheme.PALETTE.parchment)
+	details.Text = ""
+	hashLabel.Text = ""
+	clearResultBadges()
+	AudioKit.setMode("raid")
+	AudioKit.setWallPct(1)
+
+	local winner = tostring(entry.winner or "defender")
+	local role = tostring(entry.role or "attack")
+	local synthetic = {
+		ok = true,
+		battleId = entry.battleId,
+		mode = role,
+		seed = entry.seed,
+		simVersion = Core.SIM_VERSION,
+		wall = entry.replayWall,
+		waveSpec = entry.waveSpec,
+		resultHash = entry.resultHash,
+		winner = winner,
+		playerWon = if role == "defense" then winner == "defender" else winner == "attacker",
+		rewardGold = math.max(0, tonumber(entry.goldDelta) or 0),
+		wallHp = if winner == "defender" then 100 else 0,
+	}
+	lastResult = synthetic
+	startReplay(synthetic, true)
+end
+
 startBattle = function(mode: string, extraOpts: { [string]: any }?): ()
 	if busy then
 		return
@@ -1991,8 +2080,10 @@ startBattle = function(mode: string, extraOpts: { [string]: any }?): ()
 	showModal()
 	local isDefend = mode == "defend"
 	local isCampaign = mode == "campaign"
+	local isRevenge = mode == "revenge"
 	title.Text = if isCampaign
 		then I18n.t(UiKit.getLocale(), "cta_story")
+		elseif isRevenge then I18n.t(UiKit.getLocale(), "ui_log_rev")
 		elseif isDefend then rmsg("defend_title")
 		else "RAID"
 	status.Text = if isDefend or isCampaign then rmsg("defending") else rmsg("attacking")

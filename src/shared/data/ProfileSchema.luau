@@ -1,15 +1,15 @@
 --!strict
--- Schema v5 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
+-- Schema v6 do perfil da MURALHA: template, validacao, sanitizacao e migracao.
 -- Puro Luau (nenhuma API do Roblox): roda no CLI em sim/profile-contract.luau e no servidor.
 -- Regras: campo novo entra em newProfile E em sanitizeCurrent; campo desconhecido nunca e salvo
 -- (a whitelist roda em todo load); a chave do perfil e UserId, nunca nome; nada de PII no Data.
 
 local ProfileSchema = {}
 
-ProfileSchema.SCHEMA_VERSION = 5
+ProfileSchema.SCHEMA_VERSION = 6
 ProfileSchema.STORE_NAME = "MuralhaProfile_v1"
 ProfileSchema.SECONDS_PER_DAY = 86400
--- Versao de conteudo padrao do schema v5. O catalogo atual (TrapCatalog.CONTENT_VERSION)
+-- Versao de conteudo padrao do schema v6. O catalogo atual (TrapCatalog.CONTENT_VERSION)
 -- manda no gate de conteudo; o schema valida a faixa >= 1.
 ProfileSchema.DEFAULT_CONTENT_VERSION = 3
 
@@ -34,6 +34,12 @@ ProfileSchema.MAX_STAR_MASK = 7
 ProfileSchema.MAX_HORDE_CARDS = 64
 ProfileSchema.MAX_DECK_SQUADS = 8
 ProfileSchema.MAX_SQUAD_UNITS = 200
+ProfileSchema.MAX_FTUE_STEP = 6
+ProfileSchema.MAX_BATTLE_HISTORY = 12
+ProfileSchema.MAX_REVENGE_COOLDOWNS = 32
+ProfileSchema.REVENGE_COOLDOWN_SECONDS = ProfileSchema.SECONDS_PER_DAY
+ProfileSchema.MAX_BATTLE_ID_LENGTH = 64
+ProfileSchema.MAX_LABEL_LENGTH = 32
 
 ProfileSchema.ARENA = table.freeze({
 	xMin = 1000,
@@ -116,6 +122,43 @@ export type Stats = {
 	lastSeenAt: number,
 }
 
+export type FtueState = {
+	step: number,
+	skipped: boolean,
+	completedAt: number,
+}
+
+export type BattleHistoryTrap = {
+	cell: string?,
+	type: string,
+	level: number,
+	x: number?,
+	y: number?,
+}
+
+export type BattleHistoryWall = {
+	level: number,
+	hp: number,
+	traps: { BattleHistoryTrap },
+}
+
+export type BattleHistoryEntry = {
+	battleId: string,
+	role: string,
+	winner: string,
+	rivalHash: string,
+	rivalLabel: string,
+	leagueDelta: number,
+	goldDelta: number,
+	createdAt: number,
+	resultHash: number,
+	seed: number,
+	isBot: boolean,
+	revenged: boolean,
+	rivalWall: BattleHistoryWall?,
+	waveSpec: { [string]: any }?,
+}
+
 export type Profile = {
 	schemaVersion: number,
 	contentVersion: number,
@@ -127,6 +170,9 @@ export type Profile = {
 	campaign: CampaignProgress,
 	horde: HordeProgress,
 	stats: Stats,
+	ftue: FtueState,
+	revengeCooldowns: { [string]: number },
+	battleHistory: { BattleHistoryEntry },
 }
 
 -- Campos proibidos: PII nao entra no perfil (o UserId e a chave, nao o dado). A lista tambem
@@ -166,6 +212,9 @@ local TOP_FIELDS = {
 	"campaign",
 	"horde",
 	"stats",
+	"ftue",
+	"revengeCooldowns",
+	"battleHistory",
 }
 local WALL_FIELDS = { "level", "gridWidth", "activeTrapLimit", "cells" }
 local CELL_FIELDS = { "trap", "level", "x", "y" }
@@ -201,6 +250,48 @@ local STATS_FIELDS = {
 	"firstSeenAt",
 	"lastSeenAt",
 }
+local FTUE_FIELDS = { "step", "skipped", "completedAt" }
+local HISTORY_ENTRY_FIELDS = {
+	"battleId",
+	"role",
+	"winner",
+	"rivalHash",
+	"rivalLabel",
+	"leagueDelta",
+	"goldDelta",
+	"createdAt",
+	"resultHash",
+	"seed",
+	"isBot",
+	"revenged",
+	"rivalWall",
+	"waveSpec",
+}
+local HISTORY_WALL_FIELDS = { "level", "hp", "traps" }
+local HISTORY_TRAP_FIELDS = { "cell", "type", "level", "x", "y" }
+local WAVE_SPEC_FIELDS = {
+	"count",
+	"spawnEveryTicks",
+	"hpScaleMilli",
+	"modeScaleMilli",
+	"armorMilli",
+	"speedMilli",
+	"bossId",
+	"bossHpScaleMilli",
+	"bossSpawnTick",
+	"pool",
+	"mutatorIds",
+	"slices",
+}
+local WAVE_SLICE_FIELDS = {
+	"startTick",
+	"everyTicks",
+	"count",
+	"unit",
+	"laneMask",
+	"isElite",
+	"isChampion",
+}
 
 local function fieldSet(fields: { string }): { [string]: boolean }
 	local set: { [string]: boolean } = {}
@@ -220,6 +311,34 @@ local BOSS_CORE_SET = fieldSet(BOSS_CORE_FIELDS)
 local SQUAD_SET = fieldSet(SQUAD_FIELDS)
 local LEAGUE_SET = fieldSet(LEAGUE_FIELDS)
 local STATS_SET = fieldSet(STATS_FIELDS)
+local FTUE_SET = fieldSet(FTUE_FIELDS)
+local HISTORY_ENTRY_SET = fieldSet(HISTORY_ENTRY_FIELDS)
+local HISTORY_WALL_SET = fieldSet(HISTORY_WALL_FIELDS)
+local HISTORY_TRAP_SET = fieldSet(HISTORY_TRAP_FIELDS)
+local WAVE_SPEC_SET = fieldSet(WAVE_SPEC_FIELDS)
+local WAVE_SLICE_SET = fieldSet(WAVE_SLICE_FIELDS)
+
+local HISTORY_ROLES: { [string]: boolean } = {
+	attack = true,
+	defense = true,
+	revenge = true,
+}
+
+local HISTORY_WINNERS: { [string]: boolean } = {
+	attacker = true,
+	defender = true,
+}
+
+local WAVE_SPEC_INT_FIELDS = {
+	"count",
+	"spawnEveryTicks",
+	"hpScaleMilli",
+	"modeScaleMilli",
+	"armorMilli",
+	"speedMilli",
+	"bossHpScaleMilli",
+	"bossSpawnTick",
+}
 
 local HORDE_FACTIONS: { [string]: boolean } = {
 	iron = true,
@@ -331,6 +450,13 @@ local function newProfile(): Profile
 			firstSeenAt = 0,
 			lastSeenAt = 0,
 		},
+		ftue = {
+			step = 0,
+			skipped = false,
+			completedAt = 0,
+		},
+		revengeCooldowns = {},
+		battleHistory = {},
 	}
 end
 
@@ -368,6 +494,45 @@ local function isIdString(value: any, maxLen: number): boolean
 		return false
 	end
 	return string.match(s, "^[%w_%.%-]+$") ~= nil
+end
+
+local function isBattleId(value: any): boolean
+	if type(value) ~= "string" then
+		return false
+	end
+	local s = value :: string
+	if #s == 0 or #s > ProfileSchema.MAX_BATTLE_ID_LENGTH then
+		return false
+	end
+	return string.match(s, "^[%w_%.%-:]+$") ~= nil
+end
+
+local function isSafeLabel(value: any): boolean
+	if type(value) ~= "string" then
+		return false
+	end
+	local s = value :: string
+	if #s == 0 or #s > ProfileSchema.MAX_LABEL_LENGTH then
+		return false
+	end
+	return string.find(s, "[%c]") == nil
+end
+
+local function checkDenseArray(value: any, maxLen: number, path: string): (boolean, string?)
+	if type(value) ~= "table" then
+		return false, path .. " ausente"
+	end
+	local count = 0
+	for k in pairs(value) do
+		count += 1
+		if not isFiniteInteger(k) or (k :: number) < 1 then
+			return false, path .. ": chave nao-indice"
+		end
+	end
+	if count ~= #value or #value > maxLen then
+		return false, path .. ": formato ou tamanho invalido"
+	end
+	return true, nil
 end
 
 function ProfileSchema.isValidStageId(stageId: any): boolean
@@ -831,7 +996,250 @@ local function validateStats(stats: any): (boolean, string?)
 	return true, nil
 end
 
--- Valida o perfil inteiro contra o schema v5. Retorna (ok, erro) em vez de lancar: o chamador
+local function validateFtue(ftue: any): (boolean, string?)
+	if type(ftue) ~= "table" then
+		return false, "ftue ausente"
+	end
+	local okKeys, errKeys = checkForeignKeys(ftue, FTUE_SET, "ftue")
+	if not okKeys then
+		return false, errKeys
+	end
+	if
+		not isFiniteInteger(ftue.step)
+		or (ftue.step :: number) < 0
+		or (ftue.step :: number) > ProfileSchema.MAX_FTUE_STEP
+	then
+		return false, "ftue.step fora de [0," .. tostring(ProfileSchema.MAX_FTUE_STEP) .. "]"
+	end
+	if type(ftue.skipped) ~= "boolean" then
+		return false, "ftue.skipped nao e boolean"
+	end
+	if not isFiniteInteger(ftue.completedAt) or (ftue.completedAt :: number) < 0 then
+		return false, "ftue.completedAt invalido"
+	end
+	return true, nil
+end
+
+local function validateRevengeCooldowns(cooldowns: any): (boolean, string?)
+	if type(cooldowns) ~= "table" then
+		return false, "revengeCooldowns ausente"
+	end
+	local count = 0
+	for rivalHash, ts in pairs(cooldowns) do
+		count += 1
+		if count > ProfileSchema.MAX_REVENGE_COOLDOWNS then
+			return false,
+				"revengeCooldowns acima de " .. tostring(ProfileSchema.MAX_REVENGE_COOLDOWNS)
+		end
+		if
+			not isIdString(rivalHash, ProfileSchema.MAX_ID_LENGTH)
+			or ProfileSchema.PII_KEYS[string.lower(rivalHash :: string)]
+		then
+			return false, "revengeCooldowns: chave invalida (" .. tostring(rivalHash) .. ")"
+		end
+		if not isFiniteInteger(ts) or (ts :: number) < 0 then
+			return false, "revengeCooldowns." .. tostring(rivalHash) .. " invalido"
+		end
+	end
+	return true, nil
+end
+
+local function validateHistoryWall(wall: any, path: string): (boolean, string?)
+	if type(wall) ~= "table" then
+		return false, path .. " nao e tabela"
+	end
+	local okKeys, errKeys = checkForeignKeys(wall, HISTORY_WALL_SET, path)
+	if not okKeys then
+		return false, errKeys
+	end
+	if
+		not isFiniteInteger(wall.level)
+		or (wall.level :: number) < 1
+		or (wall.level :: number) > ProfileSchema.MAX_WALL_LEVEL
+	then
+		return false, path .. ".level invalido"
+	end
+	if not isFiniteInteger(wall.hp) or (wall.hp :: number) < 1 then
+		return false, path .. ".hp invalido"
+	end
+	local okTraps, errTraps = checkDenseArray(wall.traps, ProfileSchema.MAX_CELLS, path .. ".traps")
+	if not okTraps then
+		return false, errTraps
+	end
+	for idx, trap in ipairs(wall.traps) do
+		local tPath = path .. ".traps[" .. tostring(idx) .. "]"
+		if type(trap) ~= "table" then
+			return false, tPath .. " nao e tabela"
+		end
+		local okTrapKeys, errTrapKeys = checkForeignKeys(trap, HISTORY_TRAP_SET, tPath)
+		if not okTrapKeys then
+			return false, errTrapKeys
+		end
+		if not isIdString(trap.type, ProfileSchema.MAX_ID_LENGTH) then
+			return false, tPath .. ".type invalido"
+		end
+		if
+			not isFiniteInteger(trap.level)
+			or (trap.level :: number) < 1
+			or (trap.level :: number) > ProfileSchema.MAX_TRAP_LEVEL
+		then
+			return false, tPath .. ".level invalido"
+		end
+		local hasPos = trap.x ~= nil or trap.y ~= nil
+		if hasPos then
+			local okPos, errPos = ProfileSchema.validatePosition(trap.x, trap.y)
+			if not okPos then
+				return false, tPath .. ": " .. tostring(errPos)
+			end
+		elseif not ProfileSchema.isValidSlot(trap.cell) then
+			return false, tPath .. ".cell ausente/invalido"
+		end
+		if trap.cell ~= nil and not ProfileSchema.isValidSlot(trap.cell) then
+			return false, tPath .. ".cell invalido"
+		end
+	end
+	return true, nil
+end
+
+local function validateWaveSpec(waveSpec: any, path: string): (boolean, string?)
+	if type(waveSpec) ~= "table" then
+		return false, path .. " nao e tabela"
+	end
+	local okKeys, errKeys = checkForeignKeys(waveSpec, WAVE_SPEC_SET, path)
+	if not okKeys then
+		return false, errKeys
+	end
+	for _, field in ipairs(WAVE_SPEC_INT_FIELDS) do
+		local v = waveSpec[field]
+		if v ~= nil and (not isFiniteInteger(v) or (v :: number) < 0) then
+			return false, path .. "." .. field .. " invalido"
+		end
+	end
+	if waveSpec.bossId ~= nil and not isIdString(waveSpec.bossId, ProfileSchema.MAX_ID_LENGTH) then
+		return false, path .. ".bossId invalido"
+	end
+	for _, listField in ipairs({ "pool", "mutatorIds" }) do
+		local list = waveSpec[listField]
+		if list ~= nil then
+			local okArr, errArr = checkDenseArray(list, 32, path .. "." .. listField)
+			if not okArr then
+				return false, errArr
+			end
+			for i, item in ipairs(list) do
+				if not isIdString(item, ProfileSchema.MAX_ID_LENGTH) then
+					return false, path .. "." .. listField .. "[" .. tostring(i) .. "] invalido"
+				end
+			end
+		end
+	end
+	if waveSpec.slices ~= nil then
+		local okSlices, errSlices = checkDenseArray(waveSpec.slices, 16, path .. ".slices")
+		if not okSlices then
+			return false, errSlices
+		end
+		for idx, slice in ipairs(waveSpec.slices) do
+			local sPath = path .. ".slices[" .. tostring(idx) .. "]"
+			if type(slice) ~= "table" then
+				return false, sPath .. " nao e tabela"
+			end
+			local okSKeys, errSKeys = checkForeignKeys(slice, WAVE_SLICE_SET, sPath)
+			if not okSKeys then
+				return false, errSKeys
+			end
+			for _, sf in ipairs({ "startTick", "everyTicks", "count" }) do
+				if not isFiniteInteger(slice[sf]) or (slice[sf] :: number) < 0 then
+					return false, sPath .. "." .. sf .. " invalido"
+				end
+			end
+			if not isIdString(slice.unit, ProfileSchema.MAX_ID_LENGTH) then
+				return false, sPath .. ".unit invalido"
+			end
+			if
+				slice.laneMask ~= nil
+				and (not isFiniteInteger(slice.laneMask) or (slice.laneMask :: number) < 0)
+			then
+				return false, sPath .. ".laneMask invalido"
+			end
+			if slice.isElite ~= nil and type(slice.isElite) ~= "boolean" then
+				return false, sPath .. ".isElite invalido"
+			end
+			if slice.isChampion ~= nil and type(slice.isChampion) ~= "boolean" then
+				return false, sPath .. ".isChampion invalido"
+			end
+		end
+	end
+	return true, nil
+end
+
+local function validateBattleHistory(history: any): (boolean, string?)
+	local okArr, errArr =
+		checkDenseArray(history, ProfileSchema.MAX_BATTLE_HISTORY, "battleHistory")
+	if not okArr then
+		return false, errArr
+	end
+	for idx, entry in ipairs(history) do
+		local path = "battleHistory[" .. tostring(idx) .. "]"
+		if type(entry) ~= "table" then
+			return false, path .. " nao e tabela"
+		end
+		local okKeys, errKeys = checkForeignKeys(entry, HISTORY_ENTRY_SET, path)
+		if not okKeys then
+			return false, errKeys
+		end
+		if not isBattleId(entry.battleId) then
+			return false, path .. ".battleId invalido"
+		end
+		if type(entry.role) ~= "string" or HISTORY_ROLES[entry.role] ~= true then
+			return false, path .. ".role invalido"
+		end
+		if type(entry.winner) ~= "string" or HISTORY_WINNERS[entry.winner] ~= true then
+			return false, path .. ".winner invalido"
+		end
+		if not isIdString(entry.rivalHash, ProfileSchema.MAX_ID_LENGTH) then
+			return false, path .. ".rivalHash invalido"
+		end
+		if not isSafeLabel(entry.rivalLabel) then
+			return false, path .. ".rivalLabel invalido"
+		end
+		if
+			not isFiniteInteger(entry.leagueDelta)
+			or (entry.leagueDelta :: number) < -1000
+			or (entry.leagueDelta :: number) > 1000
+		then
+			return false, path .. ".leagueDelta invalido"
+		end
+		if
+			not isFiniteInteger(entry.goldDelta)
+			or (entry.goldDelta :: number) < -ProfileSchema.MAX_GOLD
+			or (entry.goldDelta :: number) > ProfileSchema.MAX_GOLD
+		then
+			return false, path .. ".goldDelta invalido"
+		end
+		for _, intField in ipairs({ "createdAt", "resultHash", "seed" }) do
+			if not isFiniteInteger(entry[intField]) or (entry[intField] :: number) < 0 then
+				return false, path .. "." .. intField .. " invalido"
+			end
+		end
+		if type(entry.isBot) ~= "boolean" or type(entry.revenged) ~= "boolean" then
+			return false, path .. ".flags boolean invalidas"
+		end
+		if entry.rivalWall ~= nil then
+			local okWall, errWall = validateHistoryWall(entry.rivalWall, path .. ".rivalWall")
+			if not okWall then
+				return false, errWall
+			end
+		end
+		if entry.waveSpec ~= nil then
+			local okWave, errWave = validateWaveSpec(entry.waveSpec, path .. ".waveSpec")
+			if not okWave then
+				return false, errWave
+			end
+		end
+	end
+	return true, nil
+end
+
+-- Valida o perfil inteiro contra o schema v6. Retorna (ok, erro) em vez de lancar: o chamador
 -- decide entre migrar, descartar ou recusar a sessao.
 function ProfileSchema.validate(data: any): (boolean, string?)
 	if type(data) ~= "table" then
@@ -889,6 +1297,18 @@ function ProfileSchema.validate(data: any): (boolean, string?)
 	local okStats, errStats = validateStats(data.stats)
 	if not okStats then
 		return false, errStats
+	end
+	local okFtue, errFtue = validateFtue(data.ftue)
+	if not okFtue then
+		return false, errFtue
+	end
+	local okCd, errCd = validateRevengeCooldowns(data.revengeCooldowns)
+	if not okCd then
+		return false, errCd
+	end
+	local okHistory, errHistory = validateBattleHistory(data.battleHistory)
+	if not okHistory then
+		return false, errHistory
 	end
 	return true, nil
 end
@@ -999,8 +1419,127 @@ local function sanitizeStarsMap(raw: any): { [string]: number }
 	return out
 end
 
--- Reconstroi um perfil v5 valido a partir de qualquer tabela: so entra o que o schema
+-- Reconstroi um perfil v6 valido a partir de qualquer tabela: so entra o que o schema
 -- reconhece e cabe na faixa. E o que roda em todo load, entao lixo/PII nunca e persistido.
+local function sanitizeHistoryWall(rawWall: any): BattleHistoryWall?
+	if type(rawWall) ~= "table" then
+		return nil
+	end
+	if not isFiniteInteger(rawWall.hp) or (rawWall.hp :: number) < 1 then
+		return nil
+	end
+	if type(rawWall.traps) ~= "table" then
+		return nil
+	end
+	local rawLevel = if isFiniteInteger(rawWall.level) then rawWall.level :: number else 1
+	local cleanTraps: { BattleHistoryTrap } = {}
+	for _, trap in ipairs(rawWall.traps) do
+		if #cleanTraps >= ProfileSchema.MAX_CELLS then
+			break
+		end
+		if
+			type(trap) == "table"
+			and isIdString(trap.type, ProfileSchema.MAX_ID_LENGTH)
+			and isFiniteInteger(trap.level)
+		then
+			local hasPos = trap.x ~= nil or trap.y ~= nil
+			local posOk = if hasPos then ProfileSchema.validatePosition(trap.x, trap.y) else false
+			local cellOk = ProfileSchema.isValidSlot(trap.cell)
+			if posOk or (not hasPos and cellOk) then
+				local entry: BattleHistoryTrap = {
+					type = trap.type :: string,
+					level = clampInt(trap.level :: number, 1, ProfileSchema.MAX_TRAP_LEVEL),
+				}
+				if cellOk then
+					entry.cell = trap.cell :: string
+				end
+				if posOk then
+					entry.x = trap.x :: number
+					entry.y = trap.y :: number
+				end
+				table.insert(cleanTraps, entry)
+			end
+		end
+	end
+	return {
+		level = clampInt(rawLevel, 1, ProfileSchema.MAX_WALL_LEVEL),
+		hp = clampInt(rawWall.hp :: number, 1, ProfileSchema.MAX_COUNTER),
+		traps = cleanTraps,
+	}
+end
+
+local function sanitizeStringArray(raw: any, maxLen: number): { string }?
+	if type(raw) ~= "table" then
+		return nil
+	end
+	local out: { string } = {}
+	for _, item in ipairs(raw) do
+		if #out >= maxLen then
+			break
+		end
+		if isIdString(item, ProfileSchema.MAX_ID_LENGTH) then
+			table.insert(out, item :: string)
+		end
+	end
+	return out
+end
+
+local function sanitizeWaveSpec(rawWave: any): { [string]: any }?
+	if type(rawWave) ~= "table" then
+		return nil
+	end
+	local out: { [string]: any } = {}
+	for _, field in ipairs(WAVE_SPEC_INT_FIELDS) do
+		local val = rawWave[field]
+		if isFiniteInteger(val) then
+			out[field] = clampInt(val :: number, 0, ProfileSchema.MAX_COUNTER)
+		end
+	end
+	if isIdString(rawWave.bossId, ProfileSchema.MAX_ID_LENGTH) then
+		out.bossId = rawWave.bossId :: string
+	end
+	if type(rawWave.pool) == "table" then
+		out.pool = sanitizeStringArray(rawWave.pool, 32)
+	end
+	if type(rawWave.mutatorIds) == "table" then
+		out.mutatorIds = sanitizeStringArray(rawWave.mutatorIds, 32)
+	end
+	if type(rawWave.slices) == "table" then
+		local cleanSlices: { { [string]: any } } = {}
+		for _, slice in ipairs(rawWave.slices) do
+			if #cleanSlices >= 16 then
+				break
+			end
+			if
+				type(slice) == "table"
+				and isFiniteInteger(slice.startTick)
+				and isFiniteInteger(slice.everyTicks)
+				and isFiniteInteger(slice.count)
+				and isIdString(slice.unit, ProfileSchema.MAX_ID_LENGTH)
+			then
+				local item: { [string]: any } = {
+					startTick = clampInt(slice.startTick :: number, 0, ProfileSchema.MAX_COUNTER),
+					everyTicks = clampInt(slice.everyTicks :: number, 0, ProfileSchema.MAX_COUNTER),
+					count = clampInt(slice.count :: number, 0, ProfileSchema.MAX_COUNTER),
+					unit = slice.unit :: string,
+				}
+				if isFiniteInteger(slice.laneMask) then
+					item.laneMask = clampInt(slice.laneMask :: number, 0, ProfileSchema.MAX_COUNTER)
+				end
+				if type(slice.isElite) == "boolean" then
+					item.isElite = slice.isElite
+				end
+				if type(slice.isChampion) == "boolean" then
+					item.isChampion = slice.isChampion
+				end
+				table.insert(cleanSlices, item)
+			end
+		end
+		out.slices = cleanSlices
+	end
+	return out
+end
+
 local function sanitizeCurrent(data: any): Profile
 	local profile = newProfile()
 	if type(data) ~= "table" then
@@ -1190,6 +1729,100 @@ local function sanitizeCurrent(data: any): Profile
 			clampInt(data.contentVersion :: number, 1, ProfileSchema.MAX_COUNTER)
 	end
 
+	local rawFtue = data.ftue
+	if type(rawFtue) == "table" then
+		if isFiniteInteger(rawFtue.step) then
+			profile.ftue.step = clampInt(rawFtue.step :: number, 0, ProfileSchema.MAX_FTUE_STEP)
+		end
+		if type(rawFtue.skipped) == "boolean" then
+			profile.ftue.skipped = rawFtue.skipped
+		end
+		if isFiniteInteger(rawFtue.completedAt) then
+			profile.ftue.completedAt =
+				clampInt(rawFtue.completedAt :: number, 0, ProfileSchema.MAX_COUNTER)
+		end
+	end
+
+	local rawCd = data.revengeCooldowns
+	if type(rawCd) == "table" then
+		local keys: { string } = {}
+		for key in pairs(rawCd) do
+			if type(key) == "string" then
+				table.insert(keys, key :: string)
+			end
+		end
+		table.sort(keys)
+		local copiedCd = 0
+		for _, rivalHash in ipairs(keys) do
+			if copiedCd >= ProfileSchema.MAX_REVENGE_COOLDOWNS then
+				break
+			end
+			if
+				isIdString(rivalHash, ProfileSchema.MAX_ID_LENGTH)
+				and not ProfileSchema.PII_KEYS[string.lower(rivalHash)]
+				and isFiniteInteger(rawCd[rivalHash])
+			then
+				profile.revengeCooldowns[rivalHash] =
+					clampInt(rawCd[rivalHash] :: number, 0, ProfileSchema.MAX_COUNTER)
+				copiedCd += 1
+			end
+		end
+	end
+
+	local rawHistory = data.battleHistory
+	if type(rawHistory) == "table" then
+		local cleanHistory: { BattleHistoryEntry } = {}
+		for _, item in ipairs(rawHistory) do
+			if #cleanHistory >= ProfileSchema.MAX_BATTLE_HISTORY then
+				break
+			end
+			if
+				type(item) == "table"
+				and isBattleId(item.battleId)
+				and type(item.role) == "string"
+				and HISTORY_ROLES[item.role] == true
+				and type(item.winner) == "string"
+				and HISTORY_WINNERS[item.winner] == true
+				and isIdString(item.rivalHash, ProfileSchema.MAX_ID_LENGTH)
+				and isSafeLabel(item.rivalLabel)
+				and isFiniteInteger(item.leagueDelta)
+				and isFiniteInteger(item.goldDelta)
+				and isFiniteInteger(item.createdAt)
+				and isFiniteInteger(item.resultHash)
+				and isFiniteInteger(item.seed)
+				and type(item.isBot) == "boolean"
+				and type(item.revenged) == "boolean"
+			then
+				local entry: BattleHistoryEntry = {
+					battleId = item.battleId :: string,
+					role = item.role :: string,
+					winner = item.winner :: string,
+					rivalHash = item.rivalHash :: string,
+					rivalLabel = item.rivalLabel :: string,
+					leagueDelta = clampInt(item.leagueDelta :: number, -1000, 1000),
+					goldDelta = clampInt(
+						item.goldDelta :: number,
+						-ProfileSchema.MAX_GOLD,
+						ProfileSchema.MAX_GOLD
+					),
+					createdAt = clampInt(item.createdAt :: number, 0, ProfileSchema.MAX_COUNTER),
+					resultHash = clampInt(item.resultHash :: number, 0, ProfileSchema.MAX_COUNTER),
+					seed = clampInt(item.seed :: number, 0, ProfileSchema.MAX_COUNTER),
+					isBot = item.isBot :: boolean,
+					revenged = item.revenged :: boolean,
+				}
+				if item.rivalWall ~= nil then
+					entry.rivalWall = sanitizeHistoryWall(item.rivalWall)
+				end
+				if item.waveSpec ~= nil then
+					entry.waveSpec = sanitizeWaveSpec(item.waveSpec)
+				end
+				table.insert(cleanHistory, entry)
+			end
+		end
+		profile.battleHistory = cleanHistory
+	end
+
 	profile.schemaVersion = ProfileSchema.SCHEMA_VERSION
 	return profile
 end
@@ -1202,6 +1835,9 @@ local function sanitizeV1(data: any): any
 	profile.equipped = nil
 	profile.campaign = nil
 	profile.horde = nil
+	profile.ftue = nil
+	profile.revengeCooldowns = nil
+	profile.battleHistory = nil
 	profile.wall = {
 		gridWidth = ProfileSchema.GRID_WIDTH,
 		activeTrapLimit = ProfileSchema.ACTIVE_TRAP_LIMIT,
@@ -1387,7 +2023,41 @@ MIGRATIONS[4] = function(data: any): any
 	return copy
 end
 
--- Migra e devolve um perfil v5 valido. Versao futura (build mais novo) e recusada: nao
+-- 5 -> 6: adiciona FTUE guiado (ftueStep 0..6), cooldown de vinganca (24h) e historico BattleLog (GAP-020).
+-- Preserva 100% wall, gold, league, cosmetics, equipped, campaign, horde e stats sem alterar o hash da muralha.
+MIGRATIONS[5] = function(data: any): any
+	local copy: any = {}
+	if type(data) == "table" then
+		for key, value in pairs(data) do
+			copy[key] = value
+		end
+	end
+	if type(copy.ftue) ~= "table" then
+		local stats = if type(copy.stats) == "table" then copy.stats else {}
+		local raids = if isFiniteInteger(stats.raids) then stats.raids :: number else 0
+		local wins = if isFiniteInteger(stats.wins) then stats.wins :: number else 0
+		local defenses = if isFiniteInteger(stats.defenses) then stats.defenses :: number else 0
+		local inferredStep = if raids > 0 or wins > 0
+			then ProfileSchema.MAX_FTUE_STEP
+			elseif defenses > 0 then 1
+			else 0
+		copy.ftue = {
+			step = inferredStep,
+			skipped = false,
+			completedAt = 0,
+		}
+	end
+	if type(copy.revengeCooldowns) ~= "table" then
+		copy.revengeCooldowns = {}
+	end
+	if type(copy.battleHistory) ~= "table" then
+		copy.battleHistory = {}
+	end
+	copy.schemaVersion = 6
+	return copy
+end
+
+-- Migra e devolve um perfil v6 valido. Versao futura (build mais novo) e recusada: nao
 -- sobrescrever dado que este servidor nao entende. Nunca muta a tabela recebida.
 function ProfileSchema.migrate(data: any, fromVersion: number?): (Profile?, string?)
 	local version: number

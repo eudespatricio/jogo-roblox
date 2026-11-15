@@ -19,6 +19,7 @@ local raidModules = Shared:WaitForChild("raid")
 local BattleLog = require(raidModules:WaitForChild("BattleLog"))
 local BotPhantoms = require(raidModules:WaitForChild("BotPhantoms"))
 local DeckCatalog = require(raidModules:WaitForChild("DeckCatalog"))
+local PostMatchReport = require(raidModules:WaitForChild("PostMatchReport"))
 local RaidReplay = require(raidModules:WaitForChild("RaidReplay"))
 local RaidTelemetry = require(raidModules:WaitForChild("RaidTelemetry"))
 local CampaignCatalog = require(Shared:WaitForChild("campaign"):WaitForChild("CampaignCatalog"))
@@ -29,9 +30,11 @@ local WallService = require(script.Parent.Parent:WaitForChild("walls"):WaitForCh
 local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local BattleLogStore = require(script.Parent:WaitForChild("BattleLogStore"))
+local DefenseInboxStore = require(script.Parent:WaitForChild("DefenseInboxStore"))
 local PhantomStore = require(script.Parent:WaitForChild("PhantomStore"))
 local AnalyticsService =
 	require(script.Parent.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
+local FtueService = require(script.Parent.Parent:WaitForChild("ftue"):WaitForChild("FtueService"))
 
 local REMOTES_NAME = "MuralhaRemotes"
 local RAID_SPEED = 1
@@ -65,6 +68,7 @@ local remotes = ensureRemotes()
 local raidStart = ensureRemoteFunction(remotes, "RaidStart")
 local campaignStateRemote = ensureRemoteFunction(remotes, "CampaignState")
 local campaignClaimRemote = ensureRemoteFunction(remotes, "CampaignClaim")
+local battleLogStateRemote = ensureRemoteFunction(remotes, "BattleLogState")
 
 local raidEvent = remotes:FindFirstChild("RaidEvent")
 if raidEvent == nil or raidEvent.ClassName ~= "RemoteEvent" then
@@ -127,6 +131,23 @@ print(
 		.. " name="
 		.. PhantomStore.STORE_NAME
 )
+
+local inboxDataStore = nil
+if not useMock then
+	local ok, result = pcall(function()
+		return DataStoreService:GetDataStore(DefenseInboxStore.STORE_NAME)
+	end)
+	if ok then
+		inboxDataStore = result
+	else
+		warn("[raid] DataStore da inbox indisponivel; usando Mock: " .. tostring(result))
+	end
+end
+local inboxStore = DefenseInboxStore.new({
+	store = inboxDataStore,
+	mock = useMock or inboxDataStore == nil,
+})
+local defenseReplayWalls: { [string]: any } = {}
 
 type ActiveRaid = {
 	battleId: string,
@@ -278,7 +299,19 @@ local function runBattle(seed: number, wall: any, waveSpec: any): any
 	return battle:Run()
 end
 
-local function runBattleWithTimeline(seed: number, wall: any, waveSpec: any): (any, { any })
+local function runBattleWithReport(seed: number, wall: any, waveSpec: any): (any, any)
+	local battle = Core.Battle.new({
+		seed = seed,
+		simVersion = Core.SIM_VERSION,
+		wall = wall,
+		wave = waveSpec,
+	})
+	local result = battle:Run()
+	local report = PostMatchReport.fromBattle(battle, result, TrapCatalog)
+	return result, report
+end
+
+local function runBattleWithTimeline(seed: number, wall: any, waveSpec: any): (any, { any }, any)
 	local battle = Core.Battle.new({
 		seed = seed,
 		simVersion = Core.SIM_VERSION,
@@ -321,7 +354,9 @@ local function runBattleWithTimeline(seed: number, wall: any, waveSpec: any): (a
 			captureSnapshot()
 		end
 	end
-	return battle:Result(), timeline
+	local result = battle:Result()
+	local report = PostMatchReport.fromBattle(battle, result, TrapCatalog)
+	return result, timeline, report
 end
 
 local function logEvent(player: Player, name: string, props: any): ()
@@ -373,6 +408,183 @@ local function creditRaid(
 		return false, nil
 	end
 	return true, result.gold
+end
+
+local function ensureProfileHistory(profile: any): ({ any }, { [string]: number })
+	if type(profile.battleHistory) ~= "table" then
+		profile.battleHistory = {}
+	end
+	if type(profile.revengeCooldowns) ~= "table" then
+		profile.revengeCooldowns = {}
+	end
+	return profile.battleHistory, profile.revengeCooldowns
+end
+
+local function toHistoryWall(rawWall: any): any?
+	if type(rawWall) ~= "table" or type(rawWall.traps) ~= "table" then
+		return nil
+	end
+	local traps = {}
+	for _, t in ipairs(rawWall.traps) do
+		if #traps >= ProfileSchema.MAX_CELLS then
+			break
+		end
+		if type(t) == "table" and type(t.type) == "string" then
+			local copy: { [string]: any } = {
+				type = t.type,
+				level = math.clamp(math.floor(tonumber(t.level) or 1), 1, 5),
+			}
+			if type(t.cell) == "string" and t.cell ~= "" then
+				copy.cell = t.cell
+			end
+			if type(t.x) == "number" and type(t.y) == "number" then
+				copy.x = math.floor(t.x)
+				copy.y = math.floor(t.y)
+			end
+			traps[#traps + 1] = copy
+		end
+	end
+	return {
+		level = math.clamp(
+			math.floor(tonumber(rawWall.level) or 1),
+			1,
+			ProfileSchema.MAX_WALL_LEVEL
+		),
+		hp = math.max(1, math.floor(tonumber(rawWall.hp) or 500)),
+		traps = traps,
+	}
+end
+
+local function prependBattleHistory(profile: any, entry: { [string]: any }): boolean
+	local history = ensureProfileHistory(profile)
+	for _, existing in ipairs(history) do
+		if type(existing) == "table" and existing.battleId == entry.battleId then
+			return false
+		end
+	end
+	table.insert(history, 1, entry)
+	while #history > ProfileSchema.MAX_BATTLE_HISTORY do
+		table.remove(history)
+	end
+	return true
+end
+
+local function findHistoryEntry(profile: any, battleId: any): any?
+	if type(battleId) ~= "string" or battleId == "" then
+		return nil
+	end
+	local history = ensureProfileHistory(profile)
+	for _, entry in ipairs(history) do
+		if type(entry) == "table" and entry.battleId == battleId then
+			return entry
+		end
+	end
+	return nil
+end
+
+local function evalRevengeEligibility(
+	profile: any,
+	entry: any,
+	myHash: string,
+	nowTs: number
+): (boolean, string?, number)
+	if type(entry) ~= "table" then
+		return false, "revenge_not_found", 0
+	end
+	if entry.role ~= "defense" then
+		return false, "revenge_invalid_role", 0
+	end
+	if entry.isBot == true or entry.rivalHash == "bot" then
+		return false, "revenge_bot", 0
+	end
+	if entry.rivalHash == myHash then
+		return false, "revenge_self", 0
+	end
+	if entry.revenged == true then
+		return false, "revenge_used", 0
+	end
+	if type(entry.rivalWall) ~= "table" then
+		return false, "revenge_no_target", 0
+	end
+	local _, cooldowns = ensureProfileHistory(profile)
+	local lastTs = tonumber(cooldowns[entry.rivalHash]) or 0
+	local cdSec = ProfileSchema.REVENGE_COOLDOWN_SECONDS
+	if lastTs > 0 and (nowTs - lastTs) < cdSec then
+		return false, "revenge_cooldown", math.max(1, cdSec - (nowTs - lastTs))
+	end
+	return true, nil, 0
+end
+
+local function markRevengeCooldown(profile: any, rivalHash: string, nowTs: number): ()
+	local _, cooldowns = ensureProfileHistory(profile)
+	cooldowns[rivalHash] = nowTs
+	local count = 0
+	local oldestKey: string? = nil
+	local oldestTs = math.huge
+	for k, ts in pairs(cooldowns) do
+		count += 1
+		local numTs = tonumber(ts) or 0
+		if numTs < oldestTs then
+			oldestTs = numTs
+			oldestKey = k
+		end
+	end
+	if count > ProfileSchema.MAX_REVENGE_COOLDOWNS and oldestKey ~= nil then
+		cooldowns[oldestKey] = nil
+	end
+end
+
+local function syncDefenseInbox(player: Player, profile: any): number
+	local myHash = PhantomStore.hashOwner(player.UserId)
+	local entries, err = inboxStore.consume(myHash)
+	if err ~= nil then
+		warn("[raid] falha ao consumir inbox: " .. tostring(err))
+		return 0
+	end
+	if #entries == 0 then
+		return 0
+	end
+	local added = 0
+	for i = #entries, 1, -1 do
+		local item = entries[i]
+		local goldEarned = if item.winner == "defender" then item.goldReward else 0
+		local historyEntry = {
+			battleId = item.battleId,
+			role = "defense",
+			winner = item.winner,
+			rivalHash = item.attackerHash,
+			rivalLabel = item.attackerLabel,
+			leagueDelta = 0,
+			goldDelta = goldEarned,
+			createdAt = item.createdAt,
+			resultHash = item.resultHash,
+			seed = item.seed,
+			isBot = false,
+			revenged = false,
+			rivalWall = toHistoryWall(item.attackerWall),
+			waveSpec = if type(item.waveSpec) == "table" then cloneTable(item.waveSpec) else nil,
+		}
+		if prependBattleHistory(profile, historyEntry) then
+			added += 1
+			if item.defenderWall ~= nil then
+				defenseReplayWalls[item.battleId] = cloneTable(item.defenderWall)
+			end
+			if type(profile.stats) == "table" then
+				profile.stats.defenses = (tonumber(profile.stats.defenses) or 0) + 1
+			end
+			if goldEarned > 0 then
+				local okGold, goldAfter = creditRaid(player, item.battleId, goldEarned, "defense")
+				if okGold and goldAfter ~= nil and player.Parent == Players then
+					player:SetAttribute("MuralhaGold", goldAfter)
+				end
+			end
+		end
+	end
+	if added > 0 and player.Parent == Players then
+		local prevUnread = tonumber(player:GetAttribute("MuralhaUnreadLogs")) or 0
+		player:SetAttribute("MuralhaUnreadLogs", prevUnread + added)
+	end
+	return added
 end
 
 local function ensureProfileCampaign(profile: any): any
@@ -532,7 +744,8 @@ local function startCampaignBattle(
 		speed = RAID_SPEED,
 	})
 
-	local result, timeline = runBattleWithTimeline(seed, cloneTable(wall), cloneTable(waveSpec))
+	local result, timeline, report =
+		runBattleWithTimeline(seed, cloneTable(wall), cloneTable(waveSpec))
 	local replay = runBattle(seed, cloneTable(wall), cloneTable(waveSpec))
 	local replayOk, replayErr, expectedHash, actualHash = RaidReplay.verify(result, replay)
 	if not replayOk then
@@ -667,6 +880,7 @@ local function startCampaignBattle(
 	local myLeague = TrapCatalog.leagueOf(profile.league.points)
 	local myWallLvl = tonumber(wall.level) or 1
 	local hordeSnap = hordeSummary(horde, myLeague)
+	local ftueState = FtueService.notify(player, if playerWon then "campaign_won" else "defend")
 	local responsePayload = {
 		ok = true,
 		mode = "campaign",
@@ -691,6 +905,8 @@ local function startCampaignBattle(
 		shardEarned = shardEarned,
 		coreDropped = coreDropped,
 		horde = hordeSnap,
+		ftue = ftueState,
+		report = report,
 		campaign = campaignSnap,
 		timeline = timeline,
 		waveSpec = waveSpec,
@@ -748,6 +964,125 @@ local function startCampaignBattle(
 	return responsePayload
 end
 
+local function buildLogEntriesForClient(player: Player, profile: any): { any }
+	local myHash = PhantomStore.hashOwner(player.UserId)
+	local nowTs = os.time()
+	local history = ensureProfileHistory(profile)
+	local out = {}
+	for _, entry in ipairs(history) do
+		if type(entry) == "table" then
+			local canRevenge = false
+			local revengeReason: string? = nil
+			local cooldownLeftSec = 0
+			if entry.role == "defense" and entry.isBot ~= true and entry.rivalHash ~= "bot" then
+				local ok, reason, left = evalRevengeEligibility(profile, entry, myHash, nowTs)
+				canRevenge = ok
+				revengeReason = reason
+				cooldownLeftSec = left
+			elseif entry.isBot == true or entry.rivalHash == "bot" then
+				revengeReason = "revenge_bot"
+			end
+
+			local replayWall = nil
+			if entry.role == "defense" then
+				replayWall = defenseReplayWalls[entry.battleId]
+				if replayWall == nil then
+					local rec = logStore.get(entry.battleId)
+					if rec ~= nil and type(rec.wall) == "table" then
+						replayWall = rec.wall
+						defenseReplayWalls[entry.battleId] = cloneTable(rec.wall)
+					end
+				end
+			end
+			if replayWall == nil and type(entry.rivalWall) == "table" then
+				replayWall = entry.rivalWall
+			end
+
+			out[#out + 1] = {
+				battleId = entry.battleId,
+				role = entry.role,
+				winner = entry.winner,
+				rivalHash = entry.rivalHash,
+				rivalLabel = entry.rivalLabel,
+				leagueDelta = entry.leagueDelta,
+				goldDelta = entry.goldDelta,
+				createdAt = entry.createdAt,
+				resultHash = entry.resultHash,
+				seed = entry.seed,
+				isBot = entry.isBot == true,
+				revenged = entry.revenged == true,
+				canRevenge = canRevenge,
+				revengeReason = revengeReason,
+				cooldownLeftSec = cooldownLeftSec,
+				replayWall = replayWall,
+				waveSpec = entry.waveSpec,
+			}
+		end
+	end
+	return out
+end
+
+local function recordAndPushHistory(
+	profile: any,
+	battleId: string,
+	role: string,
+	winner: string,
+	rivalHash: string,
+	rivalLabel: string,
+	leagueDelta: number,
+	goldDelta: number,
+	resultHash: number,
+	seed: number,
+	isBot: boolean,
+	wall: any,
+	waveSpec: any,
+	attackerSnapshot: any,
+	myHash: string,
+	shardLeague: number,
+	shouldPushInbox: boolean
+): ()
+	local nowTs = os.time()
+	if role == "defense" and isBot then
+		defenseReplayWalls[battleId] = cloneTable(wall)
+	end
+	prependBattleHistory(profile, {
+		battleId = battleId,
+		role = role,
+		winner = winner,
+		rivalHash = rivalHash,
+		rivalLabel = rivalLabel,
+		leagueDelta = leagueDelta,
+		goldDelta = goldDelta,
+		createdAt = nowTs,
+		resultHash = resultHash,
+		seed = seed,
+		isBot = isBot,
+		revenged = false,
+		rivalWall = toHistoryWall(wall),
+		waveSpec = if type(waveSpec) == "table" then cloneTable(waveSpec) else nil,
+	})
+	if shouldPushInbox and not isBot and rivalHash ~= "bot" and rivalHash ~= myHash then
+		local attackerLabel = string.format("L%d#%s", shardLeague, string.sub(myHash, 1, 4))
+		local inboxOk, inboxErr = inboxStore.push(rivalHash, {
+			battleId = battleId,
+			attackerHash = myHash,
+			attackerLabel = attackerLabel,
+			attackerLeague = shardLeague,
+			winner = winner,
+			goldReward = if winner == "defender" then 15 else 0,
+			createdAt = nowTs,
+			resultHash = resultHash,
+			seed = seed,
+			attackerWall = toHistoryWall(attackerSnapshot),
+			defenderWall = toHistoryWall(wall),
+			waveSpec = if type(waveSpec) == "table" then cloneTable(waveSpec) else nil,
+		})
+		if not inboxOk then
+			warn("[raid] inbox push falhou: " .. tostring(inboxErr))
+		end
+	end
+end
+
 local function startRaid(player: Player, rawOpts: any): any
 	if busy[player] == true then
 		return { ok = false, err = "busy" }
@@ -755,6 +1090,7 @@ local function startRaid(player: Player, rawOpts: any): any
 	busy[player] = true
 	local isCampaign = type(rawOpts) == "table" and rawOpts.mode == "campaign"
 	local isDefend = type(rawOpts) == "table" and rawOpts.mode == "defend"
+	local isRevenge = type(rawOpts) == "table" and rawOpts.mode == "revenge"
 	local ok, response = pcall(function()
 		local battleId = string.lower(HttpService:GenerateGUID(false))
 		local battleKey = BattleLog.keyFor(battleId)
@@ -794,10 +1130,34 @@ local function startRaid(player: Player, rawOpts: any): any
 		local phantomLabel: string
 		local myWallLevel = tonumber(currentSnapshot.level) or 1
 		local myTrapCount = #currentSnapshot.traps
+		local revengeEntry: any = nil
 		if isDefend then
 			target = currentSnapshot
 			targetLeague = shardLeague
 			phantomLabel = string.format("Lv%d", myWallLevel)
+		elseif isRevenge then
+			syncDefenseInbox(player, profile)
+			revengeEntry =
+				findHistoryEntry(profile, type(rawOpts) == "table" and rawOpts.battleId or nil)
+			local revOk, revErr, cdLeft =
+				evalRevengeEligibility(profile, revengeEntry, myHash, os.time())
+			if not revOk then
+				return { ok = false, err = revErr, cooldownLeftSec = cdLeft }
+			end
+			targetLeague = math.clamp(
+				tonumber(string.match(tostring(revengeEntry.rivalLabel or ""), "^L(%d+)"))
+					or shardLeague,
+				PhantomStore.MIN_LEAGUE,
+				PhantomStore.MAX_LEAGUE
+			)
+			target = {
+				ownerHash = revengeEntry.rivalHash,
+				league = targetLeague,
+				level = revengeEntry.rivalWall.level,
+				hp = revengeEntry.rivalWall.hp,
+				traps = revengeEntry.rivalWall.traps,
+			}
+			phantomLabel = tostring(revengeEntry.rivalLabel)
 		else
 			local matchLeague = BotPhantoms.matchLeague(shardLeague, myWallLevel, myTrapCount)
 			local matched, matchErr = phantomStore.getForLeague(matchLeague, myHash, seed)
@@ -879,11 +1239,17 @@ local function startRaid(player: Player, rawOpts: any): any
 		logEvent(player, "battle_started", startedProps)
 		logEvent(player, "raid_start", {
 			battle_id = battleId,
-			mode = if isDefend then "defense" else "phantom",
+			mode = if isDefend then "defense" elseif isRevenge then "revenge" else "phantom",
 			speed = RAID_SPEED,
 		})
+		if isRevenge then
+			logEvent(player, "revenge_started", {
+				battle_id = battleId,
+				league = myLeague,
+			})
+		end
 
-		local result = runBattle(seed, wall, waveSpec)
+		local result, report = runBattleWithReport(seed, wall, waveSpec)
 		local replay = runBattle(seed, wallFromSnapshot(target), waveSpec)
 		local replayOk, replayErr, expectedHash, actualHash = RaidReplay.verify(result, replay)
 		if not replayOk then
@@ -923,6 +1289,9 @@ local function startRaid(player: Player, rawOpts: any): any
 		local raidsNow = profile.stats.raids
 		local fatiguePct = if raidsNow < 10 then 100 elseif raidsNow < 25 then 50 else 25
 		local winGold = math.max(5, math.floor(baseGold * fatiguePct / 100))
+		if isRevenge then
+			winGold = math.max(6, math.floor(winGold * 1.2 + 0.5))
+		end
 		local rewardGold = if playerWon then winGold elseif raidsNow < 3 then 5 else 0
 
 		local oldPoints = profile.league.points
@@ -931,11 +1300,15 @@ local function startRaid(player: Player, rawOpts: any): any
 		local newPoints = oldPoints
 		if playerWon then
 			profile.stats.wins += 1
-			newPoints = oldPoints + (if isDefend then 15 else 25)
+			newPoints = oldPoints + (if isRevenge then 30 elseif isDefend then 15 else 25)
 		elseif not isDefend and oldLeague >= 3 then
 			newPoints = math.max((oldLeague - 1) * 100, oldPoints - 10)
 		end
 		profile.league.points = newPoints
+		if isRevenge and revengeEntry ~= nil then
+			revengeEntry.revenged = true
+			markRevengeCooldown(profile, revengeEntry.rivalHash, os.time())
+		end
 		local newLeague = TrapCatalog.leagueOf(newPoints)
 		if newLeague ~= oldLeague then
 			logEvent(player, "league_changed", {
@@ -1056,6 +1429,32 @@ local function startRaid(player: Player, rawOpts: any): any
 			player:SetAttribute("MuralhaGold", goldAfter)
 		end
 
+		recordAndPushHistory(
+			profile,
+			battleId,
+			if isDefend then "defense" elseif isRevenge then "revenge" else "attack",
+			result.winner,
+			tostring(target.ownerHash or "bot"),
+			if isDefend then string.format("Horda L%d", targetLeague) else phantomLabel,
+			newPoints - oldPoints,
+			creditedGold,
+			result.hash,
+			seed,
+			if isDefend then true else isBot,
+			wall,
+			waveSpec,
+			currentSnapshot,
+			myHash,
+			shardLeague,
+			not isDefend and not isRevenge
+		)
+		local ftueEv = if isRevenge
+			then (if playerWon then "revenge_won" else "revenge")
+			elseif isDefend then "defend"
+			elseif playerWon then "raid_won"
+			else "raid_completed"
+		local ftueState = FtueService.notify(player, ftueEv)
+
 		local matchup = if isDefend
 			then {
 				card1 = {
@@ -1117,7 +1516,7 @@ local function startRaid(player: Player, rawOpts: any): any
 
 		return {
 			ok = true,
-			mode = if isDefend then "defend" else "raid",
+			mode = if isDefend then "defend" elseif isRevenge then "revenge" else "raid",
 			playerWon = playerWon,
 			battleId = battleId,
 			seed = seed,
@@ -1134,6 +1533,8 @@ local function startRaid(player: Player, rawOpts: any): any
 			shardEarned = shardEarned,
 			coreDropped = coreDropped,
 			horde = hordeSummary(horde, newLeague),
+			ftue = ftueState,
+			report = report,
 			replaySeconds = RaidReplay.SECONDS,
 			wall = wall,
 			phantomName = phantomLabel,
@@ -1300,6 +1701,62 @@ end)
 Players.PlayerRemoving:Connect(function(player: Player)
 	clearBusy(player)
 end)
+
+local function syncInboxOnJoin(player: Player): ()
+	for _ = 1, 100 do
+		if player.Parent ~= Players then
+			return
+		end
+		local session = ProfileRegistry.get(player)
+		if session ~= nil and type(session.Data) == "table" then
+			syncDefenseInbox(player, session.Data)
+			return
+		end
+		task.wait(0.1)
+	end
+end
+
+Players.PlayerAdded:Connect(function(player: Player)
+	task.spawn(syncInboxOnJoin, player)
+end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(syncInboxOnJoin, player)
+end
+
+battleLogStateRemote.OnServerInvoke = function(player: Player, rawReq: any)
+	local ok, response = pcall(function()
+		local action = if type(rawReq) == "table" then rawReq.action else rawReq
+		local profileSession = ProfileRegistry.get(player)
+		if profileSession == nil or type(profileSession.Data) ~= "table" then
+			return { ok = false, err = "profile" }
+		end
+		local profile = profileSession.Data
+		if action == "replay_ack" then
+			local ftueState = FtueService.notify(player, "replay_watched")
+			return {
+				ok = true,
+				ftue = ftueState,
+				gold = tonumber(profile.gold) or 0,
+			}
+		end
+		syncDefenseInbox(player, profile)
+		player:SetAttribute("MuralhaUnreadLogs", 0)
+		local ftueState = FtueService.notify(player, "log_opened")
+		return {
+			ok = true,
+			unread = 0,
+			entries = buildLogEntriesForClient(player, profile),
+			ftue = ftueState,
+			gold = tonumber(profile.gold) or 0,
+		}
+	end)
+	if not ok then
+		warn("[raid] BattleLogState falhou: " .. tostring(response))
+		return { ok = false, err = "internal" }
+	end
+	return response
+end
 
 print(
 	string.format(

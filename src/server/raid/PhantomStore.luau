@@ -36,6 +36,7 @@ export type Snapshot = {
 export type StoreHandle = {
 	put: (snapshot: any, slot: number?) -> (boolean, string?),
 	getForLeague: (league: number, excludeHash: string?, seed: number?) -> (Snapshot?, string?),
+	getSlot: (league: number, slot: number) -> (Snapshot?, string?),
 	isMock: boolean,
 	validate: (snapshot: any) -> (boolean, string?),
 }
@@ -238,9 +239,17 @@ function PhantomStore.new(options: any): StoreHandle
 		return nil, lastErr
 	end
 
+	local function getSlot(league: number, slot: number): (Snapshot?, string?)
+		local clampedLeague =
+			math.clamp(math.floor(league), PhantomStore.MIN_LEAGUE, PhantomStore.MAX_LEAGUE)
+		local key = PhantomStore.slotKey(clampedLeague, slot)
+		return readSlot(key)
+	end
+
 	return {
 		put = put,
 		getForLeague = getForLeague,
+		getSlot = getSlot,
 		isMock = mock,
 		validate = validate,
 	}

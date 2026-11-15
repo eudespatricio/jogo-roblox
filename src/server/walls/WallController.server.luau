@@ -26,6 +26,7 @@ local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local AnalyticsService =
 	require(script.Parent.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
+local FtueService = require(script.Parent.Parent:WaitForChild("ftue"):WaitForChild("FtueService"))
 local BuildGrid = require(script.Parent.Parent:WaitForChild("world"):WaitForChild("BuildGrid"))
 
 local REMOTES_NAME = "MuralhaRemotes"
@@ -151,7 +152,17 @@ local function handleAction(
 
 	local session = ProfileRegistry.get(player)
 	if session ~= nil then
-		if type(result.gold) == "number" then
+		if
+			request.action == BuildProtocol.ACTIONS.place
+			or request.action == BuildProtocol.ACTIONS.upgrade
+			or request.action == BuildProtocol.ACTIONS.move
+			or request.action == BuildProtocol.ACTIONS.upgrade_wall
+		then
+			FtueService.notify(player, request.action)
+		end
+		if type(session.Data.gold) == "number" then
+			player:SetAttribute("MuralhaGold", session.Data.gold)
+		elseif type(result.gold) == "number" then
 			player:SetAttribute("MuralhaGold", result.gold)
 		end
 		pcall(BuildGrid.refresh, session.Data.wall.cells)

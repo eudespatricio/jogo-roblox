@@ -7,7 +7,7 @@
 ## Bloco de versões
 
 <!-- VERSOES:INICIO -->
-schema=5
+schema=6
 content=3
 sim=8
 hash=1245379674
@@ -50,3 +50,8 @@ analytics=2
    de piche/canhão/catapulta, arqueiro com bônus de +25% contra voadores, flag `isChampion` em fatias
    com multiplicadores e contabilidade de campeão no resultado da batalha, preservando o hash de
    referência `1245379674` na seed 42) e `analytics=2`.
+9. **Playtest v1.5 (14/11/2026).** `schema=6` (Pacote Pós-Partida GAP-020: `ftue` guiado `0..6`,
+   `revengeCooldowns` anti-win-trading `24h` e `battleHistory` sem PII com snapshot/waveSpec para
+   replay e Vingança), `content=3`, `sim=8` (telemetria paralela `CombatTelemetry()` apenas de
+   leitura preservando o hash de referência `1245379674` na seed 42) e `analytics=2` (+3 eventos
+   aditivos: `ftue_step`, `ftue_skip`, `revenge_started`).

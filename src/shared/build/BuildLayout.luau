@@ -29,6 +29,7 @@ export type HudLayout = {
 	unibarReservedW: number,
 	goldPill: Rect,
 	wallPill: Rect,
+	logBtn: Rect,
 	camBtn: Rect,
 	muteBtn: Rect,
 	comboBtn: Rect,
@@ -44,6 +45,7 @@ export type HudLayout = {
 	defendBtn: Rect,
 	attackBtn: Rect,
 	toastBanner: Rect,
+	ftueBanner: Rect,
 	combatTopPill: Rect,
 	combatTopSoloPill: Rect,
 	combatBossPill: Rect,
@@ -232,11 +234,12 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	local row1MaxX = math.min(maxX, topRightStart)
 	local row1AvailW = math.max(0, row1MaxX - row1MinX)
 
+	local logW = if isDesktop then 68 else 44
 	local camW = if isDesktop then 68 else 44
 	local muteW = 44
 	local comboW = if isDesktop then 96 else 44
-	local localeW = if isDesktop then 128 else 48
-	local utilW = camW + uGap + muteW + uGap + comboW + uGap + localeW
+	local localeW = if isDesktop then 128 else 44
+	local utilW = logW + uGap + camW + uGap + muteW + uGap + comboW + uGap + localeW
 
 	local utilX: number
 	local utilY: number
@@ -249,15 +252,16 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	end
 
 	local utilityCluster = rect(utilX, utilY, utilW, pillH)
-	local camBtn = rect(utilX, utilY, camW, pillH)
+	local logBtn = rect(utilX, utilY, logW, pillH)
+	local camBtn = rect(logBtn.x + logW + uGap, utilY, camW, pillH)
 	local muteBtn = rect(camBtn.x + camW + uGap, utilY, muteW, pillH)
 	local comboBtn = rect(muteBtn.x + muteW + uGap, utilY, comboW, pillH)
 	local localeBtn = rect(comboBtn.x + comboW + uGap, utilY, localeW, pillH)
 
-	local goldDesiredW = clamp(round(w * 0.13), 88, 120)
+	local goldDesiredW = clamp(round(w * 0.125), 84, 120)
 	local wallDesiredW =
-		clamp(round(w * (if h <= 420 then 0.23 else 0.27)), 148, if h <= 420 then 200 else 260)
-	local wallMinW = 140
+		clamp(round(w * (if h <= 420 then 0.21 else 0.27)), 140, if h <= 420 then 176 else 260)
+	local wallMinW = 114
 	local row1LeftFree = math.max(0, (utilX - gap) - row1MinX)
 
 	local goldPill: Rect
@@ -300,12 +304,12 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 
 	if usableW >= 600 then
 		-- Single peripheral bottom band (Landscape phones + tablets + desktop)
-		local ctaW = if h <= 420 then 96 else clamp(round(w * 0.135), 96, 128)
+		local ctaW = if h <= 420 then 90 else clamp(round(w * 0.135), 96, 128)
 		local ctaH = 44
 		local ctaGap = 5
 		local maxDockCenterW = usableW - toolsW - ctaW - gap * 2
 		local rawCardW = math.floor((maxDockCenterW - dockPadX * 2 - cardGap * 4) / 5)
-		cardW = clamp(rawCardW, 48, if h <= 420 then 56 else 72)
+		cardW = clamp(rawCardW, 48, if h <= 420 then 54 else 72)
 		local dockW = cardW * 5 + cardGap * 4 + dockPadX * 2
 		local dockY = maxY - cardH
 		local dockCenterSpace = (maxX - ctaW - gap) - (minX + toolsW + gap)
@@ -353,6 +357,10 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		toastW,
 		toastH
 	)
+	local ftueW = clamp(usableW - 16, 260, 440)
+	local ftueH = 44
+	local ftueBanner =
+		rect(minX + math.floor((usableW - ftueW) * 0.5), topChromeBottom + 4, ftueW, ftueH)
 
 	-- Combat & DropIn peripheral rectangles
 	local combatReserveRight = if utilY == minY then localeW + gap else 0
@@ -391,8 +399,8 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	local combatSpeedBtn = rect(combatCloseBtn.x - gap - speedW, maxY - 44, speedW, 44)
 	local combatCamBtn = rect(combatSpeedBtn.x - gap - combatCamW, maxY - 44, combatCamW, 44)
 
-	local resW = clamp(usableW - 24, 280, 420)
-	local resH = clamp(h - safeTop - safeBottom - 40, 180, 236)
+	local resW = clamp(usableW - 20, 296, 460)
+	local resH = clamp(h - safeTop - safeBottom - 24, 228, 356)
 	local combatResultCard = rect(round((w - resW) * 0.5), round((h - resH) * 0.5), resW, resH)
 
 	local hudArea = goldPill.w * goldPill.h
@@ -414,6 +422,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		unibarReservedW = unibarLeftW,
 		goldPill = goldPill,
 		wallPill = wallPill,
+		logBtn = logBtn,
 		camBtn = camBtn,
 		muteBtn = muteBtn,
 		comboBtn = comboBtn,
@@ -429,6 +438,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		defendBtn = defendBtn,
 		attackBtn = attackBtn,
 		toastBanner = toastBanner,
+		ftueBanner = ftueBanner,
 		combatTopPill = combatTopPill,
 		combatTopSoloPill = combatTopSoloPill,
 		combatBossPill = combatBossPill,

@@ -598,6 +598,13 @@ function BuildProtocol.snapshot(
 		wallLevels = wallLevelsOut,
 		equipped = equipped,
 		horde = hordeOut,
+		ftue = if type(profile.ftue) == "table"
+			then {
+				step = tonumber(profile.ftue.step) or 0,
+				skipped = profile.ftue.skipped == true,
+				completedAt = tonumber(profile.ftue.completedAt) or 0,
+			}
+			else { step = 0, skipped = false, completedAt = 0 },
 		cells = cells,
 		catalog = catalogOut,
 	}

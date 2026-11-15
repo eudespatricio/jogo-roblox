@@ -132,3 +132,31 @@ deck_requires_core,Deck/Cost,Requirement,Requer Núcleo do Ato %d,Requires Act %
 deck_squad_vanguard,Deck/Squad,Row label,Vanguarda,Vanguard,Vanguardia
 deck_squad_pressure,Deck/Squad,Row label,Pressão,Pressure,Presión
 deck_squad_assault,Deck/Squad,Row label,Assalto,Assault,Asalto
+cta_log,HUD/CTA,Button,LOG,LOG,LOG
+cta_skip_ftue,FTUE/CTA,Button,PULAR,SKIP,SALTAR
+diag_aerial_lane,Raid/Diag,Countermeasure,Voador na %d: use Arqueiro + Gelo!,Flyer in %d: use Archer + Frost!,Aéreo en %d: ¡usa Arquero + Hielo!
+diag_pyro_lane,Raid/Diag,Countermeasure,Piro na %d: use Gelo + Arqueiro!,Pyro in %d: use Frost + Archer!,Piro en %d: ¡usa Hielo + Arquero!
+diag_boss_lane,Raid/Diag,Countermeasure,Chefe na %d: Canhão + Gelo c1!,Boss in %d: Cannon + Frost c1!,Jefe en %d: ¡Cañón + Hielo c1!
+ui_dps_header,Raid/Modal,Section title,DANO POR ARMADILHA,DAMAGE BY TRAP,DAÑO POR TRAMPA
+ui_dps_mvp,Raid/Badge,Badge,MVP,MVP,MVP
+ui_dps_eff,Raid/Stat,Efficiency,Ef.%d,Eff.%d,Ef.%d
+ui_diag_title,Raid/Modal,Section title,DIAGNÓSTICO,DIAGNOSIS,DIAGNÓSTICO
+ui_diag_lane,Raid/Stat,Sector comparison,Vazamentos A:%d P:%d B:%d,Leaks A:%d G:%d B:%d,Fugas A:%d P:%d B:%d
+ui_log_title,BattleLog/Modal,Title,HISTÓRICO (BATTLELOG),BATTLE LOG,HISTORIAL
+ui_log_empty,BattleLog/Modal,Empty state,Nenhuma batalha registrada ainda.,No battles recorded yet.,Aún no hay batallas registradas.
+ui_log_cd,BattleLog/Badge,Cooldown,Cd %dh,Cd %dh,Esp %dh
+ui_log_revenged,BattleLog/Badge,Used badge,VINGADO,AVENGED,VENGADO
+ui_log_bot,BattleLog/Badge,Bot badge,BOT,BOT,BOT
+ui_log_atk,BattleLog/Role,Role badge,ATAQUE,ATTACK,ATAQUE
+ui_log_def,BattleLog/Role,Role badge,DEFESA,DEFENSE,DEFENSA
+ui_log_rev,BattleLog/Role,Role badge,VINGANÇA,REVENGE,VENGANZA
+ui_replay_btn,BattleLog/CTA,Button,REPLAY,REPLAY,REPLAY
+toast_revenge_cd,BattleLog/Toast,Error toast,Vingança em recarga (%dh).,Revenge on cooldown (%dh).,Venganza en espera (%dh).
+toast_revenge_bot,BattleLog/Toast,Error toast,Bots não aceitam vingança.,Bots cannot be avenged.,No se puede vengar de bots.
+toast_revenge_used,BattleLog/Toast,Error toast,Esta defesa já foi vingada.,This defense was already avenged.,Esta defensa ya fue vengada.
+ftue_step_1,FTUE/Hint,Step 1,Passo 1/5: Coloque uma armadilha no grid.,Step 1/5: Place a trap on the grid.,Paso 1/5: Coloca una trampa en la red.
+ftue_step_2,FTUE/Hint,Step 2,Passo 2/5: Ataque um rival em ATACAR (+20g).,Step 2/5: Attack a rival via ATTACK (+20g).,Paso 2/5: Ataca a un rival en ATACAR (+20g).
+ftue_step_3,FTUE/Hint,Step 3,Passo 3/5: Melhore armadilha ou monte combo (+25g).,Step 3/5: Upgrade a trap or build a combo (+25g).,Paso 3/5: Mejora trampa o haz combo (+25g).
+ftue_step_4,FTUE/Hint,Step 4,Passo 4/5: Abra LOG e veja replay/vingança (+30g).,Step 4/5: Open LOG for replay/revenge (+30g).,Paso 4/5: Abre LOG para replay/venganza (+30g).
+ftue_step_5,FTUE/Hint,Step 5,Passo 5/5: Vença na HISTÓRIA ou Raide (+25g).,Step 5/5: Win in STORY or Raid (+25g).,Paso 5/5: Gana en HISTORIA o Asalto (+25g).
+ftue_done_toast,FTUE/Toast,Completed toast,Treinamento concluído! (+40g),Training complete! (+40g),¡Entrenamiento listo! (+40g)

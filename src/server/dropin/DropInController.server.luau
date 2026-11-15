@@ -22,6 +22,7 @@ local ProfileRegistry =
 	require(script.Parent.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local AnalyticsService =
 	require(script.Parent.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
+local FtueService = require(script.Parent.Parent:WaitForChild("ftue"):WaitForChild("FtueService"))
 
 local REMOTES_NAME = "MuralhaRemotes"
 local DROPIN_SEED = 4
@@ -247,6 +248,7 @@ local function snapshotFor(player: Player, logShownEvent: boolean?): any
 				if not ok then
 					warn("[dropin] reward falhou: " .. tostring(err))
 				end
+				pcall(FtueService.notify, player, "dropin_cleared")
 				if player.Parent == Players then
 					player:SetAttribute("DropInDone", true)
 				end

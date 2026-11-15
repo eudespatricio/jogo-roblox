@@ -17,6 +17,7 @@ local ProfileService = require(script.Parent:WaitForChild("data"):WaitForChild("
 local ProfileRegistry = require(script.Parent:WaitForChild("data"):WaitForChild("ProfileRegistry"))
 local AnalyticsService =
 	require(script.Parent:WaitForChild("analytics"):WaitForChild("AnalyticsService"))
+local FtueService = require(script.Parent:WaitForChild("ftue"):WaitForChild("FtueService"))
 local ProfileSchema = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("data"):WaitForChild("ProfileSchema")
 )
@@ -297,6 +298,8 @@ local function loadPlayer(player: Player)
 		"MuralhaWallLevel",
 		if type(session.Data.wall) == "table" then (session.Data.wall.level or 1) else 1
 	)
+	FtueService.syncAttributes(player, session.Data)
+	FtueService.notify(player, "boot")
 	printStoreState()
 	maybeSelfTest(player, key)
 end

@@ -2,7 +2,7 @@
 -- Teste de migracao neutra (GAP-010) — kit de expansao.
 -- Compara o hash da parede ANTIGA (representacao congelada antes da migracao) com o hash da
 -- parede MIGRADA (perfil migrado + WallService.toBattleWall), na mesma seed/wave, para
--- todos os passos 0 -> 5, 1 -> 5, 2 -> 5, 3 -> 5 e 4 -> 5.
+-- todos os passos 0 -> 6, 1 -> 6, 2 -> 6, 3 -> 6, 4 -> 6 e 5 -> 6.
 --
 -- Uso: luau tools/expansion-test/neutral-migration.luau
 
@@ -15,6 +15,7 @@ local fixtureV1 = require("../../sim/fixtures/profile-v1")
 local fixtureV2 = require("../../sim/fixtures/profile-v2")
 local fixtureV3 = require("../../sim/fixtures/profile-v3")
 local fixtureV4 = require("../../sim/fixtures/profile-v4")
+local fixtureV5 = require("../../sim/fixtures/profile-v5")
 
 local SEED = 42
 local WAVE = 70
@@ -35,7 +36,7 @@ end
 local function verifyMigration(label, rawFixture, expectedOldWall)
 	local migrated, migrateErr = ProfileSchema.migrate(rawFixture)
 	assert(migrated ~= nil, label .. ": migracao falhou: " .. tostring(migrateErr))
-	assert(migrated.schemaVersion == 5, label .. ": schemaVersion != 5")
+	assert(migrated.schemaVersion == 6, label .. ": schemaVersion != 6")
 	local contentOk, contentErr = TrapCatalog.ensureProfileContent(migrated)
 	assert(contentOk, label .. ": migracao de conteudo falhou: " .. tostring(contentErr))
 	local migratedWall, wallErr = WallService.toBattleWall(migrated, ProfileSchema, TrapCatalog, HP)
@@ -103,7 +104,16 @@ verifyMigration("3->5", fixtureV3, {
 	},
 })
 
-local oldHash, oldResult = verifyMigration("4->5", fixtureV4, {
+verifyMigration("4->6", fixtureV4, {
+	hp = HP,
+	level = 2,
+	traps = {
+		{ cell = "r1c1", type = "tar", level = 2, x = 2000, y = 500 },
+		{ cell = "r3c3", type = "archer", level = 1, x = 5000, y = 2500 },
+	},
+})
+
+local oldHash, oldResult = verifyMigration("5->6", fixtureV5, {
 	hp = HP,
 	level = 2,
 	traps = {
@@ -129,4 +139,4 @@ print(
 		oldResult.wallHp
 	)
 )
-print("OK: migracao neutra (0->5, 1->5, 2->5, 3->5 e 4->5 preservam o comportamento)")
+print("OK: migracao neutra (0->6, 1->6, 2->6, 3->6, 4->6 e 5->6 preservam o comportamento)")

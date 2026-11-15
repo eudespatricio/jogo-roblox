@@ -265,6 +265,86 @@ local TABLE: { [string]: Entry } = {
 	deck_squad_vanguard = row("Vanguarda", "Vanguard", "Vanguardia"),
 	deck_squad_pressure = row("Pressão", "Pressure", "Presión"),
 	deck_squad_assault = row("Assalto", "Assault", "Asalto"),
+	cta_log = row("LOG", "LOG", "LOG"),
+	cta_skip_ftue = row("PULAR", "SKIP", "SALTAR"),
+	diag_aerial_lane = row(
+		"Voador na %d: use Arqueiro + Gelo!",
+		"Flyer in %d: use Archer + Frost!",
+		"Aéreo en %d: ¡usa Arquero + Hielo!"
+	),
+	diag_pyro_lane = row(
+		"Piro na %d: use Gelo + Arqueiro!",
+		"Pyro in %d: use Frost + Archer!",
+		"Piro en %d: ¡usa Hielo + Arquero!"
+	),
+	diag_boss_lane = row(
+		"Chefe na %d: Canhão + Gelo c1!",
+		"Boss in %d: Cannon + Frost c1!",
+		"Jefe en %d: ¡Cañón + Hielo c1!"
+	),
+	ui_dps_header = row("DANO POR ARMADILHA", "DAMAGE BY TRAP", "DAÑO POR TRAMPA"),
+	ui_dps_mvp = row("MVP", "MVP", "MVP"),
+	ui_dps_eff = row("Ef.%d", "Eff.%d", "Ef.%d"),
+	ui_diag_title = row("DIAGNÓSTICO", "DIAGNOSIS", "DIAGNÓSTICO"),
+	ui_diag_lane = row("Vazamentos A:%d P:%d B:%d", "Leaks A:%d G:%d B:%d", "Fugas A:%d P:%d B:%d"),
+	ui_log_title = row("HISTÓRICO (BATTLELOG)", "BATTLE LOG", "HISTORIAL"),
+	ui_log_empty = row(
+		"Nenhuma batalha registrada ainda.",
+		"No battles recorded yet.",
+		"Aún no hay batallas registradas."
+	),
+	ui_log_cd = row("Cd %dh", "Cd %dh", "Esp %dh"),
+	ui_log_revenged = row("VINGADO", "AVENGED", "VENGADO"),
+	ui_log_bot = row("BOT", "BOT", "BOT"),
+	ui_log_atk = row("ATAQUE", "ATTACK", "ATAQUE"),
+	ui_log_def = row("DEFESA", "DEFENSE", "DEFENSA"),
+	ui_log_rev = row("VINGANÇA", "REVENGE", "VENGANZA"),
+	ui_replay_btn = row("REPLAY", "REPLAY", "REPLAY"),
+	toast_revenge_cd = row(
+		"Vingança em recarga (%dh).",
+		"Revenge on cooldown (%dh).",
+		"Venganza en espera (%dh)."
+	),
+	toast_revenge_bot = row(
+		"Bots não aceitam vingança.",
+		"Bots cannot be avenged.",
+		"No se puede vengar de bots."
+	),
+	toast_revenge_used = row(
+		"Esta defesa já foi vingada.",
+		"This defense was already avenged.",
+		"Esta defensa ya fue vengada."
+	),
+	ftue_step_1 = row(
+		"Passo 1/5: Coloque uma armadilha no grid.",
+		"Step 1/5: Place a trap on the grid.",
+		"Paso 1/5: Coloca una trampa en la red."
+	),
+	ftue_step_2 = row(
+		"Passo 2/5: Ataque um rival em ATACAR (+20g).",
+		"Step 2/5: Attack a rival via ATTACK (+20g).",
+		"Paso 2/5: Ataca a un rival en ATACAR (+20g)."
+	),
+	ftue_step_3 = row(
+		"Passo 3/5: Melhore armadilha ou monte combo (+25g).",
+		"Step 3/5: Upgrade a trap or build a combo (+25g).",
+		"Paso 3/5: Mejora trampa o haz combo (+25g)."
+	),
+	ftue_step_4 = row(
+		"Passo 4/5: Abra LOG e veja replay/vingança (+30g).",
+		"Step 4/5: Open LOG for replay/revenge (+30g).",
+		"Paso 4/5: Abre LOG para replay/venganza (+30g)."
+	),
+	ftue_step_5 = row(
+		"Passo 5/5: Vença na HISTÓRIA ou Raide (+25g).",
+		"Step 5/5: Win in STORY or Raid (+25g).",
+		"Paso 5/5: Gana en HISTORIA o Asalto (+25g)."
+	),
+	ftue_done_toast = row(
+		"Treinamento concluído! (+40g)",
+		"Training complete! (+40g)",
+		"¡Entrenamiento listo! (+40g)"
+	),
 }
 
 I18n.TABLE = table.freeze(TABLE)

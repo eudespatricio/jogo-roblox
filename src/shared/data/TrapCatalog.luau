@@ -67,6 +67,16 @@ function TrapCatalog.wallUpgradeCost(level: number): number?
 	return nextDef.cost
 end
 
+-- Ouro total acumulado investido numa armadilha no nivel `level` (custo base + upgrades 1..level-1).
+function TrapCatalog.totalGoldInvested(trapId: string, level: number): number
+	local def = TrapCatalog.TRAPS[trapId]
+	if def == nil then
+		return 0
+	end
+	local lvl = math.clamp(math.floor(tonumber(level) or 1), 1, TrapCatalog.MAX_LEVEL)
+	return def.cost + def.upgrade * math.floor((lvl - 1) * lvl / 2)
+end
+
 local function isInteger(value: any): boolean
 	if type(value) ~= "number" then
 		return false

@@ -237,7 +237,7 @@ end)
 check("C6 ProfileSchema v5 JSON safety e migracao v3->v5", function()
 	local migrated, err = ProfileSchema.migrate(fixtureV3)
 	assert(migrated ~= nil, "migracao v3->v5 falhou: " .. tostring(err))
-	assert(migrated.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion != 5")
+	assert(migrated.schemaVersion == ProfileSchema.SCHEMA_VERSION, "schemaVersion != 6")
 	migrated.campaign.starsNormal["1-1"] = 7
 	migrated.campaign.starsNightmare["1-1"] = 3
 	migrated.campaign.actMilestoneClaims["1"] = 7

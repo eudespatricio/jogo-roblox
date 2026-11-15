@@ -311,6 +311,86 @@ local EXPECTED_CSV = {
 	deck_squad_vanguard = { "Vanguarda", "Vanguard", "Vanguardia" },
 	deck_squad_pressure = { "Pressão", "Pressure", "Presión" },
 	deck_squad_assault = { "Assalto", "Assault", "Asalto" },
+	cta_log = { "LOG", "LOG", "LOG" },
+	cta_skip_ftue = { "PULAR", "SKIP", "SALTAR" },
+	diag_aerial_lane = {
+		"Voador na %d: use Arqueiro + Gelo!",
+		"Flyer in %d: use Archer + Frost!",
+		"Aéreo en %d: ¡usa Arquero + Hielo!",
+	},
+	diag_pyro_lane = {
+		"Piro na %d: use Gelo + Arqueiro!",
+		"Pyro in %d: use Frost + Archer!",
+		"Piro en %d: ¡usa Hielo + Arquero!",
+	},
+	diag_boss_lane = {
+		"Chefe na %d: Canhão + Gelo c1!",
+		"Boss in %d: Cannon + Frost c1!",
+		"Jefe en %d: ¡Cañón + Hielo c1!",
+	},
+	ui_dps_header = { "DANO POR ARMADILHA", "DAMAGE BY TRAP", "DAÑO POR TRAMPA" },
+	ui_dps_mvp = { "MVP", "MVP", "MVP" },
+	ui_dps_eff = { "Ef.%d", "Eff.%d", "Ef.%d" },
+	ui_diag_title = { "DIAGNÓSTICO", "DIAGNOSIS", "DIAGNÓSTICO" },
+	ui_diag_lane = { "Vazamentos A:%d P:%d B:%d", "Leaks A:%d G:%d B:%d", "Fugas A:%d P:%d B:%d" },
+	ui_log_title = { "HISTÓRICO (BATTLELOG)", "BATTLE LOG", "HISTORIAL" },
+	ui_log_empty = {
+		"Nenhuma batalha registrada ainda.",
+		"No battles recorded yet.",
+		"Aún no hay batallas registradas.",
+	},
+	ui_log_cd = { "Cd %dh", "Cd %dh", "Esp %dh" },
+	ui_log_revenged = { "VINGADO", "AVENGED", "VENGADO" },
+	ui_log_bot = { "BOT", "BOT", "BOT" },
+	ui_log_atk = { "ATAQUE", "ATTACK", "ATAQUE" },
+	ui_log_def = { "DEFESA", "DEFENSE", "DEFENSA" },
+	ui_log_rev = { "VINGANÇA", "REVENGE", "VENGANZA" },
+	ui_replay_btn = { "REPLAY", "REPLAY", "REPLAY" },
+	toast_revenge_cd = {
+		"Vingança em recarga (%dh).",
+		"Revenge on cooldown (%dh).",
+		"Venganza en espera (%dh).",
+	},
+	toast_revenge_bot = {
+		"Bots não aceitam vingança.",
+		"Bots cannot be avenged.",
+		"No se puede vengar de bots.",
+	},
+	toast_revenge_used = {
+		"Esta defesa já foi vingada.",
+		"This defense was already avenged.",
+		"Esta defensa ya fue vengada.",
+	},
+	ftue_step_1 = {
+		"Passo 1/5: Coloque uma armadilha no grid.",
+		"Step 1/5: Place a trap on the grid.",
+		"Paso 1/5: Coloca una trampa en la red.",
+	},
+	ftue_step_2 = {
+		"Passo 2/5: Ataque um rival em ATACAR (+20g).",
+		"Step 2/5: Attack a rival via ATTACK (+20g).",
+		"Paso 2/5: Ataca a un rival en ATACAR (+20g).",
+	},
+	ftue_step_3 = {
+		"Passo 3/5: Melhore armadilha ou monte combo (+25g).",
+		"Step 3/5: Upgrade a trap or build a combo (+25g).",
+		"Paso 3/5: Mejora trampa o haz combo (+25g).",
+	},
+	ftue_step_4 = {
+		"Passo 4/5: Abra LOG e veja replay/vingança (+30g).",
+		"Step 4/5: Open LOG for replay/revenge (+30g).",
+		"Paso 4/5: Abre LOG para replay/venganza (+30g).",
+	},
+	ftue_step_5 = {
+		"Passo 5/5: Vença na HISTÓRIA ou Raide (+25g).",
+		"Step 5/5: Win in STORY or Raid (+25g).",
+		"Paso 5/5: Gana en HISTORIA o Asalto (+25g).",
+	},
+	ftue_done_toast = {
+		"Treinamento concluído! (+40g)",
+		"Training complete! (+40g)",
+		"¡Entrenamiento listo! (+40g)",
+	},
 }
 
 local function extractPlaceholders(text)
@@ -330,7 +410,7 @@ check("LOCALES e DEFAULT_LOCALE definidos", function()
 	assert(I18n.DEFAULT_LOCALE == "pt", "DEFAULT_LOCALE")
 end)
 
-check("todas as 77 chaves existem e batem byte-a-byte com o CSV", function()
+check("todas as 161 chaves existem e batem byte-a-byte com o CSV", function()
 	local expectedCount = 0
 	for key, cols in pairs(EXPECTED_CSV) do
 		expectedCount += 1
@@ -349,14 +429,14 @@ check("todas as 77 chaves existem e batem byte-a-byte com o CSV", function()
 			string.format("%s [es]: '%s' != '%s'", key, tostring(entry.es), cols[3])
 		)
 	end
-	assert(expectedCount == 133, "esperava 133 chaves esperadas, achei " .. tostring(expectedCount))
+	assert(expectedCount == 161, "esperava 161 chaves esperadas, achei " .. tostring(expectedCount))
 
 	local actualCount = 0
 	for key in pairs(I18n.TABLE) do
 		actualCount += 1
 		assert(EXPECTED_CSV[key] ~= nil, "chave extra em I18n.TABLE: " .. key)
 	end
-	assert(actualCount == 133, "esperava 133 chaves em I18n.TABLE, achei " .. tostring(actualCount))
+	assert(actualCount == 161, "esperava 161 chaves em I18n.TABLE, achei " .. tostring(actualCount))
 end)
 
 check("placeholders identicos entre pt, en e es", function()
