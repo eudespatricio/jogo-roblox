@@ -21,8 +21,13 @@ lote:
     origem: art/export/wall_bastion_l1.glb
     altura_metros: 5.0572   # 18.0615 studs
     pivot: base
-    limite_triangulos: 3000
+    limite_triangulos: 6000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -34,8 +39,13 @@ lote:
     origem: art/export/wall_bastion_l2.glb
     altura_metros: 5.0613   # 18.076 studs
     pivot: base
-    limite_triangulos: 3000
+    limite_triangulos: 6000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -45,10 +55,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/wall_bastion_l3.glb
-    altura_metros: 5.0574   # 18.0622 studs
+    altura_metros: 5.0579   # 18.0641 studs
     pivot: base
-    limite_triangulos: 3000
+    limite_triangulos: 6000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -58,10 +73,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/wall_bastion_l4.glb
-    altura_metros: 5.0611   # 18.0752 studs
+    altura_metros: 5.0611   # 18.0755 studs
     pivot: base
-    limite_triangulos: 3000
+    limite_triangulos: 6000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -71,10 +91,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/wall_bastion_l5.glb
-    altura_metros: 5.0621   # 18.079 studs
+    altura_metros: 5.062   # 18.0786 studs
     pivot: base
-    limite_triangulos: 3000
+    limite_triangulos: 6000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
