@@ -19,8 +19,28 @@ assert(folder ~= nil)
 
 local warnedUnpublishedPlace = false
 
-local function needsPaletteTexture(textureId: string): boolean
-	return textureId == "" or string.sub(textureId, 1, 15) == "rbxassethash://"
+local function upgradeMeshPrecision(meshPart: MeshPart, texId: string): ()
+	local origSize = meshPart.Size
+	local origCF = meshPart.CFrame
+	if meshPart.MeshId ~= "" and meshPart.RenderFidelity ~= Enum.RenderFidelity.Precise then
+		local ok, precise = pcall(function()
+			return InsertService:CreateMeshPartAsync(
+				meshPart.MeshId,
+				Enum.CollisionFidelity.Box,
+				Enum.RenderFidelity.Precise
+			)
+		end)
+		if ok and precise ~= nil then
+			meshPart:ApplyMesh(precise)
+			precise:Destroy()
+			meshPart.Size = origSize
+			meshPart.CFrame = origCF
+		end
+	end
+	if texId ~= "" then
+		meshPart.TextureID = texId
+	end
+	meshPart.Material = Enum.Material.SmoothPlastic
 end
 
 local function prepare(model: Model): ()
@@ -36,12 +56,8 @@ local function prepare(model: Model): ()
 			descendant.CanTouch = false
 			descendant.CanQuery = false
 			descendant.CastShadow = true
-			if
-				descendant:IsA("MeshPart")
-				and paletteTexture ~= ""
-				and needsPaletteTexture(descendant.TextureID)
-			then
-				descendant.TextureID = paletteTexture
+			if descendant:IsA("MeshPart") then
+				upgradeMeshPrecision(descendant, paletteTexture)
 			end
 		end
 	end

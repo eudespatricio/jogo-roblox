@@ -25,8 +25,28 @@ assert(folder ~= nil)
 
 local warnedUnpublishedPlace = false
 
-local function needsPaletteTexture(textureId: string): boolean
-	return textureId == "" or string.sub(textureId, 1, 15) == "rbxassethash://"
+local function upgradeMeshPrecision(meshPart: MeshPart, texId: string): ()
+	local origSize = meshPart.Size
+	local origCF = meshPart.CFrame
+	if meshPart.MeshId ~= "" and meshPart.RenderFidelity ~= Enum.RenderFidelity.Precise then
+		local ok, precise = pcall(function()
+			return InsertService:CreateMeshPartAsync(
+				meshPart.MeshId,
+				Enum.CollisionFidelity.Box,
+				Enum.RenderFidelity.Precise
+			)
+		end)
+		if ok and precise ~= nil then
+			meshPart:ApplyMesh(precise)
+			precise:Destroy()
+			meshPart.Size = origSize
+			meshPart.CFrame = origCF
+		end
+	end
+	if texId ~= "" then
+		meshPart.TextureID = texId
+	end
+	meshPart.Material = Enum.Material.SmoothPlastic
 end
 
 local function prepare(model: Model, textureId: number): ()
@@ -34,6 +54,7 @@ local function prepare(model: Model, textureId: number): ()
 	local paletteTexture = if MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID > 0
 		then "rbxassetid://" .. tostring(MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID)
 		else ""
+	local resolvedTex = if texContentId ~= "" then texContentId else paletteTexture
 	for _, descendant in ipairs(model:GetDescendants()) do
 		if descendant:IsA("SurfaceAppearance") then
 			descendant:Destroy()
@@ -44,11 +65,7 @@ local function prepare(model: Model, textureId: number): ()
 			descendant.CanQuery = false
 			descendant.CastShadow = false
 			if descendant:IsA("MeshPart") then
-				if texContentId ~= "" then
-					descendant.TextureID = texContentId
-				elseif paletteTexture ~= "" and needsPaletteTexture(descendant.TextureID) then
-					descendant.TextureID = paletteTexture
-				end
+				upgradeMeshPrecision(descendant, resolvedTex)
 			end
 		end
 	end
