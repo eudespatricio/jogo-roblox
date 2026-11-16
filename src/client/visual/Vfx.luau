@@ -716,6 +716,7 @@ function Vfx.impact(parent: Instance, position: Vector3, color: Color3, count: n
 	local anchor = makeAnchor(parent, position, VisualTheme.VFX.impactLifetime + 0.35, "VfxImpact")
 	attachEmitter(anchor, {
 		name = "ImpactBurst",
+		texture = VfxAssets.contentId("softGlowFlare"),
 		color = ColorSequence.new(color, rgb(VisualTheme.PALETTE.white)),
 		size = NumberSequence.new(0.28, 0.04),
 		transparency = NumberSequence.new(0.05, 1),
@@ -727,6 +728,9 @@ function Vfx.impact(parent: Instance, position: Vector3, color: Color3, count: n
 		burstCount = rawTotal * 2,
 	})
 	spawnLightFlash(parent, position, color, 1.8, 7, 0.16)
+	if currentTier ~= "Low" then
+		emitSlashSparks(parent, position, color, math.min(rawTotal, 4))
+	end
 
 	for index = 1, total do
 		local piece = makePart(
@@ -901,6 +905,50 @@ function Vfx.death(parent: Instance, position: Vector3, color: Color3, isFrozen:
 
 	Vfx.impact(parent, position + Vector3.new(0, 0.8, 0), burstColor, 5)
 	Vfx.dust(parent, position, 3)
+	if frozen then
+		emitFrostShatter(parent, position + Vector3.new(0, 0.8, 0), color, 0.9)
+	else
+		local glowAnchor =
+			makeAnchor(parent, position + Vector3.new(0, 0.8, 0), 0.7, "VfxDeathGlow")
+		attachEmitter(glowAnchor, {
+			name = "DeathGlow",
+			texture = VfxAssets.contentId("softGlowFlare"),
+			color = ColorSequence.new(white, color),
+			size = NumberSequence.new(1.2, 2.6),
+			transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.25),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			lifetime = NumberRange.new(0.2, 0.35),
+			speed = NumberRange.new(0, 0),
+			spreadAngle = Vector2.new(0, 0),
+			lightEmission = 1,
+			rotSpeed = NumberRange.new(0, 0),
+			burstCount = 1,
+		})
+		if VfxAssets.contentId("smokeWispy") ~= "" then
+			attachEmitter(glowAnchor, {
+				name = "DeathSmoke",
+				texture = VfxAssets.contentId("smokeWispy"),
+				color = ColorSequence.new(
+					color:Lerp(white, 0.3),
+					rgb(VisualTheme.PALETTE.stoneDark)
+				),
+				size = NumberSequence.new(0.9, 2.2),
+				transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.4),
+					NumberSequenceKeypoint.new(1, 1),
+				}),
+				lifetime = NumberRange.new(0.4, 0.7),
+				speed = NumberRange.new(1, 3),
+				spreadAngle = Vector2.new(60, 60),
+				acceleration = Vector3.new(0, 2, 0),
+				drag = 2,
+				lightEmission = 0,
+				burstCount = 3,
+			})
+		end
+	end
 
 	-- Expanding ground shockwave ring
 	spawnShockwaveRing(
@@ -2097,6 +2145,8 @@ function Vfx.bossSlamImpact(parent: Instance, pos: Vector3, accentColor: Color3)
 	local stone = rgb(VisualTheme.PALETTE.stone)
 	local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
 	local slamPos = pos + Vector3.new(-2.2, 0.08, 0)
+	spawnScorchDecal(parent, pos, 3.2)
+	emitSlashSparks(parent, pos + Vector3.new(0, 0.9, 0), accentColor, 10)
 
 	-- Dual seismic shockwave rings
 	spawnShockwaveRing(

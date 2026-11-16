@@ -60,16 +60,23 @@ local function contentId(id: number): string
 	return ""
 end
 
--- Superficie publicada do modelo (colorMap > 0) ou nil.
+-- Superficie publicada do modelo (colorMap > 0); senao o atlas mestre (Two-Tier: modelos
+-- Tier-A instanciados) quando publicado; senao nil.
 function PbrAssets.surfaceFor(modelName: string): Surface?
 	local surface = PbrAssets.HERO_SURFACES[modelName]
 	if surface ~= nil and surface.colorMap > 0 then
 		return surface
 	end
+	if PbrAssets.MASTER_ATLAS.colorMap > 0 then
+		return PbrAssets.MASTER_ATLAS
+	end
 	return nil
 end
 
 function PbrAssets.anyPublished(): boolean
+	if PbrAssets.MASTER_ATLAS.colorMap > 0 then
+		return true
+	end
 	for _, surface in pairs(PbrAssets.HERO_SURFACES) do
 		if surface.colorMap > 0 then
 			return true
