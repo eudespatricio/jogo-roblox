@@ -17,6 +17,8 @@ if folder == nil then
 end
 assert(folder ~= nil)
 
+local warnedUnpublishedPlace = false
+
 local function needsPaletteTexture(textureId: string): boolean
 	return textureId == "" or string.sub(textureId, 1, 15) == "rbxassethash://"
 end
@@ -54,14 +56,23 @@ local function loadMesh(modelName: string, assetId: number): ()
 			return InsertService:LoadAsset(assetId)
 		end)
 		if not ok or result == nil then
-			warn(
-				string.format(
-					"[meshes] malha %s (%d) indisponivel: %s",
-					modelName,
-					assetId,
-					tostring(result)
+			if game.PlaceId == 0 then
+				if not warnedUnpublishedPlace then
+					warnedUnpublishedPlace = true
+					warn(
+						"[Muralha/Meshes] Place local sem PlaceId (PlaceId=0): publique no Studio sob userId 11966727684 para carregar malhas 3D Open Cloud."
+					)
+				end
+			else
+				warn(
+					string.format(
+						"[meshes] malha %s (%d) indisponivel: %s",
+						modelName,
+						assetId,
+						tostring(result)
+					)
 				)
-			)
+			end
 			return
 		end
 		local container = result :: Model

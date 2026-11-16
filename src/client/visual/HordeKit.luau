@@ -449,11 +449,10 @@ local function buildSapperFallbackTorso(parent: Instance, spec: EnemySpec): { To
 	)
 	torso.CFrame = CFrame.new(0, 1.24, 0)
 
-	local blastPack = makePart(
+	local blastPack = makeEllipsoid(
 		parent,
 		"BlastPack",
-		Vector3.new(0.92, 1.12, 0.72),
-		Vector3.new(0, 1.32, 0.68),
+		Vector3.new(0.96, 1.18, 0.76),
 		BLAST_PACK_COLOR,
 		Enum.Material.WoodPlanks
 	)
@@ -649,11 +648,10 @@ local function createLimbs(model: Instance, kind: string, spec: EnemySpec): { [s
 		add("LegR", makeEllipsoid(model, "LegR", legSize, rgb(spec.dark), Enum.Material.Metal))
 		add("ArmL", makeEllipsoid(model, "ArmL", armSize, rgb(spec.color), Enum.Material.Metal))
 		add("ArmR", makeEllipsoid(model, "ArmR", armSize, rgb(spec.color), Enum.Material.Metal))
-		local shield = makePart(
+		local shield = makeEllipsoid(
 			model,
 			"TowerShield",
-			Vector3.new(1.85, 2.65, 0.28),
-			Vector3.zero,
+			Vector3.new(2.05, 2.80, 0.42),
 			SHIELD_STEEL_COLOR,
 			Enum.Material.Metal
 		)
@@ -2252,21 +2250,19 @@ local function buildBossLegsFallback(
 		folder.Parent = proc
 
 		if bossId == "rime_matriarch" then
-			local upper = makePart(
+			local upper = makeEllipsoid(
 				folder,
 				"SpireUpper",
-				Vector3.new(1.05 * k, legH * 0.62, 1.05 * k),
-				Vector3.zero,
+				Vector3.new(1.15 * k, legH * 0.66, 1.15 * k),
 				dark,
 				Enum.Material.Metal
 			)
 			upper.CFrame = CFrame.new(0, -legH * 0.31, 0)
 
-			local spire = makePart(
+			local spire = makeWedge(
 				folder,
 				"CryoSpire",
-				Vector3.new(0.76 * k, legH * 0.44, 0.88 * k),
-				Vector3.zero,
+				Vector3.new(0.82 * k, legH * 0.48, 0.94 * k),
 				primary,
 				Enum.Material.Ice
 			)
@@ -2282,22 +2278,20 @@ local function buildBossLegsFallback(
 			facet.CFrame = CFrame.new(0, -legH * 0.46, -0.58 * k)
 		else
 			local legW = if bossId == "slag_juggernaut" then 1.55 * k else 1.28 * k
-			local greave = makePart(
+			local greave = makeEllipsoid(
 				folder,
 				"Greave",
-				Vector3.new(legW, legH * 0.86, legW * 0.96),
-				Vector3.zero,
+				Vector3.new(legW * 1.08, legH * 0.88, legW * 1.04),
 				if bossId == "slag_juggernaut" then rgb(VisualTheme.PALETTE.stoneDark) else dark,
 				Enum.Material.Metal
 			)
 			greave.CFrame = CFrame.new(0, -legH * 0.43, 0)
 
 			local bootH = legH * 0.24
-			local boot = makePart(
+			local boot = makeEllipsoid(
 				folder,
 				"Boot",
-				Vector3.new(legW * 1.12, bootH, legW * 1.38),
-				Vector3.zero,
+				Vector3.new(legW * 1.18, bootH * 1.15, legW * 1.46),
 				if bossId == "powder_baron" then rgb(VisualTheme.PALETTE.woodDark) else dark,
 				Enum.Material.Metal
 			)
@@ -2310,11 +2304,10 @@ local function buildBossLegsFallback(
 			local kneeMat = if bossId == "rift_titan"
 				then Enum.Material.Neon
 				else Enum.Material.Metal
-			local knee = makePart(
+			local knee = makeWedge(
 				folder,
 				"Knee",
-				Vector3.new(legW * 0.72, 0.68 * k, 0.52 * k),
-				Vector3.zero,
+				Vector3.new(legW * 0.76, 0.72 * k, 0.62 * k),
 				kneeColor,
 				kneeMat
 			)
@@ -2383,13 +2376,15 @@ local function buildBossFallbackRig(
 			local stack = makePart(
 				torsoFolder,
 				if sx < 0 then "StackL" else "StackR",
-				Vector3.new(1.0 * k, 2.6 * k, 1.0 * k),
+				Vector3.new(2.6 * k, 1.0 * k, 1.0 * k),
 				Vector3.zero,
 				rgb(VisualTheme.PALETTE.stoneDark),
-				Enum.Material.Slate
+				Enum.Material.Slate,
+				Enum.PartType.Cylinder
 			)
 			stack.CFrame = CFrame.new(sx * 1.6 * k, tH * 0.72, 1.45 * k)
 				* CFrame.Angles(math.rad(16), 0, math.rad(-sx * 8))
+				* CFrame.Angles(0, 0, math.rad(90))
 
 			local ember = makePart(
 				torsoFolder,
@@ -2411,22 +2406,20 @@ local function buildBossFallbackRig(
 			Enum.Material.Metal
 		)
 		head.CFrame = CFrame.new(0, tH * 0.78, -0.5 * k)
-		local crest = makePart(
+		local crest = makeWedge(
 			torsoFolder,
 			"MagmaCrest",
 			Vector3.new(0.6 * k, 1.1 * k, 1.6 * k),
-			Vector3.zero,
 			accent,
 			Enum.Material.Neon
 		)
 		crest.CFrame = CFrame.new(0, tH * 0.93, -0.3 * k)
 
 		-- Left arm: heavy foundry gauntlet
-		local lArm = makePart(
+		local lArm = makeEllipsoid(
 			armLFolder,
 			"ArmL",
-			Vector3.new(1.25 * k, 3.0 * k, 1.25 * k),
-			Vector3.zero,
+			Vector3.new(1.35 * k, 3.1 * k, 1.35 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2443,11 +2436,10 @@ local function buildBossFallbackRig(
 		lFist.CFrame = CFrame.new(0, -2.95 * k, -0.55 * k)
 
 		-- Right arm: molten slag warhammer
-		local rArm = makePart(
+		local rArm = makeEllipsoid(
 			armRFolder,
 			"ArmR",
-			Vector3.new(1.25 * k, 2.8 * k, 1.25 * k),
-			Vector3.zero,
+			Vector3.new(1.35 * k, 2.9 * k, 1.35 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2455,19 +2447,23 @@ local function buildBossFallbackRig(
 		local shaft = makePart(
 			armRFolder,
 			"HammerShaft",
-			Vector3.new(0.36 * k, 0.36 * k, 4.2 * k),
+			Vector3.new(4.2 * k, 0.38 * k, 0.38 * k),
 			Vector3.zero,
 			steel,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		shaft.CFrame = CFrame.new(0, -2.6 * k, -1.8 * k) * CFrame.Angles(math.rad(-20), 0, 0)
+		shaft.CFrame = CFrame.new(0, -2.6 * k, -1.8 * k)
+			* CFrame.Angles(math.rad(-20), 0, 0)
+			* CFrame.Angles(0, math.rad(90), 0)
 		local headHammer = makePart(
 			armRFolder,
 			"HammerHead",
-			Vector3.new(2.2 * k, 1.55 * k, 1.45 * k),
+			Vector3.new(2.3 * k, 1.55 * k, 1.55 * k),
 			Vector3.zero,
 			accent,
-			Enum.Material.Neon
+			Enum.Material.Neon,
+			Enum.PartType.Cylinder
 		)
 		headHammer.CFrame = CFrame.new(0, -2.0 * k, -3.55 * k) * CFrame.Angles(math.rad(-20), 0, 0)
 	elseif bossId == "rime_matriarch" then
@@ -2480,11 +2476,10 @@ local function buildBossFallbackRig(
 		)
 		bodice.CFrame = CFrame.new(0, tH * 0.36, 0)
 
-		local cryoCore = makePart(
+		local cryoCore = makeEllipsoid(
 			torsoFolder,
 			"CryoCore",
-			Vector3.new(1.25 * k, 1.85 * k, 0.9 * k),
-			Vector3.zero,
+			Vector3.new(1.32 * k, 1.92 * k, 0.96 * k),
 			accent,
 			Enum.Material.Neon
 		)
@@ -2512,22 +2507,20 @@ local function buildBossFallbackRig(
 			Enum.PartType.Ball
 		)
 		head.CFrame = CFrame.new(0, tH * 0.78, -0.15 * k)
-		local crown = makePart(
+		local crown = makeWedge(
 			torsoFolder,
 			"IceCrown",
-			Vector3.new(2.2 * k, 1.35 * k, 0.55 * k),
-			Vector3.zero,
+			Vector3.new(2.2 * k, 1.35 * k, 0.65 * k),
 			accent,
 			Enum.Material.Neon
 		)
 		crown.CFrame = CFrame.new(0, tH * 0.94, -0.2 * k)
 
 		-- Left arm: razor ice claw
-		local lArm = makePart(
+		local lArm = makeEllipsoid(
 			armLFolder,
 			"ArmL",
-			Vector3.new(0.85 * k, 2.8 * k, 0.85 * k),
-			Vector3.zero,
+			Vector3.new(0.92 * k, 2.9 * k, 0.92 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2542,11 +2535,10 @@ local function buildBossFallbackRig(
 		lClaw.CFrame = CFrame.new(0, -2.9 * k, -0.95 * k) * CFrame.Angles(math.rad(-55), 0, 0)
 
 		-- Right arm: cryo crystal scepter
-		local rArm = makePart(
+		local rArm = makeEllipsoid(
 			armRFolder,
 			"ArmR",
-			Vector3.new(0.85 * k, 2.6 * k, 0.85 * k),
-			Vector3.zero,
+			Vector3.new(0.92 * k, 2.7 * k, 0.92 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2554,38 +2546,38 @@ local function buildBossFallbackRig(
 		local staff = makePart(
 			armRFolder,
 			"ScepterShaft",
-			Vector3.new(0.32 * k, 0.32 * k, 4.4 * k),
+			Vector3.new(4.4 * k, 0.34 * k, 0.34 * k),
 			Vector3.zero,
 			steel,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		staff.CFrame = CFrame.new(0, -2.4 * k, -1.75 * k) * CFrame.Angles(math.rad(-25), 0, 0)
-		local crystal = makePart(
+		staff.CFrame = CFrame.new(0, -2.4 * k, -1.75 * k)
+			* CFrame.Angles(math.rad(-25), 0, 0)
+			* CFrame.Angles(0, math.rad(90), 0)
+		local crystal = makeEllipsoid(
 			armRFolder,
 			"ScepterCrystal",
-			Vector3.new(1.05 * k, 1.45 * k, 1.05 * k),
-			Vector3.zero,
+			Vector3.new(1.12 * k, 1.52 * k, 1.12 * k),
 			accent,
 			Enum.Material.Neon
 		)
 		crystal.CFrame = CFrame.new(0, -1.65 * k, -3.75 * k)
 			* CFrame.Angles(math.rad(-25), math.rad(45), 0)
 	elseif bossId == "powder_baron" then
-		local coat = makePart(
+		local coat = makeEllipsoid(
 			torsoFolder,
 			"SiegeCoat",
-			Vector3.new(4.4 * k, tH * 0.62, 3.0 * k),
-			Vector3.zero,
+			Vector3.new(4.6 * k, tH * 0.66, 3.2 * k),
 			primary,
 			Enum.Material.SmoothPlastic
 		)
 		coat.CFrame = CFrame.new(0, tH * 0.34, 0)
 
-		local buckle = makePart(
+		local buckle = makeEllipsoid(
 			torsoFolder,
 			"GoldBuckle",
-			Vector3.new(1.3 * k, 0.9 * k, 0.5 * k),
-			Vector3.zero,
+			Vector3.new(1.35 * k, 0.95 * k, 0.56 * k),
 			gold,
 			Enum.Material.Neon
 		)
@@ -2595,24 +2587,28 @@ local function buildBossFallbackRig(
 			local mortar = makePart(
 				torsoFolder,
 				if sx < 0 then "MortarL" else "MortarR",
-				Vector3.new(1.25 * k, 2.5 * k, 1.25 * k),
+				Vector3.new(2.5 * k, 1.25 * k, 1.25 * k),
 				Vector3.zero,
 				dark,
-				Enum.Material.Metal
+				Enum.Material.Metal,
+				Enum.PartType.Cylinder
 			)
 			mortar.CFrame = CFrame.new(sx * 2.1 * k, tH * 0.72, -0.35 * k)
 				* CFrame.Angles(math.rad(32), 0, 0)
+				* CFrame.Angles(0, 0, math.rad(90))
 
 			local ring = makePart(
 				torsoFolder,
 				if sx < 0 then "MortarRimL" else "MortarRimR",
-				Vector3.new(1.42 * k, 0.38 * k, 1.42 * k),
+				Vector3.new(0.38 * k, 1.42 * k, 1.42 * k),
 				Vector3.zero,
 				gold,
-				Enum.Material.Metal
+				Enum.Material.Metal,
+				Enum.PartType.Cylinder
 			)
 			ring.CFrame = CFrame.new(sx * 2.1 * k, tH * 0.84, -0.95 * k)
 				* CFrame.Angles(math.rad(32), 0, 0)
+				* CFrame.Angles(0, 0, math.rad(90))
 		end
 
 		local head = makePart(
@@ -2625,31 +2621,28 @@ local function buildBossFallbackRig(
 			Enum.PartType.Ball
 		)
 		head.CFrame = CFrame.new(0, tH * 0.76, -0.1 * k)
-		local brim = makePart(
+		local brim = makeEllipsoid(
 			torsoFolder,
 			"TricorneBrim",
-			Vector3.new(3.4 * k, 0.36 * k, 3.0 * k),
-			Vector3.zero,
+			Vector3.new(3.5 * k, 0.42 * k, 3.1 * k),
 			dark,
 			Enum.Material.Fabric
 		)
 		brim.CFrame = CFrame.new(0, tH * 0.88, -0.1 * k)
-		local hatCrown = makePart(
+		local hatCrown = makeEllipsoid(
 			torsoFolder,
 			"TricorneCrown",
-			Vector3.new(2.0 * k, 0.95 * k, 1.8 * k),
-			Vector3.zero,
+			Vector3.new(2.1 * k, 1.05 * k, 1.9 * k),
 			accent,
 			Enum.Material.Metal
 		)
 		hatCrown.CFrame = CFrame.new(0, tH * 0.94, -0.1 * k)
 
 		-- Left arm: gauntlet + powder brace
-		local lArm = makePart(
+		local lArm = makeEllipsoid(
 			armLFolder,
 			"ArmL",
-			Vector3.new(1.0 * k, 2.8 * k, 1.0 * k),
-			Vector3.zero,
+			Vector3.new(1.08 * k, 2.9 * k, 1.08 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2657,19 +2650,19 @@ local function buildBossFallbackRig(
 		local lCuff = makePart(
 			armLFolder,
 			"BronzeCuff",
-			Vector3.new(1.25 * k, 1.0 * k, 1.25 * k),
+			Vector3.new(1.0 * k, 1.28 * k, 1.28 * k),
 			Vector3.zero,
 			primary,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		lCuff.CFrame = CFrame.new(0, -2.6 * k, -0.45 * k)
+		lCuff.CFrame = CFrame.new(0, -2.6 * k, -0.45 * k) * CFrame.Angles(0, 0, math.rad(90))
 
 		-- Right arm: brass bombard arm cannon
-		local rArm = makePart(
+		local rArm = makeEllipsoid(
 			armRFolder,
 			"ArmR",
-			Vector3.new(1.05 * k, 2.5 * k, 1.05 * k),
-			Vector3.zero,
+			Vector3.new(1.12 * k, 2.6 * k, 1.12 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2677,21 +2670,27 @@ local function buildBossFallbackRig(
 		local cannon = makePart(
 			armRFolder,
 			"BombardBarrel",
-			Vector3.new(1.25 * k, 1.25 * k, 3.2 * k),
+			Vector3.new(3.2 * k, 1.28 * k, 1.28 * k),
 			Vector3.zero,
 			primary,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		cannon.CFrame = CFrame.new(0, -2.35 * k, -1.65 * k) * CFrame.Angles(math.rad(-12), 0, 0)
+		cannon.CFrame = CFrame.new(0, -2.35 * k, -1.65 * k)
+			* CFrame.Angles(math.rad(-12), 0, 0)
+			* CFrame.Angles(0, math.rad(90), 0)
 		local muzzle = makePart(
 			armRFolder,
 			"BombardMuzzle",
-			Vector3.new(1.45 * k, 1.45 * k, 0.45 * k),
+			Vector3.new(0.45 * k, 1.48 * k, 1.48 * k),
 			Vector3.zero,
 			gold,
-			Enum.Material.Neon
+			Enum.Material.Neon,
+			Enum.PartType.Cylinder
 		)
-		muzzle.CFrame = CFrame.new(0, -2.02 * k, -3.15 * k) * CFrame.Angles(math.rad(-12), 0, 0)
+		muzzle.CFrame = CFrame.new(0, -2.02 * k, -3.15 * k)
+			* CFrame.Angles(math.rad(-12), 0, 0)
+			* CFrame.Angles(0, math.rad(90), 0)
 	elseif bossId == "rift_titan" then
 		local chest = makeEllipsoid(
 			torsoFolder,
@@ -2713,22 +2712,20 @@ local function buildBossFallbackRig(
 		)
 		heart.CFrame = CFrame.new(0, tH * 0.40, -1.45 * k)
 
-		local cape = makePart(
+		local cape = makeEllipsoid(
 			torsoFolder,
 			"SovereignCape",
-			Vector3.new(4.2 * k, tH * 0.72, 0.32 * k),
-			Vector3.zero,
+			Vector3.new(4.3 * k, tH * 0.74, 0.40 * k),
 			rgb(VisualTheme.PALETTE.tealDark),
 			Enum.Material.Fabric
 		)
 		cape.CFrame = CFrame.new(0, tH * 0.32, 1.55 * k) * CFrame.Angles(math.rad(14), 0, 0)
 
 		for _, sx in ipairs({ -1, 1 }) do
-			local pauldron = makePart(
+			local pauldron = makeEllipsoid(
 				torsoFolder,
 				if sx < 0 then "PauldronL" else "PauldronR",
-				Vector3.new(1.85 * k, 1.45 * k, 2.05 * k),
-				Vector3.zero,
+				Vector3.new(1.95 * k, 1.55 * k, 2.15 * k),
 				dark,
 				Enum.Material.Metal
 			)
@@ -2753,11 +2750,10 @@ local function buildBossFallbackRig(
 			Enum.Material.Metal
 		)
 		helm.CFrame = CFrame.new(0, tH * 0.78, -0.15 * k)
-		local visor = makePart(
+		local visor = makeEllipsoid(
 			torsoFolder,
 			"RiftVisor",
-			Vector3.new(1.25 * k, 0.35 * k, 0.45 * k),
-			Vector3.zero,
+			Vector3.new(1.32 * k, 0.38 * k, 0.50 * k),
 			accent,
 			Enum.Material.Neon
 		)
@@ -2775,11 +2771,10 @@ local function buildBossFallbackRig(
 		end
 
 		-- Left arm: armored arm + wrist Rift claw blade
-		local lArm = makePart(
+		local lArm = makeEllipsoid(
 			armLFolder,
 			"ArmL",
-			Vector3.new(1.0 * k, 2.9 * k, 1.0 * k),
-			Vector3.zero,
+			Vector3.new(1.08 * k, 3.0 * k, 1.08 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2794,11 +2789,10 @@ local function buildBossFallbackRig(
 		lClaw.CFrame = CFrame.new(0, -2.9 * k, -0.95 * k) * CFrame.Angles(math.rad(-55), 0, 0)
 
 		-- Right arm: armored arm + colossal Rift Obelisk Greatsword poised forward-downward (~35 deg ready angle, NEVER touching ground)
-		local rArm = makePart(
+		local rArm = makeEllipsoid(
 			armRFolder,
 			"ArmR",
-			Vector3.new(1.05 * k, 2.75 * k, 1.05 * k),
-			Vector3.zero,
+			Vector3.new(1.12 * k, 2.85 * k, 1.12 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2808,38 +2802,38 @@ local function buildBossFallbackRig(
 		local hilt = makePart(
 			armRFolder,
 			"ObeliskHilt",
-			Vector3.new(0.32 * k, 1.15 * k, 0.32 * k),
+			Vector3.new(1.15 * k, 0.34 * k, 0.34 * k),
 			Vector3.zero,
 			gold,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		hilt.CFrame = CFrame.new(0, -2.5 * k, -0.65 * k) * CFrame.Angles(swordTilt, 0, 0)
+		hilt.CFrame = CFrame.new(0, -2.5 * k, -0.65 * k)
+			* CFrame.Angles(swordTilt, 0, 0)
+			* CFrame.Angles(0, 0, math.rad(90))
 
-		local guard = makePart(
+		local guard = makeEllipsoid(
 			armRFolder,
 			"ObeliskGuard",
-			Vector3.new(1.45 * k, 0.36 * k, 0.55 * k),
-			Vector3.zero,
+			Vector3.new(1.52 * k, 0.40 * k, 0.60 * k),
 			gold,
 			Enum.Material.Metal
 		)
 		guard.CFrame = CFrame.new(0, -2.75 * k, -1.05 * k) * CFrame.Angles(swordTilt, 0, 0)
 
-		local blade = makePart(
+		local blade = makeEllipsoid(
 			armRFolder,
 			"ObeliskBlade",
-			Vector3.new(0.88 * k, 4.4 * k, 0.28 * k),
-			Vector3.zero,
+			Vector3.new(0.94 * k, 4.4 * k, 0.34 * k),
 			dark,
 			Enum.Material.Metal
 		)
 		blade.CFrame = CFrame.new(0, -3.72 * k, -2.50 * k) * CFrame.Angles(swordTilt, 0, 0)
 
-		local bladeCore = makePart(
+		local bladeCore = makeEllipsoid(
 			armRFolder,
 			"ObeliskCore",
-			Vector3.new(0.34 * k, 4.15 * k, 0.36 * k),
-			Vector3.zero,
+			Vector3.new(0.38 * k, 4.15 * k, 0.42 * k),
 			primary,
 			Enum.Material.Neon
 		)
@@ -2919,31 +2913,28 @@ local function buildBossFallbackRig(
 		end
 
 		-- Left arm: iron gauntlet
-		local lArm = makePart(
+		local lArm = makeEllipsoid(
 			armLFolder,
 			"ArmL",
-			Vector3.new(1.1 * k, 2.8 * k, 1.1 * k),
-			Vector3.zero,
+			Vector3.new(1.18 * k, 2.9 * k, 1.18 * k),
 			dark,
 			Enum.Material.Metal
 		)
 		lArm.CFrame = CFrame.new(0, -1.3 * k, -0.25 * k)
-		local lShield = makePart(
+		local lShield = makeEllipsoid(
 			armLFolder,
 			"RamShield",
-			Vector3.new(0.75 * k, 1.9 * k, 1.65 * k),
-			Vector3.zero,
+			Vector3.new(0.82 * k, 2.0 * k, 1.75 * k),
 			primary,
 			Enum.Material.Metal
 		)
 		lShield.CFrame = CFrame.new(-0.35 * k, -2.65 * k, -0.75 * k)
 
 		-- Right arm: iron battering-ram gauntlet
-		local rArm = makePart(
+		local rArm = makeEllipsoid(
 			armRFolder,
 			"ArmR",
-			Vector3.new(1.1 * k, 2.6 * k, 1.1 * k),
-			Vector3.zero,
+			Vector3.new(1.18 * k, 2.7 * k, 1.18 * k),
 			dark,
 			Enum.Material.Metal
 		)
@@ -2951,12 +2942,13 @@ local function buildBossFallbackRig(
 		local ramHead = makePart(
 			armRFolder,
 			"BatteringRam",
-			Vector3.new(1.55 * k, 1.45 * k, 2.45 * k),
+			Vector3.new(2.45 * k, 1.55 * k, 1.55 * k),
 			Vector3.zero,
 			primary,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		ramHead.CFrame = CFrame.new(0, -2.5 * k, -1.35 * k)
+		ramHead.CFrame = CFrame.new(0, -2.5 * k, -1.35 * k) * CFrame.Angles(0, math.rad(90), 0)
 		local ramSpike = makeWedge(
 			armRFolder,
 			"RamSpike",

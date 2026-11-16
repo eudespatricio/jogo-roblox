@@ -117,6 +117,21 @@ local function makeWedge(
 	return piece
 end
 
+local function makeEllipsoid(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	offset: Vector3,
+	color: Color3,
+	material: Enum.Material?
+): Part
+	local piece = makePart(parent, name, size, offset, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = piece
+	return piece
+end
+
 local function addRankChevrons(container: Instance): ()
 	local mast = makePart(
 		container,
@@ -145,14 +160,16 @@ end
 
 -- 6 partes + Base + BaseTrim + RankMast + 3 Chevrons = 12 partes (BUDGET.trapParts = 12).
 local function archer(model: Instance, spec: TrapSpec): ()
-	makePart(
+	local towerBody = makePart(
 		model,
 		"TowerBody",
-		Vector3.new(2.4, 3.7, 2.4),
+		Vector3.new(3.7, 2.5, 2.5),
 		Vector3.new(0, 2.15, 0),
 		rgb(VisualTheme.PALETTE.wood),
-		Enum.Material.WoodPlanks
+		Enum.Material.WoodPlanks,
+		Enum.PartType.Cylinder
 	)
+	towerBody.CFrame = CFrame.new(0, 2.15, 0) * CFrame.Angles(0, 0, math.rad(90))
 	makeWedge(
 		model,
 		"TowerRoof",
@@ -161,7 +178,7 @@ local function archer(model: Instance, spec: TrapSpec): ()
 		rgb(spec.accent),
 		Enum.Material.WoodPlanks
 	)
-	makePart(
+	makeWedge(
 		model,
 		"Banner",
 		Vector3.new(0.12, 2.0, 1.2),
@@ -169,10 +186,10 @@ local function archer(model: Instance, spec: TrapSpec): ()
 		rgb(VisualTheme.PALETTE.amber),
 		Enum.Material.Fabric
 	)
-	makePart(
+	makeEllipsoid(
 		model,
 		"ArcherBody",
-		Vector3.new(0.55, 1.0, 0.55),
+		Vector3.new(0.62, 1.05, 0.62),
 		Vector3.new(0, 3.25, 0.8),
 		rgb(VisualTheme.PALETTE.amber),
 		Enum.Material.SmoothPlastic
@@ -186,10 +203,10 @@ local function archer(model: Instance, spec: TrapSpec): ()
 		Enum.Material.SmoothPlastic,
 		Enum.PartType.Ball
 	)
-	makePart(
+	makeEllipsoid(
 		model,
 		"Bow",
-		Vector3.new(0.12, 1.2, 0.12),
+		Vector3.new(0.18, 1.28, 0.32),
 		Vector3.new(0.45, 3.25, 1.15),
 		rgb(VisualTheme.PALETTE.woodDark),
 		Enum.Material.Wood
@@ -225,19 +242,21 @@ end
 
 -- 5 partes + Base + RankMast + 3 Chevrons = 10 partes.
 local function frost(model: Instance, spec: TrapSpec): ()
-	makePart(
+	local frostBase = makePart(
 		model,
 		"FrostBase",
-		Vector3.new(4.4, 0.3, 4.4),
+		Vector3.new(0.3, 4.4, 4.4),
 		Vector3.new(0, 0.35, 0),
 		rgb(VisualTheme.PALETTE.stoneDark),
-		Enum.Material.Ice
+		Enum.Material.Ice,
+		Enum.PartType.Cylinder
 	)
+	frostBase.CFrame = CFrame.new(0, 0.35, 0) * CFrame.Angles(0, 0, math.rad(90))
 	for index = -1, 1 do
-		local crystal = makePart(
+		local crystal = makeWedge(
 			model,
 			"Crystal" .. tostring(index + 2),
-			Vector3.new(0.55, 3.2 - math.abs(index) * 0.6, 0.55),
+			Vector3.new(0.62, 3.2 - math.abs(index) * 0.6, 0.68),
 			Vector3.new(index * 0.95, 1.8 - math.abs(index) * 0.2, 0),
 			rgb(spec.color),
 			Enum.Material.Neon
@@ -245,23 +264,25 @@ local function frost(model: Instance, spec: TrapSpec): ()
 		crystal.CFrame = crystal.CFrame
 			* CFrame.Angles(math.rad(8 * index), 0, math.rad(12 * index))
 	end
-	makePart(
+	local glow = makePart(
 		model,
 		"FrostGlow",
-		Vector3.new(4.6, 0.2, 4.6),
+		Vector3.new(0.2, 4.6, 4.6),
 		Vector3.new(0, 0.54, 0),
 		rgb(spec.accent),
-		Enum.Material.Neon
-	).Transparency =
-		0.55
+		Enum.Material.Neon,
+		Enum.PartType.Cylinder
+	)
+	glow.CFrame = CFrame.new(0, 0.54, 0) * CFrame.Angles(0, 0, math.rad(90))
+	glow.Transparency = 0.55
 end
 
 -- 5 partes + Base + RankMast + 3 Chevrons = 10 partes.
 local function cannon(model: Instance, spec: TrapSpec): ()
-	makePart(
+	makeEllipsoid(
 		model,
 		"Carriage",
-		Vector3.new(3.2, 0.8, 2.2),
+		Vector3.new(3.35, 0.88, 2.25),
 		Vector3.new(0, 0.9, 0),
 		rgb(VisualTheme.PALETTE.wood),
 		Enum.Material.WoodPlanks
@@ -300,10 +321,10 @@ end
 
 -- 6 partes + Base + RankMast + 3 Chevrons = 11 partes.
 local function catapult(model: Instance, spec: TrapSpec): ()
-	makePart(
+	makeEllipsoid(
 		model,
 		"Frame",
-		Vector3.new(3.8, 0.55, 2.6),
+		Vector3.new(3.95, 0.62, 2.65),
 		Vector3.new(0, 0.85, 0),
 		rgb(VisualTheme.PALETTE.woodDark),
 		Enum.Material.WoodPlanks
@@ -324,10 +345,11 @@ local function catapult(model: Instance, spec: TrapSpec): ()
 	local arm = makePart(
 		model,
 		"Arm",
-		Vector3.new(4.4, 0.4, 0.4),
+		Vector3.new(4.4, 0.42, 0.42),
 		Vector3.new(-0.2, 2.05, 0),
 		rgb(spec.accent),
-		Enum.Material.Wood
+		Enum.Material.Wood,
+		Enum.PartType.Cylinder
 	)
 	arm.CFrame = arm.CFrame * CFrame.Angles(0, 0, math.rad(25))
 	makePart(
@@ -339,10 +361,10 @@ local function catapult(model: Instance, spec: TrapSpec): ()
 		Enum.Material.Metal,
 		Enum.PartType.Ball
 	)
-	makePart(
+	makeEllipsoid(
 		model,
 		"Basket",
-		Vector3.new(1.1, 0.5, 1.1),
+		Vector3.new(1.25, 0.65, 1.25),
 		Vector3.new(1.6, 2.9, 0),
 		rgb(VisualTheme.PALETTE.wood),
 		Enum.Material.WoodPlanks

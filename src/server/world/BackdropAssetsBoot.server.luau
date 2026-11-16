@@ -7,6 +7,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BackdropAssets = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("BackdropAssets")
 )
+local MeshAssets = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
+)
 
 if not BackdropAssets.anyPublished() then
 	return
@@ -20,8 +23,17 @@ if folder == nil then
 end
 assert(folder ~= nil)
 
+local warnedUnpublishedPlace = false
+
+local function needsPaletteTexture(textureId: string): boolean
+	return textureId == "" or string.sub(textureId, 1, 15) == "rbxassethash://"
+end
+
 local function prepare(model: Model, textureId: number): ()
 	local texContentId = if textureId > 0 then "rbxassetid://" .. tostring(textureId) else ""
+	local paletteTexture = if MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID > 0
+		then "rbxassetid://" .. tostring(MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID)
+		else ""
 	for _, descendant in ipairs(model:GetDescendants()) do
 		if descendant:IsA("SurfaceAppearance") then
 			descendant:Destroy()
@@ -31,8 +43,12 @@ local function prepare(model: Model, textureId: number): ()
 			descendant.CanTouch = false
 			descendant.CanQuery = false
 			descendant.CastShadow = false
-			if descendant:IsA("MeshPart") and texContentId ~= "" then
-				descendant.TextureID = texContentId
+			if descendant:IsA("MeshPart") then
+				if texContentId ~= "" then
+					descendant.TextureID = texContentId
+				elseif paletteTexture ~= "" and needsPaletteTexture(descendant.TextureID) then
+					descendant.TextureID = paletteTexture
+				end
 			end
 		end
 	end
@@ -47,14 +63,23 @@ for _, asset in ipairs(BackdropAssets.ASSETS) do
 			return InsertService:LoadAsset(asset.assetId)
 		end)
 		if not ok or result == nil then
-			warn(
-				string.format(
-					"[backdrop] malha %s (%d) indisponivel: %s",
-					asset.key,
-					asset.assetId,
-					tostring(result)
+			if game.PlaceId == 0 then
+				if not warnedUnpublishedPlace then
+					warnedUnpublishedPlace = true
+					warn(
+						"[Muralha/Backdrop] Place local sem PlaceId (PlaceId=0): publique no Studio sob userId 11966727684 para carregar malhas 3D Open Cloud."
+					)
+				end
+			else
+				warn(
+					string.format(
+						"[backdrop] malha %s (%d) indisponivel: %s",
+						asset.key,
+						asset.assetId,
+						tostring(result)
+					)
 				)
-			)
+			end
 			return
 		end
 		local container = result :: Model
