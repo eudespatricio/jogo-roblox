@@ -51,7 +51,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 	revengeButton.Visible = false
 	UiKit.corner(revengeButton, 10)
 	UiKit.setSelected(revengeButton, true)
-	addTextConstraint(revengeButton, 9, 13)
+	addTextConstraint(revengeButton, 12, 16)
 
 	local section = Instance.new("Frame")
 	section.Name = "PostMatchSection"
@@ -64,7 +64,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 
 	local headerRow = Instance.new("Frame")
 	headerRow.Name = "HeaderRow"
-	headerRow.Size = UDim2.new(1, 0, 0, 16)
+	headerRow.Size = UDim2.new(1, 0, 0, 18)
 	headerRow.BackgroundTransparency = 1
 	headerRow.ZIndex = 19
 	headerRow.Parent = section
@@ -79,7 +79,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 	dpsTitle.Size = UDim2.new(0.52, -4, 1, 0)
 	dpsTitle.TextScaled = true
 	dpsTitle.ZIndex = 19
-	addTextConstraint(dpsTitle, 8, 11)
+	addTextConstraint(dpsTitle, 10, 13)
 
 	local sectorLabel = UiKit.label(
 		headerRow,
@@ -93,12 +93,12 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 	sectorLabel.TextXAlignment = Enum.TextXAlignment.Right
 	sectorLabel.TextScaled = true
 	sectorLabel.ZIndex = 19
-	addTextConstraint(sectorLabel, 8, 11)
+	addTextConstraint(sectorLabel, 10, 13)
 
 	local trapsList = Instance.new("ScrollingFrame")
 	trapsList.Name = "TrapsList"
-	trapsList.Position = UDim2.fromOffset(0, 18)
-	trapsList.Size = UDim2.new(1, 0, 1, -18)
+	trapsList.Position = UDim2.fromOffset(0, 20)
+	trapsList.Size = UDim2.new(1, 0, 1, -20)
 	trapsList.BackgroundTransparency = 1
 	trapsList.BorderSizePixel = 0
 	trapsList.ScrollBarThickness = 4
@@ -116,7 +116,8 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 	local diagBanner = UiKit.panel(section, "DiagBanner", UiKit.color(VisualTheme.PALETTE.ironDark))
 	diagBanner.AnchorPoint = Vector2.new(0, 1)
 	diagBanner.Position = UDim2.new(0, 0, 1, 0)
-	diagBanner.Size = UDim2.new(1, 0, 0, 24)
+	diagBanner.Size = UDim2.new(1, 0, 0, 26)
+	diagBanner.BackgroundTransparency = 0.22
 	diagBanner.ZIndex = 19
 	diagBanner.Visible = false
 	UiKit.corner(diagBanner, 6)
@@ -133,7 +134,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 	diagText.Size = UDim2.new(1, -16, 1, -4)
 	diagText.TextScaled = true
 	diagText.ZIndex = 20
-	addTextConstraint(diagText, 8, 11)
+	addTextConstraint(diagText, 11, 14)
 
 	local function clearRows(): ()
 		for _, child in ipairs(trapsList:GetChildren()) do
@@ -204,9 +205,9 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 				local row = Instance.new("Frame")
 				row.Name = "TrapRow_" .. tostring(idx)
 				row.LayoutOrder = idx
-				row.Size = UDim2.new(1, -4, 0, 24)
+				row.Size = UDim2.new(1, -4, 0, 26)
 				row.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
-				row.BackgroundTransparency = 0.08
+				row.BackgroundTransparency = 0.20
 				row.BorderSizePixel = 0
 				row.ZIndex = 19
 				row.Parent = trapsList
@@ -240,7 +241,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 				nameLabel.Size = UDim2.new(0.40, -6, 1, -4)
 				nameLabel.TextScaled = true
 				nameLabel.ZIndex = 20
-				addTextConstraint(nameLabel, 8, 11)
+				addTextConstraint(nameLabel, 11, 15)
 
 				local statsOffsetLeft = 0.41
 				if entry.isMvp == true then
@@ -248,7 +249,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 					mvpPill.Name = "MvpPill"
 					mvpPill.AnchorPoint = Vector2.new(0, 0.5)
 					mvpPill.Position = UDim2.new(0.40, 2, 0.5, 0)
-					mvpPill.Size = UDim2.fromOffset(32, 16)
+					mvpPill.Size = UDim2.fromOffset(36, 18)
 					mvpPill.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
 					mvpPill.BorderSizePixel = 0
 					mvpPill.Text = I18n.t(loc, "ui_dps_mvp")
@@ -258,8 +259,8 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 					mvpPill.ZIndex = 20
 					mvpPill.Parent = row
 					UiKit.corner(mvpPill, 4)
-					addTextConstraint(mvpPill, 7, 9)
-					statsOffsetLeft = 0.54
+					addTextConstraint(mvpPill, 10, 13)
+					statsOffsetLeft = 0.55
 				end
 
 				local dmgHp = math.max(0, math.floor(tonumber(entry.damageHp) or 0))
@@ -278,7 +279,7 @@ function PostMatchUi.create(resultCard: Frame, actionOpts: PostMatchActionOpts?)
 				statsLabel.TextXAlignment = Enum.TextXAlignment.Right
 				statsLabel.TextScaled = true
 				statsLabel.ZIndex = 20
-				addTextConstraint(statsLabel, 8, 10)
+				addTextConstraint(statsLabel, 11, 15)
 			end
 		end
 

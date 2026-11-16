@@ -316,6 +316,7 @@ root.BackgroundTransparency = 1
 root.Parent = gui
 
 local goldPill = UiKit.panel(root, "GoldPill")
+goldPill.BackgroundTransparency = 0.22
 goldPill.Active = true
 UiKit.corner(goldPill, 12)
 local coin = UiKit.iconCoin(goldPill, 20)
@@ -335,55 +336,60 @@ goldLabel.TextXAlignment = Enum.TextXAlignment.Left
 goldLabel.TextScaled = true
 goldLabel.TextWrapped = false
 local goldCap = Instance.new("UITextSizeConstraint")
-goldCap.MinTextSize = 11
+goldCap.MinTextSize = 12
 goldCap.MaxTextSize = 18
 goldCap.Parent = goldLabel
 
 local wallUpgradeBtn = UiKit.button(root, "WallUpgrade", "L1 · Nv1 (500) · 0/5")
+wallUpgradeBtn.BackgroundTransparency = 0.22
 wallUpgradeBtn.Font = Enum.Font.GothamBold
 wallUpgradeBtn.TextScaled = true
 wallUpgradeBtn.TextWrapped = false
 wallUpgradeBtn.TextTruncate = Enum.TextTruncate.AtEnd
 UiKit.corner(wallUpgradeBtn, 12)
 local wallUpgradeCap = Instance.new("UITextSizeConstraint")
-wallUpgradeCap.MinTextSize = 10
-wallUpgradeCap.MaxTextSize = 14
+wallUpgradeCap.MinTextSize = 12
+wallUpgradeCap.MaxTextSize = 16
 wallUpgradeCap.Parent = wallUpgradeBtn
 
 local camBtn = UiKit.button(root, "CamBtn", "CAM 1")
+camBtn.BackgroundTransparency = 0.22
 camBtn.Font = Enum.Font.GothamBold
 camBtn.TextScaled = true
 camBtn.TextWrapped = false
 UiKit.corner(camBtn, 12)
 local camBtnCap = Instance.new("UITextSizeConstraint")
-camBtnCap.MinTextSize = 10
-camBtnCap.MaxTextSize = 13
+camBtnCap.MinTextSize = 11
+camBtnCap.MaxTextSize = 14
 camBtnCap.Parent = camBtn
 
 local muteBtn = UiKit.button(root, "MuteBtn", "SFX")
+muteBtn.BackgroundTransparency = 0.22
 muteBtn.Font = Enum.Font.GothamBold
 muteBtn.TextScaled = true
 muteBtn.TextWrapped = false
 UiKit.corner(muteBtn, 12)
 local muteBtnCap = Instance.new("UITextSizeConstraint")
-muteBtnCap.MinTextSize = 10
-muteBtnCap.MaxTextSize = 13
+muteBtnCap.MinTextSize = 11
+muteBtnCap.MaxTextSize = 14
 muteBtnCap.Parent = muteBtn
 
 local comboBtn = UiKit.button(root, "ComboGuideBtn", "?")
+comboBtn.BackgroundTransparency = 0.22
 comboBtn.Font = Enum.Font.GothamBold
 comboBtn.TextScaled = true
 comboBtn.TextWrapped = false
 UiKit.corner(comboBtn, 12)
 local comboBtnCap = Instance.new("UITextSizeConstraint")
-comboBtnCap.MinTextSize = 10
-comboBtnCap.MaxTextSize = 14
+comboBtnCap.MinTextSize = 12
+comboBtnCap.MaxTextSize = 16
 comboBtnCap.Parent = comboBtn
 
 local localePill = UiKit.createLocalePill(root)
 local compactLocalePill = UiKit.createCompactLocalePill(root)
 
 local comboModal = UiKit.panel(root, "ComboModal")
+comboModal.BackgroundTransparency = 0.18
 comboModal.Visible = false
 comboModal.ZIndex = 20
 comboModal.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -440,7 +446,7 @@ for index, spec in ipairs(COMBO_SPECS) do
 	rowFrame.Position = UDim2.fromOffset(12, 48 + (index - 1) * 58)
 	rowFrame.Size = UDim2.new(1, -24, 0, 52)
 	rowFrame.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.stoneDark)
-	rowFrame.BackgroundTransparency = 0.25
+	rowFrame.BackgroundTransparency = 0.22
 	rowFrame.BorderSizePixel = 0
 	rowFrame.ZIndex = 21
 	rowFrame.Parent = comboModal
@@ -468,8 +474,8 @@ for index, spec in ipairs(COMBO_SPECS) do
 	nameLbl.TextScaled = true
 	nameLbl.ZIndex = 22
 	local nameCap = Instance.new("UITextSizeConstraint")
-	nameCap.MinTextSize = 10
-	nameCap.MaxTextSize = 14
+	nameCap.MinTextSize = 11
+	nameCap.MaxTextSize = 15
 	nameCap.Parent = nameLbl
 
 	local descLbl = UiKit.label(
@@ -484,8 +490,8 @@ for index, spec in ipairs(COMBO_SPECS) do
 	descLbl.TextScaled = true
 	descLbl.ZIndex = 22
 	local descCap = Instance.new("UITextSizeConstraint")
-	descCap.MinTextSize = 9
-	descCap.MaxTextSize = 12
+	descCap.MinTextSize = 11
+	descCap.MaxTextSize = 14
 	descCap.Parent = descLbl
 
 	comboRows[#comboRows + 1] = {
@@ -613,7 +619,7 @@ local function makeMode(order: number, id: string, text: string): TextButton
 	UiKit.corner(button, 10)
 	local textCap = Instance.new("UITextSizeConstraint")
 	textCap.MaxTextSize = 16
-	textCap.MinTextSize = 10
+	textCap.MinTextSize = 11
 	textCap.Parent = button
 	modeButtons[id] = button
 	return button
@@ -681,14 +687,22 @@ local ctxMoveBtn = makeContextBtn(2, "CtxMove", "MV", VisualTheme.PALETTE.teal)
 local ctxRemoveBtn = makeContextBtn(3, "CtxRemove", "✕", VisualTheme.PALETTE.danger)
 
 local toastBanner = UiKit.panel(root, "ToastBanner")
+toastBanner.AnchorPoint = Vector2.new(0.5, 0)
+toastBanner.AutomaticSize = Enum.AutomaticSize.X
+toastBanner.Size = UDim2.fromOffset(180, 34)
+toastBanner.BackgroundTransparency = 0.24
 toastBanner.Visible = false
 toastBanner.ZIndex = 6
-UiKit.corner(toastBanner, 10)
-UiKit.stroke(toastBanner, UiKit.color(VisualTheme.PALETTE.amber), 1, 0.25)
+UiKit.corner(toastBanner, 16)
+UiKit.stroke(toastBanner, UiKit.color(VisualTheme.PALETTE.amber), 1, 0.22)
+local toastSizeCap = Instance.new("UISizeConstraint")
+toastSizeCap.MinSize = Vector2.new(140, 32)
+toastSizeCap.MaxSize = Vector2.new(320, 38)
+toastSizeCap.Parent = toastBanner
 local toastPad = toastBanner:FindFirstChildOfClass("UIPadding")
 if toastPad ~= nil then
-	toastPad.PaddingLeft = UDim.new(0, 12)
-	toastPad.PaddingRight = UDim.new(0, 12)
+	toastPad.PaddingLeft = UDim.new(0, 14)
+	toastPad.PaddingRight = UDim.new(0, 14)
 	toastPad.PaddingTop = UDim.new(0, 4)
 	toastPad.PaddingBottom = UDim.new(0, 4)
 end
@@ -699,15 +713,20 @@ local toastLabel = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.parchment),
 	Enum.Font.GothamBold
 )
-toastLabel.Size = UDim2.fromScale(1, 1)
+toastLabel.AutomaticSize = Enum.AutomaticSize.X
+toastLabel.Size = UDim2.fromScale(0, 1)
 toastLabel.TextXAlignment = Enum.TextXAlignment.Center
 toastLabel.TextScaled = true
+toastLabel.TextSize = 14
+toastLabel.TextWrapped = false
 toastLabel.ZIndex = 7
 local toastTextCap = Instance.new("UITextSizeConstraint")
-toastTextCap.MaxTextSize = 14
+toastTextCap.MinTextSize = 13
+toastTextCap.MaxTextSize = 16
 toastTextCap.Parent = toastLabel
 
 local debugHud = UiKit.panel(root, "DebugHud")
+debugHud.BackgroundTransparency = 0.24
 debugHud.Visible = VisualTheme.UI.debugHudDefault
 local debugMetrics = UiKit.label(
 	debugHud,
@@ -719,7 +738,7 @@ local debugMetrics = UiKit.label(
 debugMetrics.Position = UDim2.fromOffset(8, 0)
 debugMetrics.Size = UDim2.new(1, -16, 1, 0)
 debugMetrics.TextScaled = false
-debugMetrics.TextSize = 11
+debugMetrics.TextSize = 12
 
 -- ---------------------------------------------------------------- acoes
 local toastToken = 0
@@ -733,7 +752,7 @@ setStatus = function(text: string): ()
 	local myToken = toastToken
 	toastLabel.Text = text
 	toastLabel.TextTransparency = 0
-	toastBanner.BackgroundTransparency = 0.08
+	toastBanner.BackgroundTransparency = 0.24
 	toastBanner.Visible = true
 	UiKit.stroke(toastBanner, UiKit.color(VisualTheme.PALETTE.amber), 1, 0.2)
 
@@ -775,6 +794,7 @@ local function refreshMuteButton(): ()
 	local muted = AudioKit.isMuted()
 	muteBtn.Text = if muted then "MUTE" else "SFX"
 	UiKit.setSelected(muteBtn, not muted)
+	muteBtn.BackgroundTransparency = 0.22
 	if muted then
 		muteBtn.TextColor3 = UiKit.color(VisualTheme.PALETTE.danger)
 		UiKit.stroke(muteBtn, UiKit.color(VisualTheme.PALETTE.danger), 1.5, 0.2)
@@ -1243,7 +1263,11 @@ local function applyLayout(): ()
 	applyRect(deckBtn, hudRects.deckBtn)
 	deckBtn.Text = ""
 	deckUi.applyLayout(hudRects)
-	applyRect(toastBanner, hudRects.toastBanner)
+	toastBanner.Position = UDim2.fromOffset(
+		hudRects.toastBanner.x + math.floor(hudRects.toastBanner.w * 0.5),
+		hudRects.toastBanner.y
+	)
+	toastBanner.Size = UDim2.fromOffset(0, hudRects.toastBanner.h)
 	ftueUi.applyLayout(hudRects)
 
 	trapLayout.Padding = UDim.new(0, hudRects.trapCardGap)

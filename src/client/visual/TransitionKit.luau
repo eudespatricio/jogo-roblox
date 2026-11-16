@@ -731,7 +731,7 @@ local function createLoRCardView(parent: Frame, name: string): CardView
 	keywordText.Size = UDim2.fromScale(1, 1)
 	keywordText.TextXAlignment = Enum.TextXAlignment.Center
 	keywordText.TextScaled = false
-	keywordText.TextSize = 12
+	keywordText.TextSize = 13
 	keywordText.ZIndex = 11
 
 	-- Linha 1: arsenal ou formacao de onda (sem chips minusculos!)
@@ -741,7 +741,7 @@ local function createLoRCardView(parent: Frame, name: string): CardView
 	line1Label.TextXAlignment = Enum.TextXAlignment.Center
 	line1Label.TextYAlignment = Enum.TextYAlignment.Center
 	line1Label.TextScaled = false
-	line1Label.TextSize = 12
+	line1Label.TextSize = 13
 	line1Label.TextWrapped = true
 	line1Label.RichText = true
 	line1Label.ZIndex = 10
@@ -778,7 +778,7 @@ local function createLoRCardView(parent: Frame, name: string): CardView
 	dividerText.Size = UDim2.fromScale(1, 1)
 	dividerText.TextXAlignment = Enum.TextXAlignment.Center
 	dividerText.TextScaled = false
-	dividerText.TextSize = 10
+	dividerText.TextSize = 12
 	dividerText.ZIndex = 11
 
 	-- Linha 2: resumo de vitorias / armadilhas / onda
@@ -794,7 +794,7 @@ local function createLoRCardView(parent: Frame, name: string): CardView
 	line2Label.TextXAlignment = Enum.TextXAlignment.Center
 	line2Label.TextYAlignment = Enum.TextYAlignment.Top
 	line2Label.TextScaled = false
-	line2Label.TextSize = 12
+	line2Label.TextSize = 13
 	line2Label.TextWrapped = true
 	line2Label.ZIndex = 10
 
@@ -846,7 +846,7 @@ local function createLoRCardView(parent: Frame, name: string): CardView
 	originText.Size = UDim2.fromScale(1, 1)
 	originText.TextXAlignment = Enum.TextXAlignment.Center
 	originText.TextScaled = false
-	originText.TextSize = 11
+	originText.TextSize = 12
 	originText.ZIndex = 17
 
 	-- 3. Crest superior direito (L1..L5)
@@ -1097,7 +1097,7 @@ local function buildUi(): UiState
 	curtainCenter.Position = UDim2.fromScale(0.5, 0.5)
 	curtainCenter.Size = UDim2.fromOffset(320, 122)
 	curtainCenter.BackgroundColor3 = COL_CARD_BODY
-	curtainCenter.BackgroundTransparency = 0.08
+	curtainCenter.BackgroundTransparency = 0.20
 	curtainCenter.BorderSizePixel = 0
 	curtainCenter.Visible = false
 	curtainCenter.ZIndex = 10
@@ -1188,7 +1188,7 @@ local function buildUi(): UiState
 	modePill.Name = "ModeBanner"
 	modePill.Size = UDim2.fromOffset(88, 52)
 	modePill.BackgroundColor3 = COL_CARD_BODY
-	modePill.BackgroundTransparency = 0.08
+	modePill.BackgroundTransparency = 0.22
 	modePill.BorderSizePixel = 0
 	modePill.ZIndex = 11
 	modePill.Parent = centerCol
@@ -1203,8 +1203,8 @@ local function buildUi(): UiState
 	modeLabel.TextScaled = true
 	modeLabel.ZIndex = 12
 	local modeCap = Instance.new("UITextSizeConstraint")
-	modeCap.MinTextSize = 10
-	modeCap.MaxTextSize = 14
+	modeCap.MinTextSize = 11
+	modeCap.MaxTextSize = 15
 	modeCap.Parent = modeLabel
 
 	local modeSub = UiKit.label(modePill, "ModeSub", "", COL_PARCHMENT, Enum.Font.GothamBold)
@@ -1215,8 +1215,8 @@ local function buildUi(): UiState
 	modeSub.TextWrapped = false
 	modeSub.ZIndex = 12
 	local subCap = Instance.new("UITextSizeConstraint")
-	subCap.MinTextSize = 9
-	subCap.MaxTextSize = 12
+	subCap.MinTextSize = 11
+	subCap.MaxTextSize = 15
 	subCap.Parent = modeSub
 
 	local vsBadge = Instance.new("Frame")
@@ -1262,7 +1262,7 @@ local function buildUi(): UiState
 	footer.Name = "FooterStatus"
 	footer.Size = UDim2.fromOffset(88, 50)
 	footer.BackgroundColor3 = COL_CARD_BODY
-	footer.BackgroundTransparency = 0.1
+	footer.BackgroundTransparency = 0.22
 	footer.BorderSizePixel = 0
 	footer.ZIndex = 11
 	footer.Parent = centerCol
@@ -1278,8 +1278,8 @@ local function buildUi(): UiState
 	footerText.TextWrapped = true
 	footerText.ZIndex = 12
 	local footerCap = Instance.new("UITextSizeConstraint")
-	footerCap.MinTextSize = 9
-	footerCap.MaxTextSize = 11
+	footerCap.MinTextSize = 11
+	footerCap.MaxTextSize = 15
 	footerCap.Parent = footerText
 
 	local footerTrack = Instance.new("Frame")
