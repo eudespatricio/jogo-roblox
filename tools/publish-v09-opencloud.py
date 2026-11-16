@@ -168,7 +168,7 @@ def collect_jobs() -> list[UploadJob]:
             UploadJob(
                 logical_key=f"model.CMD_{kind}",
                 asset_type="Model",
-                path=ROOT / f"art/export/cmd_{kind}.glb",
+                path=ROOT / f"art/export/horde_{kind}.glb",
                 display_name=f"CMD_{kind}_v18",
                 description=f"Muralha Horde {kind} (Forge3D 0.9.0 roblox-aa-80)",
                 strip_textures=True,
@@ -212,7 +212,7 @@ def collect_jobs() -> list[UploadJob]:
             UploadJob(
                 logical_key=f"model.PROP_{pk}",
                 asset_type="Model",
-                path=ROOT / f"art/export/prop_{pk}.glb",
+                path=ROOT / f"art/export/{pk}.glb",
                 display_name=f"PROP_{pk}_v18",
                 description=f"Muralha Prop {pk} (Forge3D 0.9.0 roblox-aa-80)",
                 strip_textures=True,
@@ -223,7 +223,7 @@ def collect_jobs() -> list[UploadJob]:
             UploadJob(
                 logical_key=f"model.FAUNA_{fk}",
                 asset_type="Model",
-                path=ROOT / f"art/export/fauna_{fk}.glb",
+                path=ROOT / f"art/export/{fk}.glb",
                 display_name=f"FAUNA_{fk}_v18",
                 description=f"Muralha Fauna {fk} (Forge3D 0.9.0 roblox-aa-80)",
                 strip_textures=True,
