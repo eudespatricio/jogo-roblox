@@ -94,7 +94,7 @@ for g in "${GROUPS_SEL[@]}"; do
     echo "[forge3d] validate FALHOU: $g" >&2; cat "$LOGDIR/validate_$g.json" >&2; exit 1; }
   echo "[forge3d] run $lote"
   rc=0
-  "$FORGE3D" run "$lote" --json >"$LOGDIR/run_$g.json" || rc=$?
+  "$FORGE3D" run "$lote" --clean-dest --json >"$LOGDIR/run_$g.json" || rc=$?
   line="$(python3 - "$LOGDIR/run_$g.json" "$rc" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
@@ -105,10 +105,20 @@ bad = [f"{i['id']}:{i.get('estado')}/{i.get('qc')}" for i in itens
 r = d.get("resumo", {})
 tri = max((i.get("triangulos") or 0) for i in itens) if itens else 0
 estados = sorted({i.get("estado") for i in itens})
+g11 = d.get("orcamento_cena") or {}
+g11_st = g11.get("status", "n/a")
+g11_med = g11.get("medido") or {}
+g11_info = (
+    f"G11={g11_st}(tris={g11_med.get('triangulos_cena', 0)},"
+    f"dc={g11_med.get('draw_calls_estimados', 0)},"
+    f"vram={g11_med.get('vram_texturas_mb', 0)}MB)"
+    if g11 else "G11=n/a"
+)
 print(f"{len(itens) - len(bad)}/{len(itens)} publicado reprovados={r.get('reprovados', 0)} "
-      f"falhas={r.get('falhas', 0)} tris_max={tri} estados={','.join(map(str, estados))} rc={sys.argv[2]}"
+      f"falhas={r.get('falhas', 0)} tris_max={tri} {g11_info} estados={','.join(map(str, estados))} rc={sys.argv[2]}"
       + (f" BAD={';'.join(bad)}" if bad else ""))
-sys.exit(1 if bad or r.get("reprovados", 0) or r.get("falhas", 0) or int(sys.argv[2]) else 0)
+g11_bad = bool(g11 and g11_st != "ok")
+sys.exit(1 if bad or g11_bad or r.get("reprovados", 0) or r.get("falhas", 0) or int(sys.argv[2]) else 0)
 PY
 )" || status=1
   echo "[forge3d] $g: $line"
@@ -118,9 +128,18 @@ PY
     echo "[forge3d] verify FALHOU: $g (ver $LOGDIR/verify_$g.json)" >&2
     status=1
   else
-    python3 - "$lote" "$(dest_of "$g")" "$ROOT" <<'PY' || status=1
-import hashlib, os, re, shutil, sys
-lote_path, dest_dir, root_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+    python3 - "$lote" "$(dest_of "$g")" "$ROOT" "$LOGDIR/verify_$g.json" <<'PY' || status=1
+import hashlib, json, os, re, shutil, sys
+lote_path, dest_dir, root_dir, verify_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+vdoc = json.load(open(verify_path, encoding="utf-8"))
+vitens = vdoc.get("itens") or []
+bad_man = [
+    f"{it.get('asset_id')}:{it.get('schema')}"
+    for it in vitens
+    if it.get("schema") != "forge3d/manifest@6" or not it.get("qc_reexecutado")
+]
+if not vdoc.get("ok") or bad_man:
+    raise SystemExit(f"verify manifest@6 falhou em {verify_path}: bad={bad_man}")
 pairs, cur_id = [], None
 with open(lote_path, encoding="utf-8") as fh:
     for raw in fh:
@@ -146,7 +165,7 @@ for item_id, origem in pairs:
     h_dst = hashlib.sha256(open(dst, "rb").read()).hexdigest()
     if h_src != h_dst:
         raise SystemExit(f"SHA-256 divergente para {item_id}: {h_src} != {h_dst}")
-print(f"[sync] {len(pairs)} GLBs sincronizados ({dest_dir} -> art/export/) com paridade SHA-256 OK")
+print(f"[sync] {len(pairs)} GLBs sincronizados ({dest_dir} -> art/export/) + {len(vitens)} manifest@6 OK")
 PY
   fi
 done

@@ -104,6 +104,133 @@ assert len(NAMES) <= 64, "atlas 8x8"
 MAT = None
 RNG = random.Random(SEED_BASE)
 
+# Mapeamento de cada cor da paleta para preset procedural_pbr (Forge3D 0.9.0 spec@6).
+PAL_PBR_META: dict[str, dict] = {
+    "stone": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.0, "normal_forca": 1.05},
+    "stoneDark": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.08, "normal_forca": 1.15},
+    "stoneLight": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 0.92, "normal_forca": 0.95},
+    "wood": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 1.0, "normal_forca": 1.05},
+    "woodDark": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 1.10, "normal_forca": 1.15},
+    "woodLight": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 0.92, "normal_forca": 0.95},
+    "iron": {"preset": "aco_forjado", "metallic_override": 0.88, "roughness_escala": 1.0, "normal_forca": 1.05},
+    "ironDark": {"preset": "aco_forjado", "metallic_override": 0.82, "roughness_escala": 1.18, "normal_forca": 1.15},
+    "amber": {"preset": "ouro_ornamentado", "metallic_override": 0.45, "roughness_escala": 0.85, "normal_forca": 0.80},
+    "amberBright": {"preset": "energia_espectral", "metallic_override": 0.15, "roughness_escala": 0.65, "normal_forca": 0.70},
+    "danger": {"preset": "energia_espectral", "metallic_override": 0.12, "roughness_escala": 0.75, "normal_forca": 0.85},
+    "parchment": {"preset": "tecido_nobre", "metallic_override": 0.0, "roughness_escala": 1.05, "normal_forca": 0.75},
+    "grass": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.12, "normal_forca": 0.95},
+    "gold": {"preset": "ouro_ornamentado", "metallic_override": 0.94, "roughness_escala": 0.85, "normal_forca": 1.05},
+    "roof": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 0.95, "normal_forca": 1.05},
+    "moss": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.15, "normal_forca": 1.10},
+    "ink": {"preset": "aco_forjado", "metallic_override": 0.35, "roughness_escala": 1.25, "normal_forca": 0.80},
+    "white": {"preset": "tecido_nobre", "metallic_override": 0.0, "roughness_escala": 0.90, "normal_forca": 0.70},
+    "neonAmber": {"preset": "energia_espectral", "metallic_override": 0.10, "roughness_escala": 0.55, "normal_forca": 0.65},
+    "bronze": {"preset": "ouro_ornamentado", "metallic_override": 0.86, "roughness_escala": 1.05, "normal_forca": 1.05},
+    "steel": {"preset": "aco_forjado", "metallic_override": 0.94, "roughness_escala": 0.82, "normal_forca": 0.95},
+    "archer": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 0.95, "normal_forca": 0.90},
+    "archerDark": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 1.05, "normal_forca": 1.0},
+    "tarGlow": {"preset": "energia_espectral", "metallic_override": 0.15, "roughness_escala": 0.60, "normal_forca": 0.80},
+    "tarDeep": {"preset": "pedra_musgo", "metallic_override": 0.08, "roughness_escala": 0.75, "normal_forca": 1.10},
+    "ice": {"preset": "cristal_arcano", "metallic_override": 0.05, "roughness_escala": 0.65, "normal_forca": 0.95},
+    "iceLight": {"preset": "cristal_arcano", "metallic_override": 0.05, "roughness_escala": 0.55, "normal_forca": 0.85},
+    "iceGlow": {"preset": "energia_espectral", "metallic_override": 0.08, "roughness_escala": 0.50, "normal_forca": 0.75},
+    "catapult": {"preset": "tecido_nobre", "metallic_override": 0.05, "roughness_escala": 0.95, "normal_forca": 0.90},
+    "teal": {"preset": "escamas_dragao", "metallic_override": 0.18, "roughness_escala": 0.90, "normal_forca": 1.05},
+    "tealDark": {"preset": "escamas_dragao", "metallic_override": 0.22, "roughness_escala": 1.0, "normal_forca": 1.15},
+    "tealBrute": {"preset": "escamas_dragao", "metallic_override": 0.24, "roughness_escala": 0.95, "normal_forca": 1.20},
+    "tealBruteDark": {"preset": "escamas_dragao", "metallic_override": 0.28, "roughness_escala": 1.05, "normal_forca": 1.25},
+    "tealSwarm": {"preset": "cristal_arcano", "metallic_override": 0.12, "roughness_escala": 0.70, "normal_forca": 0.95},
+    "tealSwarmDark": {"preset": "escamas_dragao", "metallic_override": 0.20, "roughness_escala": 0.95, "normal_forca": 1.10},
+    "eyeNeon": {"preset": "energia_espectral", "metallic_override": 0.08, "roughness_escala": 0.50, "normal_forca": 0.60},
+    "ember": {"preset": "energia_espectral", "metallic_override": 0.12, "roughness_escala": 0.65, "normal_forca": 0.80},
+    "goldBright": {"preset": "ouro_ornamentado", "metallic_override": 0.97, "roughness_escala": 0.72, "normal_forca": 1.0},
+    "leafDeep": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.10, "normal_forca": 0.95},
+    "leafMid": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.05, "normal_forca": 0.90},
+    "leafSun": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.0, "normal_forca": 0.85},
+    "oliveLeaf": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 1.05, "normal_forca": 0.90},
+    "barkDark": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 1.18, "normal_forca": 1.25},
+    "furBrown": {"preset": "couro_gasto", "metallic_override": 0.0, "roughness_escala": 1.05, "normal_forca": 1.05},
+    "furTan": {"preset": "couro_gasto", "metallic_override": 0.0, "roughness_escala": 1.0, "normal_forca": 0.95},
+    "hornIvory": {"preset": "pele_humana", "metallic_override": 0.0, "roughness_escala": 0.78, "normal_forca": 0.85},
+    "wyvernScale": {"preset": "escamas_dragao", "metallic_override": 0.20, "roughness_escala": 0.90, "normal_forca": 1.20},
+    "wyvernWing": {"preset": "couro_gasto", "metallic_override": 0.05, "roughness_escala": 0.95, "normal_forca": 1.0},
+    "obsidian": {"preset": "cristal_arcano", "metallic_override": 0.22, "roughness_escala": 0.75, "normal_forca": 1.10},
+    "obsidianLight": {"preset": "pedra_musgo", "metallic_override": 0.14, "roughness_escala": 0.82, "normal_forca": 1.05},
+    "violet": {"preset": "cristal_arcano", "metallic_override": 0.10, "roughness_escala": 0.65, "normal_forca": 0.90},
+    "whiteStone": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 0.85, "normal_forca": 0.95},
+    "whiteStoneDark": {"preset": "pedra_musgo", "metallic_override": 0.0, "roughness_escala": 0.95, "normal_forca": 1.05},
+    "royal": {"preset": "tecido_nobre", "metallic_override": 0.08, "roughness_escala": 0.90, "normal_forca": 0.95},
+    "emberDeep": {"preset": "energia_espectral", "metallic_override": 0.14, "roughness_escala": 0.68, "normal_forca": 0.85},
+    "crimsonCloth": {"preset": "tecido_nobre", "metallic_override": 0.05, "roughness_escala": 0.95, "normal_forca": 0.95},
+    "crimsonBright": {"preset": "tecido_nobre", "metallic_override": 0.08, "roughness_escala": 0.88, "normal_forca": 0.90},
+    "arcaneCyan": {"preset": "energia_espectral", "metallic_override": 0.10, "roughness_escala": 0.55, "normal_forca": 0.75},
+    "arcaneViolet": {"preset": "cristal_arcano", "metallic_override": 0.12, "roughness_escala": 0.60, "normal_forca": 0.88},
+    "brass": {"preset": "ouro_ornamentado", "metallic_override": 0.90, "roughness_escala": 0.92, "normal_forca": 1.0},
+    "slateRoof": {"preset": "pedra_musgo", "metallic_override": 0.06, "roughness_escala": 0.88, "normal_forca": 1.05},
+    "straw": {"preset": "madeira_ancestral", "metallic_override": 0.0, "roughness_escala": 1.15, "normal_forca": 1.10},
+    "bone": {"preset": "pele_humana", "metallic_override": 0.0, "roughness_escala": 0.85, "normal_forca": 0.90},
+}
+assert set(PAL_PBR_META) == set(NAMES), "PAL_PBR_META deve cobrir 100% de NAMES"
+
+DEFAULT_DETALHE_ALTO = {
+    "ativo": True,
+    "subdiv_niveis": 1,
+    "chanfro_bevel_m": 0.008,
+    "crease_angulo_graus": 40,
+    "ao_cavidade_forca": 0.38,
+}
+
+
+def pal_hex(color: str) -> str:
+    r, g, b = PAL[color]
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def pal_uv_faixa(color: str) -> list[float]:
+    i = NAMES.index(color)
+    cx, cy = i % 8, i // 8
+    return [
+        round(cx / 8.0, 4),
+        round(cy / 8.0, 4),
+        round((cx + 1) / 8.0, 4),
+        round((cy + 1) / 8.0, 4),
+    ]
+
+
+def _closest_pal_color(src: str, candidates: list[str]) -> str:
+    sr, sg, sb = PAL[src]
+    src_preset = PAL_PBR_META[src]["preset"]
+    best = candidates[0]
+    best_score = float("inf")
+    for c in candidates:
+        cr, cg, cb = PAL[c]
+        dist_sq = (sr - cr) ** 2 + (sg - cg) ** 2 + (sb - cb) ** 2
+        # Penaliza troca de familia material para coalescer em preset compativel quando proximo
+        if PAL_PBR_META[c]["preset"] != src_preset:
+            dist_sq += 2500.0
+        if dist_sq < best_score:
+            best_score = dist_sq
+            best = c
+    return best
+
+
+def _assign_poly_uv_cell(uv_data, poly, color: str) -> None:
+    i = NAMES.index(color)
+    cx, cy = i % 8, i // 8
+    u0, u1 = cx / 8.0 + 0.008, (cx + 1) / 8.0 - 0.008
+    v0, v1 = cy / 8.0 + 0.008, (cy + 1) / 8.0 - 0.008
+    u_mid, v_mid = 0.5 * (u0 + u1), 0.5 * (v0 + v1)
+    ru, rv = 0.5 * (u1 - u0), 0.5 * (v1 - v0)
+    n = poly.loop_total
+    if n == 4:
+        pts = ((u0, v0), (u1, v0), (u1, v1), (u0, v1))
+        for k, li in enumerate(poly.loop_indices):
+            uv_data[li].uv = pts[k]
+    else:
+        for k, li in enumerate(poly.loop_indices):
+            a = 2 * math.pi * k / n
+            uv_data[li].uv = (u_mid + ru * math.cos(a), v_mid + rv * math.sin(a))
+
 
 # ---------------------------------------------------------------- cena e materiais
 def reset_scene():
@@ -151,19 +278,16 @@ def paint(obj, color: str):
     me = obj.data
     if not me.uv_layers:
         me.uv_layers.new(name="UVMap")
-    i = NAMES.index(color)
-    u, v = ((i % 8) + 0.5) / 8, ((i // 8) + 0.5) / 8
     uv = me.uv_layers.active.data
-    # UV nao colapsada (QC G3): cada face vira um poligono pequeno dentro da celula
+    # UV nao colapsada (QC G3): cada face abrange [cx/8+0.008, (cx+1)/8-0.008] x [cy/8+0.008, (cy+1)/8-0.008]
     for p in me.polygons:
-        n = p.loop_total
-        for k, li in enumerate(p.loop_indices):
-            a = 2 * math.pi * k / n
-            uv[li].uv = (u + 0.03 * math.cos(a), v + 0.03 * math.sin(a))
+        _assign_poly_uv_cell(uv, p, color)
     me.materials.clear()
     me.materials.append(MAT)  # 1 material por mesh (QC G5)
     for p in me.polygons:
         p.material_index = 0
+    obj["muralha_pal_color"] = color
+    obj["muralha_pal_colors"] = [color]
     return obj
 
 
@@ -331,6 +455,8 @@ def capsule_seg(p0, p1, r0, r1, color, verts=16, cap_ends=False):
             bpy.ops.object.join()
             seg = _active()
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+            seg["muralha_pal_color"] = color
+            seg["muralha_pal_colors"] = [color]
     return seg
 
 
@@ -453,6 +579,138 @@ def rank_row(lvl, y, z, spacing=0.8):
 
 
 # ---------------------------------------------------------------- montagem
+def _poly_pal_color(uv_data, poly) -> str | None:
+    if not poly.loop_indices:
+        return None
+    u = sum(uv_data[li].uv[0] for li in poly.loop_indices) / poly.loop_total
+    v = sum(uv_data[li].uv[1] for li in poly.loop_indices) / poly.loop_total
+    cx = max(0, min(7, int(u * 8.0)))
+    cy = max(0, min(7, int(v * 8.0)))
+    idx = cy * 8 + cx
+    return NAMES[idx] if 0 <= idx < len(NAMES) else None
+
+
+def _collect_and_coalesce_pal_colors(obj, seed_counts: dict[str, int] | None = None, max_colors: int = 16) -> list[str]:
+    counts: dict[str, int] = dict(seed_counts or {})
+    me = getattr(obj, "data", None)
+    if me is not None and me.uv_layers and me.polygons:
+        uv_counts: dict[str, int] = {}
+        uv = me.uv_layers.active.data
+        for p in me.polygons:
+            c = _poly_pal_color(uv, p)
+            if c in PAL:
+                uv_counts[c] = uv_counts.get(c, 0) + 1
+        for c, n in uv_counts.items():
+            counts[c] = max(counts.get(c, 0), n)
+    ordered = sorted(
+        (c for c in counts if c in PAL),
+        key=lambda c: (-counts[c], NAMES.index(c)),
+    )
+    if not ordered:
+        ordered = ["stone"]
+    if len(ordered) > max_colors:
+        kept = ordered[:max_colors]
+        remap = {c: _closest_pal_color(c, kept) for c in ordered[max_colors:]}
+        if me is not None and me.uv_layers and me.polygons:
+            uv = me.uv_layers.active.data
+            for p in me.polygons:
+                c = _poly_pal_color(uv, p)
+                if c in remap:
+                    _assign_poly_uv_cell(uv, p, remap[c])
+            me.update()
+        ordered = kept
+    obj["muralha_pal_colors"] = list(ordered)
+    return ordered
+
+
+def extract_pal_colors(obj_or_objs, max_colors: int = 16) -> list[str]:
+    """Extrai as cores PAL usadas num objeto ou lista de objetos, coalescendo as mais raras se > max_colors."""
+    if isinstance(obj_or_objs, (list, tuple)):
+        if all(isinstance(x, str) for x in obj_or_objs):
+            seen: list[str] = []
+            for c in obj_or_objs:
+                if c in PAL and c not in seen:
+                    seen.append(c)
+            return seen[:max_colors] if seen else ["stone"]
+        counts: dict[str, int] = {}
+        mesh_objs = []
+        for item in obj_or_objs:
+            o = item[1] if isinstance(item, tuple) and len(item) == 2 else item
+            if getattr(o, "data", None) is None:
+                continue
+            mesh_objs.append(o)
+            if o.data.uv_layers and o.data.polygons:
+                uv = o.data.uv_layers.active.data
+                for p in o.data.polygons:
+                    c = _poly_pal_color(uv, p)
+                    if c in PAL:
+                        counts[c] = counts.get(c, 0) + 1
+            for c in o.get("muralha_pal_colors") or ():
+                if c in PAL:
+                    counts.setdefault(c, 1)
+        ordered = sorted(counts, key=lambda c: (-counts[c], NAMES.index(c)))
+        if not ordered:
+            return ["stone"]
+        if len(ordered) > max_colors:
+            kept = ordered[:max_colors]
+            remap = {c: _closest_pal_color(c, kept) for c in ordered[max_colors:]}
+            for o in mesh_objs:
+                if o.data.uv_layers and o.data.polygons:
+                    uv = o.data.uv_layers.active.data
+                    for p in o.data.polygons:
+                        c = _poly_pal_color(uv, p)
+                        if c in remap:
+                            _assign_poly_uv_cell(uv, p, remap[c])
+                    o.data.update()
+                o["muralha_pal_colors"] = [c for c in (o.get("muralha_pal_colors") or ()) if c in kept]
+            ordered = kept
+        return ordered
+    o = obj_or_objs
+    stored = [c for c in (o.get("muralha_pal_colors") or ()) if c in PAL]
+    if stored and len(stored) <= max_colors:
+        return list(stored)
+    return _collect_and_coalesce_pal_colors(o, max_colors=max_colors)
+
+
+def build_pbr_zonas(colors, max_zones: int = 16) -> list[dict]:
+    """Constroi ate `max_zones` entradas de `pbr_zonas` (spec@6) a partir das cores PAL usadas."""
+    pal_list = extract_pal_colors(colors, max_colors=max_zones)
+    zonas: list[dict] = []
+    for c in pal_list[:max_zones]:
+        meta = PAL_PBR_META[c]
+        hex_col = pal_hex(c)
+        zonas.append(
+            {
+                "nome": c,
+                "preset": meta["preset"],
+                "cor_hex": hex_col,
+                "cor_tinta": hex_col,
+                "uv_faixa": pal_uv_faixa(c),
+                "metallic_override": meta["metallic_override"],
+                "roughness_escala": meta["roughness_escala"],
+                "normal_forca": meta["normal_forca"],
+            }
+        )
+    return zonas
+
+
+def format_pbr_zonas_yaml(zonas: list[dict], indent: str = "    ") -> list[str]:
+    lines = [f"{indent}pbr_zonas:"]
+    for z in zonas[:16]:
+        uv_str = ", ".join(f"{v:g}" if v in (0.0, 1.0) else f"{v:.4f}".rstrip("0").rstrip(".") for v in z["uv_faixa"])
+        lines += [
+            f"{indent}  - nome: {z['nome']}",
+            f"{indent}    preset: {z['preset']}",
+            f"{indent}    cor_hex: \"{z['cor_hex']}\"",
+            f"{indent}    cor_tinta: \"{z['cor_tinta']}\"",
+            f"{indent}    uv_faixa: [{uv_str}]",
+            f"{indent}    metallic_override: {z['metallic_override']}",
+            f"{indent}    roughness_escala: {z['roughness_escala']}",
+            f"{indent}    normal_forca: {z['normal_forca']}",
+        ]
+    return lines
+
+
 def join(objs, name, seed):
     """Junta as pecas num mesh. Antes, desloca cada peca por um jitter deterministico de
     3-12 milesimos de stud em X/Y/Z: invisivel, mas garante que nenhuma aresta de pecas
@@ -464,6 +722,15 @@ def join(objs, name, seed):
         else:
             flat.append(item)
     objs = flat
+    seed_counts: dict[str, int] = {}
+    for o in objs:
+        n_polys = max(1, len(o.data.polygons)) if getattr(o, "data", None) is not None else 1
+        c = o.get("muralha_pal_color")
+        if isinstance(c, str) and c in PAL:
+            seed_counts[c] = seed_counts.get(c, 0) + n_polys
+        for sub_c in o.get("muralha_pal_colors") or ():
+            if isinstance(sub_c, str) and sub_c in PAL:
+                seed_counts.setdefault(sub_c, 1)
     rng = random.Random(seed)
     for o in objs:
         o.location = (
@@ -480,6 +747,7 @@ def join(objs, name, seed):
     o.name = name
     o.data.name = name
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    _collect_and_coalesce_pal_colors(o, seed_counts=seed_counts, max_colors=16)
     return o
 
 
@@ -550,27 +818,39 @@ def export_glb(obj, filename):
 
 
 # ---------------------------------------------------------------- lote Forge3D
-def write_lote(group, items, header_note):
-    """Gera art/forge/lote_<group>_import.yaml com altura MEDIDA (G2: studs x 0,28)."""
+def write_lote(group, items, header_note, hero_pbr: bool = False):
+    """Gera art/forge/lote_<group>_import.yaml (spec@6, roblox-aa-80, Two-Tier PBR) com altura MEDIDA."""
     lines = [
-        f"# Forge3D 0.8.0 — rota `import`: {header_note}",
+        f"# Forge3D 0.9.0 — rota `import`: {header_note}",
         "# GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:",
-        "# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).",
-        "schema: forge3d/spec@5",
+        "# altura_metros = altura exportada em studs x 0,28 (perfil roblox-aa-80).",
+        "schema: forge3d/spec@6",
         "",
         "projeto: muralha",
-        "perfil: roblox-r15",
+        "perfil: roblox-aa-80",
         f"destino_exportacao: ~/.local/state/forge3d/saida/muralha_{group}",
-        "estilo_global: lowpoly_lit",
+        "estilo_global: stylized_pbr",
+        "",
+        "orcamento_cena:",
+        "  triangulos_max: 400000",
+        "  draw_calls_max: 400",
+        "  vram_mb_max: 200",
+        "",
+        "roblox_render:",
+        "  lighting_technology: Future",
+        "  render_fidelity_padrao: Precise",
+        "  surface_appearance: true",
+        "  strip_embedded_textures_glb: true",
         "",
         "politica:",
         "  falha: continuar",
-        "  custo_max_min: 5",
+        "  custo_max_min: 30",
         f"  seed_base: {SEED_BASE}",
         "",
         "lote:",
     ]
     for it in items:
+        is_hero = bool(it.get("hero_pbr", hero_pbr))
         sn = it.get("suavizacao_normais") or {
             "modo": "hard_surface",
             "angulo_graus": 46,
@@ -579,6 +859,8 @@ def write_lote(group, items, header_note):
         }
         wn = "true" if sn.get("weighted_normals", True) else "false"
         cs = "true" if sn.get("corrective_smooth", False) else "false"
+        rf = it.get("render_fidelity_roblox", "Precise")
+        qtd = int(it.get("quantidade_cena", 1))
         lines += [
             f"  - id: {it['id']}",
             f"    tipo: {it['tipo']}",
@@ -587,7 +869,35 @@ def write_lote(group, items, header_note):
             f"    altura_metros: {it['altura_metros']}   # {it['altura_studs']} studs",
             f"    pivot: {it.get('pivot', 'base')}",
             f"    limite_triangulos: {it['limite']}",
-            "    material: opaque",
+        ]
+        if is_hero:
+            qual = it.get("qualidade", "hero")
+            det = it.get("detalhe_alto") or DEFAULT_DETALHE_ALTO
+            det_ativo = "true" if det.get("ativo", True) else "false"
+            zonas = it.get("pbr_zonas") or build_pbr_zonas(it.get("pal_colors") or ["stone"], max_zones=16)
+            lines += [
+                "    material: pbr",
+                f"    qualidade: {qual}",
+                f"    quantidade_cena: {qtd}",
+                f"    render_fidelity_roblox: {rf}",
+                "    detalhe_alto:",
+                f"      ativo: {det_ativo}",
+                f"      subdiv_niveis: {int(det.get('subdiv_niveis', 1))}",
+                f"      chanfro_bevel_m: {float(det.get('chanfro_bevel_m', 0.008))}",
+                f"      crease_angulo_graus: {int(det.get('crease_angulo_graus', 40))}",
+                f"      ao_cavidade_forca: {float(det.get('ao_cavidade_forca', 0.38))}",
+            ]
+            lines += format_pbr_zonas_yaml(zonas, indent="    ")
+        else:
+            mat = it.get("material", "opaque")
+            qual = it.get("qualidade", "standard")
+            lines += [
+                f"    material: {mat}",
+                f"    qualidade: {qual}",
+                f"    quantidade_cena: {qtd}",
+                f"    render_fidelity_roblox: {rf}",
+            ]
+        lines += [
             "    suavizacao_normais:",
             f"      modo: {sn.get('modo', 'hard_surface')}",
             f"      angulo_graus: {sn.get('angulo_graus', 46)}",
@@ -665,7 +975,7 @@ def render_items(group, objs, scale_pad=1.25):
 
 
 # ---------------------------------------------------------------- orquestracao
-def run_group(group, specs, header_note):
+def run_group(group, specs, header_note, hero_pbr: bool = False):
     """specs: dicts {id, name, glb, tipo, limite, tags, build: fn(seed)->list[parts]}.
 
     Constroi, junta, normaliza, checa G1/orcamento localmente, exporta, gera o lote e
@@ -685,12 +995,14 @@ def run_group(group, specs, header_note):
         if not ok:
             failures.append(s["id"])
         glb = export_glb(o, s["glb"])
+        pal_colors = extract_pal_colors(o, max_colors=16)
         items.append(
             {
                 **s,
                 "glb_path": glb,
                 "altura_studs": h,
                 "altura_metros": round(h * METROS_POR_STUD, 4),
+                "pal_colors": pal_colors,
             }
         )
         report.append(
@@ -701,12 +1013,13 @@ def run_group(group, specs, header_note):
                 "limite": s["limite"],
                 "altura_studs": h,
                 "footprint": [round(mx[0] - mn[0], 2), round(mx[1] - mn[1], 2)],
+                "pal_colors": len(pal_colors),
                 **g1,
                 "ok": ok,
             }
         )
         objs.append(o)
-    lote = write_lote(group, items, header_note)
+    lote = write_lote(group, items, header_note, hero_pbr=hero_pbr)
     renders = render_items(group, objs)
     print("ART_REPORT " + json.dumps({"group": group, "lote": lote, "items": report, "renders": renders}))
     if failures:

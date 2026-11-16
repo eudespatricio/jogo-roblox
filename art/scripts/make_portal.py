@@ -1,12 +1,12 @@
 """Gera o portal da fenda (PROP_rift_portal) e os 5 portais monumentais da campanha
-(PORTAL_act1..PORTAL_act5) para a esteira Blender -> Forge3D -> Open Cloud.
+(PORTAL_act1..PORTAL_act5) para a esteira Blender -> Forge3D 0.9.0 (stylized_pbr hero) -> Open Cloud.
 
 Frente no Blender = -Y (simetrico em -Y/+Y para vista dupla Build e Raid), largura ao longo de X,
-base normalizada em Z=0, altura ~13-14.6 studs, limite <= 3600 tris por malha (alvo 2100..3400).
+base normalizada em Z=0, altura ~13-14.6 studs, limite <= 4800 tris por malha.
 
 Uso headless:
   blender -b --factory-startup --python-exit-code 1 --python art/scripts/make_portal.py
-Saidas: art/export/*.glb, art/forge/lote_portal_import.yaml (gerado),
+Saidas: art/export/*.glb, art/forge/lote_portal_import.yaml (gerado, spec@6 hero PBR),
         art/renders/portal/*.png (ignorado no git)
 """
 
@@ -20,7 +20,7 @@ sys.dont_write_bytecode = True  # sem __pycache__ em art/scripts
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lowpoly_lib as L  # noqa: E402
 
-LIMITE = 3600  # alvo 2100..3400 tris por portal
+LIMITE = 4800  # alvo AA hero <= 4800 tris por portal
 NORMALS_SPEC = {
     "modo": "hard_surface",
     "angulo_graus": 46,
@@ -60,22 +60,44 @@ def _vortex_lens(
     )
 
 
-def _altar_steps(p, base_w, base_d, col1, col2, col3, dais_col):
-    """Altar monumental chanfrado com degraus frontais/traseiros e disco ritual de 20 lados."""
+def _altar_steps(p, base_w, base_d, col1, col2, col3, dais_col, rune_col=None):
+    """Altar monumental chanfrado com degraus frontais/traseiros, pedestais de canto e disco ritual."""
     p.append(L.box((base_w, base_d, 0.54), (0, 0, 0.27), col1, bevel=0.07))
     p.append(L.box((base_w - 1.6, base_d - 0.9, 0.44), (0, 0, 0.74), col2, bevel=0.06))
     for sy in (-1, 1):
         p.append(L.box((5.8, 0.72, 0.30), (0, sy * (base_d * 0.5 + 0.24), 0.15), col1))
         p.append(L.box((4.8, 0.60, 0.28), (0, sy * (base_d * 0.5 - 0.16), 0.42), col3))
+        if rune_col:
+            for rx in (-1.65, 0.0, 1.65):
+                p.append(L.box((0.72, 0.22, 0.12), (rx, sy * (base_d * 0.5 + 0.28), 0.32), rune_col))
+        for sx in (-1, 1):
+            p.append(
+                L.box(
+                    (0.86, 0.68, 0.62),
+                    (sx * (base_w * 0.5 - 0.55), sy * (base_d * 0.5 - 0.38), 0.38),
+                    col3,
+                    bevel=0.04,
+                )
+            )
     p.append(L.cyl(3.35, 0.22, (0, 0, 0.92), dais_col, verts=20, r2=3.12))
+
+
+def _pillar_rune_carvings(p, x: float, r_col: float, z_vals: tuple[float, ...], frame_col: str, glow_col: str):
+    """Entalhes runicos esculpidos em baixo-relevo nas faces -Y/+Y e flancos das colunas."""
+    for z in z_vals:
+        for sy in (-1, 1):
+            y_pos = sy * (r_col + 0.04)
+            p.append(L.box((0.52, 0.14, 0.68), (x, y_pos, z), frame_col, bevel=0.03))
+            p.append(L.box((0.22, 0.18, 0.44), (x, y_pos + sy * 0.02, z), glow_col))
+            p.append(L.box((0.36, 0.18, 0.14), (x, y_pos + sy * 0.02, z), glow_col))
 
 
 def portal():
     """PROP_rift_portal — arco de obsidiana arcana em camadas + aneis toroidais de vortice + cristais."""
     p = []
 
-    # 1. Altar escalonado chanfrado de obsidiana + disco ritual arcano
-    _altar_steps(p, 12.6, 4.5, "obsidian", "obsidianLight", "stoneDark", "tealDark")
+    # 1. Altar escalonado chanfrado de obsidiana + disco ritual arcano + runas de degrau
+    _altar_steps(p, 12.6, 4.5, "obsidian", "obsidianLight", "stoneDark", "tealDark", rune_col="arcaneCyan")
 
     # 2. Aglomerados de cristais arcanos flanqueando o altar
     for sx in (-1, 1):
@@ -86,12 +108,13 @@ def portal():
         p.append(L.box((1.15, 0.95, 0.62), (sx * 5.80, -1.95, 0.34), "obsidian", bevel=0.05, rot=(0.12, sx * 0.18, 0.3)))
         p.append(L.box((1.05, 0.88, 0.56), (sx * 5.75, 1.95, 0.30), "obsidianLight", rot=(-0.12, sx * 0.16, -0.25)))
 
-    # 3. Colunas afuniladas de 24 lados em obsidiana com aneis runicos e espiras gemeas
+    # 3. Colunas afuniladas de 24 lados em obsidiana com aneis runicos, entalhes e espiras gemeas
     for sx in (-1, 1):
         x = sx * 4.15
         p.append(L.cyl(1.50, 1.15, (x, 0, 0.88), "obsidian", verts=24, r2=1.28))
         p.append(L.cyl(1.34, 0.20, (x, 0, 1.98), "tealSwarm", verts=18, r2=1.30))
         p.append(L.cyl(1.22, 5.30, (x, 0, 2.16), "obsidianLight", verts=24, r2=0.98))
+        _pillar_rune_carvings(p, x, 1.10, (3.00, 4.85, 6.65), "obsidian", "arcaneCyan")
         for z in (3.85, 5.85):
             rz = 1.16 - (z - 3.85) * 0.045
             p.append(L.cyl(rz, 0.18, (x, 0, z), "arcaneCyan", verts=16, r2=rz * 0.98))
@@ -111,7 +134,7 @@ def portal():
         p.append(L.crystal(0.42, 1.98, (x + sx * 0.74, 0, 8.06), "obsidianLight", tilt=(0.0, sx * 0.52), verts=5))
         p.append(L.ico(0.42, (x + sx * 0.48, 0, 9.55), "eyeNeon", squash=(0.82, 0.82, 1.38), subdiv=1))
 
-    # 4. Arco arcano de obsidiana em camadas (9 aduelas chanfradas + crista dorsal + pedra-chave)
+    # 4. Arco arcano de obsidiana em camadas (9 aduelas chanfradas + crista dorsal + entalhes runicos + pedra-chave)
     n_arch = 9
     for k in range(n_arch):
         theta = 0.16 + (math.pi - 0.32) * k / (n_arch - 1)
@@ -121,10 +144,20 @@ def portal():
         is_key = k == n_arch // 2
         col = "arcaneViolet" if is_key else ("obsidian" if k % 2 == 0 else "obsidianLight")
         p.append(L.box((1.42, 2.04, 1.14), (vx, 0, vz), col, bevel=0.06, rot=(0.0, ry, 0.0)))
+        for sy in (-1, 1):
+            p.append(
+                L.box(
+                    (0.52, 0.14, 0.36),
+                    (vx, sy * 1.06, vz),
+                    "eyeNeon" if is_key else "arcaneCyan",
+                    rot=(0.0, ry, 0.0),
+                )
+            )
         if k % 2 == 1:
             ox = 4.62 * math.cos(theta)
             oz = 7.25 + 4.35 * math.sin(theta)
             p.append(L.box((0.96, 1.42, 0.52), (ox, 0, oz), "obsidian", rot=(0.0, ry, 0.0)))
+            p.append(L.crystal(0.28, 1.08, (ox, 0, oz + 0.18), "arcaneViolet", tilt=(0.0, ry), verts=5))
 
     p.append(L.crystal(0.76, 2.35, (0, 0, 10.75), "obsidian", verts=6, spin=math.pi / 6))
     for sy in (-1, 1):
@@ -153,7 +186,7 @@ def portal_act1():
     p = []
 
     # 1. Plataforma escalonada de ferro e pedra chamuscada
-    _altar_steps(p, 12.8, 4.6, "ironDark", "stoneDark", "iron", "tarDeep")
+    _altar_steps(p, 12.8, 4.6, "ironDark", "stoneDark", "iron", "tarDeep", rune_col="emberDeep")
 
     # 2. Braseiros laterais redondos (verts=14) com chamas em camadas
     for sx in (-1, 1):
@@ -164,25 +197,30 @@ def portal_act1():
         p.append(L.crystal(0.32, 0.96, (bx, -0.16, 1.44), "ember", tilt=(0.18, 0.0), verts=5))
         p.append(L.crystal(0.24, 0.78, (bx, 0.16, 1.48), "neonAmber", tilt=(-0.18, 0.0), verts=5))
 
-    # 3. Colunas afuniladas (verts=20) revestidas por colares blindados chanfrados e espigoes
+    # 3. Colunas afuniladas (verts=20) revestidas por colares blindados chanfrados, entalhes em brasa e espigoes
     for sx in (-1, 1):
         x = sx * 4.25
         p.append(L.box((2.20, 2.60, 1.18), (x, 0, 1.48), "ironDark", bevel=0.07))
         p.append(L.cyl(1.18, 5.50, (x, 0, 2.05), "iron", verts=20, r2=0.98))
+        _pillar_rune_carvings(p, x, 1.08, (2.75, 4.75), "ironDark", "ember")
         for z in (3.55, 5.95):
             p.append(L.box((1.92, 2.30, 0.42), (x, 0, z), "ironDark", bevel=0.05))
             p.append(L.crystal(0.30, 1.18, (x + sx * 0.90, 0, z), "steel", tilt=(0.0, sx * 1.15), verts=5))
             for sy in (-1, 1):
                 p.append(L.box((0.56, 0.18, 0.24), (x, sy * 1.14, z), "emberDeep"))
+                for rx in (-0.62, 0.62):
+                    p.append(L.box((0.16, 0.16, 0.16), (x + rx, sy * 1.16, z), "bronze"))
         # Ombreira de cerco chanfrada + chifres de aco
         p.append(L.box((2.38, 2.48, 1.16), (x + sx * 0.15, 0, 8.05), "ironDark", bevel=0.07))
         p.append(L.crystal(0.54, 2.65, (x + sx * 0.36, 0, 8.52), "steel", tilt=(0.0, sx * 0.24), verts=5))
         p.append(L.crystal(0.36, 1.75, (x + sx * 0.94, 0, 8.20), "iron", tilt=(0.0, sx * 0.58), verts=5))
 
-    # 4. Arco blindado chanfrado + Pedra-Chave em Bigorna de Guerra (forged war-anvil keystone)
+    # 4. Arco blindado chanfrado + nervuras cravadas + Pedra-Chave em Bigorna de Guerra
     for ax, az, ry in ((-3.22, 8.78, 0.42), (-1.70, 9.68, 0.20), (1.70, 9.68, -0.20), (3.22, 8.78, -0.42)):
         p.append(L.box((2.15, 2.12, 1.18), (ax, 0, az), "iron", bevel=0.06, rot=(0.0, ry, 0.0)))
         p.append(L.box((0.52, 2.26, 0.34), (ax, 0, az + 0.48), "bronze", rot=(0.0, ry, 0.0)))
+        for sy in (-1, 1):
+            p.append(L.box((0.68, 0.16, 0.32), (ax, sy * 1.08, az), "emberDeep", rot=(0.0, ry, 0.0)))
 
     # Bigorna de Guerra central no apice (base, cintura acinturada, mesa larga + chifre lateral de bigorna)
     p.append(L.box((2.10, 2.34, 0.62), (0, 0, 9.88), "ironDark", bevel=0.06))
@@ -235,9 +273,9 @@ def portal_act2():
     p = []
 
     # 1. Base de basalto vulcanico chanfrado + piscina de magma incandescente
-    _altar_steps(p, 12.8, 4.8, "tarDeep", "obsidian", "stoneDark", "danger")
+    _altar_steps(p, 12.8, 4.8, "tarDeep", "obsidian", "stoneDark", "danger", rune_col="amberBright")
 
-    # 2. Cadinhos gemeos suaves de magma (bojo esferico + aro toroidal + domo borbulhante)
+    # 2. Cadinhos gemeos suaves de magma (bojo esferico + aro toroidal + garras de escoria + domo borbulhante)
     for sx in (-1, 1):
         cx = sx * 5.48
         p.append(L.cyl(0.95, 0.65, (cx, 0, 0.54), "obsidian", verts=14, r2=1.18))
@@ -246,11 +284,14 @@ def portal_act2():
         p.append(L.cyl(1.02, 0.24, (cx, 0, 2.22), "danger", verts=12, r2=0.92))
         p.append(L.crystal(0.42, 1.32, (cx, 0, 2.46), "emberDeep", verts=5))
         p.append(L.ico(0.28, (cx + sx * 0.22, -0.18, 2.72), "amberBright", subdiv=1))
+        for sy in (-1, 1):
+            p.append(L.box((0.28, 0.24, 0.82), (cx, sy * 1.10, 1.68), "bronze", bevel=0.03))
 
-    # 3. Colunas em tambores serrilhados de basalto (verts=20) com fendas brilhantes de lava
+    # 3. Colunas em tambores serrilhados de basalto (verts=20) com fendas brilhantes de lava e entalhes de brasa
     for sx in (-1, 1):
         x = sx * 4.22
         p.append(L.cyl(1.54, 1.15, (x, 0, 0.88), "tarDeep", verts=20, r2=1.34))
+        _pillar_rune_carvings(p, x, 1.18, (3.15, 5.75), "tarDeep", "emberDeep")
         for idx, z in enumerate((2.05, 4.65)):
             r1 = 1.30 - idx * 0.12
             r2 = r1 - 0.08
@@ -266,7 +307,7 @@ def portal_act2():
         p.append(L.crystal(0.44, 2.10, (x + sx * 0.85, 0, 7.35), "obsidian", tilt=(0.0, sx * 0.52), verts=5))
         p.append(L.crystal(0.32, 1.38, (x + sx * 0.35, 0, 9.55), "emberDeep", tilt=(0.0, sx * 0.18), verts=4))
 
-    # 4. Coroa vulcanica megalitica com fendas de magma e cratera central
+    # 4. Coroa vulcanica megalitica com fendas de magma, dentes de obsidiana e cratera central
     n_arch = 7
     for k in range(n_arch):
         theta = 0.20 + (math.pi - 0.40) * k / (n_arch - 1)
@@ -275,8 +316,13 @@ def portal_act2():
         ry = math.pi / 2 - theta
         col = "tarDeep" if k % 2 == 0 else "obsidian"
         p.append(L.box((1.65, 2.15, 1.24), (vx, 0, vz), col, bevel=0.06, rot=(0.0, ry, 0.0)))
+        for sy in (-1, 1):
+            p.append(L.box((0.46, 0.16, 0.46), (vx, sy * 1.10, vz), "amberBright" if k % 2 == 0 else "emberDeep", rot=(0.0, ry, 0.0)))
         if k % 2 == 1:
             p.append(L.box((0.28, 2.24, 1.30), (vx, 0, vz), "emberDeep", rot=(0.0, ry, 0.0)))
+            ox = 4.62 * math.cos(theta)
+            oz = 7.55 + 4.18 * math.sin(theta)
+            p.append(L.crystal(0.34, 1.15, (ox, 0, oz), "obsidian", tilt=(0.0, ry), verts=5))
 
     # Cratera da coroa vulcanica no apice
     p.append(L.cyl(1.15, 1.05, (0, 0, 10.65), "tarDeep", verts=14, r2=0.88))
@@ -297,7 +343,7 @@ def portal_act3():
     p = []
 
     # 1. Altar glacial chanfrado + disco espelhado de gelo
-    _altar_steps(p, 12.6, 4.5, "stone", "whiteStoneDark", "steel", "ice")
+    _altar_steps(p, 12.6, 4.5, "stone", "whiteStoneDark", "steel", "ice", rune_col="iceGlow")
 
     # 2. Aglomerados de cristais de gelo de 6 faces nas extremidades
     for sx in (-1, 1):
@@ -306,11 +352,12 @@ def portal_act3():
         p.append(L.crystal(0.36, 1.60, (sx * 4.82, -1.65, 0.46), "iceGlow", tilt=(0.24, sx * 0.16), verts=6))
         p.append(L.crystal(0.34, 1.50, (sx * 4.82, 1.65, 0.46), "arcaneCyan", tilt=(-0.24, sx * 0.16), verts=6))
 
-    # 3. Colunas glaciais suaves (verts=20) com aneis crio-toroidais e espiras boreais de 6 lados
+    # 3. Colunas glaciais suaves (verts=20) com entalhes runicos de gelo, aneis crio-toroidais e espiras boreais
     for sx in (-1, 1):
         x = sx * 4.20
         p.append(L.cyl(1.44, 1.08, (x, 0, 0.88), "steel", verts=20, r2=1.24))
         p.append(L.cyl(1.18, 5.55, (x, 0, 1.92), "whiteStoneDark", verts=20, r2=0.92))
+        _pillar_rune_carvings(p, x, 1.06, (2.60, 4.35, 6.35), "steel", "iceGlow")
         p.append(L.cyl(1.16, 0.20, (x, 0, 3.25), "arcaneCyan", verts=18, r2=1.14))
         p.append(L.torus(1.08, 0.09, (x, 0, 5.35), "iceGlow", major_seg=16, minor_seg=5))
         for sy in (-1, 1):
@@ -320,12 +367,13 @@ def portal_act3():
         p.append(L.crystal(0.50, 3.70, (x + sx * 0.80, 0, 7.25), "ice", tilt=(0.0, sx * 0.26), verts=6))
         p.append(L.crystal(0.36, 2.35, (x - sx * 0.34, 0, 7.65), "iceGlow", tilt=(0.0, -sx * 0.06), verts=6))
 
-    # 4. Arco ogival pontiagudo com nodos runicos brilhantes + diamante boreal de 6 faces
+    # 4. Arco ogival pontiagudo com nodos runicos brilhantes, estalactites de gelo + diamante boreal de 6 faces
     arch_left = [(-3.45, 7.95, 0.52), (-2.15, 9.45, 0.68), (-0.95, 10.65, 0.82)]
     for ax, az, ry in arch_left:
         for sx in (-1, 1):
             p.append(L.box((1.65, 1.86, 0.98), (sx * abs(ax), 0, az), "steel", bevel=0.06, rot=(0.0, -sx * ry, 0.0)))
             p.append(L.crystal(0.34, 1.32, (sx * abs(ax), 0, az + 0.42), "iceLight", tilt=(0.0, sx * 0.22), verts=6))
+            p.append(L.crystal(0.24, 0.88, (sx * abs(ax) * 0.92, 0, az - 0.36), "ice", tilt=(math.pi, -sx * 0.18), verts=5))
             for sy in (-1, 1):
                 p.append(L.ico(0.26, (sx * abs(ax), sy * 0.98, az), "iceGlow", squash=(0.85, 0.55, 1.15), subdiv=1))
 
@@ -356,7 +404,7 @@ def portal_act4():
     p = []
 
     # 1. Plataforma fortificada com borda chanfrada de latao/bronze
-    _altar_steps(p, 12.8, 4.6, "ironDark", "iron", "brass", "bronze")
+    _altar_steps(p, 12.8, 4.6, "ironDark", "iron", "brass", "bronze", rune_col="goldBright")
 
     # 2. Chamines gemeas suaves (verts=16) + tubulacoes de vapor rebitadas ligadas aos pilares
     for sx in (-1, 1):
@@ -369,14 +417,19 @@ def portal_act4():
         # Tubulacao horizontal de vapor + flange de latao conectando chamine ao pilar
         p.append(L.cyl_axis(0.26, 1.35, (sx * 4.76, 0, 5.25), "iron", axis="x", verts=12))
         p.append(L.cyl_axis(0.35, 0.20, (sx * 4.76, 0, 5.25), "brass", axis="x", verts=12))
+        p.append(L.cyl_axis(0.22, 1.35, (sx * 4.76, 0, 7.15), "bronze", axis="x", verts=10))
 
-    # 3. Colunas blindadas de casamata (verts=20) com placas de latao e luzes de alerta (-Y/+Y)
+    # 3. Colunas blindadas de casamata (verts=20) com placas de latao, manometros e luzes de alerta (-Y/+Y)
     for sx in (-1, 1):
         x = sx * 4.10
         p.append(L.box((2.14, 2.68, 1.25), (x, 0, 1.54), "ironDark", bevel=0.06))
         p.append(L.cyl(1.16, 5.65, (x, 0, 2.12), "iron", verts=20, r2=1.02))
+        _pillar_rune_carvings(p, x, 1.08, (2.75, 7.20), "brass", "amberBright")
         for z in (3.55, 6.35):
             p.append(L.box((1.90, 2.40, 0.38), (x, 0, z), "brass"))
+            for sy in (-1, 1):
+                for rx in (-0.58, 0.58):
+                    p.append(L.box((0.16, 0.16, 0.16), (x + rx, sy * 1.22, z), "goldBright"))
         p.append(L.box((2.18, 2.52, 1.05), (x, 0, 8.18), "ironDark"))
         # Luzes de alerta engaioladas em latao na frente e atras
         for sy in (-1, 1):
@@ -393,6 +446,8 @@ def portal_act4():
         ry = math.pi / 2 - theta
         col = "iron" if k % 2 == 0 else "brass"
         p.append(L.box((1.95, 2.16, 1.12), (vx, 0, vz), col, bevel=0.05, rot=(0.0, ry, 0.0)))
+        for sy in (-1, 1):
+            p.append(L.box((0.58, 0.16, 0.34), (vx, sy * 1.10, vz), "goldBright" if k % 2 == 0 else "bronze", rot=(0.0, ry, 0.0)))
 
     # Coroa industrial + engrenagem mestre de latao (verts=18) + 2 pinhoes laterais
     p.append(L.box((2.75, 2.28, 1.24), (0, 0, 11.10), "ironDark", bevel=0.06))
@@ -427,12 +482,14 @@ def portal_act5():
     """Ato 5 — A Fenda Profunda: obeliscos flutuantes de obsidiana e aneis toroidais de contencao arcaneViolet/eyeNeon."""
     p = []
 
-    # 1. Altar abissal de 3 degraus chanfrados
+    # 1. Altar abissal de 3 degraus chanfrados + entalhes runicos abissais
     p.append(L.box((13.4, 5.0, 0.56), (0, 0, 0.28), "obsidian", bevel=0.08))
     p.append(L.box((11.6, 3.9, 0.46), (0, 0, 0.78), "obsidianLight", bevel=0.06))
     p.append(L.box((9.8, 3.1, 0.38), (0, 0, 1.18), "stoneDark", bevel=0.05))
     for sy in (-1, 1):
         p.append(L.box((6.2, 0.74, 0.30), (0, sy * 2.72, 0.15), "obsidian"))
+        for rx in (-1.85, 0.0, 1.85):
+            p.append(L.box((0.76, 0.22, 0.14), (rx, sy * 2.76, 0.34), "arcaneViolet"))
     p.append(L.cyl(3.28, 0.22, (0, 0, 1.32), "tealDark", verts=20, r2=3.06))
 
     # 2. Obeliscos flutuantes de obsidiana nas extremidades (pedestal terrestre + gap de levitacao + obelisco suspenso)
@@ -450,25 +507,29 @@ def portal_act5():
         p.append(L.box((1.22, 1.22, 0.24), (ox, 0, 7.5), "eyeNeon"))
         p.append(L.ico(0.34, (ox, 0, 11.55), "eyeNeon", squash=(0.78, 0.78, 1.38), subdiv=1))
 
-    # 3. Colunas monoliticas suaves (verts=24) em obsidiana com condutos arcanos violeta/neon
+    # 3. Colunas monoliticas suaves (verts=24) em obsidiana com condutos arcanos violeta/neon e entalhes
     for sx in (-1, 1):
         x = sx * 3.88
         p.append(L.box((2.18, 2.68, 1.32), (x, 0, 1.92), "obsidian", bevel=0.07))
         p.append(L.cyl(1.18, 6.25, (x, 0, 2.55), "obsidianLight", verts=24, r2=0.98))
+        _pillar_rune_carvings(p, x, 1.12, (3.45, 5.68, 7.85), "obsidian", "eyeNeon")
         for sy in (-1, 1):
             p.append(L.box((0.40, 0.20, 5.55), (x, sy * 1.08, 5.68), "arcaneViolet"))
             p.append(L.box((0.18, 0.24, 4.75), (x, sy * 1.14, 5.68), "eyeNeon"))
         p.append(L.box((2.28, 2.58, 0.98), (x, 0, 9.15), "obsidian", bevel=0.06))
 
-    # 4. Lintel monumental escalonado em obsidiana + coroa abissal
+    # 4. Lintel monumental escalonado em obsidiana + cachorros abissais + coroa abissal
     p.append(L.box((9.85, 2.48, 1.25), (0, 0, 10.15), "obsidian", bevel=0.07))
     p.append(L.box((7.45, 2.16, 0.96), (0, 0, 11.18), "obsidianLight", bevel=0.06))
     p.append(L.box((4.48, 1.86, 0.86), (0, 0, 12.02), "obsidian", bevel=0.06))
     p.append(L.crystal(0.76, 2.20, (0, 0, 12.38), "arcaneViolet", verts=6))
     for sx in (-1, 1):
         p.append(L.crystal(0.56, 2.45, (sx * 4.25, 0, 10.55), "obsidian", tilt=(0.0, sx * 0.24), verts=6))
+        p.append(L.crystal(0.38, 1.55, (sx * 2.45, 0, 11.45), "arcaneViolet", tilt=(0.0, sx * 0.16), verts=5))
     for sy in (-1, 1):
         p.append(L.box((1.90, 0.24, 0.42), (0, sy * 1.12, 11.18), "arcaneViolet"))
+        for rx in (-2.95, 2.95):
+            p.append(L.box((0.64, 0.20, 0.48), (rx, sy * 1.26, 10.15), "eyeNeon"))
         p.append(L.ico(0.58, (0, sy * 1.05, 12.05), "eyeNeon", squash=(0.74, 0.42, 1.38), subdiv=1))
 
     # 5. Portal abissal + aneis toroidais de contencao entrecruzados (arcaneViolet / eyeNeon)
@@ -510,6 +571,8 @@ L.run_group(
             "glb": "prop_rift_portal.glb",
             "tipo": "modulo_cenario",
             "limite": LIMITE,
+            "hero_pbr": True,
+            "quantidade_cena": 1,
             "center_xy": True,
             "suavizacao_normais": NORMALS_SPEC,
             "tags": ["muralha", "portal", "rift"],
@@ -521,6 +584,8 @@ L.run_group(
             "glb": "portal_act1_iron.glb",
             "tipo": "modulo_cenario",
             "limite": LIMITE,
+            "hero_pbr": True,
+            "quantidade_cena": 1,
             "center_xy": True,
             "suavizacao_normais": NORMALS_SPEC,
             "tags": ["muralha", "portal", "campaign", "act1"],
@@ -532,6 +597,8 @@ L.run_group(
             "glb": "portal_act2_slag.glb",
             "tipo": "modulo_cenario",
             "limite": LIMITE,
+            "hero_pbr": True,
+            "quantidade_cena": 1,
             "center_xy": True,
             "suavizacao_normais": NORMALS_SPEC,
             "tags": ["muralha", "portal", "campaign", "act2"],
@@ -543,6 +610,8 @@ L.run_group(
             "glb": "portal_act3_frost.glb",
             "tipo": "modulo_cenario",
             "limite": LIMITE,
+            "hero_pbr": True,
+            "quantidade_cena": 1,
             "center_xy": True,
             "suavizacao_normais": NORMALS_SPEC,
             "tags": ["muralha", "portal", "campaign", "act3"],
@@ -554,6 +623,8 @@ L.run_group(
             "glb": "portal_act4_powder.glb",
             "tipo": "modulo_cenario",
             "limite": LIMITE,
+            "hero_pbr": True,
+            "quantidade_cena": 1,
             "center_xy": True,
             "suavizacao_normais": NORMALS_SPEC,
             "tags": ["muralha", "portal", "campaign", "act4"],
@@ -565,6 +636,8 @@ L.run_group(
             "glb": "portal_act5_rift.glb",
             "tipo": "modulo_cenario",
             "limite": LIMITE,
+            "hero_pbr": True,
+            "quantidade_cena": 1,
             "center_xy": True,
             "suavizacao_normais": NORMALS_SPEC,
             "tags": ["muralha", "portal", "campaign", "act5"],
@@ -572,4 +645,5 @@ L.run_group(
         },
     ],
     "portal da fenda + 5 portais monumentais da campanha (art/scripts/make_portal.py)",
+    hero_pbr=True,
 )

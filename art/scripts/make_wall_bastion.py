@@ -29,14 +29,24 @@ from mathutils import Vector
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from lowpoly_lib import NAMES, PAL, make_palette  # noqa: E402
+from lowpoly_lib import (  # noqa: E402
+    DEFAULT_DETALHE_ALTO,
+    NAMES,
+    PAL,
+    _assign_poly_uv_cell,
+    _collect_and_coalesce_pal_colors,
+    build_pbr_zonas,
+    extract_pal_colors,
+    format_pbr_zonas_yaml,
+    make_palette,
+)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LEVELS = (1, 2, 3, 4, 5)
-TIER_TRIS_MAX = 5800
-LIMITE_LOTE = {lvl: 6000 for lvl in LEVELS}
-METROS_POR_STUD = 0.28  # perfil roblox-r15 do Forge3D
-BUDGET = {"segment": 1350, "gate": 2500, "tower": 2400}
+TIER_TRIS_MAX = 7500
+LIMITE_LOTE = {lvl: 7500 for lvl in LEVELS}
+METROS_POR_STUD = 0.28  # perfil roblox-aa-80 do Forge3D
+BUDGET = {"segment": 1650, "gate": 3100, "tower": 2700}
 
 # Layout canonico preservado
 SEG_A, SEG_B = 5.9, 19.2
@@ -188,19 +198,16 @@ def paint(obj, color: str):
     me = obj.data
     if not me.uv_layers:
         me.uv_layers.new(name="UVMap")
-    i = NAMES.index(color)
-    u, v = ((i % 8) + 0.5) / 8, ((i // 8) + 0.5) / 8
     uv = me.uv_layers.active.data
-    # UV nao colapsada (QC G3 do Forge3D)
+    # UV nao colapsada (QC G3): cada face abrange [cx/8+0.008, (cx+1)/8-0.008] x [cy/8+0.008, (cy+1)/8-0.008]
     for p in me.polygons:
-        n = p.loop_total
-        for k, li in enumerate(p.loop_indices):
-            a = 2 * math.pi * k / n
-            uv[li].uv = (u + 0.03 * math.cos(a), v + 0.03 * math.sin(a))
+        _assign_poly_uv_cell(uv, p, color)
     me.materials.clear()
     me.materials.append(MAT)  # 1 material por mesh (QC G5)
     for p in me.polygons:
         p.material_index = 0
+    obj["muralha_pal_color"] = color
+    obj["muralha_pal_colors"] = [color]
     return obj
 
 
@@ -393,6 +400,15 @@ def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=16):
 
 def join(objs, name, seed):
     """Junta pecas com jitter deterministico 3e-3..10e-3 studs antes de fundir (QC G1)."""
+    seed_counts: dict[str, int] = {}
+    for o in objs:
+        n_polys = max(1, len(o.data.polygons)) if getattr(o, "data", None) is not None else 1
+        c = o.get("muralha_pal_color")
+        if isinstance(c, str) and c in PAL:
+            seed_counts[c] = seed_counts.get(c, 0) + n_polys
+        for sub_c in o.get("muralha_pal_colors") or ():
+            if isinstance(sub_c, str) and sub_c in PAL:
+                seed_counts.setdefault(sub_c, 1)
     rng = random.Random(seed)
     for o in objs:
         o.location = (
@@ -409,6 +425,7 @@ def join(objs, name, seed):
     o.name = name
     o.data.name = name
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    _collect_and_coalesce_pal_colors(o, seed_counts=seed_counts, max_colors=16)
     return o
 
 
@@ -553,10 +570,28 @@ def build_segment(side, lvl):
             )
         )
 
-    # 4. Relevo de alvenaria escalonada + friso horizontal moldado chanfrado
+    # 4. Relevo de alvenaria escalonada (fiadas de silhares AA) + encaixes de vigamento/filigrana
     parts.append(box((length - 0.08, 0.30, 0.32), (cx, -wall_d / 2 - 0.12, 4.65), st["trim"], bevel=0.04))
-    for kx, kz, w in ((-4.3, 2.9, 1.55), (4.3, 3.2, 1.55), (-2.1, 5.30, 1.38)):
+    for kx, kz, w in (
+        (-4.8, 2.55, 1.55),
+        (-1.9, 3.35, 1.48),
+        (1.8, 2.75, 1.52),
+        (4.6, 3.45, 1.55),
+        (-4.5, 5.55, 1.45),
+        (-1.8, 6.25, 1.38),
+        (2.0, 5.75, 1.44),
+        (4.7, 6.35, 1.40),
+    ):
         parts.append(box((w, 0.28, 0.58), (cx + kx, -wall_d / 2 - 0.12, kz), st["relief"]))
+    for kx, kz in ((-3.2, 3.85), (0.0, 4.10), (3.2, 3.85)):
+        parts.append(box((1.42, 0.24, 0.52), (cx + kx, wall_d / 2 + 0.10, kz), st["wallAlt"]))
+    if lvl <= 2:
+        for kx in (-5.1, -1.7, 1.7, 5.1):
+            parts.append(box((0.26, 0.22, 1.15), (cx + kx, -wall_d / 2 - 0.14, 4.65), st["iron"]))
+    else:
+        parts.append(box((length - 0.24, 0.24, 0.22), (cx, -wall_d / 2 - 0.14, 6.85), st["boss"]))
+        for kx in (-5.2, -1.75, 1.75, 5.2):
+            parts.append(box((0.42, 0.26, 0.42), (cx + kx, -wall_d / 2 - 0.16, 4.65), st["boss"], rot=(0, math.pi / 4, 0)))
 
     # 5. Cornija saliente chanfrada + cachorros + 3 ameias + 2 escudos redondos
     walk_z = 1.70 + wall_h
@@ -606,8 +641,16 @@ def build_tower(side, lvl):
             sloped_buttress(0.74, 0.76, 0.34, 8.40, px, py, 2.15, st["buttress"], rot_z=rot_z, bevel=0.04)
         )
 
-    # 3. Friso horizontal suave (verts=24)
+    # 3. Friso horizontal suave (verts=24) + fiadas de cantaria e filigrana na torre
     parts.append(cyl(r + 0.18, 0.32, (x, 0, 5.65), st["trim"], verts=24))
+    parts.append(cyl(r + 0.14, 0.24, (x, 0, 3.85), st["wallAlt"], verts=24))
+    if lvl >= 3:
+        parts.append(cyl(r + 0.16, 0.22, (x, 0, 8.85), st["boss"], verts=24))
+    for k_q, z_q in enumerate((3.10, 4.75, 6.45, 8.20, 9.55)):
+        ang_q = -math.pi / 2 + (0.28 if k_q % 2 == 0 else -0.28)
+        qx = x + (r + 0.04) * math.cos(ang_q)
+        qy = (r + 0.04) * math.sin(ang_q)
+        parts.append(box((0.78, 0.24, 0.52), (qx, qy, z_q), st["relief"], rot=(0, 0, ang_q + math.pi / 2)))
 
     # 4. Seteiras recuadas nas faces frontais laterais (-Y +- pi/5)
     for ang_off in (-math.pi / 5, math.pi / 5):
@@ -694,6 +737,9 @@ def build_gate(lvl):
         parts.append(
             sloped_buttress(0.72, 0.56, 0.22, 6.20, px + sx * 0.45, -GATE_D / 2 - 0.75, 1.85, st["buttress"], bevel=0.04)
         )
+        for qz_idx, qz in enumerate((2.65, 3.65, 4.55, 6.15, 7.95)):
+            qx = px + sx * (pier_w * 0.34 if qz_idx % 2 == 0 else -pier_w * 0.28)
+            parts.append(box((0.78, 0.24, 0.54), (qx, -GATE_D / 2 - 0.80, qz), st["relief"]))
         parts += shield_crest(px - sx * 0.35, -GATE_D / 2 - 0.82, 7.15, 0.52, st, verts=10)
 
     # 2. Timpano suave do arco (segs=12) + parede superior
@@ -724,16 +770,20 @@ def build_gate(lvl):
     )
     parts += shield_crest(0.0, -GATE_D / 2 - 0.36, 8.68, 0.66, st, boss_col="amberBright", verts=12)
 
-    # 4. Portao duplo em carvalho encaixilhado com ferragens
+    # 4. Portao duplo em carvalho encaixilhado com ferragens, contraventamento e dobradicas
     parts.append(box((arch_r * 2, 0.42, arch_top - 0.1), (0.0, 0.42, (arch_top - 0.1) / 2), "woodDark"))
     parts.append(box((0.28, 0.56, arch_top - 0.4), (0.0, 0.32, (arch_top - 0.4) / 2), "wood"))
     for px in (-2.05, -0.75, 0.75, 2.05):
         h_plank = spring_z + math.sqrt(max(0.0, arch_r**2 - px**2)) - 0.25
         parts.append(box((0.88, 0.16, h_plank), (px, 0.18, h_plank / 2), "woodLight" if abs(px) > 1.0 else "wood"))
+    for sx in (-1, 1):
+        parts.append(box((2.15, 0.18, 0.24), (sx * 1.42, 0.14, 2.25), "woodDark", rot=(0, sx * 0.46, 0)))
     for z in (1.25, 3.25):
         parts.append(box((arch_r * 1.92, 0.20, 0.34), (0.0, 0.12, z), st["iron"]))
+        for hx in (-2.45, -1.25, 1.25, 2.45):
+            parts.append(disc_y(0.11, 0.12, (hx, 0.02, z), st["boss"], verts=8))
 
-    # 5. Grade de rastrilho (portcullis) com barras de ferro cilindricas arredondadas e pontas conicas
+    # 5. Grade de rastrilho (portcullis) com barras de ferro cilindricas, pontas conicas e rebites forjados
     port_y = -1.18
     for px in (-2.2, -1.1, 0.0, 1.1, 2.2):
         top_z = spring_z + math.sqrt(max(0.0, (arch_r - 0.1) ** 2 - px**2)) - 0.15
@@ -746,6 +796,9 @@ def build_gate(lvl):
         parts.append(sp)
     for z in (1.95, 3.85):
         parts.append(cyl_axis(0.12, 5.25, (0.0, port_y, z), st["iron"], axis="x", verts=8))
+        for px in (-2.2, -1.1, 0.0, 1.1, 2.2):
+            parts.append(box((0.28, 0.28, 0.28), (px, port_y, z), st["trim"]))
+            parts.append(disc_y(0.10, 0.14, (px, port_y - 0.12, z), st["boss"], verts=8))
 
     # 6. Camara de Alavancas superior em balanco (-Y) chanfrada com fendas brilhantes + coroamento
     cam_z = GATE_H
@@ -785,27 +838,41 @@ def build_gate(lvl):
 # ---------------------------------------------------------------- lote Forge3D
 def write_lote(levels):
     lines = [
-        "# Forge3D 0.8.0 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)",
-        "# entra no mesmo QC (escala, pivo, LOD, colisao, manifesto, indice). Saida no sandbox.",
+        "# Forge3D 0.9.0 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)",
+        "# entra no mesmo QC (escala, pivo, LOD, colisao, manifesto, indice, Gate G11). Saida no sandbox.",
         "#   forge3d run art/forge/lote_muralha_import.yaml --json   (ou: bash tools/art-pipeline.sh --only wall)",
-        "# GERADO pelo script: altura_metros = altura medida em studs x 0,28 (perfil roblox-r15).",
-        "schema: forge3d/spec@5",
+        "# GERADO pelo script: altura_metros = altura medida em studs x 0,28 (perfil roblox-aa-80).",
+        "schema: forge3d/spec@6",
         "",
         "projeto: muralha",
-        "perfil: roblox-r15",
+        "perfil: roblox-aa-80",
         "destino_exportacao: ~/.local/state/forge3d/saida/muralha_import",
-        "estilo_global: lowpoly_lit",
+        "estilo_global: stylized_pbr",
+        "",
+        "orcamento_cena:",
+        "  triangulos_max: 400000",
+        "  draw_calls_max: 400",
+        "  vram_mb_max: 200",
+        "",
+        "roblox_render:",
+        "  lighting_technology: Future",
+        "  render_fidelity_padrao: Precise",
+        "  surface_appearance: true",
+        "  strip_embedded_textures_glb: true",
         "",
         "politica:",
         "  falha: continuar",
-        "  custo_max_min: 5",
+        "  custo_max_min: 30",
         "  seed_base: 20261113",
         "",
         "lote:",
     ]
+    det = DEFAULT_DETALHE_ALTO
     for lvl, (_coll, mods) in levels.items():
         top = max((o.matrix_world @ v.co).z for _, o in mods for v in o.data.vertices)
         h = round(top, 4)
+        pal_colors = extract_pal_colors(mods, max_colors=16)
+        zonas = build_pbr_zonas(pal_colors, max_zones=16)
         lines += [
             f"  - id: wall.bastion.l{lvl}.01",
             "    tipo: modulo_cenario",
@@ -814,7 +881,19 @@ def write_lote(levels):
             f"    altura_metros: {round(h * METROS_POR_STUD, 4)}   # {h} studs",
             "    pivot: base",
             f"    limite_triangulos: {LIMITE_LOTE[lvl]}",
-            "    material: opaque",
+            "    material: pbr",
+            "    qualidade: hero",
+            "    quantidade_cena: 1",
+            "    render_fidelity_roblox: Precise",
+            "    detalhe_alto:",
+            f"      ativo: {'true' if det.get('ativo', True) else 'false'}",
+            f"      subdiv_niveis: {int(det.get('subdiv_niveis', 1))}",
+            f"      chanfro_bevel_m: {float(det.get('chanfro_bevel_m', 0.008))}",
+            f"      crease_angulo_graus: {int(det.get('crease_angulo_graus', 40))}",
+            f"      ao_cavidade_forca: {float(det.get('ao_cavidade_forca', 0.38))}",
+        ]
+        lines += format_pbr_zonas_yaml(zonas, indent="    ")
+        lines += [
             "    suavizacao_normais:",
             "      modo: hard_surface",
             "      angulo_graus: 46",
@@ -850,12 +929,13 @@ def build_level(lvl):
     set_origin(g, 0)
     mods.append(("gate", g))
 
-    # Garante pivo Z >= 0 em todo o tier apos o jitter
+    # Garante pivo Z >= 0 em todo o tier apos o jitter e coalescencia <=16 cores PBR
     min_z = min((o.matrix_world @ v.co).z for _, o in mods for v in o.data.vertices)
     for _, o in mods:
         for v in o.data.vertices:
             v.co.z -= min_z
         o.data.update()
+    extract_pal_colors(mods, max_colors=16)
 
     return coll, mods
 
