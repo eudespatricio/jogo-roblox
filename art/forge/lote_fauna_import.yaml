@@ -18,14 +18,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/wyvern_body.glb
-    altura_metros: 0.9304   # 3.3229 studs
+    altura_metros: 0.952   # 3.4001 studs
     pivot: base
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -35,14 +36,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/wyvern_wing_l.glb
-    altura_metros: 0.4175   # 1.4909 studs
+    altura_metros: 0.4206   # 1.5021 studs
     pivot: origem
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -52,14 +54,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/wyvern_wing_r.glb
-    altura_metros: 0.4269   # 1.5247 studs
+    altura_metros: 0.4214   # 1.5049 studs
     pivot: origem
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,14 +72,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/bird_body.glb
-    altura_metros: 0.4085   # 1.4588 studs
+    altura_metros: 0.4111   # 1.4682 studs
     pivot: base
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -86,14 +90,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/bird_wing_l.glb
-    altura_metros: 0.286   # 1.0215 studs
+    altura_metros: 0.2873   # 1.0259 studs
     pivot: origem
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -103,14 +108,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/bird_wing_r.glb
-    altura_metros: 0.2862   # 1.0221 studs
+    altura_metros: 0.2866   # 1.0237 studs
     pivot: origem
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -120,14 +126,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/stag.glb
-    altura_metros: 1.1763   # 4.2012 studs
+    altura_metros: 1.1522   # 4.1151 studs
     pivot: base
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -137,14 +144,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/pack_ox.glb
-    altura_metros: 0.7396   # 2.6416 studs
+    altura_metros: 0.7461   # 2.6646 studs
     pivot: base
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -154,14 +162,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/ram.glb
-    altura_metros: 0.5149   # 1.8389 studs
+    altura_metros: 0.5201   # 1.8575 studs
     pivot: base
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
-      weighted_normals: true
+      angulo_graus: 52
+      weighted_normals: false
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]

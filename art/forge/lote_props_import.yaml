@@ -1,4 +1,4 @@
-# Forge3D 0.8.0 — rota `import`: props de cenario e natureza esculpidos (art/scripts/make_props.py)
+# Forge3D 0.8.0 — rota `import`: props de cenario, natureza e guardiao esculpidos (art/scripts/make_props.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
 schema: forge3d/spec@5
@@ -18,14 +18,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/tree_pine.glb
-    altura_metros: 2.8441   # 10.1575 studs
+    altura_metros: 2.7889   # 9.9602 studs
     pivot: base
-    limite_triangulos: 1400
+    limite_triangulos: 2600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -35,14 +36,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/tree_oak.glb
-    altura_metros: 2.2942   # 8.1936 studs
+    altura_metros: 2.2357   # 7.9848 studs
     pivot: base
-    limite_triangulos: 1400
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -52,14 +54,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/rock_cluster.glb
-    altura_metros: 0.8186   # 2.9236 studs
+    altura_metros: 0.852   # 3.0427 studs
     pivot: base
-    limite_triangulos: 900
+    limite_triangulos: 1800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,14 +72,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/siege_supply.glb
-    altura_metros: 0.5677   # 2.0276 studs
+    altura_metros: 0.5767   # 2.0595 studs
     pivot: base
-    limite_triangulos: 1300
+    limite_triangulos: 2400
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -86,14 +90,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/iron_brazier.glb
-    altura_metros: 1.0819   # 3.8641 studs
+    altura_metros: 1.1699   # 4.1782 studs
     pivot: base
-    limite_triangulos: 1100
+    limite_triangulos: 2200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -103,15 +108,34 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/rift_obelisk.glb
-    altura_metros: 2.1354   # 7.6266 studs
+    altura_metros: 2.1375   # 7.6341 studs
     pivot: base
-    limite_triangulos: 1200
+    limite_triangulos: 2400
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, prop, rift, obelisk]
+
+  - id: prop.bastion_warden.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/bastion_warden.glb
+    altura_metros: 1.7488   # 6.2457 studs
+    pivot: base
+    limite_triangulos: 3000
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 48
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, prop, hero, bastion_warden]
