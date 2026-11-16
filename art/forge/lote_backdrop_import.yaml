@@ -1,0 +1,141 @@
+# Forge3D 0.8.0 — rota `import`: arquitetura e natureza do vale alem da muralha (art/scripts/make_backdrop.py)
+# GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
+# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
+schema: forge3d/spec@5
+
+projeto: muralha
+perfil: roblox-r15
+destino_exportacao: ~/.local/state/forge3d/saida/muralha_backdrop
+estilo_global: lowpoly_lit
+
+politica:
+  falha: continuar
+  custo_max_min: 5
+  seed_base: 20261113
+
+lote:
+  - id: backdrop.castle01.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_castle01.glb
+    altura_metros: 5.0554   # 18.0551 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, castle01]
+
+  - id: backdrop.keep01.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_keep01.glb
+    altura_metros: 5.6011   # 20.0038 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, keep01]
+
+  - id: backdrop.house01.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_house01.glb
+    altura_metros: 2.2472   # 8.0257 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, house01]
+
+  - id: backdrop.house02.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_house02.glb
+    altura_metros: 2.2474   # 8.0265 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, house02]
+
+  - id: backdrop.tower01.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_tower01.glb
+    altura_metros: 4.4846   # 16.0166 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, tower01]
+
+  - id: backdrop.windmill01.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_windmill01.glb
+    altura_metros: 4.5725   # 16.3303 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, windmill01]
+
+  - id: backdrop.tree01.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/backdrop_tree01.glb
+    altura_metros: 3.0951   # 11.0538 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 46
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, backdrop, tree01]
