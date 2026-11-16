@@ -32,7 +32,7 @@
 | `src/server/data/ProfileService.luau` · `FtueService.luau` · `DefenseInboxStore.luau` | sessão, FTUE server/skip + inbox assíncrona `MuralhaInbox_v1` | mexer em sessão/FTUE/inbox |
 | `src/shared/analytics/` · `src/server/analytics/` · `sim/analytics-contract.luau` | contrato v2 (36/36, `40` eventos) + sink DataStore/Memory + `es-419→es-MX` | emitir/validar evento |
 | `src/shared/i18n/I18n.luau` · `CampaignCatalog.luau` · `BotPhantoms.luau` · `sim/campaign-contract.luau` | 161 chaves PT/EN/ES + 25 estágios/5 Bosses + DeckUi/Horde + contratos | tradução/campanha/matchmaking |
-| `src/shared/visual/{VisualTheme,UiAssets}.luau` · `src/client/visual/` · `sim/visual-contract.luau` | visual/áudio: `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`HordeKit` (`23/23`) | mexer na apresentação/áudio |
+| `src/shared/visual/{VisualTheme,UiAssets,PbrAssets,VfxAssets}.luau` · `src/client/visual/` · `sim/visual-contract.luau` | visual/PBR/VFX: `PbrAssets`/`VfxAssets`/`Vfx`/`HordeKit` (`32/32`) | mexer na apresentação/áudio |
 | `src/server/walls/WallService.luau` · `WallController.server.luau` · `sim/walls-contract.luau` · `sim/content-contract.luau` · `sim/build-contract.luau` | S3/S3.4: regras, `toBattleWall`, `contentVersion`; S4: UI pura, remotes + contratos | mexer em muralha/economia/conteúdo/build |
 | `sim/fixtures/profile-v0.luau` · `docs/teste-sessao-studio.md` | fixture da migração 0→1 e roteiro do teste de sessão | mudar schema/validar P0 no Studio |
 | `src/` | produção: `shared/{...}`, `replicatedFirst/` (`BootLoading`), `server/...`, `client/`, `world/` | navegar no código |

@@ -1,16 +1,27 @@
-# Forge3D 0.8.0 — rota `import`: fauna articulada e silvestre do Bastiao (art/scripts/make_fauna.py)
+# Forge3D 0.9.0 — rota `import`: fauna articulada e silvestre do Bastiao (art/scripts/make_fauna.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
-# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@5
+# altura_metros = altura exportada em studs x 0,28 (perfil roblox-aa-80).
+schema: forge3d/spec@6
 
 projeto: muralha
-perfil: roblox-r15
+perfil: roblox-aa-80
 destino_exportacao: ~/.local/state/forge3d/saida/muralha_fauna
-estilo_global: lowpoly_lit
+estilo_global: stylized_pbr
+
+orcamento_cena:
+  triangulos_max: 400000
+  draw_calls_max: 400
+  vram_mb_max: 200
+
+roblox_render:
+  lighting_technology: Future
+  render_fidelity_padrao: Precise
+  surface_appearance: true
+  strip_embedded_textures_glb: true
 
 politica:
   falha: continuar
-  custo_max_min: 5
+  custo_max_min: 30
   seed_base: 20261113
 
 lote:
@@ -18,10 +29,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/wyvern_body.glb
-    altura_metros: 0.952   # 3.4001 studs
+    altura_metros: 0.9514   # 3.398 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -36,10 +50,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/wyvern_wing_l.glb
-    altura_metros: 0.4206   # 1.5021 studs
+    altura_metros: 0.4223   # 1.5083 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -54,10 +71,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/wyvern_wing_r.glb
-    altura_metros: 0.4214   # 1.5049 studs
+    altura_metros: 0.4216   # 1.5057 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -72,10 +92,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/bird_body.glb
-    altura_metros: 0.4111   # 1.4682 studs
+    altura_metros: 0.4131   # 1.4753 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -92,8 +115,11 @@ lote:
     origem: art/export/bird_wing_l.glb
     altura_metros: 0.2873   # 1.0259 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -110,8 +136,11 @@ lote:
     origem: art/export/bird_wing_r.glb
     altura_metros: 0.2866   # 1.0237 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -126,10 +155,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/stag.glb
-    altura_metros: 1.1522   # 4.1151 studs
+    altura_metros: 1.1545   # 4.1233 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -144,10 +176,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/pack_ox.glb
-    altura_metros: 0.7461   # 2.6646 studs
+    altura_metros: 0.7422   # 2.6506 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52
@@ -162,10 +197,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/ram.glb
-    altura_metros: 0.5201   # 1.8575 studs
+    altura_metros: 0.5249   # 1.8747 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 2800
     material: opaque
+    qualidade: standard
+    quantidade_cena: 2
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 52

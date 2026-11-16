@@ -397,9 +397,26 @@ HeadlessRobloxMock.Enum = setmetatable({}, {
 })
 
 local function makeSignal()
+	local listeners: { (...any) -> () } = {}
 	return {
-		Connect = function()
+		Connect = function(_self: any, fn: ((...any) -> ())?)
+			if type(fn) == "function" then
+				listeners[#listeners + 1] = fn
+			end
 			return { Disconnect = function() end }
+		end,
+		Once = function(_self: any, fn: ((...any) -> ())?)
+			if type(fn) == "function" then
+				listeners[#listeners + 1] = fn
+			end
+			return { Disconnect = function() end }
+		end,
+		Fire = function(_self: any, ...: any)
+			local copy = listeners
+			listeners = {}
+			for _, fn in ipairs(copy) do
+				fn(...)
+			end
 		end,
 	}
 end
@@ -603,7 +620,15 @@ local services: { [string]: any } = {
 	RunService = { RenderStepped = makeSignal() },
 	TweenService = {
 		Create = function()
-			return { Play = function() end, Completed = makeSignal() }
+			local completed = makeSignal()
+			return {
+				Play = function()
+					pendingDelays[#pendingDelays + 1] = function()
+						completed:Fire(HeadlessRobloxMock.Enum.PlaybackState.Completed)
+					end
+				end,
+				Completed = completed,
+			}
 		end,
 	},
 }

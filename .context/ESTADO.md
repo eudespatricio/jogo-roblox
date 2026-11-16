@@ -7,7 +7,7 @@
 física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18+). Público 13–34.
 
 ## Fase
-**P2 + Playtest v1.7 High-Detail Smooth 3D Overhaul (16/11/2026).** `97` malhas 3D suavizadas no Open Cloud (`angulo_graus: 46..52`, `weighted_normals: true`, paridade SHA-256 `saida/`↔`art/export/`) com paleta unificada `512×512` de 64 cores (`132821694339844`), cobrindo muralhas (`5`), armadilhas (`25`), horda terrestre+aérea `CMD_wisp`/`CMD_drake` (`8`), Bosses+rig 5 juntas (`5+25`), portais (`6`), props+`PROP_bastion_warden` (`7`), fauna (`9`) e vale `BackdropAssets` com `keep01` (`7`), mais fallbacks procedurais orgânicos (`visual-contract` `29/29`), sobre a base v1.6/v1.5 (`ProfileSchema v6`, `Analytics v2`, `161` chaves I18n).
+**P2 + Playtest v1.8 Forge3D 0.9.0 AA PBR & Superior VFX Overhaul (16/11/2026).** `206` assets publicados no Open Cloud sob `forge3d 0.9.0` (`spec@6` / `manifest@6`, `perfil: roblox-aa-80`, `lighting_technology: Future`, Gate G1–G11 verdes): `97` malhas 3D AA com texturas embutidas removidas (`strip_embedded_textures=true`) e paridade SHA-256 `saida/`↔`art/export/`, `SurfaceAppearance` PBR em 2 tiers (`PbrAssets`: Atlas Mestre `2048×2048` 4 canais `87757376846021` + `24` conjuntos Hero Cycles `baseColor/normal/metallic/roughness` = `100` mapas PBR) e `9` texturas customizadas de VFX (`VfxAssets`: 4 flipbooks `Grid4x4` `1024×1024`, anel, glow, fumaça, crater decal, beam/trail) integrados em `Vfx.luau` (`visual-contract` `32/32`).
 ## Números atuais (16/11/2026)
 | Métrica | Valor |
 |---|---|
@@ -17,7 +17,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 | determinismo | hash `1245379674` (seed 42, 3 execuções) · `simVersion 8` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 62,6% defensor · ~1,6s/1.000 |
 | invariantes | 20/20 (`sim/invariants.luau`) |
-| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 29/29 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 7/7 · i18n 7/7 |
+| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 32/32 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 7/7 · i18n 7/7 |
 | versões | schema 6 · content 3 · sim 8 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
 | perfil | schema v6 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0..5→6 |
 | analytics | contrato v2 (`40` eventos) · `ftue_step`/`ftue_skip`/`revenge_started` · sink DataStore/Memory |
@@ -33,8 +33,8 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 - Muralha & FTUE: `TrapCatalog.luau` (v3, `totalGoldInvested`, `MAX_LEVEL=5`) + `WallService.luau` + `WallController` + `FtueLogic`/`FtueService`/`FtueController`.
 - Dados & Inbox: `ProfileSchema.luau` (v6: `ftue`, `battleHistory`, `revengeCooldowns`) + `ProfileService.luau` + `DefenseInboxStore.luau` (`25/25`, `7/7`).
 - Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `36/36`, `40` eventos) + `I18n.luau` (`161` chaves, `7/7`).
-- Visual P2/Open Cloud: `97` malhas 3D suavizadas + paleta `512×512` (`132821694339844`, `WallAssets`/`MeshAssets`/`BackdropAssets`), `HordeKit` (`CMD_wisp`/`CMD_drake` + rig 5 juntas 60 Hz/`DYING`)/`TrapKit`/`CrowdKit`/`AmbientLife`, `Vfx` (ragdolls + impactos/clímax Boss + `ColorCorrection`/`Bloom`), `UiKit`/`BuildLayout` (vidro/tipografia), `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`CampaignUi`, `TransitionKit` (`PROP_bastion_warden`), 87 cues Open Cloud (`29/29`).
-- Tooling: Rokit + CLI/GUI + Forge3D `0.8.0` (`spec@5`/`manifest@5`); CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
+- Visual P2/Open Cloud: `206` assets Open Cloud (`97` malhas 3D `spec@6` + `100` mapas PBR `SurfaceAppearance` `PbrAssets` + `9` texturas VFX `VfxAssets`), `HordeKit`/`TrapKit`/`CrowdKit`/`AmbientLife`, `Vfx` (flipbooks `Grid4x4`, `Beam`, `Decal` crateras Mid/High, ragdolls/clímax Boss + `VisualSetup` PBR), `UiKit`/`BuildLayout`, `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`CampaignUi`, `TransitionKit`, 87 cues Open Cloud (`32/32`).
+- Tooling: Rokit + CLI/GUI + Forge3D `0.9.0` (`spec@6`/`manifest@6`, `roblox-aa-80`); CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil) + `BotPhantoms`/`PhantomStore` 8-slots.
 

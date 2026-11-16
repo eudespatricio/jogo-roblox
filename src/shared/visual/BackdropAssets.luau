@@ -27,13 +27,13 @@ BackdropAssets.ROAD_WAYPOINTS = table.freeze({
 } :: { RoadWaypoint })
 
 BackdropAssets.ASSETS = table.freeze({
-	table.freeze({ key = "castle01", assetId = 135530891053404, textureId = 132821694339844 }),
-	table.freeze({ key = "house01", assetId = 88113262212089, textureId = 132821694339844 }),
-	table.freeze({ key = "house02", assetId = 103652086357338, textureId = 132821694339844 }),
-	table.freeze({ key = "tower01", assetId = 89001969643072, textureId = 132821694339844 }),
-	table.freeze({ key = "windmill01", assetId = 101702140849656, textureId = 132821694339844 }),
-	table.freeze({ key = "keep01", assetId = 140613750774628, textureId = 132821694339844 }),
-	table.freeze({ key = "tree01", assetId = 78778745630975, textureId = 132821694339844 }),
+	table.freeze({ key = "castle01", assetId = 128361322543744, textureId = 87757376846021 }),
+	table.freeze({ key = "house01", assetId = 87438141367084, textureId = 87757376846021 }),
+	table.freeze({ key = "house02", assetId = 86541503331780, textureId = 87757376846021 }),
+	table.freeze({ key = "tower01", assetId = 81188149550562, textureId = 87757376846021 }),
+	table.freeze({ key = "windmill01", assetId = 92963693886256, textureId = 87757376846021 }),
+	table.freeze({ key = "keep01", assetId = 131026022121239, textureId = 87757376846021 }),
+	table.freeze({ key = "tree01", assetId = 79506560404787, textureId = 87757376846021 }),
 } :: { Asset })
 
 -- 43 entradas em 3 setores: colina da Cidadela/vila (-X), crista norte/direita (-Z) e borda

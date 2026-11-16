@@ -6,15 +6,15 @@
 local VfxAssets = {}
 
 VfxAssets.IDS = {
-	explosionFlipbook = 0,
-	frostShatterFlipbook = 0,
-	arcaneRiftFlipbook = 0,
-	slashSparkFlipbook = 0,
-	shockwaveRing = 0,
-	softGlowFlare = 0,
-	smokeWispy = 0,
-	scorchCraterDecal = 0,
-	beamEnergyTrail = 0,
+	explosionFlipbook = 135806600858236,
+	frostShatterFlipbook = 78186543651102,
+	arcaneRiftFlipbook = 86991264053603,
+	slashSparkFlipbook = 138298598490067,
+	shockwaveRing = 117111013389651,
+	softGlowFlare = 118635363180451,
+	smokeWispy = 127020451371444,
+	scorchCraterDecal = 94843811733582,
+	beamEnergyTrail = 100334877599740,
 } :: { [string]: number }
 
 VfxAssets.FLIPBOOK = table.freeze({ grid = "Grid4x4", fps = 28 })

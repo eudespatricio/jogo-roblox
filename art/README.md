@@ -62,38 +62,39 @@ Saídas: `art/calibration.blend`, `art/export/calibration.glb`, `art/export/cali
 - Importar e salvar `.rbxm` no Studio (não há automação confiável para isso).
 - Validar no device fraco (triângulos, textura, draw calls) — ver orçamentos.
 
-## Esteira (Blender por script → Forge3D QC)
+## Esteira (Blender por script → Forge3D 0.9.0 QC & PBR)
 
-Um comando gera **todos** os itens de jogo restantes, passa pelo QC do Forge3D 0.8.0 (`spec@5`/`manifest@5`, rota
-`import`, mesma da muralha) e monta o lineup. **Nunca faz upload** (nenhum `forge3d upload-*`).
+Um comando gera **todos** os itens de jogo restantes, passa pelo QC do Forge3D `0.9.0` (`spec@6`/`manifest@6`, perfil `roblox-aa-80`, Gate G1–G11, bake PBR `detalhe_alto`/`pbr_zonas` nos 24 modelos Hero) e monta o lineup. **Nunca faz upload** (nenhum `forge3d upload-*`; a publicação Open Cloud é separada em `tools/publish-v09-opencloud.py`).
 
 ```bash
-bash tools/art-pipeline.sh                 # todos os 8 grupos: wall, traps, horde, bosses, portal, props, fauna, backdrop (97 modelos + paleta 512x512)
+bash tools/art-pipeline.sh                 # todos os 8 grupos: wall, traps, horde, bosses, portal, props, fauna, backdrop (97 modelos + 24 Hero PBR)
 bash tools/art-pipeline.sh --only traps    # um grupo (repetível)
 bash tools/art-pipeline.sh --skip-blender  # só Forge3D + lineup sobre os GLB já exportados
+python3 art/scripts/make_pbr_atlas.py      # gera o Atlas Mestre PBR 2048x2048 (4 mapas)
+python3 art/scripts/make_vfx_textures.py   # gera 9 texturas RGBA de VFX (4 flipbooks 4x4 + 5 mapas)
 ```
 
-| Grupo | Script | Itens (id Forge3D → objeto) | Orçamento v1.7 |
+| Grupo | Script | Itens (id Forge3D → objeto) | Orçamento v1.8 (`roblox-aa-80`) |
 |---|---|---|---|
-| `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_l<n>` (L1–L5, 5 modelos) | ≤ 5800 tris/tier (`LIMITE_LOTE` 6000) |
-| `traps` | `art/scripts/make_traps.py` | `trap.<tipo>.l<n>.01` → `TRAP_<tipo>_l<n>` (archer, tar, frost, cannon, catapult × L1–L5, 25 modelos) | ≤ 1850 tris, pegada ≤ 4,8 × 4,8 |
-| `horde` | `art/scripts/make_horde.py` | `horde.<tipo>.01` → `CMD_<tipo>` (runner, brute, swarm, shieldbearer, pyromancer, sapper, `wisp`, `drake`, 8 modelos) | ≤ 2800 tris |
-| `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` → `BOSS_<tipo>` (5 showcases) + `boss.<tipo>.<part>.01` → `BOSS_<tipo>_{torso,arm_r,arm_l,leg_l,leg_r}` (25 sub-partes, 30 modelos) | ≤ 5200 tris (full) / ≤ 2800 torso / ≤ 1600 membros |
-| `portal` | `art/scripts/make_portal.py` | `prop.rift_portal.01` → `PROP_rift_portal` + `portal.act<1..5>_<tema>.01` → `PORTAL_act<1..5>` (6 modelos) | ≤ 3600 tris |
-| `props` | `art/scripts/make_props.py` | `prop.<tipo>.01` → `PROP_<tipo>` (`tree_pine`, `tree_oak`, `rock_cluster`, `siege_supply`, `iron_brazier`, `rift_obelisk`, `bastion_warden`, 7 modelos) | ≤ 1800–3000 tris |
-| `fauna` | `art/scripts/make_fauna.py` | `fauna.<tipo>.01` → `FAUNA_<tipo>` (`wyvern_body`/`wing_l`/`wing_r`, `bird_body`/`wing_l`/`wing_r`, `stag`, `pack_ox`, `ram`, 9 modelos) | ≤ 2200 tris |
-| `backdrop` | `art/scripts/make_backdrop.py` | `backdrop.<tipo>.01` → `BACKDROP_<tipo>` (`castle01`, `keep01`, `house01`, `house02`, `tower01`, `windmill01`, `tree01`, 7 modelos) | ≤ 2800 tris |
+| `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_l<n>` (L1–L5, 5 Hero PBR) | ≤ 7500 tris/tier |
+| `traps` | `art/scripts/make_traps.py` | `trap.<tipo>.l<n>.01` → `TRAP_<tipo>_l<n>` (archer, tar, frost, cannon, catapult × L1–L5, 25 modelos) | ≤ 2600 tris, pegada ≤ 4,8 × 4,8 |
+| `horde` | `art/scripts/make_horde.py` | `horde.<tipo>.01` → `CMD_<tipo>` (runner, brute, swarm, shieldbearer, pyromancer, sapper, `wisp`, `drake`, 8 modelos) | ≤ 3400 tris |
+| `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` → `BOSS_<tipo>` (5 Hero) + `boss.<tipo>.<part>.01` → `BOSS_<tipo>_{torso(Hero),arm_r,arm_l,leg_l,leg_r}` (30 modelos) | ≤ 7200 tris (full) / ≤ 4200 torso / ≤ 2200 membros |
+| `portal` | `art/scripts/make_portal.py` | `prop.rift_portal.01` → `PROP_rift_portal` + `portal.act<1..5>_<tema>.01` → `PORTAL_act<1..5>` (6 Hero PBR) | ≤ 4800 tris |
+| `props` | `art/scripts/make_props.py` | `prop.<tipo>.01` → `PROP_<tipo>` (`tree_pine`, `tree_oak`, `rock_cluster`, `siege_supply`, `iron_brazier`, `rift_obelisk`, `bastion_warden`(Hero), 7 modelos) | ≤ 2800–3600 tris |
+| `fauna` | `art/scripts/make_fauna.py` | `fauna.<tipo>.01` → `FAUNA_<tipo>` (`wyvern_body`/`wing_l`/`wing_r`, `bird_body`/`wing_l`/`wing_r`, `stag`, `pack_ox`, `ram`, 9 modelos) | ≤ 2800 tris |
+| `backdrop` | `art/scripts/make_backdrop.py` | `backdrop.<tipo>.01` → `BACKDROP_<tipo>` (`castle01`(Hero), `keep01`(Hero), `house01`, `house02`, `tower01`, `windmill01`, `tree01`, 7 modelos) | ≤ 3600 tris |
 
 Etapas: Blender headless (grupos em paralelo, `--python-exit-code 1`) → `forge3d validate` →
-`forge3d run` → `forge3d verify ~/.local/state/forge3d/saida/muralha_<grupo>` → sync do GLB pós-processado (`saida/` → `art/export/` com paridade SHA-256) → `montage`.
+`forge3d run` → `forge3d verify ~/.local/state/forge3d/saida/muralha_<grupo>` (`manifest@6` + Gate G1–G11) → sync do GLB pós-processado (`saida/` → `art/export/` com paridade SHA-256) → `montage`.
 Logs e relatórios JSON em `art/renders/_logs/`; renders por item em `art/renders/<grupo>/`;
 lineups em `art/renders/lineup_<grupo>.png` e `lineup_all.png` (tudo ignorado no git).
 
-- **Helpers compartilhados:** `art/scripts/lowpoly_lib.py` (atlas de paleta `512×512` com 63 cores `PAL` em grade 8×8 de células `64px`, `paint()`, primitivas suavizadas `bevel_obj`/`tapered_cylinder`/`lathe_profile`, chevrons de patente). Todos os 97 modelos compartilham a textura unificada `LOWPOLY_PALETTE_TEXTURE_ID = 132821694339844`.
+- **Helpers compartilhados & PBR em 2 Tiers:** `art/scripts/lowpoly_lib.py` (paleta `PAL` 63 cores, UVs espaciais anti-bleed por célula, `PAL_PBR_META`, `build_pbr_zonas` ≤ 16 zonas + `detalhe_alto`). Os 73 modelos instanciados compartilham o Atlas Mestre PBR `2048×2048` (`PbrAssets.MASTER_ATLAS`, `colorMap = 87757376846021`), enquanto os 24 modelos Hero recebem mapas Cycles dedicados (`PbrAssets.HERO_SURFACES`) via `SurfaceAppearance`; os 97 GLBs são publicados com `strip_embedded_textures=true`.
 - **Lotes gerados:** `art/forge/lote_{muralha,traps,horde,bosses,portal,props,fauna,backdrop}_import.yaml` são escritos
   pelo script com `altura_metros` = altura **medida** do GLB × 0,28. Não editar à mão; regenerar.
-- **QC e suavização de normais (v1.7):** jitter determinístico de 3–12 milésimos de stud por peça no `join()` (G1:
-  sem arestas coincidentes após a solda do Forge), pivô normalizado em Z=0 e gate de orientação sem rotação residual/`det>0` + `suavizacao_normais: { ativo: true, angulo_graus: 46..52, weighted_normals: true, corrective_smooth: false }` (G2 no Forge3D 0.8.0 `spec@5`), UV espalhada na
+- **QC e suavização de normais (v1.8):** jitter determinístico de 3–12 milésimos de stud por peça no `join()` (G1:
+  sem arestas coincidentes após a solda do Forge), pivô normalizado em Z=0 e gate de orientação sem rotação residual/`det>0` + `suavizacao_normais: { ativo: true, angulo_graus: 46..52, weighted_normals: true, corrective_smooth: false }` (`spec@6`, G2/G11 no Forge3D 0.9.0), UV espalhada na
   célula da paleta (G3), 1 material (G5). O `g1_check()` local reprova antes do Forge. As asas de
   `fauna` e os membros de `bosses` usam `center_xy=False` e `pivot: origem` para manter o encaixe de articulação.
 - **Patente (L1–L3):** mastro + 1/2/3 chevrons ≥ 0,6 stud (`amber` / `amberBright` /

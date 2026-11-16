@@ -1,16 +1,27 @@
-# Forge3D 0.8.0 — rota `import`: torso/capuz esculpido da horda hibrida (art/scripts/make_horde.py)
+# Forge3D 0.9.0 — rota `import`: torso/capuz esculpido AA da horda hibrida (art/scripts/make_horde.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
-# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@5
+# altura_metros = altura exportada em studs x 0,28 (perfil roblox-aa-80).
+schema: forge3d/spec@6
 
 projeto: muralha
-perfil: roblox-r15
+perfil: roblox-aa-80
 destino_exportacao: ~/.local/state/forge3d/saida/muralha_horde
-estilo_global: lowpoly_lit
+estilo_global: stylized_pbr
+
+orcamento_cena:
+  triangulos_max: 400000
+  draw_calls_max: 400
+  vram_mb_max: 200
+
+roblox_render:
+  lighting_technology: Future
+  render_fidelity_padrao: Precise
+  surface_appearance: true
+  strip_embedded_textures_glb: true
 
 politica:
   falha: continuar
-  custo_max_min: 5
+  custo_max_min: 30
   seed_base: 20261113
 
 lote:
@@ -18,10 +29,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_runner.glb
-    altura_metros: 1.3846   # 4.9449 studs
+    altura_metros: 1.3982   # 4.9936 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -36,10 +50,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_brute.glb
-    altura_metros: 1.7132   # 6.1186 studs
+    altura_metros: 1.6991   # 6.0681 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -54,10 +71,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_swarm.glb
-    altura_metros: 0.6606   # 2.3592 studs
+    altura_metros: 0.6608   # 2.3601 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -72,10 +92,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_shieldbearer.glb
-    altura_metros: 1.5331   # 5.4752 studs
+    altura_metros: 1.5101   # 5.3932 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -90,10 +113,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_pyromancer.glb
-    altura_metros: 1.4885   # 5.316 studs
+    altura_metros: 1.4914   # 5.3263 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -108,10 +134,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_sapper.glb
-    altura_metros: 0.8329   # 2.9745 studs
+    altura_metros: 0.831   # 2.968 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -126,10 +155,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_wisp.glb
-    altura_metros: 0.5829   # 2.0817 studs
+    altura_metros: 0.6005   # 2.1446 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48
@@ -144,10 +176,13 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_drake.glb
-    altura_metros: 1.4176   # 5.0629 studs
+    altura_metros: 1.4505   # 5.1803 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3400
     material: opaque
+    qualidade: standard
+    quantidade_cena: 6
+    render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 48

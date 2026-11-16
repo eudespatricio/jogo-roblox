@@ -12,7 +12,7 @@
 |---|---|---|
 | Editor do jogo | **Roblox Studio** (Windows, `version-67c8b1dedbb74fed`) + plugin **Rojo** | ok |
 | Código | **Rokit**: Rojo 7.7.1 · StyLua 2.6.0 · Selene 0.32.0 · Luau 0.746 · **luau-lsp 1.70.1** · **Asphalt 2.0.2** | ok |
-| 3D | **Blender 4.5.15 LTS** (`blender4.5`) e 4.2.0 (`blender`) + **Forge3D 0.8.0** (`~/.local/bin/forge3d`, `spec@5`/G1–G10) | ok; 4.5 usa libs SM/ICE extraídas sem sudo |
+| 3D | **Blender 4.5.15 LTS** (`blender4.5`) e 4.2.0 (`blender`) + **Forge3D 0.9.0** (`~/.local/bin/forge3d`, `spec@6`/`manifest@6`, `roblox-aa-80`, G1–G11) | ok; 4.5 usa libs SM/ICE extraídas sem sudo |
 | Tipos | **luau-lsp 1.70.1** (Rokit) + `.tools/globalTypes.d.luau` (`scripts/fetch-roblox-types.sh`) | ok |
 | Scripts | **Lune 0.11.1** · **Pesde 0.7.4** · **rbxcloud 0.17.0** | ok, em `~/.local/bin` |
 | Áudio/vídeo | **ffmpeg 7.0.2 static** (já existia) | ok |
@@ -64,7 +64,7 @@ O 4.5.15 LTS já está instalado no WSL como `blender4.5`; o `blender` antigo co
 | rbxcloud | 0.17.0 | `~/.local/bin/rbxcloud` |
 | oxipng | 10.2.1 | `~/.local/bin/oxipng` |
 | Blender | 4.5.15 LTS | `~/.local/bin/blender4.5` (o `blender` continua 4.2) |
-| forge3d | 0.8.0 | `~/.local/bin/forge3d` (`spec@5`/`manifest@5`, gate G2 de orientação + normais) |
+| forge3d | 0.9.0 | `~/.local/bin/forge3d` (`spec@6`/`manifest@6`, `roblox-aa-80`, Gates G1–G11, PBR bake + `strip_embedded_textures`) |
 
 `git lfs install --skip-repo` já foi rodado. O `ffmpeg 7.0.2` já estava em `~/.local/bin`.
 Para scripts e agentes, use `source scripts/env.sh` — shell não-login não lê `.bashrc`.
@@ -128,21 +128,21 @@ fixado, todo asset nasce torto ou no tamanho errado.
 
 A doc oficial de Blender para Roblox cobre units/axes: [create.roblox.com/docs/art/blender](https://create.roblox.com/docs/art/blender).
 
-### 4.2 Convenção de asset (v1.7 — 97 modelos Open Cloud + paleta 512²)
+### 4.2 Convenção de asset (v1.8 — 206 assets Open Cloud: 97 modelos + 100 PBR + 9 VFX)
 
-| Tipo | Prefixo | Pivô | Escala | Triângulos (teto v1.7) | Textura |
+| Tipo | Prefixo | Pivô | Escala | Triângulos (teto v1.8) | Textura / PBR |
 |---|---|---|---:|---:|---:|
-| Armadilha (25: 5×L1..L5) | `TRAP_` | base, Z=0 | 1 | ≤ 1.850 | 512² (paleta 64 cores) |
-| Muralha completa (5: L1..L5) | `WALL_` | base, Z=0 | 1 | ≤ 5.800 | 512² (paleta 64 cores) |
-| Horda terrestre/aérea (8: incl. `wisp`/`drake`) | `CMD_` | base, Z=0 | 1 | ≤ 2.800 | 512² (paleta 64 cores) |
-| Boss completo (5) / Sub-partes (25) | `BOSS_` | base / origem | 1 | ≤ 5.200 / ≤ 2.800 torso / ≤ 1.600 membro | 512² (paleta 64 cores) |
-| Portal (6: `rift` + `act1..5`) | `PORTAL_` / `PROP_rift_portal` | base, Z=0 | 1 | ≤ 3.600 | 512² (paleta 64 cores) |
-| Prop e Guardião (7: incl. `bastion_warden`) | `PROP_` | base, Z=0 | 1 | ≤ 3.000 | 512² (paleta 64 cores) |
-| Fauna (9: corpos e asas) | `FAUNA_` | base / origem | 1 | ≤ 2.200 | 512² (paleta 64 cores) |
-| Cenário do vale (7: incl. `keep01`) | `BACKDROP_` | base, Z=0 | 1 | ≤ 2.800 | 512² (`132821694339844`) |
-| Efeito | `VFX_` | origem | 1 | — | 256² (flipbook) |
+| Armadilha (25: 5×L1..L5) | `TRAP_` | base, Z=0 | 1 | ≤ 2.600 | Atlas PBR `2048²` (`PbrAssets.MASTER_ATLAS`) |
+| Muralha completa (5: L1..L5) | `WALL_` | base, Z=0 | 1 | ≤ 7.500 | Hero Cycles PBR 4 mapas (`PbrAssets`) |
+| Horda terrestre/aérea (8: incl. `wisp`/`drake`) | `CMD_` | base, Z=0 | 1 | ≤ 3.400 | Atlas PBR `2048²` (`PbrAssets.MASTER_ATLAS`) |
+| Boss completo (5) / Sub-partes (25) | `BOSS_` | base / origem | 1 | ≤ 7.200 / ≤ 4.200 torso / ≤ 2.200 membro | Hero Cycles PBR (full/torso) + Atlas PBR (membros) |
+| Portal (6: `rift` + `act1..5`) | `PORTAL_` / `PROP_rift_portal` | base, Z=0 | 1 | ≤ 4.800 | Hero Cycles PBR 4 mapas (`PbrAssets`) |
+| Prop e Guardião (7: incl. `bastion_warden`) | `PROP_` | base, Z=0 | 1 | ≤ 3.600 | Hero PBR (`bastion_warden`) + Atlas PBR |
+| Fauna (9: corpos e asas) | `FAUNA_` | base / origem | 1 | ≤ 2.800 | Atlas PBR `2048²` (`PbrAssets.MASTER_ATLAS`) |
+| Cenário do vale (7: incl. `keep01`) | `BACKDROP_` | base, Z=0 | 1 | ≤ 3.600 | Hero PBR (`castle01`/`keep01`) + Atlas PBR |
+| Efeito | `VFX_` | origem | 1 | — | 9 texturas (`1024²` flipbooks `4×4` + `512²` anel/glow/smoke/decal + `512×256` beam) |
 
-Regras: aplicar transforms; sem escala negativa; nomes `PREFIXO_nome_variante`; 1 material por mesh com UV na paleta `512×512` (`LOWPOLY_PALETTE_TEXTURE_ID = 132821694339844`); suavização de normais obrigatória no Forge3D (`suavizacao_normais: { ativo: true, angulo_graus: 46..52, weighted_normals: true, corrective_smooth: false }`) e sincronização SHA-256 entre `saida/` e `art/export/*.glb`.
+Regras: aplicar transforms; sem escala negativa; nomes `PREFIXO_nome_variante`; 1 material por mesh com UV na grade `8×8` (`SurfaceAppearance` em 2 tiers via `PbrAssets`: `MASTER_ATLAS` `2048²` `colorMap = 87757376846021` + 24 conjuntos `HERO_SURFACES`, e `LOWPOLY_PALETTE_TEXTURE_ID = 87757376846021`); suavização de normais obrigatória no Forge3D (`spec@6`, `roblox-aa-80`, Gates G1–G11); upload com `strip_embedded_textures=true` e sincronização SHA-256 entre `saida/` e `art/export/*.glb`.
 
 ### 4.3 Export e versionamento
 

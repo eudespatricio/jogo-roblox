@@ -12,6 +12,8 @@ local UiAssets = require("../src/shared/visual/UiAssets")
 local AudioAssets = require("../src/shared/visual/AudioAssets")
 local CameraFraming = require("../src/shared/visual/CameraFraming")
 local PortalThemes = require("../src/shared/visual/PortalThemes")
+local PbrAssets = require("../src/shared/visual/PbrAssets")
+local VfxAssets = require("../src/shared/visual/VfxAssets")
 local HeadlessMock = require("../src/shared/visual/HeadlessRobloxMock")
 local cliRequire: any = require
 local HordeKit = cliRequire("../src/client/visual/HordeKit")
@@ -862,11 +864,12 @@ check(
 )
 
 check(
-	"open cloud v1.7: 97 assetIds 3D unicos > 0 + paleta 512x512 (132821694339844) com paridade no Backdrop",
+	"open cloud v1.8: 97 assetIds 3D unicos > 0 + paleta PBR 2048x2048 com paridade no Backdrop",
 	function()
 		assert(
-			MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID == 132821694339844,
-			"LOWPOLY_PALETTE_TEXTURE_ID divergente"
+			PbrAssets.MASTER_ATLAS.colorMap > 0
+				and MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID == PbrAssets.MASTER_ATLAS.colorMap,
+			"LOWPOLY_PALETTE_TEXTURE_ID divergente de PbrAssets.MASTER_ATLAS.colorMap"
 		)
 		assert(
 			MeshAssets.PORTAL == MeshAssets.PORTALS.rift,
@@ -1067,6 +1070,256 @@ check("open cloud v1.7: BackdropAssets keep01 ativo em ASSETS e posicionado em L
 	end
 	assert(keepPlacements >= 1, "keep01 nao posicionado em BackdropAssets.LAYOUT")
 end)
+
+check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 9 VFX)", function()
+	local globalIds: { [number]: string } = {}
+	local totalAssets = 0
+	local function addGlobal(label: string, id: number)
+		assert(
+			type(id) == "number" and id > 0 and id == math.floor(id),
+			"assetId invalido em " .. label .. ": " .. tostring(id)
+		)
+		assert(
+			globalIds[id] == nil,
+			string.format("colisao global (%d): %s vs %s", id, tostring(globalIds[id]), label)
+		)
+		globalIds[id] = label
+		totalAssets += 1
+	end
+
+	for tier, id in ipairs(WallAssets.ASSET_IDS) do
+		addGlobal("model.WALL_bastion_l" .. tostring(tier), id)
+	end
+	for _, trapId in ipairs({ "archer", "tar", "frost", "cannon", "catapult" }) do
+		for lvl = 1, 5 do
+			addGlobal(
+				"model." .. MeshAssets.trapModelName(trapId, lvl),
+				MeshAssets.TRAPS[trapId][lvl]
+			)
+		end
+	end
+	for kind, id in pairs(MeshAssets.HORDE) do
+		addGlobal("model." .. MeshAssets.hordeModelName(kind), id)
+	end
+	for bossId, id in pairs(MeshAssets.BOSSES) do
+		addGlobal("model." .. MeshAssets.bossModelName(bossId), id)
+	end
+	for bossId, parts in pairs(MeshAssets.BOSS_PARTS) do
+		for _, pk in ipairs({ "torso", "arm_r", "arm_l", "leg_l", "leg_r" }) do
+			addGlobal("model." .. MeshAssets.bossPartModelName(bossId, pk), (parts :: any)[pk])
+		end
+	end
+	for pKey, id in pairs(MeshAssets.PORTALS) do
+		addGlobal("model.PORTAL_" .. pKey, id)
+	end
+	for key, id in pairs(MeshAssets.PROPS) do
+		addGlobal("model." .. MeshAssets.propModelName(key), id)
+	end
+	for key, id in pairs(MeshAssets.FAUNA) do
+		addGlobal("model." .. MeshAssets.faunaModelName(key), id)
+	end
+	for _, asset in ipairs(BackdropAssets.ASSETS) do
+		addGlobal("model." .. BackdropAssets.modelName(asset.key), asset.assetId)
+	end
+
+	for _, ch in ipairs({ "colorMap", "normalMap", "metalnessMap", "roughnessMap" }) do
+		addGlobal("pbr.MASTER_ATLAS." .. ch, (PbrAssets.MASTER_ATLAS :: any)[ch])
+	end
+	local heroKeys = {
+		"WALL_bastion_l1",
+		"WALL_bastion_l2",
+		"WALL_bastion_l3",
+		"WALL_bastion_l4",
+		"WALL_bastion_l5",
+		"BOSS_iron_ram_colossus",
+		"BOSS_slag_juggernaut",
+		"BOSS_rime_matriarch",
+		"BOSS_powder_baron",
+		"BOSS_rift_titan",
+		"BOSS_iron_ram_colossus_torso",
+		"BOSS_slag_juggernaut_torso",
+		"BOSS_rime_matriarch_torso",
+		"BOSS_powder_baron_torso",
+		"BOSS_rift_titan_torso",
+		"PROP_rift_portal",
+		"PORTAL_act1",
+		"PORTAL_act2",
+		"PORTAL_act3",
+		"PORTAL_act4",
+		"PORTAL_act5",
+		"PROP_bastion_warden",
+		"BACKDROP_castle01",
+		"BACKDROP_keep01",
+	}
+	for _, hk in ipairs(heroKeys) do
+		local surf = PbrAssets.HERO_SURFACES[hk]
+		assert(surf ~= nil, "HERO_SURFACES sem chave: " .. hk)
+		for _, ch in ipairs({ "colorMap", "normalMap", "metalnessMap", "roughnessMap" }) do
+			addGlobal("pbr.HERO." .. hk .. "." .. ch, (surf :: any)[ch])
+		end
+	end
+
+	local vfxKeys = {
+		"explosionFlipbook",
+		"frostShatterFlipbook",
+		"arcaneRiftFlipbook",
+		"slashSparkFlipbook",
+		"shockwaveRing",
+		"softGlowFlare",
+		"smokeWispy",
+		"scorchCraterDecal",
+		"beamEnergyTrail",
+	}
+	for _, vk in ipairs(vfxKeys) do
+		addGlobal("vfx." .. vk, VfxAssets.IDS[vk])
+		local cid = VfxAssets.contentId(vk)
+		assert(string.sub(cid, 1, 13) == "rbxassetid://", "VfxAssets.contentId invalido: " .. vk)
+	end
+
+	assert(totalAssets == 206, "esperava 206 assetIds globais, achei " .. tostring(totalAssets))
+end)
+
+check(
+	"PbrAssets Two-Tier SurfaceAppearance: Hero + MASTER_ATLAS montam ColorMap/NormalMap/MetalnessMap/RoughnessMap",
+	function()
+		local function testMount(modelName: string, expectedSurf: any)
+			local m = HeadlessMock.Instance.new("Model")
+			m.Name = modelName
+			local mp = HeadlessMock.Instance.new("MeshPart")
+			mp.Name = "Mesh"
+			mp.TextureID = "rbxassetid://999"
+			mp.Parent = m
+			PbrAssets.applyToModel(m, modelName, "rbxassetid://999")
+			assert(mp.TextureID == "", "TextureID deveria limpar apos PBR em " .. modelName)
+			local sa = mp:FindFirstChildOfClass("SurfaceAppearance")
+			assert(sa ~= nil, "SurfaceAppearance ausente em " .. modelName)
+			assert(
+				sa.ColorMap == "rbxassetid://" .. tostring(expectedSurf.colorMap),
+				"ColorMap divergente em " .. modelName
+			)
+			assert(
+				sa.NormalMap == "rbxassetid://" .. tostring(expectedSurf.normalMap),
+				"NormalMap divergente em " .. modelName
+			)
+			assert(
+				sa.MetalnessMap == "rbxassetid://" .. tostring(expectedSurf.metalnessMap),
+				"MetalnessMap divergente em " .. modelName
+			)
+			assert(
+				sa.RoughnessMap == "rbxassetid://" .. tostring(expectedSurf.roughnessMap),
+				"RoughnessMap divergente em " .. modelName
+			)
+		end
+
+		for _, heroName in ipairs({
+			"WALL_bastion_l5",
+			"BOSS_rift_titan",
+			"BOSS_rift_titan_torso",
+			"PORTAL_act5",
+			"PROP_bastion_warden",
+			"BACKDROP_keep01",
+		}) do
+			testMount(heroName, PbrAssets.HERO_SURFACES[heroName])
+		end
+		for _, tierAName in ipairs({ "TRAP_cannon_l3", "CMD_drake", "FAUNA_wyvern_body" }) do
+			testMount(tierAName, PbrAssets.MASTER_ATLAS)
+		end
+	end
+)
+
+check(
+	"Vfx v1.8: flipbooks Grid4x4, Beam/Trail texturizados e ScorchDecal apenas em Mid/High (CanQuery=false)",
+	function()
+		local prevTier = Vfx.getQualityTier()
+		Vfx.setQualityTier("Mid")
+		local scene = HeadlessMock.Instance.new("Folder")
+		HeadlessMock.setTime(300.0)
+		HeadlessMock.clearDelays()
+
+		local p0 = HeadlessMock.Vector3.new(0, 1, 0)
+		local p1 = HeadlessMock.Vector3.new(10, 1, 0)
+		local accent = HeadlessMock.Color3.fromRGB(245, 158, 11)
+		local frost = HeadlessMock.Color3.fromRGB(89, 166, 230)
+		Vfx.trapEffect(scene, "cannon", p0, p1, nil)
+		Vfx.trapEffect(scene, "frost", p0, p1, "thermal_shock")
+		Vfx.bossTelegraph(scene, p1, accent, 0.5)
+		local telegraphZone = scene:FindFirstChild("VfxBossTelegraphZone")
+		assert(telegraphZone ~= nil, "VfxBossTelegraphZone ausente")
+		local beams = 0
+		for _, desc in ipairs(telegraphZone:GetDescendants()) do
+			if desc.ClassName == "Beam" then
+				beams += 1
+				assert(
+					string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+					"Beam sem Texture rbxassetid"
+				)
+			end
+		end
+		assert(beams >= 1, "esperava >=1 Beam texturizado em VfxBossTelegraphZone")
+
+		Vfx.bossSlamImpact(scene, p1, accent)
+		Vfx.portalBreach(scene, p1, frost, accent, false)
+		Vfx.dust(scene, p1, 6)
+		HeadlessMock.flushDelays()
+
+		local flipbooks, trails, scorchPlates, decals = 0, 0, 0, 0
+		for _, desc in ipairs(scene:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				assert(
+					desc.CanQuery == false,
+					"Vfx v1.8 vazou CanQuery=true: " .. tostring(desc.Name)
+				)
+				assert(
+					desc.CanTouch == false,
+					"Vfx v1.8 vazou CanTouch=true: " .. tostring(desc.Name)
+				)
+				if string.sub(tostring(desc.Name), 1, 3) ~= "F2_" then
+					assert(
+						desc.CanCollide == false,
+						"Vfx nao-F2 CanCollide=true: " .. tostring(desc.Name)
+					)
+				end
+				if desc.Name == "VfxScorchPlate" then
+					scorchPlates += 1
+				end
+			elseif desc.ClassName == "ParticleEmitter" then
+				if desc.FlipbookLayout == HeadlessMock.Enum.ParticleFlipbookLayout.Grid4x4 then
+					flipbooks += 1
+					assert(
+						string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+						"Flipbook sem Texture rbxassetid"
+					)
+				end
+			elseif desc.ClassName == "Trail" then
+				trails += 1
+				assert(
+					string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+					"Trail sem Texture rbxassetid"
+				)
+			elseif desc.ClassName == "Decal" then
+				decals += 1
+				assert(
+					string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+					"Decal sem Texture rbxassetid"
+				)
+			end
+		end
+		assert(flipbooks >= 3, "esperava >=3 flipbooks Grid4x4, achei " .. tostring(flipbooks))
+		assert(trails >= 1, "esperava >=1 Trail texturizado")
+		assert(scorchPlates >= 2 and decals >= 2, "esperava >=2 VfxScorchPlate+Decal em Mid")
+
+		-- Low tier: zero scorch plates
+		Vfx.setQualityTier("Low")
+		local lowScene = HeadlessMock.Instance.new("Folder")
+		Vfx.trapEffect(lowScene, "cannon", p0, p1, nil)
+		Vfx.bossSlamImpact(lowScene, p1, accent)
+		HeadlessMock.flushDelays()
+		for _, desc in ipairs(lowScene:GetDescendants()) do
+			assert(desc.Name ~= "VfxScorchPlate", "Low tier nao deveria criar VfxScorchPlate")
+		end
+		Vfx.setQualityTier(prevTier)
+	end
+)
 
 print(string.format("contrato visual (S8): %d checagens, %d falhas", checks, #failures))
 if #failures > 0 then

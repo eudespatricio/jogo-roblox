@@ -7,73 +7,73 @@ local MeshAssets = {}
 
 MeshAssets.FOLDER = "MuralhaAssets"
 MeshAssets.PORTAL_MODEL = "PROP_rift_portal"
-MeshAssets.PORTAL = 109517791180533
-MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID = 132821694339844
+MeshAssets.PORTAL = 124705842110804
+MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID = 87757376846021
 
 MeshAssets.PORTALS = table.freeze({
-	rift = 109517791180533, -- PROP_rift_portal
-	act1 = 126791113392403, -- PORTAL_act1 (Cinzas da Fronteira)
-	act2 = 128996643862236, -- PORTAL_act2 (Forjas de Escoria)
-	act3 = 138667848759919, -- PORTAL_act3 (Geada do Desfiladeiro)
-	act4 = 123597805510451, -- PORTAL_act4 (Polvora e Trincheira)
-	act5 = 115299301395101, -- PORTAL_act5 (A Fenda Profunda)
+	rift = 124705842110804, -- PROP_rift_portal
+	act1 = 80457558833517, -- PORTAL_act1
+	act2 = 130006104127963, -- PORTAL_act2
+	act3 = 92413708179170, -- PORTAL_act3
+	act4 = 113494595591202, -- PORTAL_act4
+	act5 = 140239593735227, -- PORTAL_act5
 }) :: { [string]: number }
 
 MeshAssets.TRAPS = table.freeze({
 	archer = table.freeze({
-		136531088392860, -- TRAP_archer_l1
-		127948003041990, -- TRAP_archer_l2
-		83428075493522, -- TRAP_archer_l3
-		134079627686582, -- TRAP_archer_l4
-		107116747084140, -- TRAP_archer_l5
+		74898920509737, -- TRAP_archer_l1
+		107034619319568, -- TRAP_archer_l2
+		71594213565838, -- TRAP_archer_l3
+		71233522965926, -- TRAP_archer_l4
+		99928560680039, -- TRAP_archer_l5
 	}),
 	tar = table.freeze({
-		129134650747475, -- TRAP_tar_l1
-		136374643717888, -- TRAP_tar_l2
-		105093278832083, -- TRAP_tar_l3
-		102634061007344, -- TRAP_tar_l4
-		117454116345175, -- TRAP_tar_l5
+		112747041692494, -- TRAP_tar_l1
+		74142165009322, -- TRAP_tar_l2
+		76097922544609, -- TRAP_tar_l3
+		80078124738613, -- TRAP_tar_l4
+		111936049397621, -- TRAP_tar_l5
 	}),
 	frost = table.freeze({
-		97973146456506, -- TRAP_frost_l1
-		91023890309611, -- TRAP_frost_l2
-		98609249267663, -- TRAP_frost_l3
-		81664686909476, -- TRAP_frost_l4
-		124785877415722, -- TRAP_frost_l5
+		75599638124392, -- TRAP_frost_l1
+		86151546861269, -- TRAP_frost_l2
+		101914720011590, -- TRAP_frost_l3
+		109168500595198, -- TRAP_frost_l4
+		121197989695612, -- TRAP_frost_l5
 	}),
 	cannon = table.freeze({
-		116997364661572, -- TRAP_cannon_l1
-		98932646893638, -- TRAP_cannon_l2
-		80307720103187, -- TRAP_cannon_l3
-		82932722118375, -- TRAP_cannon_l4
-		87409845344282, -- TRAP_cannon_l5
+		126408629929681, -- TRAP_cannon_l1
+		98052647295794, -- TRAP_cannon_l2
+		131506467672707, -- TRAP_cannon_l3
+		82347357559408, -- TRAP_cannon_l4
+		75043667056813, -- TRAP_cannon_l5
 	}),
 	catapult = table.freeze({
-		139360486270181, -- TRAP_catapult_l1
-		108621388470630, -- TRAP_catapult_l2
-		137032570894304, -- TRAP_catapult_l3
-		131401388418125, -- TRAP_catapult_l4
-		94776291697805, -- TRAP_catapult_l5
+		91148892276169, -- TRAP_catapult_l1
+		89061317902158, -- TRAP_catapult_l2
+		131023354001872, -- TRAP_catapult_l3
+		100007095385951, -- TRAP_catapult_l4
+		78937648158384, -- TRAP_catapult_l5
 	}),
 }) :: { [string]: { number } }
 
 MeshAssets.HORDE = table.freeze({
-	runner = 81670910227032, -- CMD_runner (torso/capuz esculpido para rig articulado)
-	brute = 72160988434060, -- CMD_brute (tronco/elmo esculpido para rig articulado)
-	swarm = 105470158146133, -- CMD_swarm (cranio espectral esculpido para rig articulado)
-	shieldbearer = 138850606688580, -- CMD_shieldbearer (escudeiro blindado para rig articulado)
-	pyromancer = 102596546057159, -- CMD_pyromancer (piroforjador com colar runico e nucleo de brasa)
-	sapper = 84119220103203, -- CMD_sapper (zapador com oculos e mochila de polvora)
-	wisp = 72045870880609, -- CMD_wisp (espirito/orbe da fenda voador com aneis runicos)
-	drake = 138236563437040, -- CMD_drake (draconato de escamas e chifres voador)
+	runner = 114012956006249, -- CMD_runner
+	brute = 125456882362546, -- CMD_brute
+	swarm = 96726732030645, -- CMD_swarm
+	shieldbearer = 90627963664824, -- CMD_shieldbearer
+	pyromancer = 71089087203831, -- CMD_pyromancer
+	sapper = 75545622801039, -- CMD_sapper
+	wisp = 110195715070633, -- CMD_wisp
+	drake = 121819060090792, -- CMD_drake
 }) :: { [string]: number }
 
 MeshAssets.BOSSES = table.freeze({
-	iron_ram_colossus = 76905850363477, -- BOSS_iron_ram_colossus (Ato 1)
-	slag_juggernaut = 133090749471851, -- BOSS_slag_juggernaut (Ato 2)
-	rime_matriarch = 118511202989197, -- BOSS_rime_matriarch (Ato 3)
-	powder_baron = 110759926607351, -- BOSS_powder_baron (Ato 4)
-	rift_titan = 124719274750385, -- BOSS_rift_titan (Ato 5)
+	iron_ram_colossus = 86795118354505, -- BOSS_iron_ram_colossus
+	slag_juggernaut = 134327654444729, -- BOSS_slag_juggernaut
+	rime_matriarch = 104952636888242, -- BOSS_rime_matriarch
+	powder_baron = 134089511245938, -- BOSS_powder_baron
+	rift_titan = 108755027838008, -- BOSS_rift_titan
 }) :: { [string]: number }
 
 export type BossPartIds = {
@@ -86,62 +86,62 @@ export type BossPartIds = {
 
 MeshAssets.BOSS_PARTS = table.freeze({
 	iron_ram_colossus = table.freeze({
-		torso = 134332134615397, -- BOSS_iron_ram_colossus_torso
-		arm_r = 78773563075186, -- BOSS_iron_ram_colossus_arm_r
-		arm_l = 72153503880148, -- BOSS_iron_ram_colossus_arm_l
-		leg_l = 139339557717623, -- BOSS_iron_ram_colossus_leg_l
-		leg_r = 139456813723375, -- BOSS_iron_ram_colossus_leg_r
+		torso = 86666150998704, -- BOSS_iron_ram_colossus_torso
+		arm_r = 135233841690477, -- BOSS_iron_ram_colossus_arm_r
+		arm_l = 102226955879826, -- BOSS_iron_ram_colossus_arm_l
+		leg_l = 136332810965816, -- BOSS_iron_ram_colossus_leg_l
+		leg_r = 88779565477560, -- BOSS_iron_ram_colossus_leg_r
 	}),
 	slag_juggernaut = table.freeze({
-		torso = 121524227605867, -- BOSS_slag_juggernaut_torso
-		arm_r = 90730724546300, -- BOSS_slag_juggernaut_arm_r
-		arm_l = 127482817808748, -- BOSS_slag_juggernaut_arm_l
-		leg_l = 71300753472335, -- BOSS_slag_juggernaut_leg_l
-		leg_r = 74132035848331, -- BOSS_slag_juggernaut_leg_r
+		torso = 139914667268602, -- BOSS_slag_juggernaut_torso
+		arm_r = 134151318810112, -- BOSS_slag_juggernaut_arm_r
+		arm_l = 86212244482186, -- BOSS_slag_juggernaut_arm_l
+		leg_l = 123017803819462, -- BOSS_slag_juggernaut_leg_l
+		leg_r = 135691014121164, -- BOSS_slag_juggernaut_leg_r
 	}),
 	rime_matriarch = table.freeze({
-		torso = 136005112915949, -- BOSS_rime_matriarch_torso
-		arm_r = 99445375369618, -- BOSS_rime_matriarch_arm_r
-		arm_l = 91803842414531, -- BOSS_rime_matriarch_arm_l
-		leg_l = 90381887140827, -- BOSS_rime_matriarch_leg_l
-		leg_r = 133459152908658, -- BOSS_rime_matriarch_leg_r
+		torso = 100603676077410, -- BOSS_rime_matriarch_torso
+		arm_r = 121525083568567, -- BOSS_rime_matriarch_arm_r
+		arm_l = 137836383146557, -- BOSS_rime_matriarch_arm_l
+		leg_l = 81520029765551, -- BOSS_rime_matriarch_leg_l
+		leg_r = 128741192982654, -- BOSS_rime_matriarch_leg_r
 	}),
 	powder_baron = table.freeze({
-		torso = 75788028052832, -- BOSS_powder_baron_torso
-		arm_r = 104373460151905, -- BOSS_powder_baron_arm_r
-		arm_l = 104510035468644, -- BOSS_powder_baron_arm_l
-		leg_l = 132333247764159, -- BOSS_powder_baron_leg_l
-		leg_r = 95272822540855, -- BOSS_powder_baron_leg_r
+		torso = 90945665921121, -- BOSS_powder_baron_torso
+		arm_r = 110462783821965, -- BOSS_powder_baron_arm_r
+		arm_l = 112521140013872, -- BOSS_powder_baron_arm_l
+		leg_l = 126283860231619, -- BOSS_powder_baron_leg_l
+		leg_r = 106438766521619, -- BOSS_powder_baron_leg_r
 	}),
 	rift_titan = table.freeze({
-		torso = 95302020534985, -- BOSS_rift_titan_torso
-		arm_r = 89029129457057, -- BOSS_rift_titan_arm_r
-		arm_l = 113420522768988, -- BOSS_rift_titan_arm_l
-		leg_l = 92246728751919, -- BOSS_rift_titan_leg_l
-		leg_r = 126925364264734, -- BOSS_rift_titan_leg_r
+		torso = 97243497009509, -- BOSS_rift_titan_torso
+		arm_r = 94239567275767, -- BOSS_rift_titan_arm_r
+		arm_l = 83377586608476, -- BOSS_rift_titan_arm_l
+		leg_l = 107156735138397, -- BOSS_rift_titan_leg_l
+		leg_r = 91818216518100, -- BOSS_rift_titan_leg_r
 	}),
 }) :: { [string]: BossPartIds }
 
 MeshAssets.PROPS = table.freeze({
-	tree_pine = 77916499643587, -- PROP_tree_pine (pinheiro detalhado do bastiao)
-	tree_oak = 93478874574140, -- PROP_tree_oak (carvalho detalhado da arena)
-	rock_cluster = 130272757429108, -- PROP_rock_cluster (aglomerado rochoso natural)
-	siege_supply = 92663727424492, -- PROP_siege_supply (barris e caixotes de cerco)
-	iron_brazier = 99775577424134, -- PROP_iron_brazier (braseiro forjado do bastiao)
-	rift_obelisk = 127947024172283, -- PROP_rift_obelisk (obelisco cristalino da fenda)
-	bastion_warden = 137295126478774, -- PROP_bastion_warden (guardiao heroico da muralha)
+	tree_pine = 140126555659068, -- PROP_tree_pine
+	tree_oak = 75735839562524, -- PROP_tree_oak
+	rock_cluster = 121015134136611, -- PROP_rock_cluster
+	siege_supply = 76636286828540, -- PROP_siege_supply
+	iron_brazier = 126739804470209, -- PROP_iron_brazier
+	rift_obelisk = 110394747853844, -- PROP_rift_obelisk
+	bastion_warden = 111077596874674, -- PROP_bastion_warden
 }) :: { [string]: number }
 
 MeshAssets.FAUNA = table.freeze({
-	wyvern_body = 81558330911939, -- FAUNA_wyvern_body (corpo de dragao/wyvern)
-	wyvern_wing_l = 137140544010877, -- FAUNA_wyvern_wing_l (asa esquerda wyvern)
-	wyvern_wing_r = 107742988986514, -- FAUNA_wyvern_wing_r (asa direita wyvern)
-	bird_body = 94882977563939, -- FAUNA_bird_body (corpo ave rapina/passaro)
-	bird_wing_l = 126856562308771, -- FAUNA_bird_wing_l (asa esquerda passaro)
-	bird_wing_r = 126501636552175, -- FAUNA_bird_wing_r (asa direita passaro)
-	stag = 120599200799522, -- FAUNA_stag (cervo do vale)
-	pack_ox = 131365608762000, -- FAUNA_pack_ox (boi de carga com ambar)
-	ram = 131997464517349, -- FAUNA_ram (carneiro das colinas)
+	wyvern_body = 112600701149211, -- FAUNA_wyvern_body
+	wyvern_wing_l = 78807559858605, -- FAUNA_wyvern_wing_l
+	wyvern_wing_r = 76669071902767, -- FAUNA_wyvern_wing_r
+	bird_body = 105638593150093, -- FAUNA_bird_body
+	bird_wing_l = 83275101075739, -- FAUNA_bird_wing_l
+	bird_wing_r = 79661038536872, -- FAUNA_bird_wing_r
+	stag = 110402349655640, -- FAUNA_stag
+	pack_ox = 123210153825057, -- FAUNA_pack_ox
+	ram = 134701337948694, -- FAUNA_ram
 }) :: { [string]: number }
 
 function MeshAssets.trapModelName(id: string, lvl: number): string
