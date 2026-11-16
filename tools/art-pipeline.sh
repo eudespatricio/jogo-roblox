@@ -177,11 +177,11 @@ if command -v montage >/dev/null 2>&1; then
     mapfile -t pngs < <(renders_of "$g")
     [[ ${#pngs[@]} -gt 0 ]] || continue
     tile="5x"; geo="256x256+4+4"
-    [[ $g == horde ]] && tile="3x2" && geo="320x320+4+4"
-    [[ $g == bosses ]] && tile="5x1" && geo="320x320+4+4"
+    [[ $g == horde ]] && tile="4x2" && geo="320x320+4+4"
+    [[ $g == bosses ]] && tile="5x" && geo="256x256+4+4"
     [[ $g == portal ]] && tile="3x2" && geo="320x320+4+4"
     [[ $g == wall ]] && tile="3x" && geo="480x270+4+4"
-    [[ $g == props ]] && tile="3x2" && geo="320x320+4+4"
+    [[ $g == props ]] && tile="4x2" && geo="320x320+4+4"
     [[ $g == fauna ]] && tile="3x3" && geo="320x320+4+4"
     [[ $g == backdrop ]] && tile="3x3" && geo="320x320+4+4"
     out="art/renders/lineup_$g.png"
