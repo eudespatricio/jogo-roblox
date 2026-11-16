@@ -18,14 +18,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_runner.glb
-    altura_metros: 1.401   # 5.0036 studs
+    altura_metros: 1.3846   # 4.9449 studs
     pivot: base
-    limite_triangulos: 1500
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -35,14 +36,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_brute.glb
-    altura_metros: 1.7765   # 6.3447 studs
+    altura_metros: 1.7132   # 6.1186 studs
     pivot: base
-    limite_triangulos: 1500
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -52,14 +54,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_swarm.glb
-    altura_metros: 0.7321   # 2.6148 studs
+    altura_metros: 0.6606   # 2.3592 studs
     pivot: base
-    limite_triangulos: 1500
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,14 +72,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_shieldbearer.glb
-    altura_metros: 1.5371   # 5.4895 studs
+    altura_metros: 1.5331   # 5.4752 studs
     pivot: base
-    limite_triangulos: 1500
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -86,14 +90,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_pyromancer.glb
-    altura_metros: 1.507   # 5.382 studs
+    altura_metros: 1.4885   # 5.316 studs
     pivot: base
-    limite_triangulos: 1500
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -103,15 +108,52 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/horde_sapper.glb
-    altura_metros: 0.8348   # 2.9814 studs
+    altura_metros: 0.8329   # 2.9745 studs
     pivot: base
-    limite_triangulos: 1500
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 48
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, horde, sapper]
+
+  - id: horde.wisp.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/horde_wisp.glb
+    altura_metros: 0.5829   # 2.0817 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 48
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, horde, wisp]
+
+  - id: horde.drake.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/horde_drake.glb
+    altura_metros: 1.4176   # 5.0629 studs
+    pivot: base
+    limite_triangulos: 2800
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 48
+      weighted_normals: true
+      corrective_smooth: false
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, horde, drake]
