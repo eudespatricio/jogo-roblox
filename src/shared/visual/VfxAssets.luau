@@ -13,20 +13,20 @@ export type FlipbookSpec = {
 }
 
 VfxAssets.IDS = {
-	explosionFlipbook = 135806600858236,
-	frostShatterFlipbook = 78186543651102,
-	arcaneRiftFlipbook = 86991264053603,
-	fireLoopFlipbook = 135806600858236,
-	slashSparkFlipbook = 138298598490067,
-	shockwaveRing = 117111013389651,
-	softGlowFlare = 118635363180451,
-	smokeWispy = 127020451371444,
-	scorchCraterDecal = 94843811733582,
-	beamEnergyTrail = 100334877599740,
-	tarPuddleDecal = 94843811733582,
-	frostGroundDecal = 78186543651102,
-	bossRuneDecal = 117111013389651,
-	lightningArcBeam = 100334877599740,
+	explosionFlipbook = 96367387479111,
+	frostShatterFlipbook = 76652120953457,
+	arcaneRiftFlipbook = 118011167341061,
+	fireLoopFlipbook = 115210968282968,
+	slashSparkFlipbook = 127105771893736,
+	shockwaveRing = 125080748846211,
+	softGlowFlare = 114560666216761,
+	smokeWispy = 116350659654009,
+	scorchCraterDecal = 111028655867508,
+	beamEnergyTrail = 77063707563729,
+	tarPuddleDecal = 102779989457126,
+	frostGroundDecal = 126889400767479,
+	bossRuneDecal = 103170026384574,
+	lightningArcBeam = 95285396297301,
 } :: { [string]: number }
 
 VfxAssets.FLIPBOOK = table.freeze({ grid = "Grid8x8", fps = 36 })

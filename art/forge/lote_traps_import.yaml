@@ -29,12 +29,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_archer_l1.glb
-    altura_metros: 1.4732   # 5.2613 studs
+    altura_metros: 1.442   # 5.1499 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -50,12 +50,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_archer_l2.glb
-    altura_metros: 1.4801   # 5.286 studs
+    altura_metros: 1.4398   # 5.1422 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -71,12 +71,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_archer_l3.glb
-    altura_metros: 1.5156   # 5.4129 studs
+    altura_metros: 1.5289   # 5.4602 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -92,12 +92,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_archer_l4.glb
-    altura_metros: 1.5543   # 5.5509 studs
+    altura_metros: 1.5328   # 5.4744 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -113,12 +113,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_archer_l5.glb
-    altura_metros: 1.5576   # 5.5628 studs
+    altura_metros: 1.5341   # 5.4791 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -134,12 +134,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_tar_l1.glb
-    altura_metros: 0.2913   # 1.0405 studs
+    altura_metros: 0.393   # 1.4035 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -155,12 +155,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_tar_l2.glb
-    altura_metros: 0.2927   # 1.0453 studs
+    altura_metros: 0.3915   # 1.3983 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -176,12 +176,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_tar_l3.glb
-    altura_metros: 0.2917   # 1.0417 studs
+    altura_metros: 0.3914   # 1.3977 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -197,12 +197,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_tar_l4.glb
-    altura_metros: 0.3375   # 1.2055 studs
+    altura_metros: 0.395   # 1.4106 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -218,12 +218,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_tar_l5.glb
-    altura_metros: 0.3382   # 1.2078 studs
+    altura_metros: 0.3959   # 1.4138 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -239,12 +239,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_frost_l1.glb
-    altura_metros: 1.2804   # 4.5729 studs
+    altura_metros: 1.3378   # 4.7778 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -260,12 +260,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_frost_l2.glb
-    altura_metros: 1.2772   # 4.5614 studs
+    altura_metros: 1.3375   # 4.7767 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -281,12 +281,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_frost_l3.glb
-    altura_metros: 1.2777   # 4.5633 studs
+    altura_metros: 1.3337   # 4.7633 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -302,12 +302,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_frost_l4.glb
-    altura_metros: 1.2779   # 4.5641 studs
+    altura_metros: 1.3346   # 4.7664 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -323,12 +323,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_frost_l5.glb
-    altura_metros: 1.2757   # 4.5562 studs
+    altura_metros: 1.3387   # 4.7812 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -344,12 +344,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_cannon_l1.glb
-    altura_metros: 0.8617   # 3.0775 studs
+    altura_metros: 0.8386   # 2.9949 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -365,12 +365,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_cannon_l2.glb
-    altura_metros: 0.8611   # 3.0753 studs
+    altura_metros: 0.8432   # 3.0113 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -386,12 +386,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_cannon_l3.glb
-    altura_metros: 0.9146   # 3.2666 studs
+    altura_metros: 0.844   # 3.0142 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -407,12 +407,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_cannon_l4.glb
-    altura_metros: 0.9108   # 3.2527 studs
+    altura_metros: 0.842   # 3.0072 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -428,12 +428,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_cannon_l5.glb
-    altura_metros: 0.9109   # 3.2533 studs
+    altura_metros: 0.8572   # 3.0615 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -449,12 +449,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_catapult_l1.glb
-    altura_metros: 1.3906   # 4.9665 studs
+    altura_metros: 1.4059   # 5.0209 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -470,12 +470,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_catapult_l2.glb
-    altura_metros: 1.3924   # 4.9727 studs
+    altura_metros: 1.4119   # 5.0425 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -491,12 +491,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_catapult_l3.glb
-    altura_metros: 1.3953   # 4.9833 studs
+    altura_metros: 1.4118   # 5.042 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -512,12 +512,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_catapult_l4.glb
-    altura_metros: 1.3958   # 4.9851 studs
+    altura_metros: 1.4124   # 5.0443 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface
@@ -533,12 +533,12 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/trap_catapult_l5.glb
-    altura_metros: 1.4043   # 5.0155 studs
+    altura_metros: 1.4114   # 5.0407 studs
     pivot: base
-    limite_triangulos: 2600
+    limite_triangulos: 5600
     material: opaque
-    qualidade: standard
-    quantidade_cena: 4
+    qualidade: hero
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface

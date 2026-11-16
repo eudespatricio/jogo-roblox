@@ -29,28 +29,20 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/prop_rift_portal.glb
-    altura_metros: 3.704   # 13.2286 studs
+    altura_metros: 3.7218   # 13.2923 studs
     pivot: base
-    limite_triangulos: 4800
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: obsidian
-        preset: cristal_arcano
-        cor_hex: "#262230"
-        cor_tinta: "#262230"
-        uv_faixa: [0, 0.75, 0.125, 0.875]
-        metallic_override: 0.22
-        roughness_escala: 0.75
-        normal_forca: 1.1
       - nome: arcaneCyan
         preset: energia_espectral
         cor_hex: "#38e4f5"
@@ -59,6 +51,30 @@ lote:
         metallic_override: 0.1
         roughness_escala: 0.55
         normal_forca: 0.75
+      - nome: obsidian
+        preset: cristal_arcano
+        cor_hex: "#262230"
+        cor_tinta: "#262230"
+        uv_faixa: [0, 0.75, 0.125, 0.875]
+        metallic_override: 0.22
+        roughness_escala: 0.75
+        normal_forca: 1.1
+      - nome: arcaneViolet
+        preset: cristal_arcano
+        cor_hex: "#a855f7"
+        cor_tinta: "#a855f7"
+        uv_faixa: [0.25, 0.875, 0.375, 1]
+        metallic_override: 0.12
+        roughness_escala: 0.6
+        normal_forca: 0.88
+      - nome: eyeNeon
+        preset: energia_espectral
+        cor_hex: "#dcfff5"
+        cor_tinta: "#dcfff5"
+        uv_faixa: [0.375, 0.5, 0.5, 0.625]
+        metallic_override: 0.08
+        roughness_escala: 0.5
+        normal_forca: 0.6
       - nome: tealDark
         preset: escamas_dragao
         cor_hex: "#0a4a46"
@@ -75,30 +91,6 @@ lote:
         metallic_override: 0.14
         roughness_escala: 0.82
         normal_forca: 1.05
-      - nome: eyeNeon
-        preset: energia_espectral
-        cor_hex: "#dcfff5"
-        cor_tinta: "#dcfff5"
-        uv_faixa: [0.375, 0.5, 0.5, 0.625]
-        metallic_override: 0.08
-        roughness_escala: 0.5
-        normal_forca: 0.6
-      - nome: arcaneViolet
-        preset: cristal_arcano
-        cor_hex: "#a855f7"
-        cor_tinta: "#a855f7"
-        uv_faixa: [0.25, 0.875, 0.375, 1]
-        metallic_override: 0.12
-        roughness_escala: 0.6
-        normal_forca: 0.88
-      - nome: stoneDark
-        preset: pedra_musgo
-        cor_hex: "#34383e"
-        cor_tinta: "#34383e"
-        uv_faixa: [0.125, 0, 0.25, 0.125]
-        metallic_override: 0.0
-        roughness_escala: 1.08
-        normal_forca: 1.15
       - nome: tealSwarm
         preset: cristal_arcano
         cor_hex: "#2dd4bf"
@@ -107,6 +99,14 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.7
         normal_forca: 0.95
+      - nome: stoneDark
+        preset: pedra_musgo
+        cor_hex: "#34383e"
+        cor_tinta: "#34383e"
+        uv_faixa: [0.125, 0, 0.25, 0.125]
+        metallic_override: 0.0
+        roughness_escala: 1.08
+        normal_forca: 1.15
       - nome: teal
         preset: escamas_dragao
         cor_hex: "#14b8a6"
@@ -129,19 +129,19 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act1_iron.glb
-    altura_metros: 3.7606   # 13.4306 studs
+    altura_metros: 3.7729   # 13.4748 studs
     pivot: base
-    limite_triangulos: 4800
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
-    quantidade_cena: 1
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: ironDark
         preset: aco_forjado
@@ -159,30 +159,6 @@ lote:
         metallic_override: 0.14
         roughness_escala: 0.68
         normal_forca: 0.85
-      - nome: iron
-        preset: aco_forjado
-        cor_hex: "#3a3f46"
-        cor_tinta: "#3a3f46"
-        uv_faixa: [0.75, 0, 0.875, 0.125]
-        metallic_override: 0.88
-        roughness_escala: 1.0
-        normal_forca: 1.05
-      - nome: ember
-        preset: energia_espectral
-        cor_hex: "#ffb250"
-        cor_tinta: "#ffb250"
-        uv_faixa: [0.5, 0.5, 0.625, 0.625]
-        metallic_override: 0.12
-        roughness_escala: 0.65
-        normal_forca: 0.8
-      - nome: steel
-        preset: aco_forjado
-        cor_hex: "#8c8c99"
-        cor_tinta: "#8c8c99"
-        uv_faixa: [0.5, 0.25, 0.625, 0.375]
-        metallic_override: 0.94
-        roughness_escala: 0.82
-        normal_forca: 0.95
       - nome: bronze
         preset: ouro_ornamentado
         cor_hex: "#b0783a"
@@ -191,22 +167,14 @@ lote:
         metallic_override: 0.86
         roughness_escala: 1.05
         normal_forca: 1.05
-      - nome: amberBright
-        preset: energia_espectral
-        cor_hex: "#ffc740"
-        cor_tinta: "#ffc740"
-        uv_faixa: [0.125, 0.125, 0.25, 0.25]
-        metallic_override: 0.15
-        roughness_escala: 0.65
-        normal_forca: 0.7
-      - nome: amber
-        preset: ouro_ornamentado
-        cor_hex: "#f59e0b"
-        cor_tinta: "#f59e0b"
-        uv_faixa: [0, 0.125, 0.125, 0.25]
-        metallic_override: 0.45
-        roughness_escala: 0.85
-        normal_forca: 0.8
+      - nome: iron
+        preset: aco_forjado
+        cor_hex: "#3a3f46"
+        cor_tinta: "#3a3f46"
+        uv_faixa: [0.75, 0, 0.875, 0.125]
+        metallic_override: 0.88
+        roughness_escala: 1.0
+        normal_forca: 1.05
       - nome: neonAmber
         preset: energia_espectral
         cor_hex: "#ffe496"
@@ -215,6 +183,30 @@ lote:
         metallic_override: 0.1
         roughness_escala: 0.55
         normal_forca: 0.65
+      - nome: steel
+        preset: aco_forjado
+        cor_hex: "#8c8c99"
+        cor_tinta: "#8c8c99"
+        uv_faixa: [0.5, 0.25, 0.625, 0.375]
+        metallic_override: 0.94
+        roughness_escala: 0.82
+        normal_forca: 0.95
+      - nome: ember
+        preset: energia_espectral
+        cor_hex: "#ffb250"
+        cor_tinta: "#ffb250"
+        uv_faixa: [0.5, 0.5, 0.625, 0.625]
+        metallic_override: 0.12
+        roughness_escala: 0.65
+        normal_forca: 0.8
+      - nome: amberBright
+        preset: energia_espectral
+        cor_hex: "#ffc740"
+        cor_tinta: "#ffc740"
+        uv_faixa: [0.125, 0.125, 0.25, 0.25]
+        metallic_override: 0.15
+        roughness_escala: 0.65
+        normal_forca: 0.7
       - nome: stoneDark
         preset: pedra_musgo
         cor_hex: "#34383e"
@@ -223,6 +215,22 @@ lote:
         metallic_override: 0.0
         roughness_escala: 1.08
         normal_forca: 1.15
+      - nome: amber
+        preset: ouro_ornamentado
+        cor_hex: "#f59e0b"
+        cor_tinta: "#f59e0b"
+        uv_faixa: [0, 0.125, 0.125, 0.25]
+        metallic_override: 0.45
+        roughness_escala: 0.85
+        normal_forca: 0.8
+      - nome: danger
+        preset: energia_espectral
+        cor_hex: "#e4572e"
+        cor_tinta: "#e4572e"
+        uv_faixa: [0.25, 0.125, 0.375, 0.25]
+        metallic_override: 0.12
+        roughness_escala: 0.75
+        normal_forca: 0.85
       - nome: tarDeep
         preset: pedra_musgo
         cor_hex: "#281e16"
@@ -245,19 +253,19 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act2_slag.glb
-    altura_metros: 3.812   # 13.6144 studs
+    altura_metros: 3.821   # 13.6463 studs
     pivot: base
-    limite_triangulos: 4800
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
-    quantidade_cena: 1
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: tarDeep
         preset: pedra_musgo
@@ -267,14 +275,6 @@ lote:
         metallic_override: 0.08
         roughness_escala: 0.75
         normal_forca: 1.1
-      - nome: emberDeep
-        preset: energia_espectral
-        cor_hex: "#ff8230"
-        cor_tinta: "#ff8230"
-        uv_faixa: [0.75, 0.75, 0.875, 0.875]
-        metallic_override: 0.14
-        roughness_escala: 0.68
-        normal_forca: 0.85
       - nome: amberBright
         preset: energia_espectral
         cor_hex: "#ffc740"
@@ -283,22 +283,14 @@ lote:
         metallic_override: 0.15
         roughness_escala: 0.65
         normal_forca: 0.7
-      - nome: obsidian
-        preset: cristal_arcano
-        cor_hex: "#262230"
-        cor_tinta: "#262230"
-        uv_faixa: [0, 0.75, 0.125, 0.875]
-        metallic_override: 0.22
-        roughness_escala: 0.75
-        normal_forca: 1.1
-      - nome: bronze
-        preset: ouro_ornamentado
-        cor_hex: "#b0783a"
-        cor_tinta: "#b0783a"
-        uv_faixa: [0.375, 0.25, 0.5, 0.375]
-        metallic_override: 0.86
-        roughness_escala: 1.05
-        normal_forca: 1.05
+      - nome: emberDeep
+        preset: energia_espectral
+        cor_hex: "#ff8230"
+        cor_tinta: "#ff8230"
+        uv_faixa: [0.75, 0.75, 0.875, 0.875]
+        metallic_override: 0.14
+        roughness_escala: 0.68
+        normal_forca: 0.85
       - nome: danger
         preset: energia_espectral
         cor_hex: "#e4572e"
@@ -307,14 +299,14 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.75
         normal_forca: 0.85
-      - nome: stoneDark
-        preset: pedra_musgo
-        cor_hex: "#34383e"
-        cor_tinta: "#34383e"
-        uv_faixa: [0.125, 0, 0.25, 0.125]
-        metallic_override: 0.0
-        roughness_escala: 1.08
-        normal_forca: 1.15
+      - nome: obsidian
+        preset: cristal_arcano
+        cor_hex: "#262230"
+        cor_tinta: "#262230"
+        uv_faixa: [0, 0.75, 0.125, 0.875]
+        metallic_override: 0.22
+        roughness_escala: 0.75
+        normal_forca: 1.1
       - nome: ember
         preset: energia_espectral
         cor_hex: "#ffb250"
@@ -323,6 +315,22 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.65
         normal_forca: 0.8
+      - nome: stoneDark
+        preset: pedra_musgo
+        cor_hex: "#34383e"
+        cor_tinta: "#34383e"
+        uv_faixa: [0.125, 0, 0.25, 0.125]
+        metallic_override: 0.0
+        roughness_escala: 1.08
+        normal_forca: 1.15
+      - nome: bronze
+        preset: ouro_ornamentado
+        cor_hex: "#b0783a"
+        cor_tinta: "#b0783a"
+        uv_faixa: [0.375, 0.25, 0.5, 0.375]
+        metallic_override: 0.86
+        roughness_escala: 1.05
+        normal_forca: 1.05
       - nome: ironDark
         preset: aco_forjado
         cor_hex: "#202328"
@@ -331,6 +339,14 @@ lote:
         metallic_override: 0.82
         roughness_escala: 1.18
         normal_forca: 1.15
+      - nome: iron
+        preset: aco_forjado
+        cor_hex: "#3a3f46"
+        cor_tinta: "#3a3f46"
+        uv_faixa: [0.75, 0, 0.875, 0.125]
+        metallic_override: 0.88
+        roughness_escala: 1.0
+        normal_forca: 1.05
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 46
@@ -345,19 +361,19 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act3_frost.glb
-    altura_metros: 3.8651   # 13.804 studs
+    altura_metros: 3.871   # 13.8249 studs
     pivot: base
-    limite_triangulos: 4800
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
-    quantidade_cena: 1
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: iceGlow
         preset: energia_espectral
@@ -375,14 +391,6 @@ lote:
         metallic_override: 0.94
         roughness_escala: 0.82
         normal_forca: 0.95
-      - nome: tealDark
-        preset: escamas_dragao
-        cor_hex: "#0a4a46"
-        cor_tinta: "#0a4a46"
-        uv_faixa: [0.75, 0.375, 0.875, 0.5]
-        metallic_override: 0.22
-        roughness_escala: 1.0
-        normal_forca: 1.15
       - nome: arcaneCyan
         preset: energia_espectral
         cor_hex: "#38e4f5"
@@ -391,14 +399,6 @@ lote:
         metallic_override: 0.1
         roughness_escala: 0.55
         normal_forca: 0.75
-      - nome: ice
-        preset: cristal_arcano
-        cor_hex: "#59a6e6"
-        cor_tinta: "#59a6e6"
-        uv_faixa: [0.125, 0.375, 0.25, 0.5]
-        metallic_override: 0.05
-        roughness_escala: 0.65
-        normal_forca: 0.95
       - nome: iceLight
         preset: cristal_arcano
         cor_hex: "#aad6f5"
@@ -407,6 +407,14 @@ lote:
         metallic_override: 0.05
         roughness_escala: 0.55
         normal_forca: 0.85
+      - nome: tealDark
+        preset: escamas_dragao
+        cor_hex: "#0a4a46"
+        cor_tinta: "#0a4a46"
+        uv_faixa: [0.75, 0.375, 0.875, 0.5]
+        metallic_override: 0.22
+        roughness_escala: 1.0
+        normal_forca: 1.15
       - nome: whiteStoneDark
         preset: pedra_musgo
         cor_hex: "#bcb6a8"
@@ -415,6 +423,14 @@ lote:
         metallic_override: 0.0
         roughness_escala: 0.95
         normal_forca: 1.05
+      - nome: ice
+        preset: cristal_arcano
+        cor_hex: "#59a6e6"
+        cor_tinta: "#59a6e6"
+        uv_faixa: [0.125, 0.375, 0.25, 0.5]
+        metallic_override: 0.05
+        roughness_escala: 0.65
+        normal_forca: 0.95
       - nome: stone
         preset: pedra_musgo
         cor_hex: "#5c6066"
@@ -437,36 +453,20 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act4_powder.glb
-    altura_metros: 3.6894   # 13.1764 studs
+    altura_metros: 3.6821   # 13.1503 studs
     pivot: base
-    limite_triangulos: 4800
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
-    quantidade_cena: 1
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: brass
-        preset: ouro_ornamentado
-        cor_hex: "#c69844"
-        cor_tinta: "#c69844"
-        uv_faixa: [0.375, 0.875, 0.5, 1]
-        metallic_override: 0.9
-        roughness_escala: 0.92
-        normal_forca: 1.0
-      - nome: tarDeep
-        preset: pedra_musgo
-        cor_hex: "#281e16"
-        cor_tinta: "#281e16"
-        uv_faixa: [0, 0.375, 0.125, 0.5]
-        metallic_override: 0.08
-        roughness_escala: 0.75
-        normal_forca: 1.1
       - nome: goldBright
         preset: ouro_ornamentado
         cor_hex: "#f0c850"
@@ -474,6 +474,14 @@ lote:
         uv_faixa: [0.625, 0.5, 0.75, 0.625]
         metallic_override: 0.97
         roughness_escala: 0.72
+        normal_forca: 1.0
+      - nome: brass
+        preset: ouro_ornamentado
+        cor_hex: "#c69844"
+        cor_tinta: "#c69844"
+        uv_faixa: [0.375, 0.875, 0.5, 1]
+        metallic_override: 0.9
+        roughness_escala: 0.92
         normal_forca: 1.0
       - nome: amberBright
         preset: energia_espectral
@@ -491,14 +499,14 @@ lote:
         metallic_override: 0.82
         roughness_escala: 1.18
         normal_forca: 1.15
-      - nome: bronze
-        preset: ouro_ornamentado
-        cor_hex: "#b0783a"
-        cor_tinta: "#b0783a"
-        uv_faixa: [0.375, 0.25, 0.5, 0.375]
-        metallic_override: 0.86
-        roughness_escala: 1.05
-        normal_forca: 1.05
+      - nome: tarDeep
+        preset: pedra_musgo
+        cor_hex: "#281e16"
+        cor_tinta: "#281e16"
+        uv_faixa: [0, 0.375, 0.125, 0.5]
+        metallic_override: 0.08
+        roughness_escala: 0.75
+        normal_forca: 1.1
       - nome: iron
         preset: aco_forjado
         cor_hex: "#3a3f46"
@@ -506,6 +514,14 @@ lote:
         uv_faixa: [0.75, 0, 0.875, 0.125]
         metallic_override: 0.88
         roughness_escala: 1.0
+        normal_forca: 1.05
+      - nome: bronze
+        preset: ouro_ornamentado
+        cor_hex: "#b0783a"
+        cor_tinta: "#b0783a"
+        uv_faixa: [0.375, 0.25, 0.5, 0.375]
+        metallic_override: 0.86
+        roughness_escala: 1.05
         normal_forca: 1.05
       - nome: danger
         preset: energia_espectral
@@ -537,28 +553,20 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act5_rift.glb
-    altura_metros: 4.0886   # 14.6022 studs
+    altura_metros: 4.0913   # 14.6117 studs
     pivot: base
-    limite_triangulos: 4800
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
-    quantidade_cena: 1
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: obsidian
-        preset: cristal_arcano
-        cor_hex: "#262230"
-        cor_tinta: "#262230"
-        uv_faixa: [0, 0.75, 0.125, 0.875]
-        metallic_override: 0.22
-        roughness_escala: 0.75
-        normal_forca: 1.1
       - nome: arcaneViolet
         preset: cristal_arcano
         cor_hex: "#a855f7"
@@ -567,6 +575,14 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.6
         normal_forca: 0.88
+      - nome: obsidian
+        preset: cristal_arcano
+        cor_hex: "#262230"
+        cor_tinta: "#262230"
+        uv_faixa: [0, 0.75, 0.125, 0.875]
+        metallic_override: 0.22
+        roughness_escala: 0.75
+        normal_forca: 1.1
       - nome: eyeNeon
         preset: energia_espectral
         cor_hex: "#dcfff5"
@@ -583,14 +599,6 @@ lote:
         metallic_override: 0.14
         roughness_escala: 0.82
         normal_forca: 1.05
-      - nome: tealSwarm
-        preset: cristal_arcano
-        cor_hex: "#2dd4bf"
-        cor_tinta: "#2dd4bf"
-        uv_faixa: [0.125, 0.5, 0.25, 0.625]
-        metallic_override: 0.12
-        roughness_escala: 0.7
-        normal_forca: 0.95
       - nome: stoneDark
         preset: pedra_musgo
         cor_hex: "#34383e"
@@ -599,6 +607,14 @@ lote:
         metallic_override: 0.0
         roughness_escala: 1.08
         normal_forca: 1.15
+      - nome: tealSwarm
+        preset: cristal_arcano
+        cor_hex: "#2dd4bf"
+        cor_tinta: "#2dd4bf"
+        uv_faixa: [0.125, 0.5, 0.25, 0.625]
+        metallic_override: 0.12
+        roughness_escala: 0.7
+        normal_forca: 0.95
       - nome: tealDark
         preset: escamas_dragao
         cor_hex: "#0a4a46"

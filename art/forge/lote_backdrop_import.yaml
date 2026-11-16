@@ -26,22 +26,22 @@ politica:
 
 lote:
   - id: backdrop.castle01.01
-    tipo: prop_estatico
+    tipo: modulo_cenario
     rota: import
     origem: art/export/backdrop_castle01.glb
-    altura_metros: 5.0561   # 18.0574 studs
+    altura_metros: 5.0546   # 18.0523 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
-    quantidade_cena: 2
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: stoneLight
         preset: pedra_musgo
@@ -83,14 +83,6 @@ lote:
         metallic_override: 0.06
         roughness_escala: 0.88
         normal_forca: 1.05
-      - nome: ironDark
-        preset: aco_forjado
-        cor_hex: "#202328"
-        cor_tinta: "#202328"
-        uv_faixa: [0.875, 0, 1, 0.125]
-        metallic_override: 0.82
-        roughness_escala: 1.18
-        normal_forca: 1.15
       - nome: amberBright
         preset: energia_espectral
         cor_hex: "#ffc740"
@@ -99,6 +91,14 @@ lote:
         metallic_override: 0.15
         roughness_escala: 0.65
         normal_forca: 0.7
+      - nome: ironDark
+        preset: aco_forjado
+        cor_hex: "#202328"
+        cor_tinta: "#202328"
+        uv_faixa: [0.875, 0, 1, 0.125]
+        metallic_override: 0.82
+        roughness_escala: 1.18
+        normal_forca: 1.15
       - nome: ink
         preset: aco_forjado
         cor_hex: "#121418"
@@ -107,6 +107,14 @@ lote:
         metallic_override: 0.35
         roughness_escala: 1.25
         normal_forca: 0.8
+      - nome: royal
+        preset: tecido_nobre
+        cor_hex: "#2e4ca8"
+        cor_tinta: "#2e4ca8"
+        uv_faixa: [0.625, 0.75, 0.75, 0.875]
+        metallic_override: 0.08
+        roughness_escala: 0.9
+        normal_forca: 0.95
       - nome: crimsonCloth
         preset: tecido_nobre
         cor_hex: "#8a1c26"
@@ -126,22 +134,22 @@ lote:
     tags: [muralha, backdrop, castle01]
 
   - id: backdrop.keep01.01
-    tipo: prop_estatico
+    tipo: modulo_cenario
     rota: import
     origem: art/export/backdrop_keep01.glb
-    altura_metros: 5.6001   # 20.0005 studs
+    altura_metros: 5.6049   # 20.0175 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 12000
     material: pbr
     qualidade: hero
     quantidade_cena: 2
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: gold
         preset: ouro_ornamentado
@@ -175,6 +183,22 @@ lote:
         metallic_override: 0.97
         roughness_escala: 0.72
         normal_forca: 1.0
+      - nome: stone
+        preset: pedra_musgo
+        cor_hex: "#5c6066"
+        cor_tinta: "#5c6066"
+        uv_faixa: [0, 0, 0.125, 0.125]
+        metallic_override: 0.0
+        roughness_escala: 1.0
+        normal_forca: 1.05
+      - nome: amberBright
+        preset: energia_espectral
+        cor_hex: "#ffc740"
+        cor_tinta: "#ffc740"
+        uv_faixa: [0.125, 0.125, 0.25, 0.25]
+        metallic_override: 0.15
+        roughness_escala: 0.65
+        normal_forca: 0.7
       - nome: slateRoof
         preset: pedra_musgo
         cor_hex: "#404e6c"
@@ -215,14 +239,6 @@ lote:
         metallic_override: 0.82
         roughness_escala: 1.18
         normal_forca: 1.15
-      - nome: amberBright
-        preset: energia_espectral
-        cor_hex: "#ffc740"
-        cor_tinta: "#ffc740"
-        uv_faixa: [0.125, 0.125, 0.25, 0.25]
-        metallic_override: 0.15
-        roughness_escala: 0.65
-        normal_forca: 0.7
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 46
@@ -237,9 +253,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/backdrop_house01.glb
-    altura_metros: 2.2468   # 8.0242 studs
+    altura_metros: 2.2505   # 8.0376 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 3800
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -258,9 +274,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/backdrop_house02.glb
-    altura_metros: 2.2476   # 8.0272 studs
+    altura_metros: 2.2462   # 8.0223 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 3800
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -279,9 +295,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/backdrop_tower01.glb
-    altura_metros: 4.4808   # 16.0028 studs
+    altura_metros: 4.4797   # 15.9988 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 3800
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -300,9 +316,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/backdrop_windmill01.glb
-    altura_metros: 4.576   # 16.3427 studs
+    altura_metros: 4.5787   # 16.3525 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 3800
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -323,10 +339,10 @@ lote:
     origem: art/export/backdrop_tree01.glb
     altura_metros: 3.0939   # 11.0497 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 2000
     material: opaque
     qualidade: standard
-    quantidade_cena: 2
+    quantidade_cena: 4
     render_fidelity_roblox: Precise
     suavizacao_normais:
       modo: hard_surface

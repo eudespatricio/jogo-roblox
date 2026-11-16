@@ -1159,21 +1159,6 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 		end
 	end
 
-	local vfxCoreKeys = {
-		"explosionFlipbook",
-		"frostShatterFlipbook",
-		"arcaneRiftFlipbook",
-		"slashSparkFlipbook",
-		"shockwaveRing",
-		"softGlowFlare",
-		"smokeWispy",
-		"scorchCraterDecal",
-		"beamEnergyTrail",
-	}
-	for _, vk in ipairs(vfxCoreKeys) do
-		addGlobal("vfx." .. vk, VfxAssets.IDS[vk])
-	end
-
 	local vfxAllKeys = {
 		"explosionFlipbook",
 		"frostShatterFlipbook",
@@ -1193,10 +1178,7 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 	assert(#vfxAllKeys == 14, "esperava 14 chaves em VfxAssets.IDS")
 	for _, vk in ipairs(vfxAllKeys) do
 		local id = VfxAssets.IDS[vk]
-		assert(
-			type(id) == "number" and id > 0 and id == math.floor(id),
-			"VfxAssets.IDS invalido em " .. vk .. ": " .. tostring(id)
-		)
+		addGlobal("vfx." .. vk, id)
 		local cid = VfxAssets.contentId(vk)
 		assert(string.sub(cid, 1, 13) == "rbxassetid://", "VfxAssets.contentId invalido: " .. vk)
 	end
@@ -1225,9 +1207,9 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 	)
 
 	assert(
-		totalAssets + 5 == 211,
+		totalAssets == 211,
 		"esperava 211 slots de assets Open Cloud (97 modelos + 100 PBR + 14 VFX), achei "
-			.. tostring(totalAssets + 5)
+			.. tostring(totalAssets)
 	)
 end)
 

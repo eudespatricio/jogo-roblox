@@ -29,9 +29,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/tree_pine.glb
-    altura_metros: 2.7841   # 9.9433 studs
+    altura_metros: 2.7852   # 9.9471 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3600
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -50,9 +50,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/tree_oak.glb
-    altura_metros: 2.2349   # 7.9818 studs
+    altura_metros: 2.232   # 7.9713 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3600
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -73,7 +73,7 @@ lote:
     origem: art/export/rock_cluster.glb
     altura_metros: 0.852   # 3.0427 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3600
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -92,9 +92,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/siege_supply.glb
-    altura_metros: 0.5767   # 2.0595 studs
+    altura_metros: 0.5733   # 2.0476 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3600
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -113,9 +113,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/iron_brazier.glb
-    altura_metros: 1.1654   # 4.1622 studs
+    altura_metros: 1.1651   # 4.1609 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3600
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -134,9 +134,9 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/rift_obelisk.glb
-    altura_metros: 2.1404   # 7.6444 studs
+    altura_metros: 2.1424   # 7.6514 studs
     pivot: base
-    limite_triangulos: 2800
+    limite_triangulos: 3600
     material: opaque
     qualidade: standard
     quantidade_cena: 2
@@ -155,19 +155,19 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/bastion_warden.glb
-    altura_metros: 1.7494   # 6.248 studs
+    altura_metros: 1.7548   # 6.2673 studs
     pivot: base
-    limite_triangulos: 3600
+    limite_triangulos: 11000
     material: pbr
     qualidade: hero
-    quantidade_cena: 2
+    quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: gold
         preset: ouro_ornamentado
@@ -177,22 +177,6 @@ lote:
         metallic_override: 0.94
         roughness_escala: 0.85
         normal_forca: 1.05
-      - nome: royal
-        preset: tecido_nobre
-        cor_hex: "#2e4ca8"
-        cor_tinta: "#2e4ca8"
-        uv_faixa: [0.625, 0.75, 0.75, 0.875]
-        metallic_override: 0.08
-        roughness_escala: 0.9
-        normal_forca: 0.95
-      - nome: steel
-        preset: aco_forjado
-        cor_hex: "#8c8c99"
-        cor_tinta: "#8c8c99"
-        uv_faixa: [0.5, 0.25, 0.625, 0.375]
-        metallic_override: 0.94
-        roughness_escala: 0.82
-        normal_forca: 0.95
       - nome: goldBright
         preset: ouro_ornamentado
         cor_hex: "#f0c850"
@@ -201,6 +185,22 @@ lote:
         metallic_override: 0.97
         roughness_escala: 0.72
         normal_forca: 1.0
+      - nome: steel
+        preset: aco_forjado
+        cor_hex: "#8c8c99"
+        cor_tinta: "#8c8c99"
+        uv_faixa: [0.5, 0.25, 0.625, 0.375]
+        metallic_override: 0.94
+        roughness_escala: 0.82
+        normal_forca: 0.95
+      - nome: royal
+        preset: tecido_nobre
+        cor_hex: "#2e4ca8"
+        cor_tinta: "#2e4ca8"
+        uv_faixa: [0.625, 0.75, 0.75, 0.875]
+        metallic_override: 0.08
+        roughness_escala: 0.9
+        normal_forca: 0.95
       - nome: amberBright
         preset: energia_espectral
         cor_hex: "#ffc740"
@@ -209,14 +209,14 @@ lote:
         metallic_override: 0.15
         roughness_escala: 0.65
         normal_forca: 0.7
-      - nome: ironDark
-        preset: aco_forjado
-        cor_hex: "#202328"
-        cor_tinta: "#202328"
-        uv_faixa: [0.875, 0, 1, 0.125]
-        metallic_override: 0.82
-        roughness_escala: 1.18
-        normal_forca: 1.15
+      - nome: crimsonBright
+        preset: tecido_nobre
+        cor_hex: "#c02a34"
+        cor_tinta: "#c02a34"
+        uv_faixa: [0, 0.875, 0.125, 1]
+        metallic_override: 0.08
+        roughness_escala: 0.88
+        normal_forca: 0.9
       - nome: crimsonCloth
         preset: tecido_nobre
         cor_hex: "#8a1c26"
@@ -233,14 +233,14 @@ lote:
         metallic_override: 0.1
         roughness_escala: 0.55
         normal_forca: 0.65
-      - nome: crimsonBright
-        preset: tecido_nobre
-        cor_hex: "#c02a34"
-        cor_tinta: "#c02a34"
-        uv_faixa: [0, 0.875, 0.125, 1]
-        metallic_override: 0.08
-        roughness_escala: 0.88
-        normal_forca: 0.9
+      - nome: ironDark
+        preset: aco_forjado
+        cor_hex: "#202328"
+        cor_tinta: "#202328"
+        uv_faixa: [0.875, 0, 1, 0.125]
+        metallic_override: 0.82
+        roughness_escala: 1.18
+        normal_forca: 1.15
       - nome: woodDark
         preset: madeira_ancestral
         cor_hex: "#5c3a1c"

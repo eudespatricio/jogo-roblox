@@ -128,21 +128,21 @@ fixado, todo asset nasce torto ou no tamanho errado.
 
 A doc oficial de Blender para Roblox cobre units/axes: [create.roblox.com/docs/art/blender](https://create.roblox.com/docs/art/blender).
 
-### 4.2 Convenção de asset (v1.8 — 206 assets Open Cloud: 97 modelos + 100 PBR + 9 VFX)
+### 4.2 Convenção de asset (v1.9 — 211 assets Open Cloud: 97 modelos + 100 PBR + 14 VFX)
 
-| Tipo | Prefixo | Pivô | Escala | Triângulos (teto v1.8) | Textura / PBR |
+| Tipo | Prefixo | Pivô | Escala | Triângulos (v1.9 AA) | Textura / PBR |
 |---|---|---|---:|---:|---:|
-| Armadilha (25: 5×L1..L5) | `TRAP_` | base, Z=0 | 1 | ≤ 2.600 | Atlas PBR `2048²` (`PbrAssets.MASTER_ATLAS`) |
-| Muralha completa (5: L1..L5) | `WALL_` | base, Z=0 | 1 | ≤ 7.500 | Hero Cycles PBR 4 mapas (`PbrAssets`) |
-| Horda terrestre/aérea (8: incl. `wisp`/`drake`) | `CMD_` | base, Z=0 | 1 | ≤ 3.400 | Atlas PBR `2048²` (`PbrAssets.MASTER_ATLAS`) |
-| Boss completo (5) / Sub-partes (25) | `BOSS_` | base / origem | 1 | ≤ 7.200 / ≤ 4.200 torso / ≤ 2.200 membro | Hero Cycles PBR (full/torso) + Atlas PBR (membros) |
-| Portal (6: `rift` + `act1..5`) | `PORTAL_` / `PROP_rift_portal` | base, Z=0 | 1 | ≤ 4.800 | Hero Cycles PBR 4 mapas (`PbrAssets`) |
-| Prop e Guardião (7: incl. `bastion_warden`) | `PROP_` | base, Z=0 | 1 | ≤ 3.600 | Hero PBR (`bastion_warden`) + Atlas PBR |
-| Fauna (9: corpos e asas) | `FAUNA_` | base / origem | 1 | ≤ 2.800 | Atlas PBR `2048²` (`PbrAssets.MASTER_ATLAS`) |
-| Cenário do vale (7: incl. `keep01`) | `BACKDROP_` | base, Z=0 | 1 | ≤ 3.600 | Hero PBR (`castle01`/`keep01`) + Atlas PBR |
-| Efeito | `VFX_` | origem | 1 | — | 9 texturas (`1024²` flipbooks `4×4` + `512²` anel/glow/smoke/decal + `512×256` beam) |
+| Armadilha (25: 5×L1..L5) | `TRAP_` | base, Z=0 | 1 | `4.536–5.496` (≤ 5.600) | Atlas PBR `2048²` Voronoi (`PbrAssets.MASTER_ATLAS`) |
+| Muralha completa (5: L1..L5) | `WALL_` | base, Z=0 | 1 | `16.100–17.680` (`ultra` ≤ 18.000) | Hero Cycles PBR 4 mapas (`PbrAssets`) |
+| Horda terrestre/aérea (8: incl. `wisp`/`drake`) | `CMD_` | base, Z=0 | 1 | `1.650–4.628` (≤ 5.000) | Atlas PBR `2048²` Voronoi (`PbrAssets.MASTER_ATLAS`) |
+| Boss completo (5) / Sub-partes (25) | `BOSS_` | base / origem | 1 | `16.096–17.068` (`ultra`) / `5.3k` torso · `3.1–3.5k` braço · `1.9–2.2k` perna | Hero Cycles PBR (full/torso) + Atlas PBR (membros) |
+| Portal (6: `rift` + `act1..5`) | `PORTAL_` / `PROP_rift_portal` | base, Z=0 | 1 | `10.762–11.488` (≤ 12.000) | Hero Cycles PBR 4 mapas (`PbrAssets`) |
+| Prop e Guardião (7: incl. `bastion_warden`) | `PROP_` | base, Z=0 | 1 | `9.780` (`warden`) · `2.748–3.144` props | Hero PBR (`bastion_warden`) + Atlas PBR |
+| Fauna (9: corpos e asas) | `FAUNA_` | base / origem | 1 | `8.876` wyvern · `4.3–4.7k` quadrúpede · `1.786` ave | Atlas PBR `2048²` Voronoi (`PbrAssets.MASTER_ATLAS`) |
+| Cenário do vale (7: incl. `keep01`) | `BACKDROP_` | base, Z=0 | 1 | `10.214`/`9.760` (`castle01`/`keep01`) · `1.668–3.460` vila | Hero PBR (`castle01`/`keep01`) + Atlas PBR |
+| Efeito | `VFX_` | origem | 1 | `VfxVolumeWave` 3D Mid/High | 14 texturas (`4× Grid8x8` + `1× Grid4x4` + 4 decals + 2 beams + glow/ring/smoke) |
 
-Regras: aplicar transforms; sem escala negativa; nomes `PREFIXO_nome_variante`; 1 material por mesh com UV na grade `8×8` (`SurfaceAppearance` em 2 tiers via `PbrAssets`: `MASTER_ATLAS` `2048²` `colorMap = 87757376846021` + 24 conjuntos `HERO_SURFACES`, e `LOWPOLY_PALETTE_TEXTURE_ID = 87757376846021`); suavização de normais obrigatória no Forge3D (`spec@6`, `roblox-aa-80`, Gates G1–G11); upload com `strip_embedded_textures=true` e sincronização SHA-256 entre `saida/` e `art/export/*.glb`.
+Regras: aplicar transforms; sem escala negativa; nomes `PREFIXO_nome_variante`; 1 material por mesh com UV na grade `8×8` (`SurfaceAppearance` em 2 tiers via `PbrAssets`: `MASTER_ATLAS` Voronoi `2048²` `colorMap = 123373171413605` + 24 conjuntos `HERO_SURFACES`, e `LOWPOLY_PALETTE_TEXTURE_ID = 123373171413605`); suavização de normais obrigatória no Forge3D (`spec@6`, `roblox-aa-80`, Gates G1–G11); upload com `strip_embedded_textures=true` e sincronização SHA-256 entre `saida/` e `art/export/*.glb`.
 
 ### 4.3 Export e versionamento
 

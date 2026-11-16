@@ -29,19 +29,19 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus.glb
-    altura_metros: 3.5679   # 12.7425 studs
+    altura_metros: 3.6285   # 12.959 studs
     pivot: base
-    limite_triangulos: 7200
+    limite_triangulos: 17900
     material: pbr
-    qualidade: hero
-    quantidade_cena: 1
+    qualidade: ultra
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: ironDark
         preset: aco_forjado
@@ -51,14 +51,6 @@ lote:
         metallic_override: 0.82
         roughness_escala: 1.18
         normal_forca: 1.15
-      - nome: iron
-        preset: aco_forjado
-        cor_hex: "#3a3f46"
-        cor_tinta: "#3a3f46"
-        uv_faixa: [0.75, 0, 0.875, 0.125]
-        metallic_override: 0.88
-        roughness_escala: 1.0
-        normal_forca: 1.05
       - nome: steel
         preset: aco_forjado
         cor_hex: "#8c8c99"
@@ -67,6 +59,14 @@ lote:
         metallic_override: 0.94
         roughness_escala: 0.82
         normal_forca: 0.95
+      - nome: iron
+        preset: aco_forjado
+        cor_hex: "#3a3f46"
+        cor_tinta: "#3a3f46"
+        uv_faixa: [0.75, 0, 0.875, 0.125]
+        metallic_override: 0.88
+        roughness_escala: 1.0
+        normal_forca: 1.05
       - nome: amberBright
         preset: energia_espectral
         cor_hex: "#ffc740"
@@ -105,19 +105,19 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_torso.glb
-    altura_metros: 2.7442   # 9.8007 studs
+    altura_metros: 2.7463   # 9.8081 studs
     pivot: base
-    limite_triangulos: 4200
+    limite_triangulos: 5800
     material: pbr
     qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: ironDark
         preset: aco_forjado
@@ -127,14 +127,6 @@ lote:
         metallic_override: 0.82
         roughness_escala: 1.18
         normal_forca: 1.15
-      - nome: iron
-        preset: aco_forjado
-        cor_hex: "#3a3f46"
-        cor_tinta: "#3a3f46"
-        uv_faixa: [0.75, 0, 0.875, 0.125]
-        metallic_override: 0.88
-        roughness_escala: 1.0
-        normal_forca: 1.05
       - nome: steel
         preset: aco_forjado
         cor_hex: "#8c8c99"
@@ -143,14 +135,14 @@ lote:
         metallic_override: 0.94
         roughness_escala: 0.82
         normal_forca: 0.95
-      - nome: ember
-        preset: energia_espectral
-        cor_hex: "#ffb250"
-        cor_tinta: "#ffb250"
-        uv_faixa: [0.5, 0.5, 0.625, 0.625]
-        metallic_override: 0.12
-        roughness_escala: 0.65
-        normal_forca: 0.8
+      - nome: iron
+        preset: aco_forjado
+        cor_hex: "#3a3f46"
+        cor_tinta: "#3a3f46"
+        uv_faixa: [0.75, 0, 0.875, 0.125]
+        metallic_override: 0.88
+        roughness_escala: 1.0
+        normal_forca: 1.05
       - nome: amberBright
         preset: energia_espectral
         cor_hex: "#ffc740"
@@ -159,6 +151,14 @@ lote:
         metallic_override: 0.15
         roughness_escala: 0.65
         normal_forca: 0.7
+      - nome: ember
+        preset: energia_espectral
+        cor_hex: "#ffb250"
+        cor_tinta: "#ffb250"
+        uv_faixa: [0.5, 0.5, 0.625, 0.625]
+        metallic_override: 0.12
+        roughness_escala: 0.65
+        normal_forca: 0.8
       - nome: hornIvory
         preset: pele_humana
         cor_hex: "#e0d6c0"
@@ -181,11 +181,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_arm_r.glb
-    altura_metros: 1.4868   # 5.3099 studs
+    altura_metros: 1.5074   # 5.3834 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -202,11 +202,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_arm_l.glb
-    altura_metros: 1.424   # 5.0858 studs
+    altura_metros: 1.4292   # 5.1042 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -223,11 +223,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_leg_l.glb
-    altura_metros: 1.3345   # 4.7662 studs
+    altura_metros: 1.3355   # 4.7696 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -244,11 +244,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_leg_r.glb
-    altura_metros: 1.3285   # 4.7446 studs
+    altura_metros: 1.3266   # 4.7377 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -265,19 +265,19 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut.glb
-    altura_metros: 3.5953   # 12.8405 studs
+    altura_metros: 3.6824   # 13.1513 studs
     pivot: base
-    limite_triangulos: 7200
+    limite_triangulos: 17900
     material: pbr
-    qualidade: hero
-    quantidade_cena: 1
+    qualidade: ultra
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: stoneDark
         preset: pedra_musgo
@@ -287,14 +287,6 @@ lote:
         metallic_override: 0.0
         roughness_escala: 1.08
         normal_forca: 1.15
-      - nome: ironDark
-        preset: aco_forjado
-        cor_hex: "#202328"
-        cor_tinta: "#202328"
-        uv_faixa: [0.875, 0, 1, 0.125]
-        metallic_override: 0.82
-        roughness_escala: 1.18
-        normal_forca: 1.15
       - nome: iron
         preset: aco_forjado
         cor_hex: "#3a3f46"
@@ -303,6 +295,14 @@ lote:
         metallic_override: 0.88
         roughness_escala: 1.0
         normal_forca: 1.05
+      - nome: ironDark
+        preset: aco_forjado
+        cor_hex: "#202328"
+        cor_tinta: "#202328"
+        uv_faixa: [0.875, 0, 1, 0.125]
+        metallic_override: 0.82
+        roughness_escala: 1.18
+        normal_forca: 1.15
       - nome: ember
         preset: energia_espectral
         cor_hex: "#ffb250"
@@ -319,14 +319,6 @@ lote:
         metallic_override: 0.45
         roughness_escala: 0.85
         normal_forca: 0.8
-      - nome: neonAmber
-        preset: energia_espectral
-        cor_hex: "#ffe496"
-        cor_tinta: "#ffe496"
-        uv_faixa: [0.25, 0.25, 0.375, 0.375]
-        metallic_override: 0.1
-        roughness_escala: 0.55
-        normal_forca: 0.65
       - nome: amberBright
         preset: energia_espectral
         cor_hex: "#ffc740"
@@ -343,6 +335,22 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.75
         normal_forca: 0.85
+      - nome: neonAmber
+        preset: energia_espectral
+        cor_hex: "#ffe496"
+        cor_tinta: "#ffe496"
+        uv_faixa: [0.25, 0.25, 0.375, 0.375]
+        metallic_override: 0.1
+        roughness_escala: 0.55
+        normal_forca: 0.65
+      - nome: steel
+        preset: aco_forjado
+        cor_hex: "#8c8c99"
+        cor_tinta: "#8c8c99"
+        uv_faixa: [0.5, 0.25, 0.625, 0.375]
+        metallic_override: 0.94
+        roughness_escala: 0.82
+        normal_forca: 0.95
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 46
@@ -357,36 +365,20 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_torso.glb
-    altura_metros: 2.8114   # 10.0407 studs
+    altura_metros: 2.8107   # 10.0383 studs
     pivot: base
-    limite_triangulos: 4200
+    limite_triangulos: 5800
     material: pbr
     qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: ironDark
-        preset: aco_forjado
-        cor_hex: "#202328"
-        cor_tinta: "#202328"
-        uv_faixa: [0.875, 0, 1, 0.125]
-        metallic_override: 0.82
-        roughness_escala: 1.18
-        normal_forca: 1.15
-      - nome: stoneDark
-        preset: pedra_musgo
-        cor_hex: "#34383e"
-        cor_tinta: "#34383e"
-        uv_faixa: [0.125, 0, 0.25, 0.125]
-        metallic_override: 0.0
-        roughness_escala: 1.08
-        normal_forca: 1.15
       - nome: iron
         preset: aco_forjado
         cor_hex: "#3a3f46"
@@ -395,6 +387,22 @@ lote:
         metallic_override: 0.88
         roughness_escala: 1.0
         normal_forca: 1.05
+      - nome: stoneDark
+        preset: pedra_musgo
+        cor_hex: "#34383e"
+        cor_tinta: "#34383e"
+        uv_faixa: [0.125, 0, 0.25, 0.125]
+        metallic_override: 0.0
+        roughness_escala: 1.08
+        normal_forca: 1.15
+      - nome: ironDark
+        preset: aco_forjado
+        cor_hex: "#202328"
+        cor_tinta: "#202328"
+        uv_faixa: [0.875, 0, 1, 0.125]
+        metallic_override: 0.82
+        roughness_escala: 1.18
+        normal_forca: 1.15
       - nome: ember
         preset: energia_espectral
         cor_hex: "#ffb250"
@@ -435,6 +443,14 @@ lote:
         metallic_override: 0.45
         roughness_escala: 0.85
         normal_forca: 0.8
+      - nome: steel
+        preset: aco_forjado
+        cor_hex: "#8c8c99"
+        cor_tinta: "#8c8c99"
+        uv_faixa: [0.5, 0.25, 0.625, 0.375]
+        metallic_override: 0.94
+        roughness_escala: 0.82
+        normal_forca: 0.95
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 46
@@ -449,11 +465,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_arm_r.glb
-    altura_metros: 1.6631   # 5.9396 studs
+    altura_metros: 1.6947   # 6.0525 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -470,11 +486,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_arm_l.glb
-    altura_metros: 1.6013   # 5.719 studs
+    altura_metros: 1.6015   # 5.7196 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -493,9 +509,9 @@ lote:
     origem: art/export/boss_slag_juggernaut_leg_l.glb
     altura_metros: 1.2967   # 4.631 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -514,9 +530,9 @@ lote:
     origem: art/export/boss_slag_juggernaut_leg_r.glb
     altura_metros: 1.2931   # 4.6182 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -533,20 +549,28 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch.glb
-    altura_metros: 4.2927   # 15.3312 studs
+    altura_metros: 4.3636   # 15.5843 studs
     pivot: base
-    limite_triangulos: 7200
+    limite_triangulos: 17900
     material: pbr
-    qualidade: hero
-    quantidade_cena: 1
+    qualidade: ultra
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
+      - nome: iceLight
+        preset: cristal_arcano
+        cor_hex: "#aad6f5"
+        cor_tinta: "#aad6f5"
+        uv_faixa: [0.25, 0.375, 0.375, 0.5]
+        metallic_override: 0.05
+        roughness_escala: 0.55
+        normal_forca: 0.85
       - nome: arcaneCyan
         preset: energia_espectral
         cor_hex: "#38e4f5"
@@ -563,14 +587,6 @@ lote:
         metallic_override: 0.08
         roughness_escala: 0.5
         normal_forca: 0.75
-      - nome: iceLight
-        preset: cristal_arcano
-        cor_hex: "#aad6f5"
-        cor_tinta: "#aad6f5"
-        uv_faixa: [0.25, 0.375, 0.375, 0.5]
-        metallic_override: 0.05
-        roughness_escala: 0.55
-        normal_forca: 0.85
       - nome: ironDark
         preset: aco_forjado
         cor_hex: "#202328"
@@ -579,22 +595,6 @@ lote:
         metallic_override: 0.82
         roughness_escala: 1.18
         normal_forca: 1.15
-      - nome: royal
-        preset: tecido_nobre
-        cor_hex: "#2e4ca8"
-        cor_tinta: "#2e4ca8"
-        uv_faixa: [0.625, 0.75, 0.75, 0.875]
-        metallic_override: 0.08
-        roughness_escala: 0.9
-        normal_forca: 0.95
-      - nome: ice
-        preset: cristal_arcano
-        cor_hex: "#59a6e6"
-        cor_tinta: "#59a6e6"
-        uv_faixa: [0.125, 0.375, 0.25, 0.5]
-        metallic_override: 0.05
-        roughness_escala: 0.65
-        normal_forca: 0.95
       - nome: stoneDark
         preset: pedra_musgo
         cor_hex: "#34383e"
@@ -603,6 +603,22 @@ lote:
         metallic_override: 0.0
         roughness_escala: 1.08
         normal_forca: 1.15
+      - nome: ice
+        preset: cristal_arcano
+        cor_hex: "#59a6e6"
+        cor_tinta: "#59a6e6"
+        uv_faixa: [0.125, 0.375, 0.25, 0.5]
+        metallic_override: 0.05
+        roughness_escala: 0.65
+        normal_forca: 0.95
+      - nome: royal
+        preset: tecido_nobre
+        cor_hex: "#2e4ca8"
+        cor_tinta: "#2e4ca8"
+        uv_faixa: [0.625, 0.75, 0.75, 0.875]
+        metallic_override: 0.08
+        roughness_escala: 0.9
+        normal_forca: 0.95
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 50
@@ -617,28 +633,20 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_torso.glb
-    altura_metros: 3.2031   # 11.4397 studs
+    altura_metros: 3.2057   # 11.4491 studs
     pivot: base
-    limite_triangulos: 4200
+    limite_triangulos: 5800
     material: pbr
     qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: iceGlow
-        preset: energia_espectral
-        cor_hex: "#c8f0ff"
-        cor_tinta: "#c8f0ff"
-        uv_faixa: [0.375, 0.375, 0.5, 0.5]
-        metallic_override: 0.08
-        roughness_escala: 0.5
-        normal_forca: 0.75
       - nome: iceLight
         preset: cristal_arcano
         cor_hex: "#aad6f5"
@@ -654,6 +662,14 @@ lote:
         uv_faixa: [0.125, 0.875, 0.25, 1]
         metallic_override: 0.1
         roughness_escala: 0.55
+        normal_forca: 0.75
+      - nome: iceGlow
+        preset: energia_espectral
+        cor_hex: "#c8f0ff"
+        cor_tinta: "#c8f0ff"
+        uv_faixa: [0.375, 0.375, 0.5, 0.5]
+        metallic_override: 0.08
+        roughness_escala: 0.5
         normal_forca: 0.75
       - nome: ironDark
         preset: aco_forjado
@@ -701,11 +717,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_arm_r.glb
-    altura_metros: 1.532   # 5.4713 studs
+    altura_metros: 1.532   # 5.4715 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -722,11 +738,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_arm_l.glb
-    altura_metros: 1.2346   # 4.4094 studs
+    altura_metros: 1.2342   # 4.4077 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -743,11 +759,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_leg_l.glb
-    altura_metros: 1.3821   # 4.936 studs
+    altura_metros: 1.3824   # 4.9373 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -764,11 +780,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_leg_r.glb
-    altura_metros: 1.3826   # 4.9379 studs
+    altura_metros: 1.3788   # 4.9242 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -785,28 +801,20 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron.glb
-    altura_metros: 3.8238   # 13.6565 studs
+    altura_metros: 3.8237   # 13.6559 studs
     pivot: base
-    limite_triangulos: 7200
+    limite_triangulos: 17900
     material: pbr
-    qualidade: hero
-    quantidade_cena: 1
+    qualidade: ultra
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: ironDark
-        preset: aco_forjado
-        cor_hex: "#202328"
-        cor_tinta: "#202328"
-        uv_faixa: [0.875, 0, 1, 0.125]
-        metallic_override: 0.82
-        roughness_escala: 1.18
-        normal_forca: 1.15
       - nome: brass
         preset: ouro_ornamentado
         cor_hex: "#c69844"
@@ -815,6 +823,14 @@ lote:
         metallic_override: 0.9
         roughness_escala: 0.92
         normal_forca: 1.0
+      - nome: ironDark
+        preset: aco_forjado
+        cor_hex: "#202328"
+        cor_tinta: "#202328"
+        uv_faixa: [0.875, 0, 1, 0.125]
+        metallic_override: 0.82
+        roughness_escala: 1.18
+        normal_forca: 1.15
       - nome: bronze
         preset: ouro_ornamentado
         cor_hex: "#b0783a"
@@ -831,6 +847,14 @@ lote:
         metallic_override: 0.94
         roughness_escala: 0.85
         normal_forca: 1.05
+      - nome: crimsonCloth
+        preset: tecido_nobre
+        cor_hex: "#8a1c26"
+        cor_tinta: "#8a1c26"
+        uv_faixa: [0.875, 0.75, 1, 0.875]
+        metallic_override: 0.05
+        roughness_escala: 0.95
+        normal_forca: 0.95
       - nome: goldBright
         preset: ouro_ornamentado
         cor_hex: "#f0c850"
@@ -839,6 +863,22 @@ lote:
         metallic_override: 0.97
         roughness_escala: 0.72
         normal_forca: 1.0
+      - nome: danger
+        preset: energia_espectral
+        cor_hex: "#e4572e"
+        cor_tinta: "#e4572e"
+        uv_faixa: [0.25, 0.125, 0.375, 0.25]
+        metallic_override: 0.12
+        roughness_escala: 0.75
+        normal_forca: 0.85
+      - nome: steel
+        preset: aco_forjado
+        cor_hex: "#8c8c99"
+        cor_tinta: "#8c8c99"
+        uv_faixa: [0.5, 0.25, 0.625, 0.375]
+        metallic_override: 0.94
+        roughness_escala: 0.82
+        normal_forca: 0.95
       - nome: obsidian
         preset: cristal_arcano
         cor_hex: "#262230"
@@ -855,22 +895,6 @@ lote:
         metallic_override: 0.15
         roughness_escala: 0.65
         normal_forca: 0.7
-      - nome: danger
-        preset: energia_espectral
-        cor_hex: "#e4572e"
-        cor_tinta: "#e4572e"
-        uv_faixa: [0.25, 0.125, 0.375, 0.25]
-        metallic_override: 0.12
-        roughness_escala: 0.75
-        normal_forca: 0.85
-      - nome: crimsonCloth
-        preset: tecido_nobre
-        cor_hex: "#8a1c26"
-        cor_tinta: "#8a1c26"
-        uv_faixa: [0.875, 0.75, 1, 0.875]
-        metallic_override: 0.05
-        roughness_escala: 0.95
-        normal_forca: 0.95
       - nome: crimsonBright
         preset: tecido_nobre
         cor_hex: "#c02a34"
@@ -893,28 +917,20 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_torso.glb
-    altura_metros: 2.8939   # 10.3353 studs
+    altura_metros: 2.8997   # 10.356 studs
     pivot: base
-    limite_triangulos: 4200
+    limite_triangulos: 5800
     material: pbr
     qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
-      - nome: ironDark
-        preset: aco_forjado
-        cor_hex: "#202328"
-        cor_tinta: "#202328"
-        uv_faixa: [0.875, 0, 1, 0.125]
-        metallic_override: 0.82
-        roughness_escala: 1.18
-        normal_forca: 1.15
       - nome: brass
         preset: ouro_ornamentado
         cor_hex: "#c69844"
@@ -923,6 +939,14 @@ lote:
         metallic_override: 0.9
         roughness_escala: 0.92
         normal_forca: 1.0
+      - nome: ironDark
+        preset: aco_forjado
+        cor_hex: "#202328"
+        cor_tinta: "#202328"
+        uv_faixa: [0.875, 0, 1, 0.125]
+        metallic_override: 0.82
+        roughness_escala: 1.18
+        normal_forca: 1.15
       - nome: bronze
         preset: ouro_ornamentado
         cor_hex: "#b0783a"
@@ -1001,11 +1025,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_arm_r.glb
-    altura_metros: 1.3893   # 4.9617 studs
+    altura_metros: 1.3935   # 4.9769 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1022,11 +1046,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_arm_l.glb
-    altura_metros: 1.2948   # 4.6243 studs
+    altura_metros: 1.294   # 4.6215 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1045,9 +1069,9 @@ lote:
     origem: art/export/boss_powder_baron_leg_l.glb
     altura_metros: 1.2327   # 4.4024 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1066,9 +1090,9 @@ lote:
     origem: art/export/boss_powder_baron_leg_r.glb
     altura_metros: 1.2375   # 4.4198 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1085,19 +1109,19 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan.glb
-    altura_metros: 4.6919   # 16.7569 studs
+    altura_metros: 4.7228   # 16.8671 studs
     pivot: base
-    limite_triangulos: 7200
+    limite_triangulos: 17900
     material: pbr
-    qualidade: hero
-    quantidade_cena: 1
+    qualidade: ultra
+    quantidade_cena: 0
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: obsidian
         preset: cristal_arcano
@@ -1107,14 +1131,6 @@ lote:
         metallic_override: 0.22
         roughness_escala: 0.75
         normal_forca: 1.1
-      - nome: eyeNeon
-        preset: energia_espectral
-        cor_hex: "#dcfff5"
-        cor_tinta: "#dcfff5"
-        uv_faixa: [0.375, 0.5, 0.5, 0.625]
-        metallic_override: 0.08
-        roughness_escala: 0.5
-        normal_forca: 0.6
       - nome: arcaneViolet
         preset: cristal_arcano
         cor_hex: "#a855f7"
@@ -1123,13 +1139,13 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.6
         normal_forca: 0.88
-      - nome: obsidianLight
-        preset: pedra_musgo
-        cor_hex: "#4e4660"
-        cor_tinta: "#4e4660"
-        uv_faixa: [0.125, 0.75, 0.25, 0.875]
-        metallic_override: 0.14
-        roughness_escala: 0.82
+      - nome: gold
+        preset: ouro_ornamentado
+        cor_hex: "#c9a227"
+        cor_tinta: "#c9a227"
+        uv_faixa: [0.625, 0.125, 0.75, 0.25]
+        metallic_override: 0.94
+        roughness_escala: 0.85
         normal_forca: 1.05
       - nome: goldBright
         preset: ouro_ornamentado
@@ -1139,6 +1155,22 @@ lote:
         metallic_override: 0.97
         roughness_escala: 0.72
         normal_forca: 1.0
+      - nome: eyeNeon
+        preset: energia_espectral
+        cor_hex: "#dcfff5"
+        cor_tinta: "#dcfff5"
+        uv_faixa: [0.375, 0.5, 0.5, 0.625]
+        metallic_override: 0.08
+        roughness_escala: 0.5
+        normal_forca: 0.6
+      - nome: obsidianLight
+        preset: pedra_musgo
+        cor_hex: "#4e4660"
+        cor_tinta: "#4e4660"
+        uv_faixa: [0.125, 0.75, 0.25, 0.875]
+        metallic_override: 0.14
+        roughness_escala: 0.82
+        normal_forca: 1.05
       - nome: violet
         preset: cristal_arcano
         cor_hex: "#8b5cf6"
@@ -1147,30 +1179,6 @@ lote:
         metallic_override: 0.1
         roughness_escala: 0.65
         normal_forca: 0.9
-      - nome: gold
-        preset: ouro_ornamentado
-        cor_hex: "#c9a227"
-        cor_tinta: "#c9a227"
-        uv_faixa: [0.625, 0.125, 0.75, 0.25]
-        metallic_override: 0.94
-        roughness_escala: 0.85
-        normal_forca: 1.05
-      - nome: ink
-        preset: aco_forjado
-        cor_hex: "#121418"
-        cor_tinta: "#121418"
-        uv_faixa: [0, 0.25, 0.125, 0.375]
-        metallic_override: 0.35
-        roughness_escala: 1.25
-        normal_forca: 0.8
-      - nome: steel
-        preset: aco_forjado
-        cor_hex: "#8c8c99"
-        cor_tinta: "#8c8c99"
-        uv_faixa: [0.5, 0.25, 0.625, 0.375]
-        metallic_override: 0.94
-        roughness_escala: 0.82
-        normal_forca: 0.95
       - nome: tealSwarm
         preset: cristal_arcano
         cor_hex: "#2dd4bf"
@@ -1179,6 +1187,22 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.7
         normal_forca: 0.95
+      - nome: steel
+        preset: aco_forjado
+        cor_hex: "#8c8c99"
+        cor_tinta: "#8c8c99"
+        uv_faixa: [0.5, 0.25, 0.625, 0.375]
+        metallic_override: 0.94
+        roughness_escala: 0.82
+        normal_forca: 0.95
+      - nome: ink
+        preset: aco_forjado
+        cor_hex: "#121418"
+        cor_tinta: "#121418"
+        uv_faixa: [0, 0.25, 0.125, 0.375]
+        metallic_override: 0.35
+        roughness_escala: 1.25
+        normal_forca: 0.8
     suavizacao_normais:
       modo: hard_surface
       angulo_graus: 46
@@ -1193,19 +1217,19 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_torso.glb
-    altura_metros: 3.3841   # 12.0859 studs
+    altura_metros: 3.3942   # 12.1222 studs
     pivot: base
-    limite_triangulos: 4200
+    limite_triangulos: 5800
     material: pbr
     qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     detalhe_alto:
       ativo: true
-      subdiv_niveis: 1
+      subdiv_niveis: 0
       chanfro_bevel_m: 0.008
       crease_angulo_graus: 40
-      ao_cavidade_forca: 0.38
+      ao_cavidade_forca: 0.42
     pbr_zonas:
       - nome: obsidian
         preset: cristal_arcano
@@ -1215,22 +1239,6 @@ lote:
         metallic_override: 0.22
         roughness_escala: 0.75
         normal_forca: 1.1
-      - nome: goldBright
-        preset: ouro_ornamentado
-        cor_hex: "#f0c850"
-        cor_tinta: "#f0c850"
-        uv_faixa: [0.625, 0.5, 0.75, 0.625]
-        metallic_override: 0.97
-        roughness_escala: 0.72
-        normal_forca: 1.0
-      - nome: obsidianLight
-        preset: pedra_musgo
-        cor_hex: "#4e4660"
-        cor_tinta: "#4e4660"
-        uv_faixa: [0.125, 0.75, 0.25, 0.875]
-        metallic_override: 0.14
-        roughness_escala: 0.82
-        normal_forca: 1.05
       - nome: eyeNeon
         preset: energia_espectral
         cor_hex: "#dcfff5"
@@ -1239,6 +1247,14 @@ lote:
         metallic_override: 0.08
         roughness_escala: 0.5
         normal_forca: 0.6
+      - nome: goldBright
+        preset: ouro_ornamentado
+        cor_hex: "#f0c850"
+        cor_tinta: "#f0c850"
+        uv_faixa: [0.625, 0.5, 0.75, 0.625]
+        metallic_override: 0.97
+        roughness_escala: 0.72
+        normal_forca: 1.0
       - nome: arcaneViolet
         preset: cristal_arcano
         cor_hex: "#a855f7"
@@ -1247,14 +1263,6 @@ lote:
         metallic_override: 0.12
         roughness_escala: 0.6
         normal_forca: 0.88
-      - nome: violet
-        preset: cristal_arcano
-        cor_hex: "#8b5cf6"
-        cor_tinta: "#8b5cf6"
-        uv_faixa: [0.25, 0.75, 0.375, 0.875]
-        metallic_override: 0.1
-        roughness_escala: 0.65
-        normal_forca: 0.9
       - nome: gold
         preset: ouro_ornamentado
         cor_hex: "#c9a227"
@@ -1263,6 +1271,22 @@ lote:
         metallic_override: 0.94
         roughness_escala: 0.85
         normal_forca: 1.05
+      - nome: obsidianLight
+        preset: pedra_musgo
+        cor_hex: "#4e4660"
+        cor_tinta: "#4e4660"
+        uv_faixa: [0.125, 0.75, 0.25, 0.875]
+        metallic_override: 0.14
+        roughness_escala: 0.82
+        normal_forca: 1.05
+      - nome: violet
+        preset: cristal_arcano
+        cor_hex: "#8b5cf6"
+        cor_tinta: "#8b5cf6"
+        uv_faixa: [0.25, 0.75, 0.375, 0.875]
+        metallic_override: 0.1
+        roughness_escala: 0.65
+        normal_forca: 0.9
       - nome: ink
         preset: aco_forjado
         cor_hex: "#121418"
@@ -1293,11 +1317,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_arm_r.glb
-    altura_metros: 2.1679   # 7.7426 studs
+    altura_metros: 2.1664   # 7.7372 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1314,11 +1338,11 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_arm_l.glb
-    altura_metros: 1.6197   # 5.7847 studs
+    altura_metros: 1.6201   # 5.7861 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 3700
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1337,9 +1361,9 @@ lote:
     origem: art/export/boss_rift_titan_leg_l.glb
     altura_metros: 1.6246   # 5.8023 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
@@ -1358,9 +1382,9 @@ lote:
     origem: art/export/boss_rift_titan_leg_r.glb
     altura_metros: 1.6158   # 5.7707 studs
     pivot: origem
-    limite_triangulos: 2200
+    limite_triangulos: 2500
     material: opaque
-    qualidade: standard
+    qualidade: hero
     quantidade_cena: 1
     render_fidelity_roblox: Precise
     suavizacao_normais:
