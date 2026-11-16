@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publicador Open Cloud v1.8 (Forge3D 0.9.0 / spec@6 / roblox-aa-80).
 
-Publica os 206 assets visuais da MURALHA na Open Cloud (`creator_id=11966727684`, `user`)
+Publica os 211 assets visuais da MURALHA na Open Cloud (`creator_id=11966727684`, `user`)
 com checkpoint idempotente em `art/renders/_logs/opencloud_v09_ledger.json`, backoff
 exponencial e `strip_embedded_textures=True` nos 97 GLBs, atualizando os catálogos Luau em
 `src/shared/visual/{Wall,Mesh,Backdrop,Pbr,Vfx}Assets.luau`.
@@ -56,17 +56,23 @@ PROPS = ("tree_pine", "tree_oak", "rock_cluster", "siege_supply", "iron_brazier"
 FAUNA = ("wyvern_body", "wyvern_wing_l", "wyvern_wing_r", "bird_body", "bird_wing_l", "bird_wing_r", "stag", "pack_ox", "ram")
 BACKDROP_KEYS = ("castle01", "house01", "house02", "tower01", "windmill01", "keep01", "tree01")
 
-VFX_MAP = (
-    ("explosionFlipbook", "vfx_flipbook_explosion_4x4.png"),
-    ("frostShatterFlipbook", "vfx_flipbook_frost_shatter_4x4.png"),
-    ("arcaneRiftFlipbook", "vfx_flipbook_arcane_rift_4x4.png"),
+VFX_SPECS = (
+    ("explosionFlipbook", "vfx_flipbook_explosion_8x8.png"),
+    ("frostShatterFlipbook", "vfx_flipbook_frost_shatter_8x8.png"),
+    ("arcaneRiftFlipbook", "vfx_flipbook_arcane_rift_8x8.png"),
+    ("fireLoopFlipbook", "vfx_flipbook_fire_loop_8x8.png"),
     ("slashSparkFlipbook", "vfx_flipbook_slash_spark_4x4.png"),
     ("shockwaveRing", "vfx_shockwave_ring.png"),
     ("softGlowFlare", "vfx_soft_glow_flare.png"),
     ("smokeWispy", "vfx_smoke_wispy.png"),
     ("scorchCraterDecal", "vfx_scorch_crater_decal.png"),
     ("beamEnergyTrail", "vfx_beam_energy_trail.png"),
+    ("tarPuddleDecal", "vfx_tar_puddle_decal.png"),
+    ("frostGroundDecal", "vfx_frost_ground_decal.png"),
+    ("bossRuneDecal", "vfx_boss_rune_decal.png"),
+    ("lightningArcBeam", "vfx_lightning_arc_beam.png"),
 )
+VFX_MAP = VFX_SPECS
 
 # 24 Hero assets: (model_name, saida_group, forge_id)
 HERO_ITEMS = (
@@ -114,8 +120,8 @@ def collect_jobs() -> list[UploadJob]:
             )
         )
 
-    # 2. VFX Textures (9 Images)
-    for key, fname in VFX_MAP:
+    # 2. VFX Textures (14 Images)
+    for key, fname in VFX_SPECS:
         jobs.append(
             UploadJob(
                 logical_key=f"vfx.{key}",
@@ -446,7 +452,7 @@ def patch_luau_catalogs(ids: dict[str, int]) -> None:
     vfx_p = ROOT / "src/shared/visual/VfxAssets.luau"
     vfx_txt = vfx_p.read_text(encoding="utf-8")
     vfx_block = "VfxAssets.IDS = {\n" + "\n".join(
-        f"\t{k} = {ids[f'vfx.{k}']}," for k, _f in VFX_MAP
+        f"\t{k} = {ids[f'vfx.{k}']}," for k, _f in VFX_SPECS
     ) + "\n} :: { [string]: number }"
     vfx_txt, n = re.subn(r"VfxAssets\.IDS = \{.*?\}\s*::\s*\{\s*\[string\]:\s*number\s*\}", vfx_block, vfx_txt, count=1, flags=re.S)
     assert n == 1, "VfxAssets.IDS"
@@ -461,11 +467,11 @@ def patch_luau_catalogs(ids: dict[str, int]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--workers", type=int, default=6)
     args = parser.parse_args()
 
     jobs = collect_jobs()
-    assert len(jobs) == 206, f"Esperava 206 jobs, achei {len(jobs)}"
+    assert len(jobs) == 211, f"Esperava 211 jobs, achei {len(jobs)}"
     missing = [str(j.path) for j in jobs if not j.path.is_file()]
     if missing:
         raise SystemExit(f"Arquivos ausentes ({len(missing)}):\n" + "\n".join(missing[:20]))
