@@ -72,8 +72,8 @@ function VisualSetup.apply(): ()
 	Lighting.GeographicLatitude = 24
 	Lighting.Ambient = rgb({ 112, 120, 132 })
 	Lighting.OutdoorAmbient = rgb({ 158, 166, 178 })
-	Lighting.EnvironmentDiffuseScale = 0.7
-	Lighting.EnvironmentSpecularScale = 0.35
+	Lighting.EnvironmentDiffuseScale = 0.75
+	Lighting.EnvironmentSpecularScale = 0.55 -- PBR: metais/aco (SurfaceAppearance) precisam de reflexo de ceu
 	Lighting.ShadowSoftness = 0.22
 	Lighting.GlobalShadows = true
 
@@ -100,15 +100,15 @@ function VisualSetup.apply(): ()
 		ensureInstance("ColorCorrectionEffect", "MuralhaColor") :: ColorCorrectionEffect
 	colorCorrection.Enabled = true
 	colorCorrection.Brightness = 0.03
-	colorCorrection.Contrast = 0.08
-	colorCorrection.Saturation = 0.08
+	colorCorrection.Contrast = 0.1
+	colorCorrection.Saturation = 0.06
 	colorCorrection.TintColor = Color3.fromRGB(255, 246, 232)
 
 	local bloom = ensureInstance("BloomEffect", "MuralhaBloom") :: BloomEffect
 	bloom.Enabled = true
-	bloom.Intensity = 0.35
+	bloom.Intensity = 0.4
 	bloom.Size = 18
-	bloom.Threshold = 1.15
+	bloom.Threshold = 1.05 -- VFX aditivos (flipbooks) florescem sem lavar o diorama
 
 	local dof = ensureInstance("DepthOfFieldEffect", "MuralhaDOF") :: DepthOfFieldEffect
 	dof.Enabled = true

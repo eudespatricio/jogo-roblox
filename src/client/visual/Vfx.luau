@@ -17,12 +17,24 @@ local VisualTheme = if IS_ROBLOX
 	)
 	else Mock.shared("VisualTheme") :: any
 
+local VfxAssets = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("VfxAssets")
+	)
+	else Mock.shared("VfxAssets") :: any
+
 local activeGame = if IS_ROBLOX then game else Mock.game :: typeof(game)
 local Instance = if IS_ROBLOX then Instance else Mock.Instance :: typeof(Instance)
 local Vector3 = if IS_ROBLOX then Vector3 else Mock.Vector3 :: typeof(Vector3)
 local Vector2 = if IS_ROBLOX then Vector2 else Mock.Vector2 :: typeof(Vector2)
 local CFrame = if IS_ROBLOX then CFrame else Mock.CFrame :: typeof(CFrame)
 local Color3 = if IS_ROBLOX then Color3 else Mock.Color3 :: typeof(Color3)
+local ColorSequenceKeypoint = if IS_ROBLOX
+	then ColorSequenceKeypoint
+	else Mock.ColorSequenceKeypoint :: typeof(ColorSequenceKeypoint)
 local ColorSequence = if IS_ROBLOX
 	then ColorSequence
 	else Mock.ColorSequence :: typeof(ColorSequence)
@@ -74,6 +86,14 @@ type EmitterSpec = {
 	rate: number?,
 	burstCount: number?,
 	activeSeconds: number?,
+	-- Texturas Forge3D (VfxAssets): vazio/nil = partícula padrão (fallback procedural, ID 0).
+	texture: string?,
+	flipbookLayout: EnumItem?,
+	flipbookMode: EnumItem?,
+	flipbookFramerate: NumberRange?,
+	orientation: EnumItem?,
+	squash: NumberSequence?,
+	zOffset: number?,
 }
 
 local TIER_TTL: { [QualityTier]: number } = {
@@ -212,6 +232,26 @@ local function attachEmitter(parent: Instance, spec: EmitterSpec): ParticleEmitt
 	emitter.EmissionDirection = spec.emissionDirection or Enum.NormalId.Top
 	emitter.RotSpeed = spec.rotSpeed or NumberRange.new(-60, 60)
 
+	local texture = spec.texture or ""
+	if texture ~= "" then
+		emitter.Texture = texture
+		if spec.flipbookLayout ~= nil then
+			emitter.FlipbookLayout = spec.flipbookLayout :: any
+			emitter.FlipbookMode = (spec.flipbookMode or Enum.ParticleFlipbookMode.OneShot) :: any
+			emitter.FlipbookFramerate = spec.flipbookFramerate
+				or NumberRange.new(VfxAssets.FLIPBOOK.fps)
+		end
+	end
+	if spec.orientation ~= nil then
+		emitter.Orientation = spec.orientation :: any
+	end
+	if spec.squash ~= nil then
+		emitter.Squash = spec.squash
+	end
+	if spec.zOffset ~= nil then
+		emitter.ZOffset = spec.zOffset
+	end
+
 	local rate = spec.rate or 0
 	if rate > 0 then
 		emitter.Rate = scaleParticles(rate)
@@ -267,10 +307,248 @@ local function attachTrail(
 	trail.LightEmission = 0.7
 	trail.LightInfluence = 0.1
 	trail.FaceCamera = true
+	local trailTexture: string = VfxAssets.contentId("beamEnergyTrail")
+	if trailTexture ~= "" then
+		trail.Texture = trailTexture
+		trail.TextureMode = Enum.TextureMode.Stretch
+		trail.TextureLength = 1
+	end
 	trail.MinLength = 0.05
 	trail.Enabled = true
 	trail.Parent = part
 	return trail
+end
+
+-- ===== Camada de texturas Forge3D (flipbooks, decals, aneis). Sem ID publicado: fallback leve. =====
+local function flipbookEmitterSpec(
+	key: string,
+	name: string,
+	color: Color3,
+	sizeStart: number,
+	sizeEnd: number,
+	burst: number
+): EmitterSpec
+	local texture: string = VfxAssets.contentId(key)
+	local white = Color3.new(1, 1, 1)
+	if texture ~= "" then
+		return {
+			name = name,
+			texture = texture,
+			flipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+			flipbookMode = Enum.ParticleFlipbookMode.OneShot,
+			flipbookFramerate = NumberRange.new(VfxAssets.FLIPBOOK.fps),
+			color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, white),
+				ColorSequenceKeypoint.new(0.35, color:Lerp(white, 0.35)),
+				ColorSequenceKeypoint.new(1, color),
+			}),
+			size = NumberSequence.new(sizeStart, sizeEnd),
+			transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0),
+				NumberSequenceKeypoint.new(0.75, 0.1),
+				NumberSequenceKeypoint.new(1, 1),
+			}),
+			lifetime = NumberRange.new(16 / VfxAssets.FLIPBOOK.fps),
+			speed = NumberRange.new(0, 0.4),
+			spreadAngle = Vector2.new(0, 0),
+			drag = 1,
+			lightEmission = 0.85,
+			rotSpeed = NumberRange.new(0, 0),
+			zOffset = 0.5,
+			burstCount = burst,
+		}
+	end
+	-- Fallback: um flare suave (softGlowFlare se publicado; senao partícula padrão).
+	return {
+		name = name .. "Glow",
+		texture = VfxAssets.contentId("softGlowFlare"),
+		color = ColorSequence.new(white, color),
+		size = NumberSequence.new(sizeStart * 0.6, sizeEnd * 0.8),
+		transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.3),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		lifetime = NumberRange.new(0.18, 0.3),
+		speed = NumberRange.new(0, 0.5),
+		spreadAngle = Vector2.new(0, 0),
+		lightEmission = 1,
+		rotSpeed = NumberRange.new(0, 0),
+		burstCount = 1,
+	}
+end
+
+local function emitFlipbook(
+	parent: Instance,
+	key: string,
+	position: Vector3,
+	color: Color3,
+	sizeStart: number,
+	sizeEnd: number,
+	burst: number?
+): ()
+	local anchor = makeAnchor(parent, position, 1.0, "VfxFlipbook")
+	attachEmitter(
+		anchor,
+		flipbookEmitterSpec(key, "Flipbook", color, sizeStart, sizeEnd, burst or 2)
+	)
+end
+
+local function emitExplosion(parent: Instance, position: Vector3, color: Color3, scale: number?): ()
+	local k = scale or 1
+	emitFlipbook(parent, "explosionFlipbook", position, color, 2.4 * k, 5.2 * k, 2)
+end
+
+local function emitFrostShatter(
+	parent: Instance,
+	position: Vector3,
+	color: Color3,
+	scale: number?
+): ()
+	local k = scale or 1
+	emitFlipbook(parent, "frostShatterFlipbook", position, color, 1.8 * k, 4.2 * k, 2)
+end
+
+local function emitArcaneRift(
+	parent: Instance,
+	position: Vector3,
+	color: Color3,
+	scale: number?
+): ()
+	local k = scale or 1
+	emitFlipbook(parent, "arcaneRiftFlipbook", position, color, 2.0 * k, 4.6 * k, 2)
+end
+
+-- Faiscas/cortes alongados (Orientation VelocityParallel + Squash).
+local function emitSlashSparks(
+	parent: Instance,
+	position: Vector3,
+	color: Color3,
+	burst: number?,
+	direction: Enum.NormalId?
+): ()
+	local texture: string = VfxAssets.contentId("slashSparkFlipbook")
+	local anchor = makeAnchor(parent, position, 0.8, "VfxSlashSparks")
+	local spec: EmitterSpec = {
+		name = "SlashSparks",
+		color = ColorSequence.new(Color3.new(1, 1, 1), color),
+		size = NumberSequence.new(0.5, 0.08),
+		transparency = NumberSequence.new(0, 1),
+		lifetime = NumberRange.new(0.18, 0.34),
+		speed = NumberRange.new(10, 18),
+		spreadAngle = Vector2.new(55, 55),
+		emissionDirection = direction,
+		drag = 2,
+		lightEmission = 1,
+		rotSpeed = NumberRange.new(0, 0),
+		orientation = Enum.ParticleOrientation.VelocityParallel,
+		squash = NumberSequence.new(-0.5, 0),
+		burstCount = burst or 6,
+	}
+	if texture ~= "" then
+		spec.texture = texture
+		spec.flipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4
+		spec.flipbookMode = Enum.ParticleFlipbookMode.OneShot
+		spec.flipbookFramerate = NumberRange.new(VfxAssets.FLIPBOOK.fps)
+		spec.lifetime = NumberRange.new(0.3, 0.5)
+		spec.speed = NumberRange.new(4, 9)
+	end
+	attachEmitter(anchor, spec)
+end
+
+-- Anel de choque texturizado deitado no chao (Orientation VelocityPerpendicular). Sem ID: nada.
+local function emitRingTexture(
+	parent: Instance,
+	position: Vector3,
+	color: Color3,
+	endSize: number
+): ()
+	local texture: string = VfxAssets.contentId("shockwaveRing")
+	if texture == "" then
+		return
+	end
+	local anchor = makeAnchor(parent, position, 0.9, "VfxRingTexture")
+	attachEmitter(anchor, {
+		name = "ShockwaveRingTexture",
+		texture = texture,
+		color = ColorSequence.new(Color3.new(1, 1, 1), color),
+		size = NumberSequence.new(0.8, endSize),
+		transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.1),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		lifetime = NumberRange.new(0.4, 0.45),
+		speed = NumberRange.new(0.5, 0.5),
+		spreadAngle = Vector2.new(0, 0),
+		drag = 0,
+		lightEmission = 0.9,
+		rotSpeed = NumberRange.new(0, 0),
+		orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+		burstCount = 1,
+	})
+end
+
+-- Placas de queimado no chao (Decal). Apenas Mid/High; pool circular limita o custo.
+local SCORCH_POOL_MAX = 6
+local scorchPlates: { BasePart } = {}
+
+local function spawnScorchDecal(parent: Instance, position: Vector3, radius: number): ()
+	if currentTier == "Low" then
+		return
+	end
+	local alive: { BasePart } = {}
+	for _, plate in ipairs(scorchPlates) do
+		if plate.Parent ~= nil then
+			alive[#alive + 1] = plate
+		end
+	end
+	scorchPlates = alive
+	while #scorchPlates >= SCORCH_POOL_MAX do
+		local oldest = table.remove(scorchPlates, 1)
+		if oldest ~= nil then
+			oldest:Destroy()
+		end
+	end
+
+	local texture: string = VfxAssets.contentId("scorchCraterDecal")
+	local ttl = if currentTier == "High" then 4.5 else 3.0
+	local plate = makePart(
+		parent,
+		Vector3.new(radius * 2, 0.04, radius * 2),
+		position + Vector3.new(0, 0.07, 0),
+		rgb(VisualTheme.PALETTE.ink),
+		Enum.Material.SmoothPlastic
+	)
+	plate.Name = "VfxScorchPlate"
+	plate.CanCollide = false
+	plate.CanTouch = false
+	plate.CanQuery = false
+	scorchPlates[#scorchPlates + 1] = plate
+	if texture ~= "" then
+		plate.Transparency = 1
+		local decal = Instance.new("Decal")
+		decal.Name = "ScorchDecal"
+		decal.Texture = texture
+		decal.Face = Enum.NormalId.Top
+		decal.Transparency = 0.1
+		decal.Parent = plate
+		TweenService:Create(
+			decal,
+			TweenInfo.new(ttl, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{ Transparency = 1 }
+		):Play()
+	else
+		plate.Shape = Enum.PartType.Cylinder
+		plate.Size = Vector3.new(0.04, radius * 2, radius * 2)
+		plate.CFrame = CFrame.new(position + Vector3.new(0, 0.07, 0))
+			* CFrame.Angles(0, 0, math.rad(90))
+		plate.Transparency = 0.55
+		TweenService:Create(
+			plate,
+			TweenInfo.new(ttl, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{ Transparency = 1 }
+		):Play()
+	end
+	Debris:AddItem(plate, ttl + 0.1)
 end
 
 local function moveCarrier(
@@ -487,6 +765,7 @@ function Vfx.dust(parent: Instance, position: Vector3, count: number?): ()
 	local anchor = makeAnchor(parent, position, 1.1, "VfxDust")
 	attachEmitter(anchor, {
 		name = "DustCloud",
+		texture = VfxAssets.contentId("smokeWispy"),
 		color = ColorSequence.new(stone, rgb(VisualTheme.PALETTE.stoneDark)),
 		size = NumberSequence.new(0.45, 1.4),
 		transparency = NumberSequence.new({
@@ -573,6 +852,7 @@ local function spawnShockwaveRing(
 		})
 		:Play()
 	Debris:AddItem(ring, duration + 0.05)
+	emitRingTexture(parent, position, color, endDiam)
 	return ring
 end
 
@@ -751,6 +1031,9 @@ function Vfx.ragdollEnemy(
 	pruneF2(time(), 1)
 
 	local archetype = kind or "runner"
+	if archetype == "wisp" or archetype == "pyromancer" then
+		emitArcaneRift(parent, position + Vector3.new(0, 0.9, 0), color, 0.7)
+	end
 	local rawDir = impulse or Vector3.new(12, 14.5, 2.5)
 	local baseX = math.max(math.abs(rawDir.X), 9.5)
 	local baseY = math.max(rawDir.Y, 11.5)
@@ -959,6 +1242,9 @@ function Vfx.championDeath(
 	local teal = accentColor or rgb(VisualTheme.CHAMPION.accentColor)
 	local white = rgb(VisualTheme.PALETTE.white)
 
+	emitSlashSparks(parent, position + Vector3.new(0, 1.2, 0), gold, 14)
+	emitSlashSparks(parent, position + Vector3.new(0, 1.0, 0), teal, 8, Enum.NormalId.Right)
+
 	-- Dual golden/teal shockwave rings
 	spawnShockwaveRing(parent, position + Vector3.new(0, 0.42, 0), gold, 1.25, 9.6, 0.16, 0.42)
 	spawnShockwaveRing(
@@ -1096,6 +1382,7 @@ function Vfx.ring(parent: Instance, position: Vector3, color: Color3): ()
 		{ Size = Vector3.new(0.12, 7, 7), Transparency = 1 }
 	):Play()
 	Debris:AddItem(ring, 0.5)
+	emitRingTexture(parent, position + Vector3.new(0, 0.4, 0), color, 7)
 end
 
 local function spawnBreachEllipse(
@@ -1150,6 +1437,7 @@ function Vfx.portalBreach(
 	local endSpan = if boss then 12.0 else 5.4
 
 	spawnBreachEllipse(parent, center, veilColor, startSpan, endSpan, 0.28)
+	emitArcaneRift(parent, center, accentColor, if boss then 2.2 else 0.8)
 	if boss then
 		spawnBreachEllipse(
 			parent,
@@ -1302,6 +1590,7 @@ local function spawnCrossBatteryEffect(parent: Instance, originPos: Vector3, tar
 		0.16,
 		function()
 			local burstAnchor = makeAnchor(parent, targetPos + offset, 0.7, "VfxCrossBatteryHit")
+			emitSlashSparks(parent, targetPos + offset, amberBright, 8)
 			attachEmitter(burstAnchor, {
 				name = "CrossBatterySparks",
 				color = ColorSequence.new(amberBright, amber),
@@ -1326,6 +1615,8 @@ local function spawnIncendiaryTarEffect(parent: Instance, targetPos: Vector3): (
 	local smokeBot = rgb(VisualTheme.PALETTE.ironDark)
 
 	local anchor = makeAnchor(parent, targetPos + Vector3.new(0, 0.35, 0), 2.2, "VfxIncendiaryTar")
+	emitExplosion(parent, targetPos + Vector3.new(0, 0.9, 0), amberBright, 1.2)
+	spawnScorchDecal(parent, targetPos, 1.9)
 	attachEmitter(anchor, {
 		name = "IncendiaryFire",
 		color = ColorSequence.new(amberBright, danger),
@@ -1390,6 +1681,7 @@ local function spawnThermalShockEffect(parent: Instance, targetPos: Vector3): ()
 	local white = rgb(VisualTheme.PALETTE.white)
 
 	local anchor = makeAnchor(parent, targetPos + Vector3.new(0, 0.5, 0), 1.3, "VfxThermalShock")
+	emitFrostShatter(parent, targetPos + Vector3.new(0, 0.9, 0), frostBright, 1.3)
 	attachEmitter(anchor, {
 		name = "IceShatter",
 		color = ColorSequence.new(frostBright, frost),
@@ -1457,6 +1749,7 @@ local trapHandlers: { [string]: TrapHandler } = {
 					lightEmission = 0.85,
 					burstCount = 12,
 				})
+				emitSlashSparks(parent, targetPos + Vector3.new(0, 0.3, 0), amberBright, 6)
 			end
 		)
 		if synergyKind == "cross_battery" then
@@ -1532,6 +1825,7 @@ local trapHandlers: { [string]: TrapHandler } = {
 			burstCount = 10,
 		})
 		Vfx.ring(parent, targetPos, frost)
+		emitFrostShatter(parent, targetPos + Vector3.new(0, 0.8, 0), frostBright, 1)
 		spawnLightFlash(parent, targetPos, frostBright, 2.2, 10, 0.22)
 	end,
 
@@ -1584,6 +1878,8 @@ local trapHandlers: { [string]: TrapHandler } = {
 					burstCount = 18,
 				})
 				spawnLightFlash(parent, targetPos, danger, 2.4, 10, 0.18)
+				emitExplosion(parent, targetPos + Vector3.new(0, 0.9, 0), amberBright, 1)
+				spawnScorchDecal(parent, targetPos, 1.6)
 			end
 		)
 	end,
@@ -1604,6 +1900,8 @@ local trapHandlers: { [string]: TrapHandler } = {
 			function()
 				Vfx.ring(parent, targetPos, danger)
 				Vfx.dust(parent, targetPos, 8)
+				emitExplosion(parent, targetPos + Vector3.new(0, 1.2, 0), amberBright, 1.5)
+				spawnScorchDecal(parent, targetPos, 2.2)
 				spawnLightFlash(parent, targetPos, danger, 2.6, 12, 0.2)
 			end
 		)
@@ -1713,6 +2011,30 @@ function Vfx.bossTelegraph(
 		)
 		sweep.Name = "ChargeSweep"
 		sweep.Transparency = 0.25
+
+		local beamTexture: string = VfxAssets.contentId("beamEnergyTrail")
+		if beamTexture ~= "" then
+			local halfSpan = (stripWidth - 0.5) * 0.5
+			local beamA0 = Instance.new("Attachment")
+			beamA0.Position = Vector3.new(0, 0.1, -halfSpan)
+			beamA0.Parent = sweep
+			local beamA1 = Instance.new("Attachment")
+			beamA1.Position = Vector3.new(0, 0.1, halfSpan)
+			beamA1.Parent = sweep
+			local beam = Instance.new("Beam")
+			beam.Name = "ChargeBeam"
+			beam.Attachment0 = beamA0
+			beam.Attachment1 = beamA1
+			beam.Texture = beamTexture
+			beam.TextureMode = Enum.TextureMode.Stretch
+			beam.Color = ColorSequence.new(rgb(VisualTheme.PALETTE.white), accentColor)
+			beam.Width0 = 0.9
+			beam.Width1 = 0.9
+			beam.LightEmission = 0.9
+			beam.FaceCamera = true
+			beam.Segments = 1
+			beam.Parent = sweep
+		end
 	end
 
 	local activeZone = zone :: Instance
@@ -1913,6 +2235,7 @@ function Vfx.bossDeathSequence(
 
 	if bossId == "rift_titan" then
 		-- Act 5: Rift Singularity Implosion (0..0.46s) + Radial Pulse Detonation (0.46..0.85s)
+		emitArcaneRift(parent, coreCenter, accentColor, 3)
 		local horizonShell = makePart(
 			parent,
 			Vector3.new(11.5, 11.5, 11.5),
@@ -2072,6 +2395,7 @@ function Vfx.bossDeathSequence(
 	if bossId == "rime_matriarch" then
 		-- Act 3: Boreal Cryo Supernova
 		local frostBright = rgb(VisualTheme.PALETTE.frostBright)
+		emitFrostShatter(parent, coreCenter, frostBright, 3)
 		spawnShockwaveRing(
 			parent,
 			pos + Vector3.new(0, 0.45, 0),
@@ -2130,6 +2454,8 @@ function Vfx.bossDeathSequence(
 
 	if bossId == "powder_baron" then
 		-- Act 4: Staggered Munitions Chain-Detonation across 0.85s
+		emitExplosion(parent, coreCenter, danger, 2.4)
+		spawnScorchDecal(parent, pos, 4)
 		local offsets = {
 			Vector3.new(-1.4, 3.4, -1.8),
 			Vector3.new(1.8, 4.8, 1.6),

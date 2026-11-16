@@ -15,6 +15,10 @@ if not BackdropAssets.anyPublished() then
 	return
 end
 
+local PbrAssets = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PbrAssets")
+)
+
 local folder = ReplicatedStorage:FindFirstChild(BackdropAssets.FOLDER)
 if folder == nil then
 	folder = Instance.new("Folder")
@@ -56,9 +60,7 @@ local function prepare(model: Model, textureId: number): ()
 		else ""
 	local resolvedTex = if texContentId ~= "" then texContentId else paletteTexture
 	for _, descendant in ipairs(model:GetDescendants()) do
-		if descendant:IsA("SurfaceAppearance") then
-			descendant:Destroy()
-		elseif descendant:IsA("BasePart") then
+		if descendant:IsA("BasePart") then
 			descendant.Anchored = true
 			descendant.CanCollide = false
 			descendant.CanTouch = false
@@ -69,6 +71,8 @@ local function prepare(model: Model, textureId: number): ()
 			end
 		end
 	end
+	-- PBR publicado (SurfaceAppearance) ou fallback de paleta; remove SurfaceAppearance obsoleta.
+	PbrAssets.applyToModel(model, model.Name, resolvedTex)
 end
 
 for _, asset in ipairs(BackdropAssets.ASSETS) do

@@ -346,9 +346,35 @@ HeadlessRobloxMock.NumberSequence = {
 		return { a, b }
 	end,
 }
+HeadlessRobloxMock.ColorSequenceKeypoint = {
+	new = function(t: number, c: any)
+		return { Time = t, Value = c }
+	end,
+}
 HeadlessRobloxMock.ColorSequence = {
 	new = function(a: any, b: any?)
-		return { a, b }
+		if
+			b == nil
+			and type(a) == "table"
+			and a.Keypoints == nil
+			and a[1] ~= nil
+			and a[1].Time ~= nil
+		then
+			local kps = {}
+			for i, kp in ipairs(a) do
+				kps[i] = kp
+			end
+			return { Keypoints = kps }
+		end
+		-- (c0, c1): dois keypoints em t=0 e t=1.
+		return {
+			a,
+			b,
+			Keypoints = {
+				{ Time = 0, Value = a },
+				{ Time = 1, Value = if b ~= nil then b else a },
+			},
+		}
 	end,
 }
 HeadlessRobloxMock.TweenInfo = {
@@ -469,17 +495,32 @@ function InstanceMethods:Destroy(): ()
 	end
 end
 
+-- Clone profundo: copia todos os campos publicos (MeshPart.MeshId/TextureID, SurfaceAppearance
+-- ColorMap/NormalMap/..., Beam/Decal/Attachment.Texture etc.), atributos e filhos.
+local CLONE_SKIP: { [string]: boolean } = {
+	ClassName = true,
+	ChildAdded = true,
+	Parent = true,
+	CFrame = true,
+}
+
 function InstanceMethods:Clone(): any
 	local copy = HeadlessRobloxMock.Instance.new(self.ClassName)
-	copy.Name = self.Name
-	copy.Size = self.Size
+	for k, v in pairs(self) do
+		if type(k) == "string" and string.sub(k, 1, 1) ~= "_" and not CLONE_SKIP[k] then
+			rawset(copy, k, v)
+		end
+	end
 	copy.CFrame = self.CFrame
-	copy.Color = self.Color
-	copy.Material = self.Material
-	copy.Transparency = self.Transparency
-	copy.CanCollide = self.CanCollide
-	copy.CanTouch = self.CanTouch
-	copy.CanQuery = self.CanQuery
+	for k, v in pairs(self._attrs) do
+		copy._attrs[k] = v
+	end
+	copy._scale = self._scale
+	copy._pivot = self._pivot
+	for _, child in ipairs(self._children) do
+		local childCopy = child:Clone()
+		childCopy.Parent = copy
+	end
 	return copy
 end
 

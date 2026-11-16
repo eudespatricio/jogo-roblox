@@ -17,6 +17,10 @@ local MeshAssets = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
 )
 
+local PbrAssets = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PbrAssets")
+)
+
 local TrapKit = {}
 
 local DEPLOY_POP_SEC = 0.22
@@ -704,6 +708,7 @@ local function tryMountTrapMesh(model: Model, trapId: string, level: number): bo
 
 	local clone = template:Clone()
 	clone.Name = "MeshVisual"
+	PbrAssets.reapply(clone, assetName)
 	local orient = primary.CFrame.Rotation * CFrame.Angles(0, math.rad(-90), 0)
 	local targetBottomY = primary.Position.Y - primary.Size.Y * 0.5
 

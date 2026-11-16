@@ -25,6 +25,14 @@ local MeshAssets = if IS_ROBLOX
 			:WaitForChild("MeshAssets")
 	)
 	else Mock.shared("MeshAssets") :: any
+local PbrAssets = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("PbrAssets")
+	)
+	else Mock.shared("PbrAssets") :: any
 local PortalThemes = if IS_ROBLOX
 	then require(
 		game:GetService("ReplicatedStorage")
@@ -925,6 +933,7 @@ local function tryMountScaledMesh(model: Model, assetName: string, targetH: numb
 	local hidden = model:GetAttribute("Hidden") == true
 	local clone = template:Clone()
 	clone.Name = "MeshVisual"
+	PbrAssets.reapply(clone, assetName)
 	local pieces: { TorsoPiece } = {}
 
 	if clone:IsA("Model") then
@@ -1089,6 +1098,7 @@ local function mountBossSlotMesh(
 	local hidden = model:GetAttribute("Hidden") == true
 	local clone = template:Clone()
 	clone.Name = slotName
+	PbrAssets.reapply(clone, assetName)
 	local pieces: { TorsoPiece } = {}
 	local appliedScale: number? = nil
 

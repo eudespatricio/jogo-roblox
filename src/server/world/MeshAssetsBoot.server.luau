@@ -9,6 +9,10 @@ local MeshAssets = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
 )
 
+local PbrAssets = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PbrAssets")
+)
+
 local folder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
 if folder == nil then
 	folder = Instance.new("Folder")
@@ -48,9 +52,7 @@ local function prepare(model: Model): ()
 		then "rbxassetid://" .. tostring(MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID)
 		else ""
 	for _, descendant in ipairs(model:GetDescendants()) do
-		if descendant:IsA("SurfaceAppearance") then
-			descendant:Destroy()
-		elseif descendant:IsA("BasePart") then
+		if descendant:IsA("BasePart") then
 			descendant.Anchored = true
 			descendant.CanCollide = false
 			descendant.CanTouch = false
@@ -61,6 +63,8 @@ local function prepare(model: Model): ()
 			end
 		end
 	end
+	-- PBR publicado (SurfaceAppearance) ou fallback de paleta; remove SurfaceAppearance obsoleta.
+	PbrAssets.applyToModel(model, model.Name, paletteTexture)
 end
 
 local function loadMesh(modelName: string, assetId: number): ()
