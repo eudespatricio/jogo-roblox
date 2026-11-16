@@ -1,12 +1,13 @@
-"""Gera a Muralha do Bastiao (WALL_) em 5 tiers visuais (L1..L5) com silhueta arquitetonica rica.
+"""Gera a Muralha do Bastiao (WALL_) em 5 tiers visuais (L1..L5) com silhueta arquitetonica esculpida.
 
 Modular: segmento (x2), portaria central e torre (x2) por tier, mantendo exatamente os vaos
 canonicos (SEG_A=5.9, SEG_B=19.2, TOWER_X=22.0, TOWER_R=2.8, GATE_W=11.8, GATE_D=3.8, GATE_H=10.0),
-frente = -Y no Blender (+Z glTF), Z-up e <= 2950 tris por tier GLB.
+frente = -Y no Blender (+Z glTF), Z-up e <= 5800 tris por tier GLB.
 
-Cada modulo recebe jitter deterministico por peca no join() (3e-3..10e-3 studs) e passa por
-g1_check() (espelhando lowpoly_lib.py) individualmente e em conjunto antes do export, garantindo
-0 arestas nao-manifold, 0 triangulos degenerados e pivo base em Z >= 0.
+Usa a paleta unificada 512x512 de 64 cores (`lowpoly_lib.PAL` / `NAMES` / `make_palette`),
+primitivas curvas de 24 lados (torres, telhados conicos, aneis de cachorros), blocos e contrafortes
+chanfrados (`bevel=0.04` com `clamp_overlap`), aduelas esculpidas no arco, barras cilindricas no
+rastrilho e escudos/brasoes arredondados.
 
 Uso headless:
   blender -b --factory-startup --python-exit-code 1 --python art/scripts/make_wall_bastion.py
@@ -20,51 +21,28 @@ from __future__ import annotations
 import math
 import os
 import random
+import sys
 
 import bmesh
 import bpy
 from mathutils import Vector
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lowpoly_lib import NAMES, PAL, make_palette  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LEVELS = (1, 2, 3, 4, 5)
-TIER_TRIS_MAX = 2950
-LIMITE_LOTE = {lvl: 3000 for lvl in LEVELS}
+TIER_TRIS_MAX = 5800
+LIMITE_LOTE = {lvl: 6000 for lvl in LEVELS}
 METROS_POR_STUD = 0.28  # perfil roblox-r15 do Forge3D
-BUDGET = {"segment": 500, "gate": 2000, "tower": 2000}
+BUDGET = {"segment": 1350, "gate": 2500, "tower": 2400}
 
 # Layout canonico preservado
 SEG_A, SEG_B = 5.9, 19.2
 TOWER_X, TOWER_R = 22.0, 2.8
 GATE_W, GATE_D, GATE_H = 11.8, 3.8, 10.0
 
-PAL = {
-    "stone": (92, 96, 102),
-    "stoneDark": (52, 56, 62),
-    "stoneLight": (154, 147, 134),
-    "wood": (139, 90, 43),
-    "woodDark": (92, 58, 28),
-    "woodLight": (176, 118, 62),
-    "iron": (58, 63, 70),
-    "ironDark": (32, 35, 40),
-    "amber": (245, 158, 11),
-    "amberBright": (255, 199, 64),
-    "danger": (228, 87, 46),
-    "parchment": (245, 230, 200),
-    "grass": (70, 94, 55),
-    "gold": (201, 162, 39),
-    "roof": (168, 52, 38),
-    "moss": (88, 112, 62),
-    "obsidian": (38, 34, 48),
-    "obsidianLight": (78, 70, 96),
-    "violet": (139, 92, 246),
-    "ember": (255, 140, 60),
-    "whiteStone": (228, 224, 214),
-    "whiteStoneDark": (188, 182, 168),
-    "royal": (46, 76, 168),
-    "goldBright": (240, 200, 80),
-    "ink": (18, 20, 24),
-}
-NAMES = list(PAL)
 assert len(NAMES) <= 64, "atlas 8x8"
 MAT = None
 
@@ -79,15 +57,18 @@ TIER_STYLE = {
         "cornice": "woodDark",
         "cap": "woodLight",
         "roof": "woodDark",
-        "roofRib": "wood",
+        "roofRib": "woodLight",
         "iron": "ironDark",
         "gatePier": "stoneDark",
         "archRing": "stoneLight",
-        "banner": "danger",
+        "banner": "crimsonCloth",
         "bannerTrim": "amber",
         "slitGlow": "amberBright",
-        "boss": "woodLight",
-        "sconceGlow": "amberBright",
+        "boss": "bronze",
+        "shieldFace": "woodDark",
+        "shieldRim": "bronze",
+        "sconceGlow": "ember",
+        "flameCore": "neonAmber",
     },
     2: {
         "plinth": "stoneDark",
@@ -99,55 +80,64 @@ TIER_STYLE = {
         "cornice": "stoneDark",
         "cap": "stoneLight",
         "roof": "roof",
-        "roofRib": "stoneDark",
+        "roofRib": "stoneLight",
         "iron": "iron",
         "gatePier": "stone",
         "archRing": "stoneLight",
-        "banner": "danger",
+        "banner": "crimsonBright",
         "bannerTrim": "amber",
         "slitGlow": "amberBright",
-        "boss": "iron",
-        "sconceGlow": "amberBright",
+        "boss": "steel",
+        "shieldFace": "crimsonCloth",
+        "shieldRim": "iron",
+        "sconceGlow": "ember",
+        "flameCore": "amberBright",
     },
     3: {
-        "plinth": "stoneDark",
+        "plinth": "ironDark",
         "wall": "stoneDark",
         "wallAlt": "iron",
         "buttress": "ironDark",
-        "trim": "iron",
+        "trim": "steel",
         "relief": "stone",
         "cornice": "ironDark",
-        "cap": "iron",
+        "cap": "steel",
         "roof": "iron",
-        "roofRib": "ironDark",
+        "roofRib": "brass",
         "iron": "ironDark",
         "gatePier": "stoneDark",
-        "archRing": "iron",
+        "archRing": "steel",
         "banner": "danger",
         "bannerTrim": "gold",
         "slitGlow": "amberBright",
         "boss": "gold",
-        "sconceGlow": "amberBright",
+        "shieldFace": "ironDark",
+        "shieldRim": "brass",
+        "sconceGlow": "emberDeep",
+        "flameCore": "neonAmber",
     },
     4: {
-        "plinth": "stoneDark",
+        "plinth": "ironDark",
         "wall": "obsidian",
         "wallAlt": "obsidianLight",
         "buttress": "obsidianLight",
-        "trim": "violet",
+        "trim": "arcaneViolet",
         "relief": "obsidianLight",
         "cornice": "obsidianLight",
-        "cap": "ember",
+        "cap": "emberDeep",
         "roof": "obsidian",
         "roofRib": "violet",
         "iron": "ironDark",
         "gatePier": "obsidian",
         "archRing": "obsidianLight",
         "banner": "obsidianLight",
-        "bannerTrim": "ember",
-        "slitGlow": "amberBright",
-        "boss": "violet",
-        "sconceGlow": "ember",
+        "bannerTrim": "emberDeep",
+        "slitGlow": "ember",
+        "boss": "arcaneViolet",
+        "shieldFace": "obsidian",
+        "shieldRim": "emberDeep",
+        "sconceGlow": "emberDeep",
+        "flameCore": "ember",
     },
     5: {
         "plinth": "whiteStoneDark",
@@ -159,45 +149,30 @@ TIER_STYLE = {
         "cornice": "whiteStoneDark",
         "cap": "gold",
         "roof": "royal",
-        "roofRib": "gold",
+        "roofRib": "goldBright",
         "iron": "gold",
         "gatePier": "whiteStone",
         "archRing": "gold",
         "banner": "royal",
-        "bannerTrim": "gold",
-        "slitGlow": "amberBright",
+        "bannerTrim": "goldBright",
+        "slitGlow": "neonAmber",
         "boss": "goldBright",
+        "shieldFace": "royal",
+        "shieldRim": "gold",
         "sconceGlow": "amberBright",
+        "flameCore": "neonAmber",
     },
 }
 
+for _lvl, _st in TIER_STYLE.items():
+    for _k, _c in _st.items():
+        assert _c in PAL, f"cor desconhecida em TIER_STYLE[{_lvl}][{_k}]: {_c}"
+
 
 # ---------------------------------------------------------------- materiais
-def make_palette(names=None, img_name="wall_palette"):
-    names = NAMES if names is None else names
-    size, cell = 256, 32
-    img = bpy.data.images.new(img_name, size, size, alpha=False)
-    px = [0.0] * (size * size * 4)
-    for i, name in enumerate(names):
-        r, g, b = PAL[name]
-        cx, cy = i % 8, i // 8
-        for y in range(cy * cell, (cy + 1) * cell):
-            for x in range(cx * cell, (cx + 1) * cell):
-                k = (y * size + x) * 4
-                px[k : k + 4] = [r / 255, g / 255, b / 255, 1.0]
-    img.pixels = px
-    path = os.path.join(ROOT, "art", "src", f"{img_name}.png")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    img.filepath_raw = path
-    img.file_format = "PNG"
-    img.save()
-    img.pack()
-    return img
-
-
 def make_materials():
     global MAT
-    img = make_palette(NAMES, "wall_palette")
+    img = make_palette()
     MAT = bpy.data.materials.new("M_wall_palette")
     MAT.use_nodes = True
     nt = MAT.node_tree
@@ -234,15 +209,36 @@ def _active():
     return bpy.context.view_layer.objects.active
 
 
-def _finish(obj, color, bevel=0.0):
+def _finish(obj, color, bevel=0.0, bevel_segs=1):
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-    if bevel > 0:
+    vs = obj.data.vertices
+    if vs:
+        dx = max(v.co.x for v in vs) - min(v.co.x for v in vs)
+        dy = max(v.co.y for v in vs) - min(v.co.y for v in vs)
+        dz = max(v.co.z for v in vs) - min(v.co.z for v in vs)
+        min_dim = min(dx, dy, dz)
+    else:
+        min_dim = 0.0
+    if bevel > 0 and min_dim > 0.08:
         mod = obj.modifiers.new("bv", "BEVEL")
-        mod.width = bevel
-        mod.segments = 1
+        mod.width = min(bevel, min_dim * 0.26)
+        mod.segments = bevel_segs
         mod.limit_method = "ANGLE"
+        mod.angle_limit = math.radians(30)
+        mod.use_clamp_overlap = True
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.modifier_apply(modifier=mod.name)
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+        bmesh.ops.dissolve_degenerate(bm, dist=5e-5, edges=bm.edges)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(obj.data)
+        bm.free()
+        obj.data.update()
     return paint(obj, color)
 
 
@@ -253,7 +249,7 @@ def box(size, center, color, bevel=0.0, rot=(0, 0, 0)):
     return _finish(o, color, bevel)
 
 
-def cyl(r, h, base, color, verts=10, r2=None, rot_z=0.0):
+def cyl(r, h, base, color, verts=24, r2=None, rot_z=0.0, bevel=0.0):
     loc = (base[0], base[1], base[2] + h / 2)
     if r2 is None:
         bpy.ops.mesh.primitive_cylinder_add(
@@ -263,28 +259,58 @@ def cyl(r, h, base, color, verts=10, r2=None, rot_z=0.0):
         bpy.ops.mesh.primitive_cone_add(
             vertices=verts, radius1=r, radius2=r2, depth=h, location=loc, rotation=(0, 0, rot_z)
         )
-    return _finish(_active(), color, 0.0)
+    return _finish(_active(), color, bevel)
 
 
-def disc_y(r, depth, center, color, verts=8):
+def cyl_axis(r, length, center, color, axis="x", verts=16):
+    rot = (0, math.pi / 2, 0) if axis == "x" else (math.pi / 2, 0, 0)
     bpy.ops.mesh.primitive_cylinder_add(
-        vertices=verts, radius=r, depth=depth, location=center, rotation=(math.pi / 2, 0, 0)
+        vertices=verts, radius=r, depth=length, location=center, rotation=rot
     )
     return _finish(_active(), color, 0.0)
 
 
-def _from_bmesh(bm, name, color):
+def disc_y(r, depth, center, color, verts=18, bevel=0.0):
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=verts, radius=r, depth=depth, location=center, rotation=(math.pi / 2, 0, 0)
+    )
+    return _finish(_active(), color, bevel)
+
+
+def ball(r, center, color, seg=14, rings=8, squash=(1.0, 1.0, 1.0)):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=rings, radius=r, location=center)
+    o = _active()
+    o.scale = squash
+    return _finish(o, color, 0.0)
+
+
+def torus(r_major, r_minor, center, color, major_seg=24, minor_seg=6, rot=(0.0, 0.0, 0.0)):
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=r_major,
+        minor_radius=r_minor,
+        major_segments=major_seg,
+        minor_segments=minor_seg,
+        location=center,
+    )
+    o = _active()
+    o.rotation_euler = rot
+    return _finish(o, color, 0.0)
+
+
+def _from_bmesh(bm, name, color, bevel=0.0):
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
     obj = bpy.data.objects.new(name, me)
     bpy.context.collection.objects.link(obj)
+    if bevel > 0:
+        return _finish(obj, color, bevel)
     return paint(obj, color)
 
 
-def taper_box(w0, d0, w1, d1, h, base_center, color, y_shift_top=0.0, rot_z=0.0):
-    """Prisma retangular afunilado (12 tris): base em Z=base_center[2], topo em +h."""
+def taper_box(w0, d0, w1, d1, h, base_center, color, y_shift_top=0.0, rot_z=0.0, bevel=0.0):
+    """Prisma retangular afunilado: base em Z=base_center[2], topo em +h."""
     cx, cy, z0 = base_center
     hw0, hd0 = w0 / 2, d0 / 2
     hw1, hd1 = w1 / 2, d1 / 2
@@ -311,12 +337,11 @@ def taper_box(w0, d0, w1, d1, h, base_center, color, y_shift_top=0.0, rot_z=0.0)
     )
     for f in faces:
         bm.faces.new([vs[i] for i in f])
-    return _from_bmesh(bm, "taper_box", color)
+    return _from_bmesh(bm, "taper_box", color, bevel=bevel)
 
 
-def sloped_buttress(w, d_bot, d_top, h, x, y_back, z0, color, rot_z=0.0):
+def sloped_buttress(w, d_bot, d_top, h, x, y_back, z0, color, rot_z=0.0, bevel=0.0):
     """Contraforte inclinado ancorado em y_back, projetando-se para -Y (ou rotacionado por rot_z)."""
-    # No sistema local do contraforte, a face traseira fica em y = 0 e a frente em y = -d.
     hw = w / 2
     pts = [
         (-hw, -d_bot, 0.0),
@@ -333,17 +358,19 @@ def sloped_buttress(w, d_bot, d_top, h, x, y_back, z0, color, rot_z=0.0):
     vs = [bm.verts.new((x + px * c - py * s, y_back + px * s + py * c, z0 + pz)) for px, py, pz in pts]
     for f in ((0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)):
         bm.faces.new([vs[i] for i in f])
-    return _from_bmesh(bm, "buttress", color)
+    return _from_bmesh(bm, "buttress", color, bevel=bevel)
 
 
-def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=10):
+def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=16):
     """Bloco manifold do timpano acima do arco semicircular (top_z > spring_z + radius)."""
     hw = width / 2
     top_z = max(top_z, spring_z + radius + 0.25)
     y0, y1 = cy - depth / 2, cy + depth / 2
 
-    # Constroi o arco de +X (k=0) para -X (k=segs), dividido em fatias verticais convexas (sem n-gons concavos).
-    arc = [(radius * math.cos(math.pi * k / segs), spring_z + radius * math.sin(math.pi * k / segs)) for k in range(segs + 1)]
+    arc = [
+        (radius * math.cos(math.pi * k / segs), spring_z + radius * math.sin(math.pi * k / segs))
+        for k in range(segs + 1)
+    ]
     if hw > radius + 1e-4:
         arc = [(hw, spring_z)] + arc + [(-hw, spring_z)]
 
@@ -355,13 +382,10 @@ def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=10):
 
     m = len(arc) - 1
     for i in range(m):
-        # Face frontal e traseira
         bm.faces.new((vf_bot[i], vf_top[i], vf_top[i + 1], vf_bot[i + 1]))
         bm.faces.new((vb_bot[i + 1], vb_top[i + 1], vb_top[i], vb_bot[i]))
-        # Topo e intradorso (arco)
         bm.faces.new((vf_top[i], vb_top[i], vb_top[i + 1], vf_top[i + 1]))
         bm.faces.new((vb_bot[i], vf_bot[i], vf_bot[i + 1], vb_bot[i + 1]))
-    # Tampas laterais (+X e -X)
     bm.faces.new((vf_bot[0], vb_bot[0], vb_top[0], vf_top[0]))
     bm.faces.new((vf_top[m], vb_top[m], vb_bot[m], vf_bot[m]))
     return _from_bmesh(bm, "arch_spandrel", color)
@@ -448,26 +472,37 @@ def set_origin(obj, x):
 
 
 # ---------------------------------------------------------------- ornamentos
-def sconce(x, y, z, st):
-    """Arandela de ferro forjado com brasa/chama."""
+def shield_crest(x, y, z, r, st, boss_col=None, verts=10):
+    """Escudo redondo esculpido com borda metalica, campo heraldico e umbo abaulado."""
+    bcol = boss_col or st["boss"]
     return [
-        box((0.20, 0.56, 0.18), (x, y - 0.28, z), st["iron"]),
-        cyl(0.24, 0.22, (x, y - 0.52, z + 0.08), st["iron"], verts=6, r2=0.32),
-        cyl(0.18, 0.44, (x, y - 0.52, z + 0.30), st["sconceGlow"], verts=4, r2=0.0),
+        disc_y(r, 0.15, (x, y, z), st["shieldRim"], verts=verts),
+        disc_y(r * 0.74, 0.19, (x, y - 0.03, z), st["shieldFace"], verts=verts),
+        disc_y(r * 0.30, 0.24, (x, y - 0.07, z), bcol, verts=8),
+    ]
+
+
+def sconce(x, y, z, st):
+    """Arandela de ferro forjado com taça curva e chama dupla."""
+    return [
+        box((0.20, 0.58, 0.18), (x, y - 0.28, z), st["iron"]),
+        cyl(0.24, 0.24, (x, y - 0.52, z + 0.08), st["iron"], verts=10, r2=0.35),
+        cyl(0.22, 0.48, (x, y - 0.52, z + 0.30), st["sconceGlow"], verts=6, r2=0.0),
+        cyl(0.12, 0.34, (x, y - 0.54, z + 0.36), st["flameCore"], verts=5, r2=0.0),
     ]
 
 
 def banner(x, y, z_top, w, h, st):
     return [
-        box((w + 0.36, 0.16, 0.16), (x, y - 0.04, z_top), st["iron"]),
-        box((w, 0.10, h), (x, y - 0.08, z_top - h / 2 - 0.08), st["banner"]),
-        box((w * 1.02, 0.12, 0.24), (x, y - 0.10, z_top - h - 0.06), st["bannerTrim"]),
-        box((0.46, 0.12, 0.46), (x, y - 0.12, z_top - h * 0.42), st["bannerTrim"], rot=(0, math.pi / 4, 0)),
+        cyl_axis(0.08, w + 0.44, (x, y - 0.06, z_top), st["iron"], axis="x", verts=8),
+        box((w, 0.10, h), (x, y - 0.09, z_top - h / 2 - 0.08), st["banner"]),
+        box((w * 1.03, 0.12, 0.24), (x, y - 0.11, z_top - h - 0.06), st["bannerTrim"]),
+        box((0.50, 0.13, 0.50), (x, y - 0.13, z_top - h * 0.42), st["bannerTrim"], rot=(0, math.pi / 4, 0)),
     ]
 
 
 def arrow_slit(x, y, z, h, st, rot_z=0.0):
-    """Seteira recuada com moldura profunda em 'ink', ombreira, peitoril e verga (48 tris)."""
+    """Seteira recuada com moldura profunda em 'ink', ombreira, peitoril e verga."""
     c, s = math.cos(rot_z), math.sin(rot_z)
 
     def _pt(lx, ly, lz):
@@ -489,46 +524,63 @@ def build_segment(side, lvl):
     cx = side * (a + b) / 2
     parts = []
 
-    # 1. Base em talude (sloped stone batter base) + pedras com musgo
+    # 1. Base em talude (sloped stone batter base) + blocos de fundacao com musgo
     parts.append(taper_box(length + 0.18, 4.10, length + 0.04, 2.75, 1.70, (cx, 0.0, 0.0), st["plinth"]))
-    parts.append(box((1.55, 0.52, 0.68), (cx + side * 3.1, -1.74, 0.38), st["relief"]))
-    parts.append(box((1.20, 0.48, 0.38), (cx + side * 3.1, -1.76, 0.80), "moss"))
+    parts.append(box((1.60, 0.54, 0.70), (cx + side * 3.1, -1.74, 0.38), st["relief"]))
+    parts.append(box((1.22, 0.48, 0.38), (cx + side * 3.1, -1.76, 0.80), "moss"))
+    parts.append(box((1.35, 0.48, 0.56), (cx - side * 3.4, -1.72, 0.32), st["wallAlt"]))
 
-    # 2. Corpo da cortina
+    # 2. Corpo da cortina chanfrado
     wall_h = 6.25 if lvl != 4 else 6.45
     wall_d = 2.45
-    parts.append(box((length, wall_d, wall_h), (cx, 0.0, 1.70 + wall_h / 2), st["wall"]))
+    parts.append(box((length, wall_d, wall_h), (cx, 0.0, 1.70 + wall_h / 2), st["wall"], bevel=0.04))
 
-    # 3. 3 contrafortes inclinados projetados 0.85 stud na face frontal (-Y)
+    # 3. 3 contrafortes inclinados chanfrados projetados 0.85 stud na face frontal (-Y)
     for frac in (-0.33, 0.0, 0.33):
         bx = cx + frac * length
-        parts.append(sloped_buttress(1.05, 0.85, 0.30, wall_h - 0.35, bx, -wall_d / 2, 1.70, st["buttress"]))
-        parts.append(taper_box(1.12, 0.42, 0.90, 0.24, 0.45, (bx, -wall_d / 2 - 0.14, 1.70 + wall_h - 0.35), st["cap"]))
+        parts.append(
+            sloped_buttress(1.08, 0.88, 0.32, wall_h - 0.35, bx, -wall_d / 2, 1.70, st["buttress"], bevel=0.04)
+        )
+        parts.append(
+            taper_box(
+                1.16,
+                0.44,
+                0.92,
+                0.24,
+                0.46,
+                (bx, -wall_d / 2 - 0.15, 1.70 + wall_h - 0.35),
+                st["cap"],
+            )
+        )
 
-    # 4. Relevo de alvenaria escalonada (0.28 stud) + friso horizontal
-    parts.append(box((length - 0.1, 0.28, 0.30), (cx, -wall_d / 2 - 0.12, 4.65), st["trim"]))
-    for kx, kz, w in ((-4.3, 2.9, 1.55), (4.3, 3.2, 1.55), (-2.1, 5.25, 1.35)):
+    # 4. Relevo de alvenaria escalonada + friso horizontal moldado chanfrado
+    parts.append(box((length - 0.08, 0.30, 0.32), (cx, -wall_d / 2 - 0.12, 4.65), st["trim"], bevel=0.04))
+    for kx, kz, w in ((-4.3, 2.9, 1.55), (4.3, 3.2, 1.55), (-2.1, 5.30, 1.38)):
         parts.append(box((w, 0.28, 0.58), (cx + kx, -wall_d / 2 - 0.12, kz), st["relief"]))
 
-    # 5. Cornija saliente do parapeito + 3 cachorros (corbels) + 3 ameias chanfradas com capeamento + 2 escudos
+    # 5. Cornija saliente chanfrada + cachorros + 3 ameias + 2 escudos redondos
     walk_z = 1.70 + wall_h
-    parts.append(box((length + 0.12, 3.05, 0.44), (cx, -0.10, walk_z + 0.22), st["cornice"]))
-    for kx in (-length * 0.22, 0.0, length * 0.22):
-        parts.append(sloped_buttress(0.45, 0.46, 0.14, 0.58, cx + kx, -wall_d / 2, walk_z - 0.56, st["trim"]))
+    parts.append(box((length + 0.12, 3.08, 0.46), (cx, -0.10, walk_z + 0.23), st["cornice"], bevel=0.04))
+    for kx in (-length * 0.24, 0.0, length * 0.24):
+        parts.append(sloped_buttress(0.46, 0.48, 0.14, 0.58, cx + kx, -wall_d / 2, walk_z - 0.56, st["trim"]))
 
     m = 3
     for j in range(m):
         mx = side * (a + (j + 0.5) * length / m)
-        parts.append(taper_box(1.55, 0.95, 1.35, 0.85, 1.25, (mx, -1.05, walk_z + 0.44), st["wall"]))
-        parts.append(taper_box(1.68, 1.08, 1.42, 0.92, 0.26, (mx, -1.05, walk_z + 1.69), st["cap"]))
+        parts.append(
+            taper_box(1.58, 0.96, 1.36, 0.86, 1.25, (mx, -1.05, walk_z + 0.46), st["wall"])
+        )
+        parts.append(
+            box((1.70, 1.08, 0.28), (mx, -1.05, walk_z + 1.85), st["cap"])
+        )
 
     for kx in (-length * 0.17, length * 0.17):
-        parts.append(disc_y(0.56, 0.22, (cx + kx, -wall_d / 2 - 0.18, walk_z - 1.25), st["boss"], verts=6))
+        parts += shield_crest(cx + kx, -wall_d / 2 - 0.16, walk_z - 1.22, 0.58, st, verts=10)
 
     # 6. Passadico traseiro (rear catwalk) com maos-francesas
     cat_z = walk_z - 1.05
     parts.append(box((length - 0.1, 1.45, 0.30), (cx, wall_d / 2 + 0.72, cat_z), st["trim"]))
-    parts.append(box((length - 0.1, 0.20, 0.75), (cx, wall_d / 2 + 1.38, cat_z + 0.52), st["wallAlt"]))
+    parts.append(box((length - 0.1, 0.22, 0.76), (cx, wall_d / 2 + 1.38, cat_z + 0.52), st["wallAlt"]))
     for kx in (-length * 0.30, length * 0.30):
         parts.append(box((0.28, 1.30, 0.28), (cx + kx, wall_d / 2 + 0.55, cat_z - 0.55), st["trim"], rot=(0.68, 0, 0)))
 
@@ -541,31 +593,32 @@ def build_tower(side, lvl):
     r = TOWER_R + (0.28 if lvl == 4 else 0.0)
     parts = []
 
-    # 1. Talus octogonal/decagonal alargado na base (verts=10)
-    parts.append(cyl(r + 1.15, 2.35, (x, 0, 0.0), st["plinth"], verts=10, r2=r + 0.08))
-    parts.append(cyl(r, 8.75, (x, 0, 2.35), st["wall"], verts=10))
+    # 1. Talus cilindrico suave alargado na base (verts=24) + corpo cilindrico (verts=24)
+    parts.append(cyl(r + 1.15, 2.35, (x, 0, 0.0), st["plinth"], verts=24, r2=r + 0.08))
+    parts.append(cyl(r, 8.75, (x, 0, 2.35), st["wall"], verts=24))
 
-    # 2. 4 nervuras de contraforte (-Y, +X, -X, +Y)
+    # 2. 4 nervuras de contraforte chanfradas (-Y, +X, -X, +Y)
     for ang in (-math.pi / 2, 0.0, math.pi, math.pi / 2):
-        # rot_z leva o eixo local -Y do contraforte para a direcao radial `ang`
         rot_z = ang + math.pi / 2
         px = x + (r - 0.12) * math.cos(ang)
         py = (r - 0.12) * math.sin(ang)
-        parts.append(sloped_buttress(0.72, 0.74, 0.34, 8.40, px, py, 2.15, st["buttress"], rot_z=rot_z))
+        parts.append(
+            sloped_buttress(0.74, 0.76, 0.34, 8.40, px, py, 2.15, st["buttress"], rot_z=rot_z, bevel=0.04)
+        )
 
-    # 3. Dois frisos horizontais (stringcourses)
-    for z in (5.2, 8.6):
-        parts.append(cyl(r + 0.18, 0.30, (x, 0, z), st["trim"], verts=10))
+    # 3. Friso horizontal suave (verts=24)
+    parts.append(cyl(r + 0.18, 0.32, (x, 0, 5.65), st["trim"], verts=24))
 
-    # 4. Seteiras recuadas nas faces frontais laterais (-Y +- pi/5, sem colidir com o contraforte)
+    # 4. Seteiras recuadas nas faces frontais laterais (-Y +- pi/5)
     for ang_off in (-math.pi / 5, math.pi / 5):
         ang = -math.pi / 2 + ang_off
         sx = x + (r - 0.04) * math.cos(ang)
         sy = (r - 0.04) * math.sin(ang)
-        parts += arrow_slit(sx, sy, 7.1, 1.25, st, rot_z=ang + math.pi / 2)
+        parts += arrow_slit(sx, sy, 7.3, 1.25, st, rot_z=ang + math.pi / 2)
 
-    # 5. Galeria de mata-caes (corbelled machicolation gallery) sob as ameias
+    # 5. Galeria de mata-caes com anel arredondado de cachorros (rounded corbel ring, verts=24)
     gal_z = 11.10
+    parts.append(cyl(r + 0.06, 0.56, (x, 0, gal_z - 0.56), st["trim"], verts=24, r2=r + 0.44))
     for k in range(5):
         ang = -math.pi / 2 + 2 * math.pi * k / 5
         rot_z = ang + math.pi / 2
@@ -573,21 +626,25 @@ def build_tower(side, lvl):
         cyk = (r - 0.05) * math.sin(ang)
         parts.append(sloped_buttress(0.42, 0.62, 0.16, 0.68, cxk, cyk, gal_z - 0.68, st["trim"], rot_z=rot_z))
 
-    parts.append(cyl(r + 0.15, 0.92, (x, 0, gal_z), st["cornice"], verts=10, r2=r + 0.68))
+    parts.append(cyl(r + 0.20, 0.92, (x, 0, gal_z), st["cornice"], verts=24, r2=r + 0.68))
 
-    # 6. Ameias com capeamento na galeria
+    # 6. 5 ameias com capeamento na galeria
     for k in range(5):
         ang = -math.pi / 2 + 2 * math.pi * k / 5
         mx = x + (r + 0.50) * math.cos(ang)
         my = (r + 0.50) * math.sin(ang)
-        parts.append(taper_box(1.12, 0.64, 0.98, 0.56, 1.08, (mx, my, gal_z + 0.92), st["wall"], rot_z=ang + math.pi / 2))
-        parts.append(box((1.18, 0.70, 0.20), (mx, my, gal_z + 2.08), st["cap"], rot=(0, 0, ang + math.pi / 2)))
+        parts.append(
+            taper_box(
+                1.12, 0.64, 0.98, 0.56, 1.08, (mx, my, gal_z + 0.92), st["wall"], rot_z=ang + math.pi / 2
+            )
+        )
+        parts.append(box((1.18, 0.70, 0.22), (mx, my, gal_z + 2.08), st["cap"], rot=(0, 0, ang + math.pi / 2)))
 
-    # 7. Telhado conico nervurado (verts=10) + nervuras coladas na inclinacao + lucarna frontal + flecha
+    # 7. Telhado conico suave (verts=24) + nervuras + lucarna frontal + flecha conica (verts=24)
     roof_z = gal_z + 1.00
-    roof_r = r + 0.88
+    roof_r = r + 0.90
     roof_h = 4.65
-    parts.append(cyl(roof_r, roof_h, (x, 0, roof_z), st["roof"], verts=10, r2=0.0))
+    parts.append(cyl(roof_r, roof_h, (x, 0, roof_z), st["roof"], verts=24, r2=0.0))
 
     peak = Vector((x, 0.0, roof_z + roof_h))
     for k in range(5):
@@ -596,19 +653,19 @@ def build_tower(side, lvl):
         mid = (eave + peak) * 0.5
         dvec = peak - eave
         rot_eul = dvec.normalized().to_track_quat("Z", "Y").to_euler("XYZ")
-        parts.append(box((0.18, 0.20, dvec.length * 0.96), tuple(mid), st["roofRib"], rot=tuple(rot_eul)))
+        parts.append(box((0.16, 0.18, dvec.length * 0.96), tuple(mid), st["roofRib"], rot=tuple(rot_eul)))
 
     # Lucarna frontal (-Y)
-    parts.append(taper_box(1.10, 1.15, 0.18, 1.15, 1.35, (x, -r * 0.72, roof_z + 0.85), st["roofRib"]))
+    parts.append(taper_box(1.12, 1.15, 0.20, 1.15, 1.35, (x, -r * 0.72, roof_z + 0.85), st["roofRib"]))
     parts.append(box((0.32, 0.16, 0.62), (x, -r * 0.72 - 0.56, roof_z + 1.25), "ink"))
 
-    # Flecha + estandarte no topo
+    # Flecha conica (verts=24) + flâmula no topo
     spire_z = roof_z + roof_h - 0.15
-    parts.append(cyl(0.32, 1.20, (x, 0, spire_z), st["trim"], verts=6, r2=0.0))
+    parts.append(cyl(0.34, 1.20, (x, 0, spire_z), st["trim"], verts=24, r2=0.0))
     parts.append(box((1.35, 0.08, 0.72), (x + side * 0.68, 0, spire_z + 1.10), st["banner"]))
 
     # 8. Estandarte heraldico frontal
-    parts += banner(x, -r - 0.24, 10.65, 1.35, 2.95, st)
+    parts += banner(x, -r - 0.24, 10.45, 1.35, 2.85, st)
 
     return parts
 
@@ -619,81 +676,106 @@ def build_gate(lvl):
     hw = GATE_W / 2  # 5.9
     arch_r = 3.05
     spring_z = 4.45
-    arch_top = spring_z + arch_r  # 7.50
+    arch_top = spring_z + arch_r + 0.35  # 7.85
 
-    # 1. Contrafortes/torreoes avancados dos flancos da portaria (-Y)
+    # 1. Contrafortes/torreoes avancados chanfrados dos flancos da portaria (-Y)
     pier_w = hw - arch_r  # 2.85
     for sx in (-1, 1):
         px = sx * (arch_r + pier_w / 2)
-        parts.append(taper_box(pier_w + 0.35, GATE_D + 1.50, pier_w + 0.06, GATE_D + 0.85, 1.85, (px, -0.35, 0.0), st["plinth"]))
-        parts.append(box((pier_w, GATE_D + 0.85, GATE_H - 1.85), (px, -0.35, 1.85 + (GATE_H - 1.85) / 2), st["gatePier"]))
-        parts.append(box((pier_w + 0.24, GATE_D + 1.05, 0.34), (px, -0.35, 5.20), st["trim"]))
+        parts.append(
+            taper_box(
+                pier_w + 0.35, GATE_D + 1.50, pier_w + 0.06, GATE_D + 0.85, 1.85, (px, -0.35, 0.0), st["plinth"]
+            )
+        )
+        parts.append(
+            box((pier_w, GATE_D + 0.85, GATE_H - 1.85), (px, -0.35, 1.85 + (GATE_H - 1.85) / 2), st["gatePier"], bevel=0.04)
+        )
+        parts.append(box((pier_w + 0.26, GATE_D + 1.06, 0.34), (px, -0.35, 5.20), st["trim"]))
+        parts.append(
+            sloped_buttress(0.72, 0.56, 0.22, 6.20, px + sx * 0.45, -GATE_D / 2 - 0.75, 1.85, st["buttress"], bevel=0.04)
+        )
+        parts += shield_crest(px - sx * 0.35, -GATE_D / 2 - 0.82, 7.15, 0.52, st, verts=10)
 
-    # 2. Timpano do arco + parede superior (sem Boolean!)
-    arch_top = spring_z + arch_r + 0.35
-    parts.append(arch_spandrel(arch_r * 2, arch_r, spring_z, arch_top, GATE_D, 0.0, st["wall"], segs=8))
-    parts.append(box((arch_r * 2, GATE_D, GATE_H - arch_top), (0.0, 0.0, arch_top + (GATE_H - arch_top) / 2), st["wall"]))
+    # 2. Timpano suave do arco (segs=12) + parede superior
+    parts.append(arch_spandrel(arch_r * 2, arch_r, spring_z, arch_top, GATE_D, 0.0, st["wall"], segs=12))
+    parts.append(
+        box((arch_r * 2, GATE_D, GATE_H - arch_top), (0.0, 0.0, arch_top + (GATE_H - arch_top) / 2), st["wall"])
+    )
 
-    # 3. Arco em pedra profunda com 7 aduelas alternadas + fecho com escudo da Ordem Ambar
-    for k in range(7):
-        ang = 0.14 + (math.pi - 0.28) * k / 6
-        vx = (arch_r + 0.28) * math.cos(ang)
-        vz = spring_z + (arch_r + 0.28) * math.sin(ang)
-        col = st["trim"] if k == 3 else (st["archRing"] if k % 2 == 0 else st["wallAlt"])
-        parts.append(box((0.98, 0.54, 0.64), (vx, -GATE_D / 2 - 0.12, vz), col, rot=(0, -ang + math.pi / 2, 0)))
+    # 3. Arco em pedra profunda com 7 aduelas chanfradas (voussoirs) + pedra-chave esculpida + Brasao da Ordem Ambar
+    n_voussoirs = 7
+    for k in range(n_voussoirs):
+        ang = 0.14 + (math.pi - 0.28) * k / (n_voussoirs - 1)
+        is_key = k == n_voussoirs // 2
+        vr = arch_r + (0.34 if is_key else 0.28)
+        vx = vr * math.cos(ang)
+        vz = spring_z + vr * math.sin(ang)
+        col = st["trim"] if is_key else (st["archRing"] if k % 2 == 0 else st["wallAlt"])
+        vw = 1.12 if is_key else 0.96
+        vh = 0.86 if is_key else 0.68
+        vd = 0.64 if is_key else 0.54
+        parts.append(
+            box((vw, vd, vh), (vx, -GATE_D / 2 - 0.14, vz), col, bevel=0.04, rot=(0, -ang + math.pi / 2, 0))
+        )
 
-    # Escudo da Ordem Ambar na pedra-chave central
-    parts.append(box((1.45, 0.26, 1.45), (0.0, -GATE_D / 2 - 0.26, 8.65), st["trim"], rot=(0, math.pi / 4, 0)))
-    parts.append(disc_y(0.56, 0.28, (0.0, -GATE_D / 2 - 0.36, 8.65), "amber", verts=6))
+    # Brasao esculpido da Ordem Ambar acima da pedra-chave central
+    parts.append(
+        box((1.52, 0.28, 1.52), (0.0, -GATE_D / 2 - 0.26, 8.68), st["trim"], bevel=0.04, rot=(0, math.pi / 4, 0))
+    )
+    parts += shield_crest(0.0, -GATE_D / 2 - 0.36, 8.68, 0.66, st, boss_col="amberBright", verts=12)
 
-    # 4. Portao duplo em carvalho encaixilhado com ferragens (nunca placa lisa!)
+    # 4. Portao duplo em carvalho encaixilhado com ferragens
     parts.append(box((arch_r * 2, 0.42, arch_top - 0.1), (0.0, 0.42, (arch_top - 0.1) / 2), "woodDark"))
-    parts.append(box((0.26, 0.56, arch_top - 0.4), (0.0, 0.32, (arch_top - 0.4) / 2), "wood"))
+    parts.append(box((0.28, 0.56, arch_top - 0.4), (0.0, 0.32, (arch_top - 0.4) / 2), "wood"))
     for px in (-2.05, -0.75, 0.75, 2.05):
         h_plank = spring_z + math.sqrt(max(0.0, arch_r**2 - px**2)) - 0.25
         parts.append(box((0.88, 0.16, h_plank), (px, 0.18, h_plank / 2), "woodLight" if abs(px) > 1.0 else "wood"))
     for z in (1.25, 3.25):
         parts.append(box((arch_r * 1.92, 0.20, 0.34), (0.0, 0.12, z), st["iron"]))
 
-    # 5. Grade de rastrilho (portcullis) com pontas em TODOS os tiers L1-L5 (5 verticais + 2 horizontais)
+    # 5. Grade de rastrilho (portcullis) com barras de ferro cilindricas arredondadas e pontas conicas
     port_y = -1.18
     for px in (-2.2, -1.1, 0.0, 1.1, 2.2):
         top_z = spring_z + math.sqrt(max(0.0, (arch_r - 0.1) ** 2 - px**2)) - 0.15
         bar_h = top_z - 0.62
-        parts.append(box((0.20, 0.20, bar_h), (px, port_y, 0.62 + bar_h / 2), st["iron"]))
-        sp = cyl(0.15, 0.46, (px, port_y, 0.16), st["iron"], verts=4, r2=0.0, rot_z=math.pi / 4)
+        parts.append(cyl(0.11, bar_h, (px, port_y, 0.62), st["iron"], verts=8))
+        sp = cyl(0.15, 0.48, (px, port_y, 0.14), st["iron"], verts=8, r2=0.0)
         sp.rotation_euler = (math.pi, 0, 0)
         bpy.context.view_layer.objects.active = sp
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
         parts.append(sp)
     for z in (1.95, 3.85):
-        parts.append(box((5.2, 0.22, 0.22), (0.0, port_y, z), st["iron"]))
+        parts.append(cyl_axis(0.12, 5.25, (0.0, port_y, z), st["iron"], axis="x", verts=8))
 
-    # 6. Camara de Alavancas superior em balanco (-Y) com fendas ambar brilhantes + coroamento
+    # 6. Camara de Alavancas superior em balanco (-Y) chanfrada com fendas brilhantes + coroamento
     cam_z = GATE_H
-    for kx in (-3.6, 0.0, 3.6):
+    for kx in (-3.8, 0.0, 3.8):
         parts.append(sloped_buttress(0.46, 0.90, 0.16, 0.85, kx, -GATE_D / 2, cam_z - 0.85, st["trim"]))
 
     cam_w, cam_d, cam_h = GATE_W + 0.65, GATE_D + 1.35, 2.25
-    parts.append(box((cam_w, cam_d, cam_h), (0.0, -0.45, cam_z + cam_h / 2), st["wallAlt"]))
+    parts.append(box((cam_w, cam_d, cam_h), (0.0, -0.45, cam_z + cam_h / 2), st["wallAlt"], bevel=0.04))
     for kx in (-5.6, 5.6):
-        parts.append(box((0.36, 0.26, cam_h + 0.1), (kx, -0.45 - cam_d / 2 - 0.08, cam_z + cam_h / 2), st["trim"]))
-    parts.append(box((cam_w + 0.45, cam_d + 0.40, 0.36), (0.0, -0.45, cam_z + cam_h + 0.18), st["cornice"]))
+        parts.append(
+            box((0.38, 0.28, cam_h + 0.1), (kx, -0.45 - cam_d / 2 - 0.08, cam_z + cam_h / 2), st["trim"])
+        )
+    parts.append(box((cam_w + 0.48, cam_d + 0.42, 0.38), (0.0, -0.45, cam_z + cam_h + 0.19), st["cornice"], bevel=0.04))
 
-    # 3 fendas de vigia brilhantes amberBright com moldura ink
+    # 3 fendas de vigia brilhantes com moldura ink
     parts.append(box((8.8, 0.16, 0.88), (0.0, -0.45 - cam_d / 2 - 0.04, cam_z + 1.15), "ink"))
     for sx in (-3.8, 0.0, 3.8):
         parts.append(box((0.68, 0.20, 0.56), (sx, -0.45 - cam_d / 2 - 0.08, cam_z + 1.15), st["slitGlow"]))
 
-    # Remate superior ornamentado (ameias + telhado/coroa central)
-    top_base = cam_z + cam_h + 0.36
+    # Remate superior ornamentado (ameias + telhado + flecha conica verts=24)
+    top_base = cam_z + cam_h + 0.38
     for mx in (-4.8, -2.4, 2.4, 4.8):
-        parts.append(taper_box(1.32, 0.88, 1.15, 0.78, 1.15, (mx, -0.45 - cam_d / 2 + 0.44, top_base), st["wall"]))
-        parts.append(box((1.40, 0.94, 0.20), (mx, -0.45 - cam_d / 2 + 0.44, top_base + 1.25), st["cap"]))
+        parts.append(
+            taper_box(1.34, 0.90, 1.16, 0.80, 1.15, (mx, -0.45 - cam_d / 2 + 0.44, top_base), st["wall"])
+        )
+        parts.append(box((1.42, 0.96, 0.22), (mx, -0.45 - cam_d / 2 + 0.44, top_base + 1.26), st["cap"]))
     parts.append(taper_box(5.8, cam_d + 0.2, 2.2, 0.55, 2.15, (0.0, -0.45, top_base), st["roof"]))
-    parts.append(cyl(0.32, 1.05, (0.0, -0.45, top_base + 2.15), st["trim"], verts=4, r2=0.0, rot_z=math.pi / 4))
+    parts.append(cyl(0.36, 1.10, (0.0, -0.45, top_base + 2.15), st["trim"], verts=24, r2=0.0))
 
-    # 7. Arandelas de ferro forjado na face frontal dos flancos em (+-4.9, -GATE_D/2 -> frente do pier)
+    # 7. Arandelas de ferro forjado na face frontal dos flancos
     for sx in (-4.9, 4.9):
         parts += sconce(sx, -GATE_D / 2 - 0.78, 4.4, st)
 
@@ -703,11 +785,11 @@ def build_gate(lvl):
 # ---------------------------------------------------------------- lote Forge3D
 def write_lote(levels):
     lines = [
-        "# Forge3D 0.6.1 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)",
+        "# Forge3D 0.8.0 — rota `import`: muralha modelada por script (art/scripts/make_wall_bastion.py)",
         "# entra no mesmo QC (escala, pivo, LOD, colisao, manifesto, indice). Saida no sandbox.",
         "#   forge3d run art/forge/lote_muralha_import.yaml --json   (ou: bash tools/art-pipeline.sh --only wall)",
         "# GERADO pelo script: altura_metros = altura medida em studs x 0,28 (perfil roblox-r15).",
-        "schema: forge3d/spec@4",
+        "schema: forge3d/spec@5",
         "",
         "projeto: muralha",
         "perfil: roblox-r15",
@@ -728,11 +810,16 @@ def write_lote(levels):
             f"  - id: wall.bastion.l{lvl}.01",
             "    tipo: modulo_cenario",
             "    rota: import",
-            f"    origem: {os.path.join(ROOT, 'art', 'export', f'wall_bastion_l{lvl}.glb')}",
+            f"    origem: art/export/wall_bastion_l{lvl}.glb",
             f"    altura_metros: {round(h * METROS_POR_STUD, 4)}   # {h} studs",
             "    pivot: base",
             f"    limite_triangulos: {LIMITE_LOTE[lvl]}",
             "    material: opaque",
+            "    suavizacao_normais:",
+            "      modo: hard_surface",
+            "      angulo_graus: 46",
+            "      weighted_normals: true",
+            "      corrective_smooth: false",
             "    colisao: box",
             "    seed: 20261113",
             "    lod: [100]",

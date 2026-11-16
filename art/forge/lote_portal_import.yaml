@@ -18,14 +18,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/prop_rift_portal.glb
-    altura_metros: 3.6548   # 13.053 studs
+    altura_metros: 3.7024   # 13.2228 studs
     pivot: base
-    limite_triangulos: 2000
+    limite_triangulos: 3600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -35,14 +36,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act1_iron.glb
-    altura_metros: 3.7841   # 13.5145 studs
+    altura_metros: 3.7612   # 13.4329 studs
     pivot: base
-    limite_triangulos: 2000
+    limite_triangulos: 3600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -52,14 +54,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act2_slag.glb
-    altura_metros: 3.8121   # 13.6148 studs
+    altura_metros: 3.8084   # 13.6013 studs
     pivot: base
-    limite_triangulos: 2000
+    limite_triangulos: 3600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,14 +72,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act3_frost.glb
-    altura_metros: 3.8629   # 13.796 studs
+    altura_metros: 3.8695   # 13.8198 studs
     pivot: base
-    limite_triangulos: 2000
+    limite_triangulos: 3600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -86,14 +90,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act4_powder.glb
-    altura_metros: 3.6679   # 13.0995 studs
+    altura_metros: 3.6935   # 13.1909 studs
     pivot: base
-    limite_triangulos: 2000
+    limite_triangulos: 3600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -103,14 +108,15 @@ lote:
     tipo: modulo_cenario
     rota: import
     origem: art/export/portal_act5_rift.glb
-    altura_metros: 4.0713   # 14.5405 studs
+    altura_metros: 4.0835   # 14.5839 studs
     pivot: base
-    limite_triangulos: 2000
+    limite_triangulos: 3600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
