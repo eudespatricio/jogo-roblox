@@ -1,13 +1,13 @@
 """Gera 7 props de cenario e heroi low-poly esculpidos para o Bastiao (PROP_).
 
 Props (Z-up, frente=-Y, base Z=0, centrados em XY):
-  - prop.tree_pine.01      -> PROP_tree_pine      (tree_pine.glb,      <= 2600 tris)
-  - prop.tree_oak.01       -> PROP_tree_oak       (tree_oak.glb,       <= 2800 tris)
-  - prop.rock_cluster.01   -> PROP_rock_cluster   (rock_cluster.glb,   <= 1800 tris)
-  - prop.siege_supply.01   -> PROP_siege_supply   (siege_supply.glb,   <= 2400 tris)
-  - prop.iron_brazier.01   -> PROP_iron_brazier   (iron_brazier.glb,   <= 2200 tris)
-  - prop.rift_obelisk.01   -> PROP_rift_obelisk   (rift_obelisk.glb,   <= 2400 tris)
-  - prop.bastion_warden.01 -> PROP_bastion_warden (bastion_warden.glb, <= 3000 tris)
+  - prop.tree_pine.01      -> PROP_tree_pine      (tree_pine.glb,      <= 2800 tris, Tier-A)
+  - prop.tree_oak.01       -> PROP_tree_oak       (tree_oak.glb,       <= 2800 tris, Tier-A)
+  - prop.rock_cluster.01   -> PROP_rock_cluster   (rock_cluster.glb,   <= 2800 tris, Tier-A)
+  - prop.siege_supply.01   -> PROP_siege_supply   (siege_supply.glb,   <= 2800 tris, Tier-A)
+  - prop.iron_brazier.01   -> PROP_iron_brazier   (iron_brazier.glb,   <= 2800 tris, Tier-A)
+  - prop.rift_obelisk.01   -> PROP_rift_obelisk   (rift_obelisk.glb,   <= 2800 tris, Tier-A)
+  - prop.bastion_warden.01 -> PROP_bastion_warden (bastion_warden.glb, <= 3600 tris, Hero PBR)
 
 Uso headless:
   blender -b --factory-startup --python-exit-code 1 --python art/scripts/make_props.py
@@ -162,15 +162,21 @@ def tree_pine():
                 )
             )
 
-    # 4 tufos ico subdiv=2 no miolo/copa para volume organico suave + topo em agulha
+    # 4 tufos ico subdiv=2 no miolo/copa para volume organico suave + pinhas + topo em agulha
     for cx, cy, cz, cr, ccol in (
         (-0.55, -0.45, 3.10, 0.76, "moss"),
         (0.58, 0.40, 4.30, 0.72, "leafSun"),
         (-0.40, 0.48, 5.50, 0.62, "leafMid"),
         (0.32, -0.35, 6.70, 0.52, "leafSun"),
+        (0.45, -0.52, 3.65, 0.58, "leafMid"),
+        (-0.48, 0.36, 4.85, 0.54, "moss"),
     ):
         p.append(_rot(L.ico(cr, (cx, cy, cz), ccol, squash=(1.14, 1.06, 0.78), subdiv=2), 0.18, -0.15, cz))
-    p.append(L.cyl(0.68, 1.65, (0.08, -0.08, 8.25), "leafSun", verts=14, r2=0.0))
+    # Nos de casca e pinhas pendentes sob a saia inferior
+    for k in range(4):
+        ang = 0.4 + k * math.pi / 2
+        p.append(L.ball(0.16, (1.18 * math.cos(ang), 1.18 * math.sin(ang), 2.28), "woodDark", seg=8, rings=5, squash=(0.85, 0.85, 1.35)))
+    p.append(L.cyl(0.68, 1.65, (0.08, -0.08, 8.25), "leafSun", verts=16, r2=0.0))
 
     return p
 
@@ -179,7 +185,7 @@ def tree_oak():
     """Carvalho antigo retorcido: raizes/tronco/galhos em capsule_seg e copa organica subdiv=2."""
     p = []
 
-    # 1. Raizes abertas e tronco retorcido em capsule_seg
+    # 1. Raizes abertas, almofadas de musgo na base e tronco retorcido em capsule_seg
     for k in range(5):
         a = 2 * math.pi * k / 5 + 0.35
         p.append(
@@ -189,9 +195,11 @@ def tree_oak():
                 0.34,
                 0.12,
                 "barkDark",
-                verts=12,
+                verts=14,
             )
         )
+        if k % 2 == 0:
+            p.append(_rot(L.ico(0.36, (0.76 * math.cos(a + 0.3), 0.76 * math.sin(a + 0.3), 0.22), "moss", squash=(1.2, 1.0, 0.55), subdiv=1), 0.1, 0.1, a))
 
     trunk_segs = (
         ((0.0, 0.0, 0.0), (-0.08, 0.10, 1.80), 0.68, 0.54),
@@ -200,6 +208,8 @@ def tree_oak():
     )
     for p0, p1, r0, r1 in trunk_segs:
         p.append(L.capsule_seg(p0, p1, r0, r1, "barkDark", verts=16))
+    # No de casca esculpido no tronco frontal (-Y)
+    p.append(L.torus(0.18, 0.06, (0.04, -0.44, 2.35), "woodDark", major_seg=10, minor_seg=4, rot=(math.pi / 2 - 0.12, 0.0, 0.0)))
 
     # 2. Galhos bifurcados principais e secundarios em capsule_seg
     limbs = (
@@ -213,7 +223,7 @@ def tree_oak():
     for p0, p1, r0, r1 in limbs:
         p.append(L.capsule_seg(p0, p1, r0, r1, "barkDark", verts=12))
 
-    # 3. Copa assimetrica com 6 domos principais subdiv=2 + 6 tufos de detalhe subdiv=1
+    # 3. Copa assimetrica com 6 domos principais subdiv=2 + 8 tufos de detalhe
     main_domes = (
         (0.05, -0.10, 5.85, 1.50, (1.18, 1.12, 0.84), "leafMid"),
         (-1.42, -1.02, 5.12, 1.26, (1.12, 1.06, 0.80), "leafDeep"),
@@ -226,21 +236,23 @@ def tree_oak():
         p.append(_rot(L.ico(rad, (cx, cy, cz), col, squash=sq, subdiv=2), 0.14 * math.sin(idx), 0.18 * math.cos(idx), idx * 0.5))
 
     accent_tufts = (
-        (-1.92, 0.25, 4.68, 1.02, (1.06, 1.10, 0.80), "oliveLeaf"),
-        (1.88, 0.35, 4.86, 1.00, (1.05, 1.02, 0.78), "leafMid"),
-        (0.0, -1.52, 4.98, 1.08, (1.15, 0.96, 0.82), "leafSun"),
-        (0.15, 1.58, 4.82, 1.04, (1.10, 1.00, 0.78), "leafDeep"),
-        (-0.78, -0.48, 6.52, 1.06, (1.06, 1.04, 0.82), "leafSun"),
-        (0.84, 0.34, 6.62, 1.04, (1.08, 1.02, 0.80), "oliveLeaf"),
+        (-1.92, 0.25, 4.68, 1.02, (1.06, 1.10, 0.80), "oliveLeaf", 2),
+        (1.88, 0.35, 4.86, 1.00, (1.05, 1.02, 0.78), "leafMid", 2),
+        (0.0, -1.52, 4.98, 1.08, (1.15, 0.96, 0.82), "leafSun", 2),
+        (0.15, 1.58, 4.82, 1.04, (1.10, 1.00, 0.78), "leafDeep", 1),
+        (-0.78, -0.48, 6.52, 1.06, (1.06, 1.04, 0.82), "leafSun", 2),
+        (0.84, 0.34, 6.62, 1.04, (1.08, 1.02, 0.80), "oliveLeaf", 1),
+        (-0.62, -1.28, 5.75, 0.86, (1.08, 1.02, 0.78), "moss", 1),
+        (0.72, -1.16, 5.82, 0.84, (1.06, 1.04, 0.78), "leafSun", 1),
     )
-    for idx, (cx, cy, cz, rad, sq, col) in enumerate(accent_tufts):
-        p.append(_rot(L.ico(rad, (cx, cy, cz), col, squash=sq, subdiv=1), 0.16 * math.cos(idx), 0.15 * math.sin(idx), idx * 0.7))
+    for idx, (cx, cy, cz, rad, sq, col, sdiv) in enumerate(accent_tufts):
+        p.append(_rot(L.ico(rad, (cx, cy, cz), col, squash=sq, subdiv=sdiv), 0.16 * math.cos(idx), 0.15 * math.sin(idx), idx * 0.7))
 
     return p
 
 
 def rock_cluster():
-    """Afloramento de 5 rochas esculpidas subdiv=2, almofadas de musgo e veio de quartzo ambar."""
+    """Afloramento de rochas estratificadas chanfradas, almofadas de musgo e drusa de quartzo ambar."""
     p = []
 
     boulders = (
@@ -253,21 +265,32 @@ def rock_cluster():
     for pos, rad, sq, col, (rx, ry, rz), sdiv in boulders:
         p.append(_rot(L.ico(rad, pos, col, squash=sq, subdiv=sdiv), rx, ry, rz))
 
+    # Lajes de xisto chanfradas nos degraus geologicos
+    for sz, pos, col, rot in (
+        ((1.55, 1.15, 0.34), (-0.75, -0.82, 0.20), "stoneDark", (0.08, -0.10, 0.28)),
+        ((1.35, 1.05, 0.30), (0.88, -0.78, 0.18), "stone", (-0.06, 0.12, -0.35)),
+        ((1.18, 0.92, 0.28), (0.15, 1.12, 0.16), "stoneLight", (0.10, 0.05, 0.18)),
+    ):
+        p.append(L.box(sz, pos, col, bevel=0.05, rot=rot))
+
     # Almofadas de musgo organicas
     for pos, rad, sq, rot_z in (
         ((-0.25, -0.20, 1.88), 0.64, (1.28, 1.10, 0.45), 0.4),
         ((-1.25, -0.60, 1.15), 0.50, (1.18, 1.05, 0.44), 1.3),
         ((0.95, -0.35, 1.05), 0.46, (1.15, 0.95, 0.42), 2.1),
+        ((0.35, 0.78, 0.82), 0.42, (1.12, 0.96, 0.40), 0.9),
     ):
         p.append(_rot(L.ico(rad, pos, "moss", squash=sq, subdiv=2), 0.1, -0.1, rot_z))
 
-    # Veio de quartzo ambar brotando da fenda frontal
+    # Drusa rica de quartzo ambar brotando da fenda frontal (-Y)
     for pos, r, h, col, tilt in (
-        ((0.28, -0.78, 0.45), 0.19, 0.92, "amber", (0.48, 0.22)),
-        ((0.52, -0.72, 0.38), 0.15, 0.72, "amberBright", (0.58, 0.42)),
-        ((0.08, -0.84, 0.36), 0.14, 0.66, "amber", (0.62, -0.18)),
-        ((0.38, -0.62, 0.55), 0.13, 0.58, "amberBright", (0.28, 0.32)),
-        ((-0.12, -0.76, 0.42), 0.12, 0.52, "neonAmber", (0.52, -0.34)),
+        ((0.28, -0.78, 0.45), 0.20, 0.96, "amber", (0.48, 0.22)),
+        ((0.52, -0.72, 0.38), 0.16, 0.76, "amberBright", (0.58, 0.42)),
+        ((0.08, -0.84, 0.36), 0.15, 0.70, "amber", (0.62, -0.18)),
+        ((0.38, -0.62, 0.55), 0.14, 0.62, "amberBright", (0.28, 0.32)),
+        ((-0.12, -0.76, 0.42), 0.13, 0.56, "neonAmber", (0.52, -0.34)),
+        ((0.68, -0.58, 0.44), 0.12, 0.50, "goldBright", (0.44, 0.52)),
+        ((-0.28, -0.82, 0.32), 0.11, 0.46, "amber", (0.66, -0.42)),
     ):
         p.append(L.crystal(r, h, pos, col, tilt=tilt, verts=8))
 
@@ -275,7 +298,7 @@ def rock_cluster():
 
 
 def siege_supply():
-    """Suprimentos de cerco: palete, 2 barris de 20 segs com aros torus, caixote e balas seg=16."""
+    """Suprimentos de cerco: palete, 2 barris de 20 segs, caixote ferrado chanfrado, rolo de corda e balas."""
     p = []
 
     # 1. Palete de madeira
@@ -285,17 +308,20 @@ def siege_supply():
         sx = -1.75 + k * 0.875
         p.append(L.box((0.55, 3.20, 0.12), (sx, 0.0, 0.26), "wood"))
 
-    # 2. Dois barris de carvalho com aduelas curvas (20 segs) e aros torus
+    # 2. Dois barris de carvalho com aduelas curvas (20 segs), aros torus e rolo de corda no topo
     p += _barrel((-1.15, -0.65, 0.32), 0.58, 0.73, 1.65, "wood", verts=20)
     p += _barrel((-0.95, 0.82, 0.32), 0.54, 0.69, 1.55, "woodLight", verts=20)
+    p.append(L.torus(0.28, 0.065, (-0.95, 0.82, 1.92), "straw", major_seg=12, minor_seg=4))
+    p.append(L.torus(0.19, 0.055, (-0.95, 0.82, 1.98), "straw", major_seg=10, minor_seg=4))
 
-    # 3. Caixote de municao com travamentos diagonais em madeira e cantoneiras de ferro
+    # 3. Caixote de municao chanfrado com travamentos diagonais em madeira e cantoneiras de ferro
     cx, cy, cz = 1.05, 0.62, 0.32
     cw, cd, ch = 1.65, 1.45, 1.25
-    p.append(L.box((cw, cd, ch), (cx, cy, cz + ch / 2), "woodDark"))
+    p.append(L.box((cw, cd, ch), (cx, cy, cz + ch / 2), "woodDark", bevel=0.03))
     for sx in (-1, 1):
         for sy in (-1, 1):
             p.append(L.box((0.18, 0.18, ch + 0.06), (cx + sx * (cw / 2 - 0.05), cy + sy * (cd / 2 - 0.05), cz + ch / 2), "woodLight"))
+            p.append(L.box((0.24, 0.24, 0.22), (cx + sx * (cw / 2 - 0.02), cy + sy * (cd / 2 - 0.02), cz + ch - 0.06), "ironDark"))
     for sy in (-1, 1):
         p.append(L.box((cw + 0.06, 0.14, 0.16), (cx, cy + sy * (cd / 2 - 0.02), cz + ch - 0.04), "wood"))
         p.append(L.box((cw * 0.95, 0.12, 0.14), (cx, cy + sy * (cd / 2 + 0.02), cz + ch / 2), "woodLight", rot=(0, 0.58 * sy, 0)))
@@ -303,7 +329,7 @@ def siege_supply():
         p.append(L.box((0.14, cd + 0.06, 0.16), (cx + sx * (cw / 2 - 0.02), cy, cz + ch - 0.04), "wood"))
         p.append(L.box((0.14, cd + 0.08, 0.14), (cx + sx * (cw / 2 - 0.02), cy, cz + 0.25), "ironDark"))
 
-    # 4. Piramide de balas de canhao esfericas suaves (seg=16) na bandeja frontal
+    # 4. Piramide de balas de canhao esfericas suaves (seg=16) na bandeja frontal ferrada
     tx, ty, tz = 0.92, -0.82, 0.32
     for dx in (-0.65, 0.65):
         p.append(L.box((0.14, 1.28, 0.20), (tx + dx, ty, tz + 0.10), "woodDark"))
@@ -313,19 +339,20 @@ def siege_supply():
     for dx in (-0.27, 0.27):
         for dy in (-0.27, 0.27):
             p.append(L.ball(r_ball, (tx + dx, ty + dy, tz + r_ball + 0.04), "ironDark", seg=16, rings=6))
-    p.append(L.ball(r_ball, (tx, ty, tz + r_ball + 0.42), "iron", seg=16, rings=6))
+    p.append(L.ball(r_ball, (tx, ty, tz + r_ball + 0.42), "steel", seg=16, rings=6))
 
     return p
 
 
 def iron_brazier():
-    """Braseiro de ferro forjado 22-seg: pedestal, garras curvas, aros torus e chama multi-lingua."""
+    """Braseiro de ferro forjado 22-seg: pedestal com anel de bronze, garras curvas, pontas e chama."""
     p = []
 
-    # 1. Pedestal escalonado 12-seg em stoneDark / stone
-    p.append(L.cyl(1.46, 0.34, (0, 0, 0.0), "stoneDark", verts=12, r2=1.38))
-    p.append(L.cyl(1.20, 0.30, (0, 0, 0.34), "stone", verts=12, r2=1.12))
-    p.append(L.cyl(0.96, 0.24, (0, 0, 0.64), "stoneDark", verts=12, r2=0.88))
+    # 1. Pedestal escalonado 14-seg em stoneDark / stone com anel de bronze
+    p.append(L.cyl(1.46, 0.34, (0, 0, 0.0), "stoneDark", verts=14, r2=1.38))
+    p.append(L.cyl(1.20, 0.30, (0, 0, 0.34), "stone", verts=14, r2=1.12))
+    p.append(L.cyl(0.96, 0.24, (0, 0, 0.64), "stoneDark", verts=14, r2=0.88))
+    p.append(L.torus(0.90, 0.045, (0, 0, 0.88), "bronze", major_seg=16, minor_seg=4))
 
     # 2. 3 pernas curvas de ferro forjado a 120 graus + anel torus estrutural
     p.append(L.torus(0.94, 0.075, (0, 0, 1.52), "ironDark", major_seg=22, minor_seg=5))
@@ -337,7 +364,7 @@ def iron_brazier():
         p.append(L.capsule_seg((1.04 * ca, 1.04 * sa, 1.64), (1.18 * ca, 1.18 * sa, 2.42), 0.13, 0.15, "ironDark", verts=8))
         p.append(L.torus(0.18, 0.045, (1.24 * ca, 1.24 * sa, 2.34), "bronze", major_seg=10, minor_seg=4, rot=(math.pi / 2, 0.0, a)))
 
-    # 3. Bojo afunilado de 22 segmentos + borda torus com rebites
+    # 3. Bojo afunilado de 22 segmentos + borda torus com rebites e pontas de bronze
     p.append(L.cyl(0.56, 0.36, (0, 0, 1.84), "ironDark", verts=22, r2=0.94))
     p.append(L.cyl(0.94, 0.56, (0, 0, 2.20), "iron", verts=22, r2=1.30))
     p.append(L.cyl(1.32, 0.22, (0, 0, 2.72), "ironDark", verts=22, r2=1.36))
@@ -345,14 +372,17 @@ def iron_brazier():
     for k in range(8):
         a = 2 * math.pi * k / 8
         p.append(L.ball(0.085, (1.36 * math.cos(a), 1.36 * math.sin(a), 2.84), "steel", seg=6, rings=4))
+        if k % 2 == 0:
+            p.append(L.crystal(0.09, 0.28, (1.35 * math.cos(a), 1.35 * math.sin(a), 2.90), "bronze", tilt=(-0.18 * math.sin(a), 0.18 * math.cos(a)), verts=5))
 
-    # 4. Leito de brasas subdiv=2 e chama multi-lingua esculpida
+    # 4. Leito de brasas subdiv=2, carvoes incandescentes e chama multi-lingua esculpida
     p.append(_rot(L.ico(0.90, (0, 0, 2.86), "danger", squash=(1.06, 1.06, 0.50), subdiv=2), 0.1, 0.2, 0.5))
-    # Lingua central em S ascendente
+    for k in range(4):
+        ca, sa = math.cos(k * 1.57 + 0.4), math.sin(k * 1.57 + 0.4)
+        p.append(L.ico(0.22, (0.58 * ca, 0.58 * sa, 2.98), "ember", squash=(1.1, 0.9, 0.65), subdiv=1))
     p.append(L.capsule_seg((0.0, 0.0, 2.88), (0.06, -0.05, 3.45), 0.34, 0.20, "emberDeep", verts=8))
     p.append(L.capsule_seg((0.06, -0.05, 3.40), (-0.04, 0.04, 3.85), 0.20, 0.09, "amberBright", verts=8))
     p.append(L.crystal(0.10, 0.38, (-0.04, 0.04, 3.80), "neonAmber", tilt=(0.08, -0.10), verts=6))
-    # 5 linguas periféricas espiraladas
     tongues = (
         (0.0, 0.38, 0.24, 0.86, "amberBright", "neonAmber", (0.18, -0.22)),
         (1.26, 0.42, 0.22, 0.78, "ember", "amberBright", (-0.26, 0.18)),
@@ -370,13 +400,13 @@ def iron_brazier():
 
 
 def rift_obelisk():
-    """Obelisco da fenda: base em obsidiana, fuste torcido, aneis torus de contencao e cristais."""
+    """Obelisco da fenda: base em obsidiana com runas, fuste torcido runico, giroscopio triplo e cristais."""
     p = []
 
-    # 1. Base escalonada de obsidiana (12 segs) + 4 garras laterais
-    p.append(L.cyl(1.76, 0.42, (0, 0, 0.0), "ironDark", verts=12, r2=1.56))
-    p.append(L.cyl(1.44, 0.36, (0, 0, 0.42), "obsidian", verts=12, r2=1.24))
-    p.append(L.cyl(1.14, 0.32, (0, 0, 0.78), "ink", verts=12, r2=0.96))
+    # 1. Base escalonada de obsidiana (14 segs) + 4 garras laterais + runas no degrau
+    p.append(L.cyl(1.76, 0.42, (0, 0, 0.0), "ironDark", verts=14, r2=1.56))
+    p.append(L.cyl(1.44, 0.36, (0, 0, 0.42), "obsidian", verts=14, r2=1.24))
+    p.append(L.cyl(1.14, 0.32, (0, 0, 0.78), "ink", verts=14, r2=0.96))
     for k in range(4):
         a = math.pi / 4 + k * math.pi / 2
         p.append(
@@ -389,8 +419,10 @@ def rift_obelisk():
                 verts=6,
             )
         )
+        ra = k * math.pi / 2
+        p.append(L.box((0.46, 0.16, 0.14), (1.36 * math.cos(ra), 1.36 * math.sin(ra), 0.60), "arcaneCyan", rot=(0, 0, ra + math.pi / 2)))
 
-    # 2. Obelisco facetado torcido em 4 segmentos (verts=8) + ponta piramidal
+    # 2. Obelisco facetado torcido em 4 segmentos (verts=8) + entalhes runicos luminosos + ponta piramidal
     segs = (
         (1.08, 0.84, 0.72, 1.25, 0.0, "ink"),
         (2.25, 0.74, 0.64, 1.25, 0.22, "obsidian"),
@@ -399,14 +431,19 @@ def rift_obelisk():
     )
     for z0, r1, r2, h, rz, col in segs:
         p.append(L.cyl(r1, h, (0, 0, z0), col, verts=8, r2=r2, rot_z=math.pi / 8 + rz))
+    for k in range(4):
+        a = k * math.pi / 2
+        p.append(L.box((0.14, 0.12, 0.76), (0.68 * math.cos(a + 0.11), 0.68 * math.sin(a + 0.11), 2.18), "tealSwarm", rot=(0, 0, a + 0.11)))
+        p.append(L.box((0.12, 0.10, 0.68), (0.52 * math.cos(a + 0.55), 0.52 * math.sin(a + 0.55), 4.55), "eyeNeon", rot=(0, 0, a + 0.55)))
     p.append(L.cyl(0.48, 1.18, (0, 0, 5.75), "ink", verts=8, r2=0.0, rot_z=math.pi / 8 + 0.88))
 
-    # 3. Colar de contencao com aneis torus de ferro e aneis arcanos inclinados
+    # 3. Colar de contencao com aneis torus de ferro e giroscopio triplo arcano
     p.append(L.cyl(0.84, 0.44, (0, 0, 3.15), "iron", verts=14, r2=0.80))
-    p.append(L.torus(0.88, 0.095, (0, 0, 3.37), "steel", major_seg=20, minor_seg=7))
-    p.append(L.torus(0.98, 0.075, (0, 0, 1.12), "ironDark", major_seg=20, minor_seg=6))
+    p.append(L.torus(0.88, 0.095, (0, 0, 3.37), "steel", major_seg=20, minor_seg=6))
+    p.append(L.torus(0.98, 0.075, (0, 0, 1.12), "ironDark", major_seg=20, minor_seg=5))
     p.append(L.torus(1.08, 0.055, (0, 0, 3.37), "teal", major_seg=20, minor_seg=6, rot=(0.32, -0.24, 0.0)))
-    p.append(L.torus(0.86, 0.050, (0, 0, 4.92), "arcaneCyan", major_seg=18, minor_seg=6, rot=(-0.28, 0.30, 0.4)))
+    p.append(L.torus(0.86, 0.050, (0, 0, 4.92), "arcaneCyan", major_seg=18, minor_seg=5, rot=(-0.28, 0.30, 0.4)))
+    p.append(L.torus(0.62, 0.042, (0, 0, 6.22), "tealSwarm", major_seg=16, minor_seg=5, rot=(0.34, 0.22, -0.3)))
     for k in range(4):
         a = k * math.pi / 2 + 0.33
         p.append(L.box((0.26, 0.32, 0.52), (0.82 * math.cos(a), 0.82 * math.sin(a), 3.37), "steel", rot=(0, 0, a)))
@@ -421,6 +458,7 @@ def rift_obelisk():
         ((-0.58, 0.25, 3.45), 0.16, 0.95, "tealSwarm", (-0.28, 0.65)),
         ((0.55, 0.28, 3.40), 0.16, 0.92, "teal", (-0.25, -0.68)),
         ((0.18, -0.45, 4.95), 0.15, 0.88, "eyeNeon", (0.55, -0.25)),
+        ((-0.24, 0.42, 5.02), 0.14, 0.82, "arcaneCyan", (-0.52, 0.28)),
     )
     for pos, r, h, col, tilt in shards:
         p.append(L.crystal(r, h, pos, col, tilt=tilt, verts=7))
@@ -430,27 +468,24 @@ def rift_obelisk():
 
 
 def bastion_warden():
-    """Paladino Guardiao do Bastiao (~6.2 studs, frente -Y): greathelm emplumado com visor T
-    amberBright, ombreiras curvas com aro torus dourado, manto crimsonCloth, peitoral com brasao,
-    grevas, escudo-torre real no braco esquerdo (-X) e martelo de guerra no braco direito (+X)."""
+    """Hero PBR: Paladino Guardiao do Bastiao (~6.2 studs, frente -Y): greathelm emplumado coroado com visor T
+    amberBright, gorget e ombreiras em camadas douradas, manto crimsonCloth pregueado, peitoral com
+    brasao solar, grevas, escudo-torre heráldico (-X) e martelo runico de guerra (+X)."""
     p = []
 
     # 1. Botas blindadas (sabatons), grevas, joelheiras e coxotes (z = 0.0 .. 2.30)
     for sx in (-1, 1):
         lx = sx * 0.46
-        # Sola e pe blindado apontado para -Y
         p.append(L.cyl(0.28, 0.22, (lx, -0.06, 0.0), "ironDark", verts=8, r2=0.26))
-        p.append(L.ball(0.26, (lx, -0.24, 0.18), "steel", seg=8, rings=3, squash=(0.92, 1.38, 0.68)))
+        p.append(L.ball(0.26, (lx, -0.24, 0.18), "steel", seg=8, rings=4, squash=(0.92, 1.38, 0.68)))
         p.append(L.cyl(0.22, 0.10, (lx, -0.10, 0.22), "gold", verts=8))
-        # Greva (canela) e joelheira (poleyn)
         p.append(L.capsule_seg((lx, -0.04, 0.26), (lx, -0.06, 1.18), 0.24, 0.27, "royal", verts=8))
         p.append(L.capsule_seg((lx, -0.12, 0.34), (lx, -0.14, 1.12), 0.18, 0.20, "steel", verts=6))
-        p.append(L.ball(0.27, (lx, -0.14, 1.24), "gold", seg=8, rings=3, squash=(0.95, 1.05, 0.90)))
-        # Coxote (cuisse) e escarcela lateral (tasset)
+        p.append(L.ball(0.27, (lx, -0.14, 1.24), "gold", seg=8, rings=4, squash=(0.95, 1.05, 0.90)))
         p.append(L.capsule_seg((lx, -0.04, 1.28), (lx, 0.0, 2.22), 0.28, 0.33, "steel", verts=8))
         p.append(
             _rot(
-                L.ball(0.34, (sx * 0.68, -0.04, 2.08), "royal", seg=8, rings=3, squash=(0.38, 0.95, 1.18)),
+                L.ball(0.34, (sx * 0.68, -0.04, 2.08), "royal", seg=8, rings=4, squash=(0.38, 0.95, 1.18)),
                 0.0,
                 sx * 0.24,
                 0.0,
@@ -458,41 +493,33 @@ def bastion_warden():
         )
         p.append(
             _rot(
-                L.ball(0.35, (sx * 0.70, -0.04, 1.82), "gold", seg=6, rings=3, squash=(0.36, 0.92, 0.38)),
+                L.ball(0.35, (sx * 0.70, -0.04, 1.82), "gold", seg=8, rings=3, squash=(0.36, 0.92, 0.38)),
                 0.0,
                 sx * 0.24,
                 0.0,
             )
         )
 
-    # 2. Cinturao dourado em torus e tabardo frontal/traseiro em crimsonCloth
-    p.append(L.cyl(0.62, 0.42, (0, 0.0, 2.05), "ironDark", verts=8, r2=0.66))
-    p.append(L.torus(0.66, 0.09, (0, -0.02, 2.38), "gold", major_seg=10, minor_seg=3, squash=(1.08, 0.88, 1.0)))
-    p.append(L.cyl_axis(0.18, 0.14, (0, -0.62, 2.38), "gold", axis="y", verts=8))
-    p.append(L.ball(0.10, (0, -0.68, 2.38), "amberBright", seg=6, rings=3))
-    # Tabardo real caindo na frente (-Y)
+    # 2. Cinturao dourado em torus, fivela chanfrada e tabardo frontal em crimsonCloth
+    p.append(L.cyl(0.62, 0.42, (0, 0.0, 2.05), "ironDark", verts=10, r2=0.66))
+    p.append(L.torus(0.66, 0.09, (0, -0.02, 2.38), "gold", major_seg=12, minor_seg=4, squash=(1.08, 0.88, 1.0)))
+    p.append(L.box((0.36, 0.16, 0.34), (0, -0.62, 2.38), "gold", bevel=0.03))
+    p.append(L.ball(0.11, (0, -0.69, 2.38), "amberBright", seg=6, rings=4))
     p.append(L.capsule_seg((0, -0.52, 2.28), (0, -0.58, 0.88), 0.26, 0.18, "crimsonCloth", verts=6))
     p.append(L.capsule_seg((0, -0.55, 0.92), (0, -0.58, 0.72), 0.19, 0.08, "gold", verts=6))
 
-    # 3. Peitoral blindado (royal/steel) + colar torus dourado + brasao solar amberBright
-    p.append(L.cyl(0.68, 1.65, (0, 0.0, 2.42), "royal", verts=10, r2=0.84))
-    p.append(L.ball(0.76, (0, -0.10, 3.42), "steel", seg=10, rings=4, squash=(1.08, 0.82, 1.05)))
-    p.append(L.ball(0.72, (0, -0.16, 3.46), "royal", seg=8, rings=4, squash=(0.96, 0.78, 0.94)))
-    p.append(L.torus(0.60, 0.085, (0, -0.04, 4.18), "gold", major_seg=10, minor_seg=3, squash=(1.12, 0.92, 1.0)))
-    # Brasao no peito (-Y)
-    p.append(L.cyl_axis(0.28, 0.14, (0, -0.72, 3.48), "gold", axis="y", verts=8))
-    p.append(L.ball(0.17, (0, -0.78, 3.48), "amberBright", seg=6, rings=3, squash=(1.0, 0.55, 1.25)))
+    # 3. Peitoral blindado canelado (royal/steel) + gorget dourado + brasao solar amberBright
+    p.append(L.cyl(0.68, 1.65, (0, 0.0, 2.42), "royal", verts=12, r2=0.84))
+    p.append(L.ball(0.76, (0, -0.10, 3.42), "steel", seg=10, rings=5, squash=(1.08, 0.82, 1.05)))
+    p.append(L.ball(0.72, (0, -0.16, 3.46), "royal", seg=10, rings=4, squash=(0.96, 0.78, 0.94)))
+    p.append(L.cyl(0.66, 0.24, (0, -0.04, 4.02), "steel", verts=10, r2=0.58))
+    p.append(L.torus(0.60, 0.085, (0, -0.04, 4.18), "gold", major_seg=12, minor_seg=4, squash=(1.12, 0.92, 1.0)))
+    # Brasao solar e nervuras do peito (-Y)
+    p.append(L.cyl_axis(0.28, 0.14, (0, -0.72, 3.48), "gold", axis="y", verts=10))
+    p.append(L.ball(0.17, (0, -0.78, 3.48), "amberBright", seg=8, rings=4, squash=(1.0, 0.55, 1.25)))
     for sx in (-1, 1):
-        p.append(
-            L.capsule_seg(
-                (sx * 0.12, -0.74, 3.44),
-                (sx * 0.42, -0.68, 3.68),
-                0.08,
-                0.04,
-                "goldBright",
-                verts=6,
-            )
-        )
+        p.append(L.capsule_seg((sx * 0.12, -0.74, 3.44), (sx * 0.44, -0.68, 3.70), 0.08, 0.04, "goldBright", verts=6))
+        p.append(L.capsule_seg((sx * 0.14, -0.72, 3.36), (sx * 0.38, -0.66, 3.16), 0.065, 0.035, "gold", verts=6))
 
     # 4. Ombreiras curvas em camadas com aro torus dourado e crista alada
     for sx in (-1, 1):
@@ -507,7 +534,7 @@ def bastion_warden():
         )
         p.append(
             _rot(
-                L.ball(0.48, (px * 1.04, -0.02, 4.22), "steel", seg=8, rings=3, squash=(1.05, 0.90, 0.72)),
+                L.ball(0.48, (px * 1.04, -0.02, 4.22), "steel", seg=8, rings=4, squash=(1.05, 0.90, 0.72)),
                 0.0,
                 sx * 0.26,
                 0.0,
@@ -520,21 +547,12 @@ def bastion_warden():
                 (px * 1.02, -0.02, 3.92),
                 "gold",
                 major_seg=10,
-                minor_seg=3,
+                minor_seg=4,
                 rot=(0.0, sx * 0.42, 0.0),
                 squash=(1.05, 0.92, 1.0),
             )
         )
-        p.append(
-            L.crystal(
-                0.15,
-                0.68,
-                (px * 1.05, 0.04, 4.34),
-                "gold",
-                tilt=(-0.18, sx * 0.42),
-                verts=5,
-            )
-        )
+        p.append(L.crystal(0.15, 0.68, (px * 1.05, 0.04, 4.34), "gold", tilt=(-0.18, sx * 0.42), verts=5))
 
     # 5. Manto esvoacante (crimsonCloth) nas costas (+Y) com broches dourados
     for sx in (-1, 1):
@@ -550,10 +568,13 @@ def bastion_warden():
         p.append(L.capsule_seg((x0, y0, z0), (x1, y1, z1), r0, r1, col, verts=6))
     p.append(L.capsule_seg((-0.98, 0.88, 0.46), (0.98, 0.88, 0.46), 0.14, 0.14, "gold", verts=6))
 
-    # 6. Greathelm emplumado (royal/steel/gold) + visor T amberBright
+    # 6. Greathelm emplumado coroado (royal/steel/gold) + visor T amberBright
     p.append(L.cyl(0.48, 0.88, (0, -0.04, 4.28), "steel", verts=12, r2=0.45))
-    p.append(L.ball(0.47, (0, -0.04, 5.14), "royal", seg=10, rings=4, squash=(0.96, 1.04, 0.72)))
-    p.append(L.torus(0.47, 0.06, (0, -0.04, 5.06), "gold", major_seg=10, minor_seg=3))
+    p.append(L.ball(0.47, (0, -0.04, 5.14), "royal", seg=10, rings=5, squash=(0.96, 1.04, 0.72)))
+    p.append(L.torus(0.47, 0.06, (0, -0.04, 5.06), "gold", major_seg=12, minor_seg=4))
+    for k in range(5):
+        ang = -0.9 + k * 0.45
+        p.append(L.crystal(0.065, 0.24, (0.45 * math.sin(ang), -0.04 - 0.45 * math.cos(ang), 5.10), "goldBright", verts=5))
     # Visor em T brilhante (amberBright) na face -Y
     p.append(L.capsule_seg((-0.30, -0.49, 4.86), (0.30, -0.49, 4.86), 0.075, 0.075, "amberBright", verts=6))
     p.append(L.capsule_seg((0.0, -0.50, 4.88), (0.0, -0.48, 4.42), 0.068, 0.052, "amberBright", verts=6))
@@ -565,15 +586,14 @@ def bastion_warden():
     p.append(L.capsule_seg((0, 0.18, 6.02), (0, 0.78, 5.72), 0.24, 0.16, "crimsonCloth", verts=6))
     p.append(L.capsule_seg((0, 0.72, 5.74), (0, 1.15, 5.18), 0.16, 0.07, "crimsonBright", verts=6))
 
-    # 7. Braco esquerdo (-X) + Escudo-Torre ornamentado (royal + gold)
+    # 7. Braco esquerdo (-X) + Escudo-Torre ornamentado (royal + gold + rebites)
     p.append(L.capsule_seg((-1.02, -0.04, 3.82), (-1.18, -0.32, 3.05), 0.22, 0.19, "steel", verts=8))
     p.append(L.ball(0.20, (-1.20, -0.34, 3.02), "gold", seg=6, rings=3))
     p.append(L.capsule_seg((-1.20, -0.36, 2.98), (-1.12, -0.68, 2.68), 0.20, 0.18, "royal", verts=8))
-    # Escudo-Torre abobadado
     sh_x, sh_y, sh_z = -1.24, -0.82, 2.68
     p.append(
         _rot(
-            L.ball(1.42, (sh_x, sh_y, sh_z), "royal", seg=10, rings=4, squash=(0.68, 0.18, 1.08)),
+            L.ball(1.42, (sh_x, sh_y, sh_z), "royal", seg=10, rings=5, squash=(0.68, 0.18, 1.08)),
             0.0,
             0.0,
             -0.32,
@@ -581,7 +601,7 @@ def bastion_warden():
     )
     p.append(
         _rot(
-            L.torus(0.92, 0.085, (sh_x - 0.06, sh_y - 0.12, sh_z), "gold", major_seg=10, minor_seg=3, rot=(math.pi / 2, 0.0, -0.32), squash=(0.86, 1.42, 1.0)),
+            L.torus(0.92, 0.085, (sh_x - 0.06, sh_y - 0.12, sh_z), "gold", major_seg=12, minor_seg=4, rot=(math.pi / 2, 0.0, -0.32), squash=(0.86, 1.42, 1.0)),
             0.0,
             0.0,
             0.0,
@@ -589,20 +609,21 @@ def bastion_warden():
     )
     p.append(L.capsule_seg((sh_x - 0.10, sh_y - 0.22, sh_z - 1.18), (sh_x - 0.10, sh_y - 0.22, sh_z + 1.18), 0.08, 0.08, "gold", verts=6))
     p.append(L.capsule_seg((sh_x - 0.38, sh_y - 0.08, sh_z), (sh_x + 0.18, sh_y - 0.36, sh_z), 0.08, 0.08, "gold", verts=6))
-    p.append(L.ball(0.22, (sh_x - 0.12, sh_y - 0.26, sh_z + 0.08), "amberBright", seg=6, rings=3))
+    p.append(L.ball(0.22, (sh_x - 0.12, sh_y - 0.26, sh_z + 0.08), "amberBright", seg=6, rings=4))
+    for dz in (-0.75, 0.75):
+        p.append(L.ball(0.08, (sh_x - 0.36, sh_y - 0.08, sh_z + dz), "goldBright", seg=6, rings=3))
+        p.append(L.ball(0.08, (sh_x + 0.16, sh_y - 0.34, sh_z + dz), "goldBright", seg=6, rings=3))
 
     # 8. Braco direito (+X) + Martelo de Guerra do Forjador de Runas
     p.append(L.capsule_seg((1.02, -0.04, 3.82), (1.20, -0.34, 3.08), 0.22, 0.19, "steel", verts=8))
     p.append(L.ball(0.20, (1.22, -0.36, 3.04), "gold", seg=6, rings=3))
     p.append(L.capsule_seg((1.22, -0.38, 3.00), (1.26, -0.78, 2.86), 0.20, 0.19, "royal", verts=8))
     p.append(L.ball(0.21, (1.28, -0.86, 2.84), "gold", seg=6, rings=3))
-    # Haste e cabeca do Martelo de Guerra
     h_bot = (1.24, -0.62, 1.42)
     h_top = (1.32, -1.08, 4.48)
     p.append(L.capsule_seg(h_bot, h_top, 0.10, 0.11, "woodDark", verts=8))
     p.append(L.ball(0.16, h_bot, "gold", seg=6, rings=3))
     p.append(L.torus(0.14, 0.045, (1.30, -1.00, 3.92), "gold", major_seg=8, minor_seg=3))
-    # Bloco cilindrico da marreta (apontado para -Y/+Y) + bico perfurante + nucleo runico
     hm_c = (1.32, -1.06, 4.28)
     p.append(L.cyl_axis(0.36, 1.12, hm_c, "steel", axis="y", verts=10))
     p.append(L.cyl_axis(0.40, 0.26, (hm_c[0], hm_c[1] - 0.46, hm_c[2]), "ironDark", axis="y", verts=10))
@@ -622,7 +643,9 @@ SPECS = [
         "name": "PROP_tree_pine",
         "glb": "tree_pine.glb",
         "tipo": "prop_estatico",
-        "limite": 2600,
+        "limite": 2800,
+        "hero_pbr": False,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -636,6 +659,8 @@ SPECS = [
         "glb": "tree_oak.glb",
         "tipo": "prop_estatico",
         "limite": 2800,
+        "hero_pbr": False,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -648,7 +673,9 @@ SPECS = [
         "name": "PROP_rock_cluster",
         "glb": "rock_cluster.glb",
         "tipo": "prop_estatico",
-        "limite": 1800,
+        "limite": 2800,
+        "hero_pbr": False,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -661,7 +688,9 @@ SPECS = [
         "name": "PROP_siege_supply",
         "glb": "siege_supply.glb",
         "tipo": "prop_estatico",
-        "limite": 2400,
+        "limite": 2800,
+        "hero_pbr": False,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -674,7 +703,9 @@ SPECS = [
         "name": "PROP_iron_brazier",
         "glb": "iron_brazier.glb",
         "tipo": "prop_estatico",
-        "limite": 2200,
+        "limite": 2800,
+        "hero_pbr": False,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -687,7 +718,9 @@ SPECS = [
         "name": "PROP_rift_obelisk",
         "glb": "rift_obelisk.glb",
         "tipo": "prop_estatico",
-        "limite": 2400,
+        "limite": 2800,
+        "hero_pbr": False,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -700,7 +733,9 @@ SPECS = [
         "name": "PROP_bastion_warden",
         "glb": "bastion_warden.glb",
         "tipo": "prop_estatico",
-        "limite": 3000,
+        "limite": 3600,
+        "hero_pbr": True,
+        "quantidade_cena": 2,
         "center_xy": True,
         "pivot": "base",
         "suavizacao_normais": NORMALS_PROPS,
@@ -710,4 +745,4 @@ SPECS = [
     },
 ]
 
-L.run_group("props", SPECS, "props de cenario, natureza e guardiao esculpidos (art/scripts/make_props.py)")
+L.run_group("props", SPECS, "props de cenario, natureza e guardiao esculpidos (art/scripts/make_props.py)", hero_pbr=False)
