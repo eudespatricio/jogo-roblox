@@ -953,7 +953,7 @@ SPECS = [
         "id": "prop.bastion_warden.01",
         "name": "PROP_bastion_warden",
         "glb": "bastion_warden.glb",
-        "tipo": "personagem_humanoide",
+        "tipo": "prop_estatico",
         "qualidade": "hero",
         "limite": 11000,
         "hero_pbr": True,
