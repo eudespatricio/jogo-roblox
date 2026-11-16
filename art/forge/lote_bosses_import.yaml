@@ -18,14 +18,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus.glb
-    altura_metros: 3.4331   # 12.2609 studs
+    altura_metros: 3.573   # 12.7606 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 5200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -35,14 +36,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_torso.glb
-    altura_metros: 2.6069   # 9.3105 studs
+    altura_metros: 2.7471   # 9.811 studs
     pivot: base
-    limite_triangulos: 900
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -52,14 +54,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_arm_r.glb
-    altura_metros: 1.4538   # 5.192 studs
+    altura_metros: 1.4906   # 5.3236 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,14 +72,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_arm_l.glb
-    altura_metros: 1.3876   # 4.9558 studs
+    altura_metros: 1.4198   # 5.0707 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -86,14 +90,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_leg_l.glb
-    altura_metros: 1.3297   # 4.749 studs
+    altura_metros: 1.3341   # 4.7648 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -103,14 +108,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_iron_ram_colossus_leg_r.glb
-    altura_metros: 1.33   # 4.7499 studs
+    altura_metros: 1.3306   # 4.7523 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -120,14 +126,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut.glb
-    altura_metros: 3.5753   # 12.7691 studs
+    altura_metros: 3.5952   # 12.8401 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 5200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -137,14 +144,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_torso.glb
-    altura_metros: 2.6413   # 9.4331 studs
+    altura_metros: 2.8112   # 10.04 studs
     pivot: base
-    limite_triangulos: 900
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -154,14 +162,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_arm_r.glb
-    altura_metros: 1.6105   # 5.7518 studs
+    altura_metros: 1.6693   # 5.9617 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -171,14 +180,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_arm_l.glb
-    altura_metros: 1.6001   # 5.7148 studs
+    altura_metros: 1.6013   # 5.719 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -188,14 +198,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_leg_l.glb
-    altura_metros: 1.301   # 4.6463 studs
+    altura_metros: 1.2968   # 4.6316 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -205,14 +216,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_slag_juggernaut_leg_r.glb
-    altura_metros: 1.2924   # 4.6157 studs
+    altura_metros: 1.292   # 4.6144 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -222,14 +234,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch.glb
-    altura_metros: 4.3071   # 15.3826 studs
+    altura_metros: 4.2932   # 15.3327 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 5200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 50
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -239,14 +252,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_torso.glb
-    altura_metros: 3.2073   # 11.4547 studs
+    altura_metros: 3.2084   # 11.4586 studs
     pivot: base
-    limite_triangulos: 900
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 50
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -256,14 +270,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_arm_r.glb
-    altura_metros: 1.5048   # 5.3744 studs
+    altura_metros: 1.5283   # 5.4582 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 50
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -273,14 +288,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_arm_l.glb
-    altura_metros: 1.1234   # 4.0121 studs
+    altura_metros: 1.2346   # 4.4093 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 50
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -290,14 +306,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_leg_l.glb
-    altura_metros: 1.3448   # 4.803 studs
+    altura_metros: 1.3819   # 4.9352 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 50
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -307,14 +324,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rime_matriarch_leg_r.glb
-    altura_metros: 1.3398   # 4.7851 studs
+    altura_metros: 1.3821   # 4.936 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 50
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -324,14 +342,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron.glb
-    altura_metros: 3.6819   # 13.1498 studs
+    altura_metros: 3.8244   # 13.6584 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 5200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -341,14 +360,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_torso.glb
-    altura_metros: 2.897   # 10.3465 studs
+    altura_metros: 2.8937   # 10.3347 studs
     pivot: base
-    limite_triangulos: 900
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -358,14 +378,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_arm_r.glb
-    altura_metros: 1.4764   # 5.2729 studs
+    altura_metros: 1.3936   # 4.977 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -375,14 +396,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_arm_l.glb
-    altura_metros: 1.3644   # 4.873 studs
+    altura_metros: 1.2989   # 4.6389 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -392,14 +414,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_leg_l.glb
-    altura_metros: 1.2285   # 4.3875 studs
+    altura_metros: 1.2327   # 4.4024 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -409,14 +432,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_powder_baron_leg_r.glb
-    altura_metros: 1.2323   # 4.4009 studs
+    altura_metros: 1.2384   # 4.4229 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -426,14 +450,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan.glb
-    altura_metros: 4.5396   # 16.2128 studs
+    altura_metros: 4.5072   # 16.097 studs
     pivot: base
-    limite_triangulos: 2200
+    limite_triangulos: 5200
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -443,14 +468,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_torso.glb
-    altura_metros: 3.3904   # 12.1087 studs
+    altura_metros: 3.3802   # 12.0721 studs
     pivot: base
-    limite_triangulos: 900
+    limite_triangulos: 2800
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -460,14 +486,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_arm_r.glb
-    altura_metros: 2.1716   # 7.7558 studs
+    altura_metros: 2.1706   # 7.7523 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -477,14 +504,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_arm_l.glb
-    altura_metros: 1.5544   # 5.5516 studs
+    altura_metros: 1.6257   # 5.8059 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -494,14 +522,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_leg_l.glb
-    altura_metros: 1.6097   # 5.7488 studs
+    altura_metros: 1.6203   # 5.7869 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
@@ -511,14 +540,15 @@ lote:
     tipo: prop_estatico
     rota: import
     origem: art/export/boss_rift_titan_leg_r.glb
-    altura_metros: 1.6023   # 5.7226 studs
+    altura_metros: 1.6197   # 5.7845 studs
     pivot: origem
-    limite_triangulos: 900
+    limite_triangulos: 1600
     material: opaque
     suavizacao_normais:
       modo: hard_surface
-      angulo_graus: 38
+      angulo_graus: 46
       weighted_normals: true
+      corrective_smooth: false
     colisao: box
     seed: 20261113
     lod: [100]
