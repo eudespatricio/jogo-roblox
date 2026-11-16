@@ -324,12 +324,12 @@ local function catapult(model: Instance, spec: TrapSpec): ()
 	local arm = makePart(
 		model,
 		"Arm",
-		Vector3.new(0.4, 0.4, 4.4),
-		Vector3.new(-0.2, 2.2, 0),
+		Vector3.new(4.4, 0.4, 0.4),
+		Vector3.new(-0.2, 2.05, 0),
 		rgb(spec.accent),
 		Enum.Material.Wood
 	)
-	arm.CFrame = arm.CFrame * CFrame.Angles(0, 0, math.rad(-35))
+	arm.CFrame = arm.CFrame * CFrame.Angles(0, 0, math.rad(25))
 	makePart(
 		model,
 		"Counterweight",
@@ -358,8 +358,13 @@ local function collectMovingParts(model: Model, trapId: string): { MovingPartRes
 	local targetNames: { [string]: boolean } = if trapId == "cannon"
 		then { Barrel = true, Muzzle = true }
 		elseif trapId == "catapult" then { Arm = true, Basket = true }
-		elseif trapId == "archer" then { Bow = true, ArcherBody = true }
-		elseif trapId == "frost" then { Crystal2 = true }
+		elseif trapId == "archer" then { Bow = true, ArcherBody = true, ArcherHead = true }
+		elseif trapId == "frost" then {
+			Crystal1 = true,
+			Crystal2 = true,
+			Crystal3 = true,
+			FrostGlow = true,
+		}
 		else { TarBubble1 = true, TarBubble2 = true, TarBubble3 = true }
 
 	local list: { MovingPartRest } = {}
@@ -391,6 +396,23 @@ local function collectMovingParts(model: Model, trapId: string): { MovingPartRes
 	return list
 end
 
+local function rotateAroundPivot(pivot: Vector3, rot: CFrame): CFrame
+	return CFrame.new(pivot) * rot * CFrame.new(-pivot)
+end
+
+local function springParamsForTrap(trapId: string): (number, number)
+	if trapId == "cannon" then
+		return 0.65, 14
+	elseif trapId == "catapult" then
+		return 0.52, 16
+	elseif trapId == "archer" then
+		return 0.72, 22
+	elseif trapId == "frost" then
+		return 0.68, 15
+	end
+	return 0.68, 15
+end
+
 local function applyRecoilTransform(state: TrapAnimState, value: number): ()
 	local primary = state.model.PrimaryPart
 	if primary == nil then
@@ -400,32 +422,62 @@ local function applyRecoilTransform(state: TrapAnimState, value: number): ()
 	for _, entry in ipairs(state.movingParts) do
 		if entry.role == "MeshWhole" then
 			local worldDelta = if state.trapId == "cannon"
-				then CFrame.new(-0.45 * value, 0, 0)
-				elseif state.trapId == "catapult" then CFrame.Angles(
-					0,
-					0,
-					math.rad(-14 * value)
+				then CFrame.new(-0.55 * value, 0, 0) * rotateAroundPivot(
+					Vector3.new(0, 0.75, 0),
+					CFrame.Angles(0, 0, math.rad(8 * value))
 				)
-				elseif state.trapId == "archer" then CFrame.Angles(0, 0, math.rad(-6 * value))
-				elseif state.trapId == "frost" then CFrame.new(0, 0.25 * value, 0)
-				else CFrame.new(0, 0.14 * value, 0)
-			entry.part.CFrame = rootCF * worldDelta * entry.restLocal
-		else
-			local delta = if state.trapId == "cannon"
-				then CFrame.new(-0.65 * value, 0, 0)
-				elseif state.trapId == "catapult" then CFrame.Angles(
-					0,
-					0,
-					math.rad(42 * value)
+				elseif state.trapId == "catapult" then CFrame.new(
+					0.10 * value,
+					0.06 * value,
+					0
+				) * rotateAroundPivot(
+					Vector3.new(0, 1.5, 0),
+					CFrame.Angles(0, 0, math.rad(-18 * value))
 				)
-				elseif state.trapId == "archer" then CFrame.Angles(math.rad(-6 * value), 0, 0)
-				elseif state.trapId == "frost" then CFrame.new(0, 0.35 * value, 0) * CFrame.Angles(
+				elseif state.trapId == "archer" then CFrame.new(-0.14 * value, 0.04 * value, 0)
+					* rotateAroundPivot(
+						Vector3.new(0, 2.2, 0),
+						CFrame.Angles(0, 0, math.rad(6 * value))
+					)
+				elseif state.trapId == "frost" then CFrame.new(0, 0.28 * value, 0) * CFrame.Angles(
 					0,
-					math.rad(120 * value),
+					math.rad(10 * value),
 					0
 				)
-				else CFrame.new(0, 0.25 * value, 0)
-			entry.part.CFrame = rootCF * entry.restLocal * delta
+				else CFrame.new(0, 0.20 * value, 0)
+			entry.part.CFrame = rootCF * worldDelta * entry.restLocal
+		else
+			if state.trapId == "cannon" then
+				local worldDelta = CFrame.new(-0.65 * value, 0, 0)
+					* rotateAroundPivot(
+						Vector3.new(0, 1.8, 0),
+						CFrame.Angles(0, 0, math.rad(8 * value))
+					)
+				entry.part.CFrame = rootCF * worldDelta * entry.restLocal
+			elseif state.trapId == "catapult" then
+				local worldDelta = rotateAroundPivot(
+					Vector3.new(0, 1.6, 0),
+					CFrame.Angles(0, 0, math.rad(-18 * value))
+				)
+				entry.part.CFrame = rootCF * worldDelta * entry.restLocal
+			elseif state.trapId == "archer" then
+				local worldDelta = CFrame.new(-0.16 * value, 0, 0)
+					* rotateAroundPivot(
+						Vector3.new(0, 3.1, 0),
+						CFrame.Angles(0, 0, math.rad(6 * value))
+					)
+				entry.part.CFrame = rootCF * worldDelta * entry.restLocal
+			elseif state.trapId == "frost" then
+				local localSpin = if entry.role == "Crystal2"
+					then CFrame.Angles(0, math.rad(90 * value), 0)
+					else CFrame.identity
+				entry.part.CFrame = rootCF
+					* CFrame.new(0, 0.34 * value, 0)
+					* entry.restLocal
+					* localSpin
+			else
+				entry.part.CFrame = rootCF * CFrame.new(0, 0.30 * value, 0) * entry.restLocal
+			end
 		end
 	end
 end
@@ -494,8 +546,7 @@ function TrapKit.step(dt: number): boolean
 		end
 
 		if state.recoilActive then
-			local zeta = 0.7
-			local omega = 18
+			local zeta, omega = springParamsForTrap(state.trapId)
 			local f = 1 + 2 * cDt * zeta * omega
 			local oo = omega * omega
 			local hoo = cDt * oo
@@ -531,8 +582,14 @@ function TrapKit.fire(model: Model): ()
 		model:PivotTo(state.baseCFrame)
 		state.movingParts = collectMovingParts(model, state.trapId)
 	end
+	if #state.movingParts == 0 then
+		state.movingParts = collectMovingParts(model, state.trapId)
+	end
 	state.recoilPos = 1
-	state.recoilVel = -4
+	state.recoilVel = if state.trapId == "catapult"
+		then 3.2
+		elseif state.trapId == "cannon" then 1.8
+		else 0
 	state.recoilActive = true
 	applyRecoilTransform(state, 1)
 	ensureRenderLoop()

@@ -797,6 +797,31 @@ type BossSpec = {
 	height: number,
 }
 
+type BossRigMetrics = {
+	hipY: number,
+	torsoHeight: number,
+	hipX: number,
+	shoulderX: number,
+	shoulderY: number,
+	shoulderZ: number,
+}
+
+type BossSlots = {
+	torso: { TorsoPiece },
+	armR: { TorsoPiece },
+	armL: { TorsoPiece },
+	legL: { TorsoPiece },
+	legR: { TorsoPiece },
+}
+
+type BossMountedSlots = {
+	torso: boolean,
+	armR: boolean,
+	armL: boolean,
+	legL: boolean,
+	legR: boolean,
+}
+
 export type BossUnit = {
 	model: Model,
 	rootPart: BasePart,
@@ -812,9 +837,18 @@ export type BossUnit = {
 	lastState: string,
 	lastEnraged: boolean,
 	lastNow: number,
-	visualParts: { TorsoPiece },
+	deathStartAt: number?,
+	rigMetrics: BossRigMetrics,
+	slots: BossSlots,
+	mountedSlots: BossMountedSlots,
+	torsoMeshScale: number?,
 	stateHighlight: Highlight,
 }
+
+local BOSS_HIT_KNOCKBACK_DURATION = 0.11
+local BOSS_HIT_KNOCKBACK_Z = 0.32
+local BOSS_HIT_FLINCH_DEG = 6
+local BOSS_DEATH_DURATION = 0.85
 
 local pendingHordeUnits: { [Model]: HordeUnit } = {}
 local pendingBossUnits: { [Model]: BossUnit } = {}
@@ -917,8 +951,271 @@ local function tryMountHordeMesh(model: Model, kind: string): { TorsoPiece }?
 	return tryMountScaledMesh(model, MeshAssets.hordeModelName(kind), metrics.torsoHeight)
 end
 
-local function tryMountBossMesh(model: Model, bossId: string, targetHeight: number): { TorsoPiece }?
-	return tryMountScaledMesh(model, MeshAssets.bossModelName(bossId), targetHeight)
+local function computeBossRigMetrics(bossId: string, height: number): BossRigMetrics
+	local hipY = height * 0.42
+	local torsoHeight = height * 0.58
+	if bossId == "slag_juggernaut" then
+		return {
+			hipY = hipY,
+			torsoHeight = torsoHeight,
+			hipX = height * 0.18,
+			shoulderX = torsoHeight * 0.44,
+			shoulderY = torsoHeight * 0.46,
+			shoulderZ = 0,
+		}
+	elseif bossId == "rime_matriarch" then
+		return {
+			hipY = hipY,
+			torsoHeight = torsoHeight,
+			hipX = height * 0.13,
+			shoulderX = torsoHeight * 0.34,
+			shoulderY = torsoHeight * 0.50,
+			shoulderZ = -torsoHeight * 0.03,
+		}
+	elseif bossId == "powder_baron" then
+		return {
+			hipY = hipY,
+			torsoHeight = torsoHeight,
+			hipX = height * 0.15,
+			shoulderX = torsoHeight * 0.36,
+			shoulderY = torsoHeight * 0.52,
+			shoulderZ = 0,
+		}
+	elseif bossId == "rift_titan" then
+		return {
+			hipY = hipY,
+			torsoHeight = torsoHeight,
+			hipX = height * 0.15,
+			shoulderX = torsoHeight * 0.35,
+			shoulderY = torsoHeight * 0.48,
+			shoulderZ = -torsoHeight * 0.03,
+		}
+	end
+	return {
+		hipY = hipY,
+		torsoHeight = torsoHeight,
+		hipX = height * 0.16,
+		shoulderX = torsoHeight * 0.39,
+		shoulderY = torsoHeight * 0.54,
+		shoulderZ = 0,
+	}
+end
+
+local function computeBossPartAnchor(partKey: string, bbCf: CFrame, bbSize: Vector3): Vector3
+	local pos = bbCf.Position
+	if partKey == "torso" then
+		return Vector3.new(pos.X, pos.Y - bbSize.Y * 0.5, pos.Z)
+	elseif partKey == "leg_l" or partKey == "leg_r" then
+		return Vector3.new(pos.X, pos.Y + bbSize.Y * 0.5, pos.Z)
+	elseif partKey == "arm_l" then
+		return Vector3.new(pos.X, pos.Y + bbSize.Y * 0.44, pos.Z)
+	end
+	return Vector3.new(pos.X, pos.Y + bbSize.Y * 0.42, pos.Z + bbSize.Z * 0.28)
+end
+
+local function ensureChildFolder(parent: Instance, name: string): Folder
+	local existing = parent:FindFirstChild(name)
+	if existing ~= nil and existing:IsA("Folder") then
+		return existing
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = parent
+	return folder
+end
+
+local function mountBossSlotMesh(
+	model: Model,
+	slotName: string,
+	partKey: string,
+	assetName: string,
+	targetHeight: number?,
+	uniformScale: number?
+): ({ TorsoPiece }?, number?)
+	local assetsFolder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
+	if assetsFolder == nil then
+		return nil, nil
+	end
+	local template = assetsFolder:FindFirstChild(assetName)
+	if template == nil then
+		return nil, nil
+	end
+
+	local meshSlots = ensureChildFolder(model, "MeshSlots")
+	local oldSlot = meshSlots:FindFirstChild(slotName)
+	if oldSlot ~= nil then
+		oldSlot:Destroy()
+	end
+
+	local hidden = model:GetAttribute("Hidden") == true
+	local clone = template:Clone()
+	clone.Name = slotName
+	local pieces: { TorsoPiece } = {}
+	local appliedScale: number? = nil
+
+	if clone:IsA("Model") then
+		for _, desc in ipairs(clone:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				configureHordeMeshPart(desc, hidden)
+			end
+		end
+		clone.Parent = meshSlots
+		local _, rawSize = clone:GetBoundingBox()
+		local scaleFactor = 1
+		if targetHeight ~= nil and rawSize.Y > 0.05 then
+			scaleFactor = targetHeight / rawSize.Y
+		elseif uniformScale ~= nil and uniformScale > 0 then
+			scaleFactor = uniformScale
+		end
+		appliedScale = scaleFactor
+		if scaleFactor ~= 1 then
+			clone:ScaleTo(clone:GetScale() * scaleFactor)
+		end
+		local bbCf, bbSize = clone:GetBoundingBox()
+		local anchorPos = computeBossPartAnchor(partKey, bbCf, bbSize)
+		local toJointLocal = CFrame.new(-anchorPos)
+		for _, desc in ipairs(clone:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				pieces[#pieces + 1] = {
+					part = desc,
+					size = desc.Size,
+					localCF = toJointLocal * desc.CFrame,
+				}
+			end
+		end
+	elseif clone:IsA("BasePart") then
+		configureHordeMeshPart(clone, hidden)
+		local rawY = clone.Size.Y
+		local scaleFactor = 1
+		if targetHeight ~= nil and rawY > 0.05 then
+			scaleFactor = targetHeight / rawY
+		elseif uniformScale ~= nil and uniformScale > 0 then
+			scaleFactor = uniformScale
+		end
+		appliedScale = scaleFactor
+		if scaleFactor ~= 1 then
+			clone.Size = clone.Size * scaleFactor
+		end
+		clone.CFrame = CFrame.identity * clone.CFrame.Rotation
+		clone.Parent = meshSlots
+		local anchorPos = computeBossPartAnchor(partKey, clone.CFrame, clone.Size)
+		local toJointLocal = CFrame.new(-anchorPos)
+		pieces[#pieces + 1] = {
+			part = clone,
+			size = clone.Size,
+			localCF = toJointLocal * clone.CFrame,
+		}
+	else
+		clone:Destroy()
+		return nil, nil
+	end
+
+	if #pieces == 0 then
+		clone:Destroy()
+		return nil, nil
+	end
+
+	local proc = model:FindFirstChild("ProceduralVisual")
+	if proc ~= nil then
+		local procSlot = proc:FindFirstChild("Slot_" .. slotName)
+		if procSlot ~= nil then
+			procSlot:Destroy()
+		end
+	end
+
+	return pieces, appliedScale
+end
+
+local function tryMountBossFivePartRig(unit: BossUnit): boolean
+	local assetsFolder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
+	if assetsFolder == nil then
+		return false
+	end
+
+	local model = unit.model
+	if model:GetScale() ~= 1 then
+		model:ScaleTo(1)
+	end
+
+	local bossId = unit.bossId
+	local m = unit.rigMetrics
+
+	if not unit.mountedSlots.torso then
+		local pieces, torsoScale = mountBossSlotMesh(
+			model,
+			"torso",
+			"torso",
+			"BOSS_" .. bossId .. "_torso",
+			m.torsoHeight,
+			nil
+		)
+		if pieces ~= nil then
+			unit.slots.torso = pieces
+			unit.mountedSlots.torso = true
+			unit.torsoMeshScale = torsoScale
+		end
+	end
+
+	if not unit.mountedSlots.legL then
+		local pieces =
+			mountBossSlotMesh(model, "legL", "leg_l", "BOSS_" .. bossId .. "_leg_l", m.hipY, nil)
+		if pieces ~= nil then
+			unit.slots.legL = pieces
+			unit.mountedSlots.legL = true
+		end
+	end
+
+	if not unit.mountedSlots.legR then
+		local pieces =
+			mountBossSlotMesh(model, "legR", "leg_r", "BOSS_" .. bossId .. "_leg_r", m.hipY, nil)
+		if pieces ~= nil then
+			unit.slots.legR = pieces
+			unit.mountedSlots.legR = true
+		end
+	end
+
+	local armScale = unit.torsoMeshScale
+	if armScale ~= nil then
+		if not unit.mountedSlots.armL then
+			local pieces = mountBossSlotMesh(
+				model,
+				"armL",
+				"arm_l",
+				"BOSS_" .. bossId .. "_arm_l",
+				nil,
+				armScale
+			)
+			if pieces ~= nil then
+				unit.slots.armL = pieces
+				unit.mountedSlots.armL = true
+			end
+		end
+		if not unit.mountedSlots.armR then
+			local pieces = mountBossSlotMesh(
+				model,
+				"armR",
+				"arm_r",
+				"BOSS_" .. bossId .. "_arm_r",
+				nil,
+				armScale
+			)
+			if pieces ~= nil then
+				unit.slots.armR = pieces
+				unit.mountedSlots.armR = true
+			end
+		end
+	end
+
+	local ms = unit.mountedSlots
+	if ms.torso and ms.armR and ms.armL and ms.legL and ms.legR then
+		local proc = model:FindFirstChild("ProceduralVisual")
+		if proc ~= nil then
+			proc:Destroy()
+		end
+		model:SetAttribute("HasMeshVisual", true)
+		return true
+	end
+	return false
 end
 
 local function placeScaled(
@@ -1394,6 +1691,17 @@ local function poseUnit(unit: HordeUnit, now: number, moving: boolean): ()
 	end
 end
 
+local function placeBossSlot(
+	rootCF: CFrame,
+	pieces: { TorsoPiece },
+	jointCF: CFrame,
+	scale: number
+): ()
+	for _, entry in ipairs(pieces) do
+		placeScaled(rootCF, entry.part, entry.size, jointCF * entry.localCF, scale, scale)
+	end
+end
+
 local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: boolean?): ()
 	local resolvedState = state or "MARCH"
 	local isEnraged = enraged == true
@@ -1401,60 +1709,165 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 	unit.lastEnraged = isEnraged
 	unit.lastNow = now
 
+	if resolvedState == "DYING" then
+		if unit.deathStartAt == nil then
+			unit.deathStartAt = now
+		end
+	else
+		unit.deathStartAt = nil
+	end
+
 	local approach = math.clamp(unit.approachScale, 0.45, 1.25)
-	local sxz = 1
-	local sy = 1
+	local hitKnockbackZ = 0
+	local hitFlinchPitch = 0
 	if now < unit.squashUntil then
-		local alpha = math.clamp(1 - (unit.squashUntil - now) / HIT_SQUASH_DURATION, 0, 1)
-		sxz = 1.09 + (1 - 1.09) * alpha
-		sy = 0.91 + (1 - 0.91) * alpha
+		local remaining = math.clamp((unit.squashUntil - now) / BOSS_HIT_KNOCKBACK_DURATION, 0, 1)
+		hitKnockbackZ = BOSS_HIT_KNOCKBACK_Z * remaining
+		hitFlinchPitch = math.rad(BOSS_HIT_FLINCH_DEG * remaining)
 		unit.squashed = true
 	elseif unit.squashed then
 		unit.squashed = false
 	end
-	sxz *= approach
-	sy *= approach
 
+	local m = unit.rigMetrics
 	local bobY = 0
-	local pitch = 0
-	local roll = 0
 	local lungeZ = 0
 	local jitterX = 0
+	local torsoPitch = 0
+	local torsoYaw = 0
+	local torsoRoll = 0
+	local armRPitch = 0.30
+	local armRYaw = 0
+	local armRRoll = math.rad(6)
+	local armLPitch = 0
+	local armLYaw = 0
+	local armLRoll = math.rad(-6)
+	local legLPitch = 0
+	local legLYaw = 0
+	local legLRoll = 0
+	local legRPitch = 0
+	local legRYaw = 0
+	local legRRoll = 0
+	local deathScale = 1.0
+	local armROffset = Vector3.zero
+	local armLOffset = Vector3.zero
+	local legLOffset = Vector3.zero
+	local legROffset = Vector3.zero
 
-	if resolvedState == "TELEGRAPH" then
-		local vib = math.sin(now * 28)
-		jitterX = vib * 0.22
-		bobY = 0.28 + math.abs(math.sin(now * 6)) * 0.24
-		pitch = math.rad(12)
+	if resolvedState == "DYING" then
+		local startAt = unit.deathStartAt or now
+		local t = math.clamp((now - startAt) / BOSS_DEATH_DURATION, 0, 1)
+		unit.stateHighlight.Enabled = false
+
+		if unit.bossId == "rift_titan" then
+			armRPitch = 0.30 * (1 - t) - 0.55 * t
+			armRRoll = math.rad(6 + 38 * t)
+			armLPitch = -0.35 * t
+			armLRoll = math.rad(-6 - 30 * t)
+			torsoYaw = t * 5.5
+			deathScale = math.max(0.08, 1 - t * t * 0.88)
+			bobY = -t * 0.15
+			legLPitch = 0.22 * t
+			legRPitch = -0.22 * t
+		elseif unit.bossId == "iron_ram_colossus" then
+			bobY = -t * (m.hipY * 0.42)
+			legLPitch = 0.72 * t
+			legRPitch = 0.72 * t
+			torsoPitch = math.rad(-80 * (t * t))
+			armRPitch = 0.30 - 0.85 * t
+			armLPitch = -0.55 * t
+		elseif unit.bossId == "slag_juggernaut" then
+			torsoPitch = math.rad(72 * (t * t))
+			bobY = -t * (m.hipY * 0.36)
+			armROffset = Vector3.new(3.2 * t, 1.4 * math.sin(t * math.pi), 1.8 * t)
+			armLOffset = Vector3.new(-3.2 * t, 1.4 * math.sin(t * math.pi), -1.4 * t)
+			legLOffset = Vector3.new(-2.0 * t, 0.4 * math.sin(t * math.pi), 1.6 * t)
+			legROffset = Vector3.new(2.0 * t, 0.4 * math.sin(t * math.pi), -1.6 * t)
+			armRPitch = 0.30 + 2.4 * t
+			armLPitch = -2.2 * t
+			legLPitch = 0.8 * t
+			legRPitch = -0.8 * t
+		elseif unit.bossId == "rime_matriarch" then
+			bobY = math.sin(t * math.pi) * 0.75 - t * 0.20
+			torsoPitch = math.rad(28 * math.sin(t * math.pi * 0.65))
+			armRPitch = 0.30 + 1.4 * t
+			armLPitch = 1.4 * t
+			armRRoll = math.rad(35 * t)
+			armLRoll = math.rad(-35 * t)
+			armROffset = Vector3.new(1.8 * t, 0.8 * t, 0)
+			armLOffset = Vector3.new(-1.8 * t, 0.8 * t, 0)
+			local shatterT = math.max(0, t - 0.20) / 0.80
+			deathScale = math.max(0.08, 1 - shatterT * shatterT * 0.88)
+		else
+			torsoYaw = t * 4.4
+			bobY = -t * (m.hipY * 0.45)
+			torsoPitch = math.rad(-68 * (t * t))
+			armRPitch = 0.30 + 1.2 * t
+			armRRoll = math.rad(42 * t)
+			armLPitch = -0.8 * t
+			armLRoll = math.rad(-42 * t)
+			legLPitch = 0.65 * t
+			legRPitch = -0.55 * t
+		end
+	elseif resolvedState == "TELEGRAPH" then
+		bobY = 0
+		jitterX = math.sin(now * 36) * 0.05
+		torsoPitch = math.rad(12) + hitFlinchPitch
+		torsoYaw = math.rad(-16)
+		armRPitch = 1.90
+		armRRoll = math.rad(4)
+		armLPitch = 0.55
+		armLRoll = math.rad(-12)
+		legLPitch = 0.14
+		legRPitch = -0.14
 		unit.stateHighlight.Enabled = true
 		unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.amberBright)
 		unit.stateHighlight.OutlineColor = rgb(VisualTheme.PALETTE.danger)
 		unit.stateHighlight.FillTransparency = 0.55 + math.sin(now * 16) * 0.20
 		unit.stateHighlight.OutlineTransparency = 0
 	elseif resolvedState == "ABILITY" then
-		lungeZ = -1.15
-		bobY = -0.18
-		pitch = math.rad(-16)
+		lungeZ = -0.82
+		bobY = -0.14
+		torsoPitch = math.rad(-15) + hitFlinchPitch
+		torsoYaw = math.rad(12)
+		torsoRoll = math.rad(-4)
+		armRPitch = 0.10
+		armLPitch = -0.45
+		legLPitch = 0.32
+		legRPitch = -0.32
 		unit.stateHighlight.Enabled = true
 		unit.stateHighlight.FillColor = unit.accent
 		unit.stateHighlight.OutlineColor = Color3.new(1, 1, 1)
 		unit.stateHighlight.FillTransparency = 0.45
 		unit.stateHighlight.OutlineTransparency = 0
 	elseif resolvedState == "VULNERABLE" then
-		bobY = -0.78 + math.sin(now * 5) * 0.08
-		pitch = math.rad(14)
-		roll = math.sin(now * 7) * math.rad(7)
+		bobY = -0.22
+		torsoPitch = math.rad(-20) + hitFlinchPitch
+		torsoRoll = math.sin(now * 6) * math.rad(4)
+		torsoYaw = math.sin(now * 3.5) * math.rad(5)
+		armRPitch = -0.08 + math.sin(now * 4) * 0.04
+		armLPitch = -0.08 - math.sin(now * 4) * 0.04
+		legLPitch = 0.28
+		legRPitch = -0.28
+		legLRoll = math.rad(-6)
+		legRRoll = math.rad(6)
 		unit.stateHighlight.Enabled = true
 		unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.teal)
 		unit.stateHighlight.OutlineColor = Color3.new(1, 1, 1)
 		unit.stateHighlight.FillTransparency = 0.50 + math.sin(now * 12) * 0.18
 		unit.stateHighlight.OutlineTransparency = 0
 	else
-		local omega = if isEnraged then 6.8 else 4.6
+		local omega = if isEnraged then 6.2 else 4.2
 		local p = now * omega
-		bobY = math.abs(math.sin(p)) * 0.34
-		pitch = math.rad(-5)
-		roll = math.sin(p * 0.5) * math.rad(5)
+		local legSwing = math.sin(p) * 0.46
+		legLPitch = legSwing
+		legRPitch = -legSwing
+		bobY = -math.abs(math.cos(p)) * 0.14
+		torsoYaw = -math.sin(p) * 0.10
+		torsoPitch = math.rad(-5) + hitFlinchPitch
+		torsoRoll = math.sin(p) * math.rad(3)
+		armLPitch = -legSwing
+		armRPitch = 0.30 + math.sin(p) * 0.22
 		if isEnraged then
 			unit.stateHighlight.Enabled = true
 			unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.danger)
@@ -1466,25 +1879,48 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 		end
 	end
 
+	if unit.model:GetAttribute("Hidden") == true then
+		unit.stateHighlight.Enabled = false
+	end
+
 	local rigCF = CFrame.new(unit.base.Position)
 		* unit.base.Rotation
 		* CFrame.Angles(0, math.rad(90), 0)
-	local animCF = rigCF
-		* CFrame.new(jitterX * approach, bobY * approach, lungeZ * approach)
-		* CFrame.Angles(pitch, 0, roll)
-	unit.rootPart.CFrame = animCF
+	local rootAnimCF = rigCF * CFrame.new(0, 0, hitKnockbackZ * approach)
+	unit.rootPart.CFrame = rootAnimCF
 
-	local enrageScale = if isEnraged then 1.04 else 1.0
-	for _, entry in ipairs(unit.visualParts) do
-		placeScaled(
-			animCF,
-			entry.part,
-			entry.size,
-			animCF * entry.localCF,
-			sxz * enrageScale,
-			sy * enrageScale
-		)
-	end
+	local uniformScale = approach * deathScale
+	local torsoCF = rootAnimCF
+		* CFrame.new(jitterX, m.hipY + bobY, lungeZ)
+		* CFrame.Angles(torsoPitch, torsoYaw, torsoRoll)
+
+	local minLegLHipY = m.hipY * math.cos(legLPitch) * math.cos(legLRoll)
+	local minLegRHipY = m.hipY * math.cos(legRPitch) * math.cos(legRRoll)
+	local legLHipY = if resolvedState == "DYING"
+		then math.max(m.hipY + bobY, minLegLHipY * 0.5)
+		else math.max(minLegLHipY, m.hipY + bobY)
+	local legRHipY = if resolvedState == "DYING"
+		then math.max(m.hipY + bobY, minLegRHipY * 0.5)
+		else math.max(minLegRHipY, m.hipY + bobY)
+
+	local legLCF = rootAnimCF
+		* (CFrame.new(-m.hipX + jitterX, legLHipY, lungeZ) + legLOffset)
+		* CFrame.Angles(legLPitch, legLYaw, legLRoll)
+	local legRCF = rootAnimCF
+		* (CFrame.new(m.hipX + jitterX, legRHipY, lungeZ) + legROffset)
+		* CFrame.Angles(legRPitch, legRYaw, legRRoll)
+	local armLCF = torsoCF
+		* (CFrame.new(-m.shoulderX, m.shoulderY, m.shoulderZ) + armLOffset)
+		* CFrame.Angles(armLPitch, armLYaw, armLRoll)
+	local armRCF = torsoCF
+		* (CFrame.new(m.shoulderX, m.shoulderY, m.shoulderZ) + armROffset)
+		* CFrame.Angles(armRPitch, armRYaw, armRRoll)
+
+	placeBossSlot(rootAnimCF, unit.slots.torso, torsoCF, uniformScale)
+	placeBossSlot(rootAnimCF, unit.slots.legL, legLCF, uniformScale)
+	placeBossSlot(rootAnimCF, unit.slots.legR, legRCF, uniformScale)
+	placeBossSlot(rootAnimCF, unit.slots.armL, armLCF, uniformScale)
+	placeBossSlot(rootAnimCF, unit.slots.armR, armRCF, uniformScale)
 end
 
 local function flushPendingHordeMeshes(): ()
@@ -1504,17 +1940,16 @@ local function flushPendingHordeMeshes(): ()
 		if model.Parent == nil then
 			pendingBossUnits[model] = nil
 		else
-			local meshPieces = tryMountBossMesh(model, bossUnit.bossId, bossUnit.height)
-			if meshPieces ~= nil then
-				bossUnit.visualParts = meshPieces
+			local allMounted = tryMountBossFivePartRig(bossUnit)
+			if allMounted then
 				pendingBossUnits[model] = nil
-				poseBoss(
-					bossUnit,
-					if bossUnit.lastNow > 0 then bossUnit.lastNow else time(),
-					bossUnit.lastState,
-					bossUnit.lastEnraged
-				)
 			end
+			poseBoss(
+				bossUnit,
+				if bossUnit.lastNow > 0 then bossUnit.lastNow else time(),
+				bossUnit.lastState,
+				bossUnit.lastEnraged
+			)
 		end
 	end
 end
@@ -1741,79 +2176,754 @@ function HordeKit.setVisible(unit: HordeUnit, visible: boolean): ()
 	end
 end
 
-local function buildBossFallbackVisual(parent: Instance, spec: BossSpec): { TorsoPiece }
+local function collectSlotPieces(slotFolder: Instance): { TorsoPiece }
+	local list: { TorsoPiece } = {}
+	registerTorsoChildren(slotFolder, list)
+	return list
+end
+
+local function buildBossLegsFallback(
+	proc: Instance,
+	bossId: string,
+	spec: BossSpec,
+	m: BossRigMetrics
+): ({ TorsoPiece }, { TorsoPiece })
 	local h = spec.height
 	local k = h / 12.0
 	local primary = rgb(spec.color)
 	local accent = rgb(spec.accent)
 	local dark = Color3.fromRGB(28, 32, 38)
+	local legH = m.hipY
 
-	local legs = makePart(
-		parent,
-		"BossLegs",
-		Vector3.new(4.2 * k, 3.6 * k, 2.8 * k),
-		Vector3.new(0, 1.8 * k, 0),
-		dark,
-		Enum.Material.Metal
-	)
-	legs.CFrame = CFrame.new(0, 1.8 * k, 0)
+	local results: { { TorsoPiece } } = {}
+	for _, slotName in ipairs({ "Slot_legL", "Slot_legR" }) do
+		local folder = Instance.new("Folder")
+		folder.Name = slotName
+		folder.Parent = proc
 
-	local torso = makeEllipsoid(
-		parent,
-		"BossTorso",
-		Vector3.new(6.8 * k, 5.4 * k, 4.4 * k),
-		primary,
-		Enum.Material.Metal
-	)
-	torso.CFrame = CFrame.new(0, 5.8 * k, 0)
+		if bossId == "rime_matriarch" then
+			local upper = makePart(
+				folder,
+				"SpireUpper",
+				Vector3.new(1.05 * k, legH * 0.62, 1.05 * k),
+				Vector3.zero,
+				dark,
+				Enum.Material.Metal
+			)
+			upper.CFrame = CFrame.new(0, -legH * 0.31, 0)
 
-	local core = makePart(
-		parent,
-		"BossCore",
-		Vector3.new(2.2 * k, 2.2 * k, 1.2 * k),
-		Vector3.new(0, 6.0 * k, -2.0 * k),
-		accent,
-		Enum.Material.Neon,
-		Enum.PartType.Ball
-	)
-	core.CFrame = CFrame.new(0, 6.0 * k, -2.0 * k)
+			local spire = makePart(
+				folder,
+				"CryoSpire",
+				Vector3.new(0.76 * k, legH * 0.44, 0.88 * k),
+				Vector3.zero,
+				primary,
+				Enum.Material.Ice
+			)
+			spire.CFrame = CFrame.new(0, -legH + legH * 0.22, -0.08 * k)
 
-	for _, sx in ipairs({ -1, 1 }) do
-		local shoulder = makePart(
-			parent,
-			if sx < 0 then "BossShoulderL" else "BossShoulderR",
-			Vector3.new(2.8 * k, 2.8 * k, 2.8 * k),
-			Vector3.new(sx * 4.2 * k, 7.6 * k, 0),
-			primary,
+			local facet = makeWedge(
+				folder,
+				"IceFacet",
+				Vector3.new(0.62 * k, 0.9 * k, 0.8 * k),
+				accent,
+				Enum.Material.Neon
+			)
+			facet.CFrame = CFrame.new(0, -legH * 0.46, -0.58 * k)
+		else
+			local legW = if bossId == "slag_juggernaut" then 1.55 * k else 1.28 * k
+			local greave = makePart(
+				folder,
+				"Greave",
+				Vector3.new(legW, legH * 0.86, legW * 0.96),
+				Vector3.zero,
+				if bossId == "slag_juggernaut" then rgb(VisualTheme.PALETTE.stoneDark) else dark,
+				Enum.Material.Metal
+			)
+			greave.CFrame = CFrame.new(0, -legH * 0.43, 0)
+
+			local bootH = legH * 0.24
+			local boot = makePart(
+				folder,
+				"Boot",
+				Vector3.new(legW * 1.12, bootH, legW * 1.38),
+				Vector3.zero,
+				if bossId == "powder_baron" then rgb(VisualTheme.PALETTE.woodDark) else dark,
+				Enum.Material.Metal
+			)
+			boot.CFrame = CFrame.new(0, -legH + bootH * 0.5, -0.24 * k)
+
+			local kneeColor = if bossId == "rift_titan"
+				then rgb(VisualTheme.PALETTE.teal)
+				elseif bossId == "powder_baron" then accent
+				else primary
+			local kneeMat = if bossId == "rift_titan"
+				then Enum.Material.Neon
+				else Enum.Material.Metal
+			local knee = makePart(
+				folder,
+				"Knee",
+				Vector3.new(legW * 0.72, 0.68 * k, 0.52 * k),
+				Vector3.zero,
+				kneeColor,
+				kneeMat
+			)
+			knee.CFrame = CFrame.new(0, -legH * 0.46, -legW * 0.54)
+		end
+
+		results[#results + 1] = collectSlotPieces(folder)
+	end
+
+	return results[1], results[2]
+end
+
+local function buildBossFallbackRig(
+	proc: Instance,
+	bossId: string,
+	spec: BossSpec,
+	m: BossRigMetrics
+): BossSlots
+	local h = spec.height
+	local k = h / 12.0
+	local tH = m.torsoHeight
+	local primary = rgb(spec.color)
+	local accent = rgb(spec.accent)
+	local dark = Color3.fromRGB(28, 32, 38)
+	local steel = Color3.fromRGB(130, 140, 152)
+	local gold = rgb(VisualTheme.PALETTE.amberBright)
+
+	local torsoFolder = Instance.new("Folder")
+	torsoFolder.Name = "Slot_torso"
+	torsoFolder.Parent = proc
+
+	local armLFolder = Instance.new("Folder")
+	armLFolder.Name = "Slot_armL"
+	armLFolder.Parent = proc
+
+	local armRFolder = Instance.new("Folder")
+	armRFolder.Name = "Slot_armR"
+	armRFolder.Parent = proc
+
+	local legLPieces, legRPieces = buildBossLegsFallback(proc, bossId, spec, m)
+
+	if bossId == "slag_juggernaut" then
+		local chest = makePart(
+			torsoFolder,
+			"CauldronTorso",
+			Vector3.new(5.2 * k, tH * 0.62, 3.8 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
+		)
+		chest.CFrame = CFrame.new(0, tH * 0.34, 0) * CFrame.Angles(0, 0, math.rad(90))
+
+		local magma = makePart(
+			torsoFolder,
+			"MagmaCore",
+			Vector3.new(2.2 * k, 2.2 * k, 1.3 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		magma.CFrame = CFrame.new(0, tH * 0.38, -1.75 * k)
+
+		for _, sx in ipairs({ -1, 1 }) do
+			local stack = makePart(
+				torsoFolder,
+				if sx < 0 then "StackL" else "StackR",
+				Vector3.new(1.0 * k, 2.6 * k, 1.0 * k),
+				Vector3.zero,
+				rgb(VisualTheme.PALETTE.stoneDark),
+				Enum.Material.Slate
+			)
+			stack.CFrame = CFrame.new(sx * 1.6 * k, tH * 0.72, 1.45 * k)
+				* CFrame.Angles(math.rad(16), 0, math.rad(-sx * 8))
+
+			local ember = makePart(
+				torsoFolder,
+				if sx < 0 then "StackEmberL" else "StackEmberR",
+				Vector3.new(0.85 * k, 0.85 * k, 0.85 * k),
+				Vector3.zero,
+				gold,
+				Enum.Material.Neon,
+				Enum.PartType.Ball
+			)
+			ember.CFrame = CFrame.new(sx * 1.78 * k, tH * 0.92, 1.80 * k)
+		end
+
+		local head = makeEllipsoid(
+			torsoFolder,
+			"Helm",
+			Vector3.new(2.3 * k, 1.9 * k, 2.2 * k),
+			dark,
+			Enum.Material.Metal
+		)
+		head.CFrame = CFrame.new(0, tH * 0.78, -0.5 * k)
+		local crest = makePart(
+			torsoFolder,
+			"MagmaCrest",
+			Vector3.new(0.6 * k, 1.1 * k, 1.6 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon
+		)
+		crest.CFrame = CFrame.new(0, tH * 0.93, -0.3 * k)
+
+		-- Left arm: heavy foundry gauntlet
+		local lArm = makePart(
+			armLFolder,
+			"ArmL",
+			Vector3.new(1.25 * k, 3.0 * k, 1.25 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		lArm.CFrame = CFrame.new(0, -1.4 * k, -0.2 * k)
+		local lFist = makePart(
+			armLFolder,
+			"SlagFist",
+			Vector3.new(1.65 * k, 1.45 * k, 1.65 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		lFist.CFrame = CFrame.new(0, -2.95 * k, -0.55 * k)
+
+		-- Right arm: molten slag warhammer
+		local rArm = makePart(
+			armRFolder,
+			"ArmR",
+			Vector3.new(1.25 * k, 2.8 * k, 1.25 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		rArm.CFrame = CFrame.new(0, -1.3 * k, -0.25 * k)
+		local shaft = makePart(
+			armRFolder,
+			"HammerShaft",
+			Vector3.new(0.36 * k, 0.36 * k, 4.2 * k),
+			Vector3.zero,
+			steel,
+			Enum.Material.Metal
+		)
+		shaft.CFrame = CFrame.new(0, -2.6 * k, -1.8 * k) * CFrame.Angles(math.rad(-20), 0, 0)
+		local headHammer = makePart(
+			armRFolder,
+			"HammerHead",
+			Vector3.new(2.2 * k, 1.55 * k, 1.45 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon
+		)
+		headHammer.CFrame = CFrame.new(0, -2.0 * k, -3.55 * k) * CFrame.Angles(math.rad(-20), 0, 0)
+	elseif bossId == "rime_matriarch" then
+		local bodice = makeEllipsoid(
+			torsoFolder,
+			"Bodice",
+			Vector3.new(3.8 * k, tH * 0.62, 2.6 * k),
+			dark,
+			Enum.Material.Metal
+		)
+		bodice.CFrame = CFrame.new(0, tH * 0.36, 0)
+
+		local cryoCore = makePart(
+			torsoFolder,
+			"CryoCore",
+			Vector3.new(1.25 * k, 1.85 * k, 0.9 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon
+		)
+		cryoCore.CFrame = CFrame.new(0, tH * 0.44, -1.25 * k) * CFrame.Angles(math.rad(12), 0, 0)
+
+		for _, sx in ipairs({ -1, 1 }) do
+			local mantle = makeWedge(
+				torsoFolder,
+				if sx < 0 then "MantleL" else "MantleR",
+				Vector3.new(1.3 * k, 2.6 * k, 1.4 * k),
+				primary,
+				Enum.Material.Ice
+			)
+			mantle.CFrame = CFrame.new(sx * 2.1 * k, tH * 0.64, 0.25 * k)
+				* CFrame.Angles(math.rad(-14), 0, math.rad(-sx * 22))
+		end
+
+		local head = makePart(
+			torsoFolder,
+			"Helm",
+			Vector3.new(1.9 * k, 2.1 * k, 1.9 * k),
+			Vector3.zero,
+			dark,
 			Enum.Material.Metal,
 			Enum.PartType.Ball
 		)
-		shoulder.CFrame = CFrame.new(sx * 4.2 * k, 7.6 * k, 0)
+		head.CFrame = CFrame.new(0, tH * 0.78, -0.15 * k)
+		local crown = makePart(
+			torsoFolder,
+			"IceCrown",
+			Vector3.new(2.2 * k, 1.35 * k, 0.55 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon
+		)
+		crown.CFrame = CFrame.new(0, tH * 0.94, -0.2 * k)
+
+		-- Left arm: razor ice claw
+		local lArm = makePart(
+			armLFolder,
+			"ArmL",
+			Vector3.new(0.85 * k, 2.8 * k, 0.85 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		lArm.CFrame = CFrame.new(0, -1.3 * k, -0.25 * k)
+		local lClaw = makeWedge(
+			armLFolder,
+			"IceClaw",
+			Vector3.new(0.45 * k, 1.65 * k, 0.9 * k),
+			accent,
+			Enum.Material.Neon
+		)
+		lClaw.CFrame = CFrame.new(0, -2.9 * k, -0.95 * k) * CFrame.Angles(math.rad(-55), 0, 0)
+
+		-- Right arm: cryo crystal scepter
+		local rArm = makePart(
+			armRFolder,
+			"ArmR",
+			Vector3.new(0.85 * k, 2.6 * k, 0.85 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		rArm.CFrame = CFrame.new(0, -1.2 * k, -0.25 * k)
+		local staff = makePart(
+			armRFolder,
+			"ScepterShaft",
+			Vector3.new(0.32 * k, 0.32 * k, 4.4 * k),
+			Vector3.zero,
+			steel,
+			Enum.Material.Metal
+		)
+		staff.CFrame = CFrame.new(0, -2.4 * k, -1.75 * k) * CFrame.Angles(math.rad(-25), 0, 0)
+		local crystal = makePart(
+			armRFolder,
+			"ScepterCrystal",
+			Vector3.new(1.05 * k, 1.45 * k, 1.05 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon
+		)
+		crystal.CFrame = CFrame.new(0, -1.65 * k, -3.75 * k)
+			* CFrame.Angles(math.rad(-25), math.rad(45), 0)
+	elseif bossId == "powder_baron" then
+		local coat = makePart(
+			torsoFolder,
+			"SiegeCoat",
+			Vector3.new(4.4 * k, tH * 0.62, 3.0 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.SmoothPlastic
+		)
+		coat.CFrame = CFrame.new(0, tH * 0.34, 0)
+
+		local buckle = makePart(
+			torsoFolder,
+			"GoldBuckle",
+			Vector3.new(1.3 * k, 0.9 * k, 0.5 * k),
+			Vector3.zero,
+			gold,
+			Enum.Material.Neon
+		)
+		buckle.CFrame = CFrame.new(0, tH * 0.32, -1.45 * k)
+
+		for _, sx in ipairs({ -1, 1 }) do
+			local mortar = makePart(
+				torsoFolder,
+				if sx < 0 then "MortarL" else "MortarR",
+				Vector3.new(1.25 * k, 2.5 * k, 1.25 * k),
+				Vector3.zero,
+				dark,
+				Enum.Material.Metal
+			)
+			mortar.CFrame = CFrame.new(sx * 2.1 * k, tH * 0.72, -0.35 * k)
+				* CFrame.Angles(math.rad(32), 0, 0)
+
+			local ring = makePart(
+				torsoFolder,
+				if sx < 0 then "MortarRimL" else "MortarRimR",
+				Vector3.new(1.42 * k, 0.38 * k, 1.42 * k),
+				Vector3.zero,
+				gold,
+				Enum.Material.Metal
+			)
+			ring.CFrame = CFrame.new(sx * 2.1 * k, tH * 0.84, -0.95 * k)
+				* CFrame.Angles(math.rad(32), 0, 0)
+		end
+
+		local head = makePart(
+			torsoFolder,
+			"Head",
+			Vector3.new(1.9 * k, 1.9 * k, 1.9 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal,
+			Enum.PartType.Ball
+		)
+		head.CFrame = CFrame.new(0, tH * 0.76, -0.1 * k)
+		local brim = makePart(
+			torsoFolder,
+			"TricorneBrim",
+			Vector3.new(3.4 * k, 0.36 * k, 3.0 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Fabric
+		)
+		brim.CFrame = CFrame.new(0, tH * 0.88, -0.1 * k)
+		local hatCrown = makePart(
+			torsoFolder,
+			"TricorneCrown",
+			Vector3.new(2.0 * k, 0.95 * k, 1.8 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Metal
+		)
+		hatCrown.CFrame = CFrame.new(0, tH * 0.94, -0.1 * k)
+
+		-- Left arm: gauntlet + powder brace
+		local lArm = makePart(
+			armLFolder,
+			"ArmL",
+			Vector3.new(1.0 * k, 2.8 * k, 1.0 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		lArm.CFrame = CFrame.new(0, -1.3 * k, -0.2 * k)
+		local lCuff = makePart(
+			armLFolder,
+			"BronzeCuff",
+			Vector3.new(1.25 * k, 1.0 * k, 1.25 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.Metal
+		)
+		lCuff.CFrame = CFrame.new(0, -2.6 * k, -0.45 * k)
+
+		-- Right arm: brass bombard arm cannon
+		local rArm = makePart(
+			armRFolder,
+			"ArmR",
+			Vector3.new(1.05 * k, 2.5 * k, 1.05 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		rArm.CFrame = CFrame.new(0, -1.15 * k, -0.2 * k)
+		local cannon = makePart(
+			armRFolder,
+			"BombardBarrel",
+			Vector3.new(1.25 * k, 1.25 * k, 3.2 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.Metal
+		)
+		cannon.CFrame = CFrame.new(0, -2.35 * k, -1.65 * k) * CFrame.Angles(math.rad(-12), 0, 0)
+		local muzzle = makePart(
+			armRFolder,
+			"BombardMuzzle",
+			Vector3.new(1.45 * k, 1.45 * k, 0.45 * k),
+			Vector3.zero,
+			gold,
+			Enum.Material.Neon
+		)
+		muzzle.CFrame = CFrame.new(0, -2.02 * k, -3.15 * k) * CFrame.Angles(math.rad(-12), 0, 0)
+	elseif bossId == "rift_titan" then
+		local chest = makeEllipsoid(
+			torsoFolder,
+			"SovereignChest",
+			Vector3.new(4.8 * k, tH * 0.56, 3.2 * k),
+			steel,
+			Enum.Material.Metal
+		)
+		chest.CFrame = CFrame.new(0, tH * 0.36, -0.1 * k)
+
+		local heart = makePart(
+			torsoFolder,
+			"RiftHeart",
+			Vector3.new(1.55 * k, 1.85 * k, 0.9 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		heart.CFrame = CFrame.new(0, tH * 0.40, -1.45 * k)
+
+		local cape = makePart(
+			torsoFolder,
+			"SovereignCape",
+			Vector3.new(4.2 * k, tH * 0.72, 0.32 * k),
+			Vector3.zero,
+			rgb(VisualTheme.PALETTE.tealDark),
+			Enum.Material.Fabric
+		)
+		cape.CFrame = CFrame.new(0, tH * 0.32, 1.55 * k) * CFrame.Angles(math.rad(14), 0, 0)
+
+		for _, sx in ipairs({ -1, 1 }) do
+			local pauldron = makePart(
+				torsoFolder,
+				if sx < 0 then "PauldronL" else "PauldronR",
+				Vector3.new(1.85 * k, 1.45 * k, 2.05 * k),
+				Vector3.zero,
+				dark,
+				Enum.Material.Metal
+			)
+			pauldron.CFrame = CFrame.new(sx * 2.55 * k, tH * 0.54, 0)
+				* CFrame.Angles(0, 0, math.rad(-sx * 16))
+			local spike = makeWedge(
+				torsoFolder,
+				if sx < 0 then "PauldronSpikeL" else "PauldronSpikeR",
+				Vector3.new(0.6 * k, 1.5 * k, 0.9 * k),
+				primary,
+				Enum.Material.Neon
+			)
+			spike.CFrame = CFrame.new(sx * 2.95 * k, tH * 0.68, 0.1 * k)
+				* CFrame.Angles(math.rad(-12), 0, math.rad(-sx * 24))
+		end
+
+		local helm = makeEllipsoid(
+			torsoFolder,
+			"SovereignHelm",
+			Vector3.new(1.95 * k, 2.15 * k, 2.05 * k),
+			dark,
+			Enum.Material.Metal
+		)
+		helm.CFrame = CFrame.new(0, tH * 0.78, -0.15 * k)
+		local visor = makePart(
+			torsoFolder,
+			"RiftVisor",
+			Vector3.new(1.25 * k, 0.35 * k, 0.45 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon
+		)
+		visor.CFrame = CFrame.new(0, tH * 0.79, -1.05 * k)
+		for _, sx in ipairs({ -1, 1 }) do
+			local horn = makeWedge(
+				torsoFolder,
+				if sx < 0 then "HelmHornL" else "HelmHornR",
+				Vector3.new(0.45 * k, 1.85 * k, 0.65 * k),
+				primary,
+				Enum.Material.Neon
+			)
+			horn.CFrame = CFrame.new(sx * 1.1 * k, tH * 0.92, -0.2 * k)
+				* CFrame.Angles(math.rad(10), 0, math.rad(-sx * 20))
+		end
+
+		-- Left arm: armored arm + wrist Rift claw blade
+		local lArm = makePart(
+			armLFolder,
+			"ArmL",
+			Vector3.new(1.0 * k, 2.9 * k, 1.0 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		lArm.CFrame = CFrame.new(0, -1.35 * k, -0.25 * k)
+		local lClaw = makeWedge(
+			armLFolder,
+			"RiftClaw",
+			Vector3.new(0.4 * k, 1.8 * k, 0.85 * k),
+			primary,
+			Enum.Material.Neon
+		)
+		lClaw.CFrame = CFrame.new(0, -2.9 * k, -0.95 * k) * CFrame.Angles(math.rad(-55), 0, 0)
+
+		-- Right arm: armored arm + colossal Rift Obelisk Greatsword poised forward-downward (~35 deg ready angle, NEVER touching ground)
+		local rArm = makePart(
+			armRFolder,
+			"ArmR",
+			Vector3.new(1.05 * k, 2.75 * k, 1.05 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		rArm.CFrame = CFrame.new(0, -1.25 * k, -0.25 * k) * CFrame.Angles(math.rad(14), 0, 0)
+
+		local swordTilt = math.rad(-55) -- points forward (-Z) and slightly down (-Y), ~35 deg below horizontal
+		local hilt = makePart(
+			armRFolder,
+			"ObeliskHilt",
+			Vector3.new(0.32 * k, 1.15 * k, 0.32 * k),
+			Vector3.zero,
+			gold,
+			Enum.Material.Metal
+		)
+		hilt.CFrame = CFrame.new(0, -2.5 * k, -0.65 * k) * CFrame.Angles(swordTilt, 0, 0)
+
+		local guard = makePart(
+			armRFolder,
+			"ObeliskGuard",
+			Vector3.new(1.45 * k, 0.36 * k, 0.55 * k),
+			Vector3.zero,
+			gold,
+			Enum.Material.Metal
+		)
+		guard.CFrame = CFrame.new(0, -2.75 * k, -1.05 * k) * CFrame.Angles(swordTilt, 0, 0)
+
+		local blade = makePart(
+			armRFolder,
+			"ObeliskBlade",
+			Vector3.new(0.88 * k, 4.4 * k, 0.28 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		blade.CFrame = CFrame.new(0, -3.72 * k, -2.50 * k) * CFrame.Angles(swordTilt, 0, 0)
+
+		local bladeCore = makePart(
+			armRFolder,
+			"ObeliskCore",
+			Vector3.new(0.34 * k, 4.15 * k, 0.36 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.Neon
+		)
+		bladeCore.CFrame = CFrame.new(0, -3.72 * k, -2.50 * k) * CFrame.Angles(swordTilt, 0, 0)
+	else
+		-- iron_ram_colossus (default)
+		local chest = makeEllipsoid(
+			torsoFolder,
+			"IronChest",
+			Vector3.new(5.0 * k, tH * 0.58, 3.4 * k),
+			primary,
+			Enum.Material.Metal
+		)
+		chest.CFrame = CFrame.new(0, tH * 0.36, 0)
+
+		local furnace = makePart(
+			torsoFolder,
+			"FurnaceCore",
+			Vector3.new(1.65 * k, 1.85 * k, 0.9 * k),
+			Vector3.zero,
+			accent,
+			Enum.Material.Neon,
+			Enum.PartType.Ball
+		)
+		furnace.CFrame = CFrame.new(0, tH * 0.38, -1.55 * k)
+
+		for _, sx in ipairs({ -1, 1 }) do
+			local pauldron = makePart(
+				torsoFolder,
+				if sx < 0 then "PauldronL" else "PauldronR",
+				Vector3.new(1.9 * k, 1.65 * k, 1.9 * k),
+				Vector3.zero,
+				primary,
+				Enum.Material.Metal,
+				Enum.PartType.Ball
+			)
+			pauldron.CFrame = CFrame.new(sx * 2.55 * k, tH * 0.56, 0)
+			local horn = makeWedge(
+				torsoFolder,
+				if sx < 0 then "PauldronHornL" else "PauldronHornR",
+				Vector3.new(0.55 * k, 1.45 * k, 0.75 * k),
+				steel,
+				Enum.Material.Metal
+			)
+			horn.CFrame = CFrame.new(sx * 2.85 * k, tH * 0.72, -0.1 * k)
+				* CFrame.Angles(math.rad(15), 0, math.rad(-sx * 25))
+		end
+
+		local helm = makePart(
+			torsoFolder,
+			"SiegeHelm",
+			Vector3.new(2.1 * k, 2.0 * k, 2.1 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal,
+			Enum.PartType.Ball
+		)
+		helm.CFrame = CFrame.new(0, tH * 0.78, -0.2 * k)
+		local visor = makeEllipsoid(
+			torsoFolder,
+			"SiegeVisor",
+			Vector3.new(1.45 * k, 0.42 * k, 0.55 * k),
+			accent,
+			Enum.Material.Neon
+		)
+		visor.CFrame = CFrame.new(0, tH * 0.79, -1.15 * k)
+		for _, sx in ipairs({ -1, 1 }) do
+			local horn = makeWedge(
+				torsoFolder,
+				if sx < 0 then "HelmHornL" else "HelmHornR",
+				Vector3.new(0.45 * k, 1.55 * k, 0.65 * k),
+				steel,
+				Enum.Material.Metal
+			)
+			horn.CFrame = CFrame.new(sx * 0.95 * k, tH * 0.91, -0.35 * k)
+				* CFrame.Angles(math.rad(28), 0, math.rad(-sx * 22))
+		end
+
+		-- Left arm: iron gauntlet
+		local lArm = makePart(
+			armLFolder,
+			"ArmL",
+			Vector3.new(1.1 * k, 2.8 * k, 1.1 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		lArm.CFrame = CFrame.new(0, -1.3 * k, -0.25 * k)
+		local lShield = makePart(
+			armLFolder,
+			"RamShield",
+			Vector3.new(0.75 * k, 1.9 * k, 1.65 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.Metal
+		)
+		lShield.CFrame = CFrame.new(-0.35 * k, -2.65 * k, -0.75 * k)
+
+		-- Right arm: iron battering-ram gauntlet
+		local rArm = makePart(
+			armRFolder,
+			"ArmR",
+			Vector3.new(1.1 * k, 2.6 * k, 1.1 * k),
+			Vector3.zero,
+			dark,
+			Enum.Material.Metal
+		)
+		rArm.CFrame = CFrame.new(0, -1.2 * k, -0.25 * k)
+		local ramHead = makePart(
+			armRFolder,
+			"BatteringRam",
+			Vector3.new(1.55 * k, 1.45 * k, 2.45 * k),
+			Vector3.zero,
+			primary,
+			Enum.Material.Metal
+		)
+		ramHead.CFrame = CFrame.new(0, -2.5 * k, -1.35 * k)
+		local ramSpike = makeWedge(
+			armRFolder,
+			"RamSpike",
+			Vector3.new(0.9 * k, 1.2 * k, 1.4 * k),
+			accent,
+			Enum.Material.Neon
+		)
+		ramSpike.CFrame = CFrame.new(0, -2.45 * k, -2.75 * k) * CFrame.Angles(math.rad(-90), 0, 0)
 	end
 
-	local head = makePart(
-		parent,
-		"BossHead",
-		Vector3.new(2.8 * k, 2.8 * k, 2.8 * k),
-		Vector3.new(0, 9.6 * k, -0.4 * k),
-		dark,
-		Enum.Material.Metal,
-		Enum.PartType.Ball
-	)
-	head.CFrame = CFrame.new(0, 9.6 * k, -0.4 * k)
-
-	local visor = makeEllipsoid(
-		parent,
-		"BossVisor",
-		Vector3.new(1.8 * k, 0.55 * k, 0.7 * k),
-		accent,
-		Enum.Material.Neon
-	)
-	visor.CFrame = CFrame.new(0, 9.7 * k, -1.65 * k)
-
-	local list: { TorsoPiece } = {}
-	registerTorsoChildren(parent, list)
-	return list
+	return {
+		torso = collectSlotPieces(torsoFolder),
+		armR = collectSlotPieces(armRFolder),
+		armL = collectSlotPieces(armLFolder),
+		legL = legLPieces,
+		legR = legRPieces,
+	}
 end
 
 function HordeKit.createBoss(bossId: string, parent: Instance, cframe: CFrame): BossUnit
@@ -1844,14 +2954,11 @@ function HordeKit.createBoss(bossId: string, parent: Instance, cframe: CFrame): 
 	stateHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	stateHighlight.Parent = model
 
-	local visualParts = tryMountBossMesh(model, bossId, spec.height)
-	local hasMesh = visualParts ~= nil
-	if visualParts == nil then
-		local proc = Instance.new("Folder")
-		proc.Name = "ProceduralVisual"
-		proc.Parent = model
-		visualParts = buildBossFallbackVisual(proc, spec)
-	end
+	local rigMetrics = computeBossRigMetrics(bossId, spec.height)
+	local proc = Instance.new("Folder")
+	proc.Name = "ProceduralVisual"
+	proc.Parent = model
+	local slots = buildBossFallbackRig(proc, bossId, spec, rigMetrics)
 
 	local now = time()
 	local bossUnit: BossUnit = {
@@ -1869,13 +2976,24 @@ function HordeKit.createBoss(bossId: string, parent: Instance, cframe: CFrame): 
 		lastState = "MARCH",
 		lastEnraged = false,
 		lastNow = now,
-		visualParts = visualParts :: { TorsoPiece },
+		deathStartAt = nil,
+		rigMetrics = rigMetrics,
+		slots = slots,
+		mountedSlots = {
+			torso = false,
+			armR = false,
+			armL = false,
+			legL = false,
+			legR = false,
+		},
+		torsoMeshScale = nil,
 		stateHighlight = stateHighlight,
 	}
 
+	local allMounted = tryMountBossFivePartRig(bossUnit)
 	poseBoss(bossUnit, now, "MARCH", false)
 
-	if not hasMesh then
+	if not allMounted then
 		pendingBossUnits[model] = bossUnit
 		ensureHordeMeshWatcher()
 	end
@@ -1903,7 +3021,7 @@ function HordeKit.hitSquashBoss(bossUnit: BossUnit): ()
 		return
 	end
 	local now = time()
-	bossUnit.squashUntil = now + HIT_SQUASH_DURATION
+	bossUnit.squashUntil = now + BOSS_HIT_KNOCKBACK_DURATION
 	bossUnit.squashSeq += 1
 	local seq = bossUnit.squashSeq
 	bossUnit.squashed = true
@@ -1926,7 +3044,7 @@ function HordeKit.hitSquashBoss(bossUnit: BossUnit): ()
 		end
 	end)
 
-	task.delay(HIT_SQUASH_DURATION + 0.01, function()
+	task.delay(BOSS_HIT_KNOCKBACK_DURATION + 0.01, function()
 		local parent: Instance? = bossUnit.model.Parent
 		if bossUnit.squashSeq == seq and bossUnit.squashed and parent ~= nil then
 			bossUnit.squashed = false
@@ -1937,6 +3055,9 @@ end
 
 function HordeKit.setBossVisible(bossUnit: BossUnit, visible: boolean): ()
 	bossUnit.model:SetAttribute("Hidden", not visible)
+	if not visible then
+		bossUnit.stateHighlight.Enabled = false
+	end
 	for _, descendant in ipairs(bossUnit.model:GetDescendants()) do
 		if descendant:IsA("BasePart") then
 			if descendant.Name == "RootPart" then
