@@ -184,7 +184,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	storyLabel.TextScaled = true
 	storyLabel.TextWrapped = false
 	local storyTextCap = Instance.new("UITextSizeConstraint")
-	storyTextCap.MinTextSize = 10
+	storyTextCap.MinTextSize = 11
 	storyTextCap.MaxTextSize = 16
 	storyTextCap.Parent = storyLabel
 	UiKit.stroke(storyLabel, UiKit.color(VisualTheme.PALETTE.ink), 1.5, 0.25)
@@ -194,6 +194,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	modal.AnchorPoint = Vector2.new(0.5, 0.5)
 	modal.Position = UDim2.fromScale(0.5, 0.5)
 	modal.Size = UDim2.fromOffset(520, 326)
+	modal.BackgroundTransparency = 0.18
 	modal.Visible = false
 	modal.ZIndex = 24
 	UiKit.corner(modal, 14)
@@ -301,8 +302,8 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	claimBtn.ZIndex = 26
 	UiKit.corner(claimBtn, 8)
 	local claimCap = Instance.new("UITextSizeConstraint")
-	claimCap.MinTextSize = 9
-	claimCap.MaxTextSize = 13
+	claimCap.MinTextSize = 11
+	claimCap.MaxTextSize = 14
 	claimCap.Parent = claimBtn
 
 	local stageList = Instance.new("ScrollingFrame")
@@ -348,6 +349,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		rowFrame.LayoutOrder = rowIdx
 		rowFrame.Size = UDim2.new(1, -6, 0, 48)
 		rowFrame.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+		rowFrame.BackgroundTransparency = 0.20
 		rowFrame.BorderSizePixel = 0
 		rowFrame.ZIndex = 26
 		rowFrame.Parent = stageList
@@ -366,6 +368,10 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		sName.TextWrapped = false
 		sName.TextTruncate = Enum.TextTruncate.AtEnd
 		sName.ZIndex = 27
+		local sNameCap = Instance.new("UITextSizeConstraint")
+		sNameCap.MinTextSize = 11
+		sNameCap.MaxTextSize = 15
+		sNameCap.Parent = sName
 
 		local sMeta = UiKit.label(
 			rowFrame,
@@ -380,6 +386,10 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		sMeta.TextWrapped = false
 		sMeta.TextTruncate = Enum.TextTruncate.AtEnd
 		sMeta.ZIndex = 27
+		local sMetaCap = Instance.new("UITextSizeConstraint")
+		sMetaCap.MinTextSize = 11
+		sMetaCap.MaxTextSize = 14
+		sMetaCap.Parent = sMeta
 
 		local playBtn = UiKit.button(rowFrame, "Play", "")
 		playBtn.AnchorPoint = Vector2.new(1, 0.5)
@@ -388,8 +398,8 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		playBtn.ZIndex = 27
 		UiKit.corner(playBtn, 8)
 		local pCap = Instance.new("UITextSizeConstraint")
-		pCap.MinTextSize = 10
-		pCap.MaxTextSize = 14
+		pCap.MinTextSize = 11
+		pCap.MaxTextSize = 15
 		pCap.Parent = playBtn
 
 		stageRows[rowIdx] = {
@@ -405,7 +415,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	bossHud.AnchorPoint = Vector2.zero
 	bossHud.Position = UDim2.fromOffset(192, 54)
 	bossHud.Size = UDim2.fromOffset(280, 44)
-	bossHud.BackgroundTransparency = 0.14
+	bossHud.BackgroundTransparency = 0.28
 	bossHud.Visible = false
 	bossHud.ZIndex = 17
 	UiKit.corner(bossHud, 10)
@@ -419,14 +429,14 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		Enum.Font.GothamBlack
 	)
 	bossNameLbl.Position = UDim2.fromOffset(8, 2)
-	bossNameLbl.Size = UDim2.new(0.60, -8, 0, 16)
+	bossNameLbl.Size = UDim2.new(0.60, -8, 0, 20)
 	bossNameLbl.TextScaled = true
 	bossNameLbl.TextWrapped = false
 	bossNameLbl.TextTruncate = Enum.TextTruncate.AtEnd
 	bossNameLbl.ZIndex = 18
 	local bossNameCap = Instance.new("UITextSizeConstraint")
-	bossNameCap.MinTextSize = 9
-	bossNameCap.MaxTextSize = 13
+	bossNameCap.MinTextSize = 12
+	bossNameCap.MaxTextSize = 16
 	bossNameCap.Parent = bossNameLbl
 
 	local bossStateLbl = UiKit.label(
@@ -437,27 +447,27 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		Enum.Font.GothamBlack
 	)
 	bossStateLbl.Position = UDim2.new(0.60, 0, 0, 2)
-	bossStateLbl.Size = UDim2.new(0.40, -8, 0, 16)
+	bossStateLbl.Size = UDim2.new(0.40, -8, 0, 20)
 	bossStateLbl.TextXAlignment = Enum.TextXAlignment.Right
 	bossStateLbl.TextScaled = true
 	bossStateLbl.TextWrapped = false
 	bossStateLbl.TextTruncate = Enum.TextTruncate.AtEnd
 	bossStateLbl.ZIndex = 18
 	local bossStateCap = Instance.new("UITextSizeConstraint")
-	bossStateCap.MinTextSize = 9
-	bossStateCap.MaxTextSize = 11
+	bossStateCap.MinTextSize = 11
+	bossStateCap.MaxTextSize = 14
 	bossStateCap.Parent = bossStateLbl
 
 	local bossHpBar = UiKit.progress(bossHud, "BossHp", UiKit.color(VisualTheme.PALETTE.danger))
-	bossHpBar.frame.Position = UDim2.fromOffset(8, 21)
-	bossHpBar.frame.Size = UDim2.new(1, -16, 0, 9)
+	bossHpBar.frame.Position = UDim2.fromOffset(8, 24)
+	bossHpBar.frame.Size = UDim2.new(1, -16, 0, 6)
 	bossHpBar.frame.ZIndex = 18
 	bossHpBar.fill.ZIndex = 18
 
 	local bossStaggerBar =
 		UiKit.progress(bossHud, "BossStagger", UiKit.color(VisualTheme.PALETTE.teal))
 	bossStaggerBar.frame.Position = UDim2.fromOffset(8, 33)
-	bossStaggerBar.frame.Size = UDim2.new(1, -16, 0, 6)
+	bossStaggerBar.frame.Size = UDim2.new(1, -16, 0, 4)
 	bossStaggerBar.frame.ZIndex = 18
 	bossStaggerBar.fill.ZIndex = 18
 
@@ -470,9 +480,9 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	bossBubble.Name = "BossSpeechBubble"
 	bossBubble.AnchorPoint = Vector2.zero
 	bossBubble.Position = UDim2.fromOffset(0, 0)
-	bossBubble.Size = UDim2.fromOffset(188, 36)
+	bossBubble.Size = UDim2.fromOffset(204, 38)
 	bossBubble.BackgroundColor3 = Color3.fromRGB(14, 19, 32)
-	bossBubble.BackgroundTransparency = 0.12
+	bossBubble.BackgroundTransparency = 0.30
 	bossBubble.BorderSizePixel = 0
 	bossBubble.Active = false
 	bossBubble.ClipsDescendants = false
@@ -480,8 +490,12 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	bossBubble.ZIndex = 16
 	bossBubble.Parent = root
 	UiKit.corner(bossBubble, 8)
+	local bossBubbleSizeCap = Instance.new("UISizeConstraint")
+	bossBubbleSizeCap.MinSize = Vector2.new(120, 28)
+	bossBubbleSizeCap.MaxSize = Vector2.new(236, 46)
+	bossBubbleSizeCap.Parent = bossBubble
 	local bossBubbleStroke =
-		UiKit.stroke(bossBubble, UiKit.color(VisualTheme.PALETTE.amberBright), 1.5, 0.08)
+		UiKit.stroke(bossBubble, UiKit.color(VisualTheme.PALETTE.amberBright), 1.5, 0.12)
 	local bossBubbleScale = Instance.new("UIScale")
 	bossBubbleScale.Scale = 1
 	bossBubbleScale.Parent = bossBubble
@@ -489,11 +503,11 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	local bossBubbleTail = Instance.new("Frame")
 	bossBubbleTail.Name = "Tail"
 	bossBubbleTail.AnchorPoint = Vector2.new(0.5, 0.5)
-	bossBubbleTail.Position = UDim2.fromOffset(94, 36)
+	bossBubbleTail.Position = UDim2.fromOffset(102, 38)
 	bossBubbleTail.Size = UDim2.fromOffset(7, 7)
 	bossBubbleTail.Rotation = 45
 	bossBubbleTail.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.amberBright)
-	bossBubbleTail.BackgroundTransparency = 0.08
+	bossBubbleTail.BackgroundTransparency = 0.18
 	bossBubbleTail.BorderSizePixel = 0
 	bossBubbleTail.Active = false
 	bossBubbleTail.ZIndex = 15
@@ -511,7 +525,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	bossQuoteLbl.TextXAlignment = Enum.TextXAlignment.Left
 	bossQuoteLbl.TextYAlignment = Enum.TextYAlignment.Center
 	bossQuoteLbl.TextScaled = false
-	bossQuoteLbl.TextSize = 11
+	bossQuoteLbl.TextSize = 13
 	bossQuoteLbl.TextWrapped = true
 	bossQuoteLbl.TextTruncate = Enum.TextTruncate.None
 	bossQuoteLbl.RichText = false
@@ -528,8 +542,8 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 	local function computeBubbleSize(quote: string): (number, number, number)
 		local isDesktop = if latestHudRects ~= nil then latestHudRects.isDesktop else false
 		local isPortrait = if latestHudRects ~= nil then latestHudRects.isPortrait else false
-		local bubbleW = if isDesktop then 224 elseif isPortrait then 196 else 188
-		local fontSize = if isDesktop then 12 else 11
+		local bubbleW = if isDesktop then 236 elseif isPortrait then 212 else 204
+		local fontSize = if isDesktop then 14 else 13
 		local ok, bounds = pcall(function()
 			return TextService:GetTextSize(
 				quote,
@@ -539,7 +553,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 			)
 		end)
 		local textH = if ok and typeof(bounds) == "Vector2" then math.ceil(bounds.Y) else 26
-		local bubbleH = math.clamp(textH + 10, 28, 58)
+		local bubbleH = math.clamp(textH + 10, 28, 46)
 		return bubbleW, bubbleH, fontSize
 	end
 
@@ -552,7 +566,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		if cam == nil then
 			return
 		end
-		local vpPt, onScreen = cam:WorldToViewportPoint(worldPos)
+		local vpPt, onScreen = cam:WorldToViewportPoint(worldPos + Vector3.new(0, 1.6, 0))
 		if not onScreen and vpPt.Z <= 0 then
 			return
 		end
@@ -577,7 +591,7 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 		end
 		local maxBottomY = math.max(minTopY, rootSize.Y - 56 - bh)
 		local bx = math.clamp(math.floor(localX - bw * 0.5), 8, math.max(8, rootSize.X - bw - 8))
-		local by = math.clamp(math.floor(localY - bh - 10), minTopY, maxBottomY)
+		local by = math.clamp(math.floor(localY - bh - 18), minTopY, maxBottomY)
 		local tailX = math.clamp(math.floor(localX - bx), 14, math.max(14, bw - 14))
 		bossBubble.Position = UDim2.fromOffset(bx, by)
 		bossBubbleTail.Position = UDim2.fromOffset(tailX, bh)
@@ -847,9 +861,9 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 			)
 			bossBubbleStroke.Color = accent
 			bossBubbleTail.BackgroundColor3 = accent
-			bossBubble.BackgroundTransparency = 0.12
-			bossBubbleStroke.Transparency = 0.08
-			bossBubbleTail.BackgroundTransparency = 0.08
+			bossBubble.BackgroundTransparency = 0.30
+			bossBubbleStroke.Transparency = 0.12
+			bossBubbleTail.BackgroundTransparency = 0.18
 			bossQuoteLbl.TextTransparency = 0
 
 			local bw, bh, fontSize = computeBubbleSize(quote)
@@ -870,8 +884,8 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 
 			local startedAt = time()
 			local streamDuration = totalGraphemes / 36
-			local holdUntil = startedAt + streamDuration + 1.85
-			local fadeDuration = 0.22
+			local holdUntil = startedAt + streamDuration + 2.2
+			local fadeDuration = 0.25
 			quoteStreamConn = RunService.Heartbeat:Connect(function()
 				if quoteToken ~= myToken or not bossBubble.Visible or bossBubble.Parent == nil then
 					stopQuoteStream()
@@ -883,9 +897,9 @@ function CampaignUi.create(root: Frame, opts: CampaignUiOpts): CampaignUiHandle
 				bossQuoteLbl.MaxVisibleGraphemes = shown
 				if now >= holdUntil then
 					local alpha = math.clamp((now - holdUntil) / fadeDuration, 0, 1)
-					bossBubble.BackgroundTransparency = 0.12 + 0.88 * alpha
-					bossBubbleStroke.Transparency = 0.08 + 0.92 * alpha
-					bossBubbleTail.BackgroundTransparency = 0.08 + 0.92 * alpha
+					bossBubble.BackgroundTransparency = 0.30 + 0.70 * alpha
+					bossBubbleStroke.Transparency = 0.12 + 0.88 * alpha
+					bossBubbleTail.BackgroundTransparency = 0.18 + 0.82 * alpha
 					bossQuoteLbl.TextTransparency = alpha
 					if alpha >= 1 then
 						stopQuoteStream()

@@ -119,7 +119,7 @@ function UiKit.panel(parent: Instance, name: string, color: Color3?): Frame
 	local panel = Instance.new("Frame")
 	panel.Name = name
 	panel.BackgroundColor3 = color or UiKit.color(VisualTheme.PALETTE.ink)
-	panel.BackgroundTransparency = 0.06
+	panel.BackgroundTransparency = 0.22
 	panel.BorderSizePixel = 0
 	panel.Parent = parent
 	UiKit.corner(panel, VisualTheme.UI.panelCorner)
@@ -618,6 +618,7 @@ function UiKit.card(parent: Instance, name: string): TrapCard
 	costLabel.TextScaled = true
 	costLabel.Parent = frame
 	local costMax = Instance.new("UITextSizeConstraint")
+	costMax.MinTextSize = 11
 	costMax.MaxTextSize = 15
 	costMax.Parent = costLabel
 
@@ -634,6 +635,7 @@ function UiKit.card(parent: Instance, name: string): TrapCard
 	nameLabel.TextScaled = true
 	nameLabel.Parent = frame
 	local nameMax = Instance.new("UITextSizeConstraint")
+	nameMax.MinTextSize = 11
 	nameMax.MaxTextSize = 14
 	nameMax.Parent = nameLabel
 
@@ -674,7 +676,7 @@ function UiKit.setCard(
 
 	if isLocked then
 		card.frame.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
-		card.frame.BackgroundTransparency = 0.18
+		card.frame.BackgroundTransparency = 0.24
 		UiKit.stroke(card.frame, UiKit.color(VisualTheme.PALETTE.stoneDark), 1, 0.35)
 		card.icon.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.iron)
 		card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.stone)
@@ -683,7 +685,7 @@ function UiKit.setCard(
 		return
 	end
 
-	card.frame.BackgroundTransparency = 0
+	card.frame.BackgroundTransparency = if selected then 0.06 else 0.18
 	card.icon.BackgroundColor3 = UiKit.color(spec.color)
 	card.icon.Glyph.TextColor3 = UiKit.color(VisualTheme.PALETTE.ink)
 	UiKit.setSelected(card.frame, selected)
@@ -771,7 +773,8 @@ function UiKit.createLocalePill(parent: Instance, onChange: ((string) -> ())?): 
 		btn.Size = UDim2.fromOffset(36, 34)
 		ensurePadding(btn, 3, 3, 3, 3)
 		local textCap = Instance.new("UITextSizeConstraint")
-		textCap.MaxTextSize = 13
+		textCap.MinTextSize = 11
+		textCap.MaxTextSize = 14
 		textCap.Parent = btn
 		buttons[opt.id] = btn
 		btn.MouseButton1Click:Connect(function()
@@ -801,8 +804,10 @@ local LOCALE_ORDER = { "pt", "en", "es" }
 function UiKit.createCompactLocalePill(parent: Instance, onChange: ((string) -> ())?): TextButton
 	local btn = UiKit.button(parent, "CompactLocalePill", "PT")
 	btn.Size = UDim2.fromOffset(48, math.max(44, VisualTheme.UI.minTouch))
+	btn.BackgroundTransparency = 0.22
 	ensurePadding(btn, 4, 4, 4, 4)
 	local textCap = Instance.new("UITextSizeConstraint")
+	textCap.MinTextSize = 11
 	textCap.MaxTextSize = 14
 	textCap.Parent = btn
 

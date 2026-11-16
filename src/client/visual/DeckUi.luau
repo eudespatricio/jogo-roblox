@@ -396,7 +396,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	deckBtnLabel.TextXAlignment = Enum.TextXAlignment.Center
 	deckBtnLabel.TextScaled = true
 	deckBtnLabel.TextWrapped = false
-	addTextCap(deckBtnLabel, 10, 16)
+	addTextCap(deckBtnLabel, 11, 16)
 	UiKit.stroke(deckBtnLabel, UiKit.color(VisualTheme.PALETTE.ink), 1.5, 0.25)
 
 	-- Modal centralizado responsivo
@@ -404,6 +404,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	modal.AnchorPoint = Vector2.new(0.5, 0.5)
 	modal.Position = UDim2.fromScale(0.5, 0.5)
 	modal.Size = UDim2.fromOffset(540, 344)
+	modal.BackgroundTransparency = 0.18
 	modal.Visible = false
 	modal.ZIndex = 28
 	UiKit.corner(modal, 14)
@@ -421,7 +422,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	headerTitle.TextScaled = true
 	headerTitle.TextWrapped = false
 	headerTitle.ZIndex = 29
-	addTextCap(headerTitle, 11, 16)
+	addTextCap(headerTitle, 12, 16)
 
 	local modalCloseBtn = UiKit.button(modal, "ModalClose", "X")
 	modalCloseBtn.AnchorPoint = Vector2.zero
@@ -453,7 +454,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	starterSubLbl.Size = UDim2.new(1, -44, 0, 18)
 	starterSubLbl.TextScaled = true
 	starterSubLbl.ZIndex = 29
-	addTextCap(starterSubLbl, 10, 13)
+	addTextCap(starterSubLbl, 11, 14)
 
 	local factionTabRow = Instance.new("Frame")
 	factionTabRow.Name = "FactionTabs"
@@ -477,7 +478,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		btn.Size = UDim2.new(0.2, -4, 0, 34)
 		btn.ZIndex = 30
 		UiKit.corner(btn, 8)
-		addTextCap(btn, 9, 13)
+		addTextCap(btn, 11, 14)
 		factionButtons[fId] = btn
 	end
 
@@ -486,6 +487,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	starterDetailFrame.Position = UDim2.fromOffset(0, 60)
 	starterDetailFrame.Size = UDim2.new(1, 0, 1, -110)
 	starterDetailFrame.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+	starterDetailFrame.BackgroundTransparency = 0.20
 	starterDetailFrame.BorderSizePixel = 0
 	starterDetailFrame.ZIndex = 29
 	starterDetailFrame.Parent = starterView
@@ -531,7 +533,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		sLbl.Size = UDim2.fromScale(0.42, 1)
 		sLbl.TextScaled = true
 		sLbl.ZIndex = 31
-		addTextCap(sLbl, 9, 12)
+		addTextCap(sLbl, 11, 14)
 
 		local pBar = UiKit.progress(rowFrame, "Bar", UiKit.color(VisualTheme.PALETTE.amber))
 		pBar.frame.AnchorPoint = Vector2.new(0, 0.5)
@@ -552,7 +554,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		vLbl.TextXAlignment = Enum.TextXAlignment.Right
 		vLbl.TextScaled = true
 		vLbl.ZIndex = 31
-		addTextCap(vLbl, 9, 12)
+		addTextCap(vLbl, 11, 14)
 
 		statRows[idx] = {
 			key = spec.key,
@@ -582,7 +584,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	previewHeader.Size = UDim2.new(1, 0, 0, 18)
 	previewHeader.TextScaled = true
 	previewHeader.ZIndex = 31
-	addTextCap(previewHeader, 9, 12)
+	addTextCap(previewHeader, 11, 14)
 
 	local previewSquadLabels: { TextLabel } = {}
 	for i = 1, 3 do
@@ -597,7 +599,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		pRow.Size = UDim2.new(1, 0, 0, 22)
 		pRow.TextScaled = true
 		pRow.ZIndex = 31
-		addTextCap(pRow, 9, 12)
+		addTextCap(pRow, 11, 14)
 		previewSquadLabels[i] = pRow
 	end
 
@@ -612,7 +614,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	confirmFactionBtn.ZIndex = 30
 	UiKit.corner(confirmFactionBtn, 10)
 	UiKit.setSelected(confirmFactionBtn, true)
-	addTextCap(confirmFactionBtn, 11, 15)
+	addTextCap(confirmFactionBtn, 12, 16)
 
 	-- ================================================================
 	-- VIEW 2: Squads & Forge Vault
@@ -632,6 +634,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	statusStrip.Position = UDim2.fromOffset(0, 0)
 	statusStrip.Size = UDim2.new(1, -46, 0, 28)
 	statusStrip.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+	statusStrip.BackgroundTransparency = 0.20
 	statusStrip.BorderSizePixel = 0
 	statusStrip.ZIndex = 29
 	statusStrip.Parent = vaultView
@@ -658,7 +661,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	factionBadgeLbl.TextXAlignment = Enum.TextXAlignment.Center
 	factionBadgeLbl.TextScaled = true
 	factionBadgeLbl.ZIndex = 31
-	addTextCap(factionBadgeLbl, 8, 12)
+	addTextCap(factionBadgeLbl, 10, 13)
 
 	local supplyLbl = UiKit.label(
 		statusStrip,
@@ -672,7 +675,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	supplyLbl.TextXAlignment = Enum.TextXAlignment.Center
 	supplyLbl.TextScaled = true
 	supplyLbl.ZIndex = 30
-	addTextCap(supplyLbl, 8, 12)
+	addTextCap(supplyLbl, 10, 13)
 
 	local shardsLbl = UiKit.label(
 		statusStrip,
@@ -686,7 +689,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	shardsLbl.TextXAlignment = Enum.TextXAlignment.Center
 	shardsLbl.TextScaled = true
 	shardsLbl.ZIndex = 30
-	addTextCap(shardsLbl, 8, 12)
+	addTextCap(shardsLbl, 10, 13)
 
 	local corePipsHolder = Instance.new("Frame")
 	corePipsHolder.Name = "CorePips"
@@ -740,7 +743,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	headerGoldLbl.TextXAlignment = Enum.TextXAlignment.Right
 	headerGoldLbl.TextScaled = true
 	headerGoldLbl.ZIndex = 30
-	addTextCap(headerGoldLbl, 8, 12)
+	addTextCap(headerGoldLbl, 10, 13)
 
 	-- Scrollable Body for Squads + Champion + 13-Card Relic Forge
 	local bodyScroll = Instance.new("ScrollingFrame")
@@ -771,7 +774,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	squadsHeaderLbl.Size = UDim2.new(1, -8, 0, 20)
 	squadsHeaderLbl.TextScaled = true
 	squadsHeaderLbl.ZIndex = 30
-	addTextCap(squadsHeaderLbl, 10, 13)
+	addTextCap(squadsHeaderLbl, 11, 14)
 
 	type SquadRowUi = {
 		frame: Frame,
@@ -789,6 +792,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		row.LayoutOrder = 1 + i
 		row.Size = UDim2.new(1, -8, 0, 44)
 		row.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+		row.BackgroundTransparency = 0.20
 		row.BorderSizePixel = 0
 		row.ZIndex = 30
 		row.Parent = bodyScroll
@@ -806,21 +810,21 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		roleLbl.Size = UDim2.new(0.18, -6, 1, -4)
 		roleLbl.TextScaled = true
 		roleLbl.ZIndex = 31
-		addTextCap(roleLbl, 8, 12)
+		addTextCap(roleLbl, 10, 13)
 
 		local cardBtn = UiKit.button(row, "CardSelect", "")
 		cardBtn.Position = UDim2.new(0.18, 2, 0, 3)
 		cardBtn.Size = UDim2.new(0.36, -4, 1, -6)
 		cardBtn.ZIndex = 31
 		UiKit.corner(cardBtn, 7)
-		addTextCap(cardBtn, 9, 13)
+		addTextCap(cardBtn, 11, 14)
 
 		local minusBtn = UiKit.button(row, "Minus", "-")
 		minusBtn.Position = UDim2.new(0.54, 2, 0, 3)
 		minusBtn.Size = UDim2.new(0.08, -2, 1, -6)
 		minusBtn.ZIndex = 31
 		UiKit.corner(minusBtn, 7)
-		addTextCap(minusBtn, 11, 16)
+		addTextCap(minusBtn, 12, 16)
 
 		local countLbl = UiKit.label(
 			row,
@@ -834,21 +838,21 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		countLbl.TextXAlignment = Enum.TextXAlignment.Center
 		countLbl.TextScaled = true
 		countLbl.ZIndex = 31
-		addTextCap(countLbl, 9, 13)
+		addTextCap(countLbl, 11, 14)
 
 		local plusBtn = UiKit.button(row, "Plus", "+")
 		plusBtn.Position = UDim2.new(0.71, 0, 0, 3)
 		plusBtn.Size = UDim2.new(0.08, -2, 1, -6)
 		plusBtn.ZIndex = 31
 		UiKit.corner(plusBtn, 7)
-		addTextCap(plusBtn, 11, 16)
+		addTextCap(plusBtn, 12, 16)
 
 		local laneBtn = UiKit.button(row, "LaneMode", "")
 		laneBtn.Position = UDim2.new(0.79, 2, 0, 3)
 		laneBtn.Size = UDim2.new(0.21, -6, 1, -6)
 		laneBtn.ZIndex = 31
 		UiKit.corner(laneBtn, 7)
-		addTextCap(laneBtn, 8, 12)
+		addTextCap(laneBtn, 10, 13)
 
 		squadRowUis[i] = {
 			frame = row,
@@ -867,6 +871,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	champRow.LayoutOrder = 5
 	champRow.Size = UDim2.new(1, -8, 0, 50)
 	champRow.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+	champRow.BackgroundTransparency = 0.20
 	champRow.BorderSizePixel = 0
 	champRow.ZIndex = 30
 	champRow.Parent = bodyScroll
@@ -884,7 +889,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	champTitleLbl.Size = UDim2.new(0.36, -6, 0, 20)
 	champTitleLbl.TextScaled = true
 	champTitleLbl.ZIndex = 31
-	addTextCap(champTitleLbl, 8, 12)
+	addTextCap(champTitleLbl, 11, 14)
 
 	local champHintLbl = UiKit.label(
 		champRow,
@@ -898,21 +903,21 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	champHintLbl.TextScaled = true
 	champHintLbl.TextWrapped = true
 	champHintLbl.ZIndex = 31
-	addTextCap(champHintLbl, 7, 10)
+	addTextCap(champHintLbl, 10, 13)
 
 	local champSelectBtn = UiKit.button(champRow, "ChampSelect", "--")
 	champSelectBtn.Position = UDim2.new(0.37, 2, 0, 4)
 	champSelectBtn.Size = UDim2.new(0.41, -4, 1, -8)
 	champSelectBtn.ZIndex = 31
 	UiKit.corner(champSelectBtn, 7)
-	addTextCap(champSelectBtn, 9, 13)
+	addTextCap(champSelectBtn, 11, 14)
 
 	local champLaneBtn = UiKit.button(champRow, "ChampLane", "")
 	champLaneBtn.Position = UDim2.new(0.78, 2, 0, 4)
 	champLaneBtn.Size = UDim2.new(0.22, -6, 1, -8)
 	champLaneBtn.ZIndex = 31
 	UiKit.corner(champLaneBtn, 7)
-	addTextCap(champLaneBtn, 8, 12)
+	addTextCap(champLaneBtn, 10, 13)
 
 	-- 13-Card Relic Forge Section
 	local forgeHeaderLbl = UiKit.label(
@@ -926,7 +931,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	forgeHeaderLbl.Size = UDim2.new(1, -8, 0, 20)
 	forgeHeaderLbl.TextScaled = true
 	forgeHeaderLbl.ZIndex = 30
-	addTextCap(forgeHeaderLbl, 10, 13)
+	addTextCap(forgeHeaderLbl, 11, 14)
 
 	local forgeGridFrame = Instance.new("Frame")
 	forgeGridFrame.Name = "ForgeGrid"
@@ -964,6 +969,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		cFrame.LayoutOrder = idx
 		cFrame.Size = UDim2.new(1, 0, 0, 46)
 		cFrame.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
+		cFrame.BackgroundTransparency = 0.20
 		cFrame.BorderSizePixel = 0
 		cFrame.ZIndex = 30
 		cFrame.Parent = forgeGridFrame
@@ -991,7 +997,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		nameLbl.Size = UDim2.new(0.42, -14, 0, 21)
 		nameLbl.TextScaled = true
 		nameLbl.ZIndex = 31
-		addTextCap(nameLbl, 9, 13)
+		addTextCap(nameLbl, 11, 14)
 
 		local metaLbl = UiKit.label(
 			cFrame,
@@ -1004,7 +1010,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		metaLbl.Size = UDim2.new(0.42, -14, 0, 19)
 		metaLbl.TextScaled = true
 		metaLbl.ZIndex = 31
-		addTextCap(metaLbl, 8, 11)
+		addTextCap(metaLbl, 10, 13)
 
 		local reqLbl = UiKit.label(
 			cFrame,
@@ -1019,7 +1025,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		reqLbl.TextScaled = true
 		reqLbl.TextWrapped = true
 		reqLbl.ZIndex = 31
-		addTextCap(reqLbl, 8, 11)
+		addTextCap(reqLbl, 10, 13)
 
 		local actionBtn = UiKit.button(cFrame, "Action", "")
 		actionBtn.AnchorPoint = Vector2.new(1, 0.5)
@@ -1027,7 +1033,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 		actionBtn.Size = UDim2.new(0.28, -4, 0, 38)
 		actionBtn.ZIndex = 31
 		UiKit.corner(actionBtn, 7)
-		addTextCap(actionBtn, 8, 12)
+		addTextCap(actionBtn, 11, 14)
 
 		forgeCardUis[idx] = {
 			cardId = cardId,
@@ -1057,7 +1063,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	saveBtn.ZIndex = 31
 	UiKit.corner(saveBtn, 10)
 	UiKit.setSelected(saveBtn, true)
-	addTextCap(saveBtn, 10, 15)
+	addTextCap(saveBtn, 12, 16)
 
 	local closeFooterBtn =
 		UiKit.button(footerRow, "CloseDeck", I18n.t(UiKit.getLocale(), "cta_close"))
@@ -1065,7 +1071,7 @@ function DeckUi.create(root: Frame, opts: DeckUiOpts): DeckUiHandle
 	closeFooterBtn.Size = UDim2.new(0.32, -4, 1, 0)
 	closeFooterBtn.ZIndex = 31
 	UiKit.corner(closeFooterBtn, 10)
-	addTextCap(closeFooterBtn, 10, 14)
+	addTextCap(closeFooterBtn, 11, 15)
 
 	-- ================================================================
 	-- State Helpers & Rendering

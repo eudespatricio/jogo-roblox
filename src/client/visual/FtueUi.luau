@@ -36,11 +36,12 @@ function FtueUi.create(root: Frame, opts: FtueUiOpts): FtueUiHandle
 	banner.AnchorPoint = Vector2.zero
 	banner.Position = UDim2.fromOffset(16, 62)
 	banner.Size = UDim2.fromOffset(320, 44)
+	banner.BackgroundTransparency = 0.24
 	banner.Active = false
 	banner.Visible = false
 	banner.ZIndex = 12
 	UiKit.corner(banner, 10)
-	UiKit.stroke(banner, UiKit.color(VisualTheme.PALETTE.amberBright), 2, 0.1)
+	UiKit.stroke(banner, UiKit.color(VisualTheme.PALETTE.amberBright), 1.5, 0.08)
 
 	local hintLabel = UiKit.label(
 		banner,
@@ -55,8 +56,8 @@ function FtueUi.create(root: Frame, opts: FtueUiOpts): FtueUiHandle
 	hintLabel.TextScaled = true
 	hintLabel.ZIndex = 13
 	local hintCap = Instance.new("UITextSizeConstraint")
-	hintCap.MinTextSize = 9
-	hintCap.MaxTextSize = 13
+	hintCap.MinTextSize = 12
+	hintCap.MaxTextSize = 16
 	hintCap.Parent = hintLabel
 
 	local skipBtn = UiKit.button(banner, "SkipFtue", I18n.t(UiKit.getLocale(), "cta_skip_ftue"))
@@ -65,8 +66,8 @@ function FtueUi.create(root: Frame, opts: FtueUiOpts): FtueUiHandle
 	skipBtn.Size = UDim2.fromOffset(66, 34)
 	skipBtn.ZIndex = 13
 	local skipCap = Instance.new("UITextSizeConstraint")
-	skipCap.MinTextSize = 9
-	skipCap.MaxTextSize = 12
+	skipCap.MinTextSize = 11
+	skipCap.MaxTextSize = 14
 	skipCap.Parent = skipBtn
 
 	local focusRing = Instance.new("Frame")

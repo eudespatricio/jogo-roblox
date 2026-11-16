@@ -164,7 +164,9 @@ local bar = UiKit.panel(root, "WallBar")
 bar.AnchorPoint = Vector2.zero
 bar.Position = UDim2.fromOffset(186, 6)
 bar.Size = UDim2.fromOffset(300, 44)
+bar.BackgroundTransparency = 0.26
 UiKit.corner(bar, 12)
+UiKit.stroke(bar, UiKit.color(VisualTheme.PALETTE.iron), 1, 0.30)
 
 local wallLabel = UiKit.label(
 	bar,
@@ -177,7 +179,8 @@ wallLabel.Position = UDim2.fromOffset(12, 0)
 wallLabel.Size = UDim2.new(0.32, -12, 1, 0)
 wallLabel.TextScaled = true
 local wallLabelCap = Instance.new("UITextSizeConstraint")
-wallLabelCap.MaxTextSize = 15
+wallLabelCap.MinTextSize = 11
+wallLabelCap.MaxTextSize = 16
 wallLabelCap.Parent = wallLabel
 
 local wallProgress = UiKit.progress(bar, "Fill", UiKit.color(VisualTheme.PALETTE.amber))
@@ -220,10 +223,21 @@ local clearBanner = UiKit.label(
 )
 clearBanner.AnchorPoint = Vector2.new(0.5, 0)
 clearBanner.Position = UDim2.new(0.5, 0, 0.28, 0)
-clearBanner.Size = UDim2.new(0.9, 0, 0, 64)
+clearBanner.Size = UDim2.new(0.72, 0, 0, 50)
+clearBanner.TextXAlignment = Enum.TextXAlignment.Center
 clearBanner.TextScaled = true
 clearBanner.Visible = false
 UiKit.stroke(clearBanner, UiKit.color(VisualTheme.PALETTE.ink), 3, 0)
+
+local clearBannerSizeCap = Instance.new("UISizeConstraint")
+clearBannerSizeCap.MinSize = Vector2.new(180, 40)
+clearBannerSizeCap.MaxSize = Vector2.new(440, 54)
+clearBannerSizeCap.Parent = clearBanner
+
+local clearBannerTextCap = Instance.new("UITextSizeConstraint")
+clearBannerTextCap.MinTextSize = 18
+clearBannerTextCap.MaxTextSize = 28
+clearBannerTextCap.Parent = clearBanner
 
 local defeatFrame = Instance.new("Frame")
 defeatFrame.Name = "Defeat"
@@ -379,6 +393,7 @@ local function showDefeat(): ()
 	AudioKit.playAt("gate_fracture", ORIGIN + Vector3.new(-24, 2, 0))
 	AudioKit.play("defeat")
 	crowd:react("defeat")
+	Vfx.fractureGate(scene, ORIGIN + Vector3.new(-24, FLOOR_TOP_Y, 0))
 	Vfx.shake(camera, BASE_CAMERA, 0.35, 0.35)
 	Vfx.dust(scene, ORIGIN + Vector3.new(-24, 0.5, 0), 10)
 end
@@ -476,6 +491,11 @@ local function press(): ()
 	applySnapshot(result.snapshot)
 
 	-- Salva de catapulta: projeteis cosmeticos do portao ate a horda.
+	Vfx.ring(
+		scene,
+		ORIGIN + Vector3.new(-4, FLOOR_TOP_Y, 0),
+		UiKit.color(VisualTheme.PALETTE.amberBright)
+	)
 	for index = 1, math.min(6, #horde) do
 		local target = ORIGIN + Vector3.new(12 - 30 * (index / 6), 1.2, ((index % 5) - 2) * 8)
 		Vfx.projectile(
@@ -486,6 +506,11 @@ local function press(): ()
 			0.35 + index * 0.05,
 			function()
 				Vfx.impact(scene, target, UiKit.color(VisualTheme.PALETTE.amber), 5)
+				Vfx.ring(
+					scene,
+					Vector3.new(target.X, ORIGIN.Y + FLOOR_TOP_Y, target.Z),
+					UiKit.color(VisualTheme.PALETTE.danger)
+				)
 				AudioKit.trapImpact("catapult", target)
 			end
 		)

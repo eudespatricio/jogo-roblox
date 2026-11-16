@@ -50,9 +50,10 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 
 	local logButton = UiKit.button(root, "LogBtn", I18n.t(UiKit.getLocale(), "cta_log"))
 	logButton.AnchorPoint = Vector2.zero
+	logButton.BackgroundTransparency = 0.22
 	logButton.ZIndex = 8
 	UiKit.corner(logButton, 10)
-	addTextCap(logButton, 9, 13)
+	addTextCap(logButton, 11, 14)
 
 	local unreadDot = Instance.new("Frame")
 	unreadDot.Name = "UnreadDot"
@@ -85,6 +86,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 	modal.AnchorPoint = Vector2.new(0.5, 0.5)
 	modal.Position = UDim2.fromScale(0.5, 0.5)
 	modal.Size = UDim2.fromOffset(420, 320)
+	modal.BackgroundTransparency = 0.18
 	modal.ZIndex = 24
 	modal.Visible = false
 	UiKit.corner(modal, 14)
@@ -101,14 +103,14 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 	titleLabel.Size = UDim2.new(1, -110, 0, 26)
 	titleLabel.TextScaled = true
 	titleLabel.ZIndex = 25
-	addTextCap(titleLabel, 11, 18)
+	addTextCap(titleLabel, 12, 18)
 
 	local closeBtn = UiKit.button(modal, "CloseLog", I18n.t(UiKit.getLocale(), "cta_close"))
 	closeBtn.AnchorPoint = Vector2.new(1, 0)
 	closeBtn.Position = UDim2.new(1, -10, 0, 8)
 	closeBtn.Size = UDim2.fromOffset(84, 44)
 	closeBtn.ZIndex = 25
-	addTextCap(closeBtn, 10, 13)
+	addTextCap(closeBtn, 11, 15)
 
 	local feedbackLabel = UiKit.label(
 		modal,
@@ -121,7 +123,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 	feedbackLabel.Size = UDim2.new(1, -104, 0, 18)
 	feedbackLabel.TextScaled = true
 	feedbackLabel.ZIndex = 25
-	addTextCap(feedbackLabel, 9, 12)
+	addTextCap(feedbackLabel, 11, 14)
 
 	local emptyLabel = UiKit.label(
 		modal,
@@ -137,7 +139,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 	emptyLabel.TextScaled = true
 	emptyLabel.ZIndex = 25
 	emptyLabel.Visible = false
-	addTextCap(emptyLabel, 10, 15)
+	addTextCap(emptyLabel, 11, 15)
 
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.Name = "LogScroll"
@@ -198,7 +200,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 				row.LayoutOrder = idx
 				row.Size = UDim2.new(1, -6, 0, 54)
 				row.BackgroundColor3 = UiKit.color(VisualTheme.PALETTE.ironDark)
-				row.BackgroundTransparency = 0.05
+				row.BackgroundTransparency = 0.20
 				row.BorderSizePixel = 0
 				row.ZIndex = 25
 				row.Parent = scroll
@@ -233,7 +235,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 				topLine.Size = UDim2.new(1, -(buttonsReserveW + 12), 0, 20)
 				topLine.TextScaled = true
 				topLine.ZIndex = 26
-				addTextCap(topLine, 9, 13)
+				addTextCap(topLine, 11, 15)
 
 				local gDelta = math.floor(tonumber(entry.goldDelta) or 0)
 				local lDelta = math.floor(tonumber(entry.leagueDelta) or 0)
@@ -248,7 +250,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 				subLine.Size = UDim2.new(1, -(buttonsReserveW + 12), 0, 18)
 				subLine.TextScaled = true
 				subLine.ZIndex = 26
-				addTextCap(subLine, 8, 12)
+				addTextCap(subLine, 11, 14)
 
 				local hasReplay = type(entry.replayWall) == "table"
 					and type(entry.seed) == "number"
@@ -259,7 +261,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 					replayBtn.Position = UDim2.new(1, if hasRevengeSlot then -94 else -6, 0.5, 0)
 					replayBtn.Size = UDim2.fromOffset(72, 44)
 					replayBtn.ZIndex = 26
-					addTextCap(replayBtn, 9, 12)
+					addTextCap(replayBtn, 11, 15)
 					replayBtn.MouseButton1Click:Connect(function()
 						opts.ackReplay()
 						opts.onReplay(entry)
@@ -276,7 +278,7 @@ function BattleLogUi.create(root: Frame, opts: BattleLogUiOpts): BattleLogUiHand
 					revBtn.Position = UDim2.new(1, -6, 0.5, 0)
 					revBtn.Size = UDim2.fromOffset(82, 44)
 					revBtn.ZIndex = 26
-					addTextCap(revBtn, 9, 12)
+					addTextCap(revBtn, 11, 15)
 					if revSpec.canRevenge then
 						UiKit.setSelected(revBtn, true)
 					else

@@ -349,7 +349,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		else math.min(trapDock.y, math.min(defendBtn.y, math.min(storyBtn.y, deckBtn.y)))
 	local clearCenterHeight = math.max(0, bottomCenterTop - topChromeBottom)
 
-	local toastW = clamp(usableW - 40, 220, 420)
+	local toastW = clamp(usableW - 60, 180, 320)
 	local toastH = 34
 	local toastBanner = rect(
 		minX + math.floor((usableW - toastW) * 0.5),
@@ -357,7 +357,7 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 		toastW,
 		toastH
 	)
-	local ftueW = clamp(usableW - 16, 260, 440)
+	local ftueW = clamp(usableW - 44, 228, 336)
 	local ftueH = 44
 	local ftueBanner =
 		rect(minX + math.floor((usableW - ftueW) * 0.5), topChromeBottom + 4, ftueW, ftueH)
@@ -365,14 +365,14 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	-- Combat & DropIn peripheral rectangles
 	local combatReserveRight = if utilY == minY then localeW + gap else 0
 	local combatTopAvail = math.max(0, row1MaxX - combatReserveRight - row1MinX)
-	local soloDesiredW = clamp(round(w * 0.44), 200, 360)
+	local soloDesiredW = clamp(round(w * 0.38), 200, 308)
 	local combatTopSoloPill: Rect
 	if combatTopAvail >= 200 then
 		local fitW = math.min(soloDesiredW, combatTopAvail)
 		local freeCenterX = row1MinX + math.floor((combatTopAvail - fitW) * 0.5)
 		combatTopSoloPill = rect(freeCenterX, minY, fitW, pillH)
 	else
-		local fitW = clamp(usableW, 200, 360)
+		local fitW = clamp(usableW - 24, 200, 308)
 		local pillY = math.max(minY + pillH + gap, safeTop + unibarH + 4)
 		combatTopSoloPill = rect(minX + math.floor((usableW - fitW) * 0.5), pillY, fitW, pillH)
 	end
@@ -381,9 +381,9 @@ function BuildLayout.computeHud(width: number, height: number, insets: HudInsets
 	local combatBossPill: Rect
 	local canPairRow1 = (utilY == minY) and (combatTopAvail >= 368)
 	if canPairRow1 then
-		local pairMaxW = math.min(combatTopAvail, if isDesktop then 680 else 540)
-		local topW = clamp(math.floor((pairMaxW - gap) * 0.52), 184, 350)
-		local bossW = clamp(pairMaxW - gap - topW, 176, 322)
+		local pairMaxW = math.min(combatTopAvail, if isDesktop then 596 else 496)
+		local topW = clamp(math.floor((pairMaxW - gap) * 0.52), 184, 308)
+		local bossW = clamp(pairMaxW - gap - topW, 176, 288)
 		local pairX = row1MinX + math.floor((combatTopAvail - (topW + gap + bossW)) * 0.5)
 		combatTopPill = rect(pairX, minY, topW, pillH)
 		combatBossPill = rect(pairX + topW + gap, minY, bossW, pillH)
