@@ -17,12 +17,14 @@ FORGE3D="${FORGE3D:-$HOME/.local/bin/forge3d}"
 SAIDA="$HOME/.local/state/forge3d/saida"
 LOGDIR="$ROOT/art/renders/_logs"   # art/renders/ e ignorado no git
 ALL_GROUPS=(wall traps horde bosses portal props fauna)
+[[ -f "$ROOT/art/scripts/make_backdrop.py" ]] && ALL_GROUPS+=(backdrop)
+VALID_GROUPS=(wall traps horde bosses portal props fauna backdrop)
 GROUPS_SEL=()
 SKIP_BLENDER=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --only) GROUPS_SEL+=("${2:?--only exige um grupo: wall|traps|horde|bosses|portal|props|fauna}"); shift 2 ;;
+    --only) GROUPS_SEL+=("${2:?--only exige um grupo: wall|traps|horde|bosses|portal|props|fauna|backdrop}"); shift 2 ;;
     --skip-blender) SKIP_BLENDER=1; shift ;;
     -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "argumento desconhecido: $1" >&2; exit 2 ;;
@@ -30,7 +32,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#GROUPS_SEL[@]} -eq 0 ]] && GROUPS_SEL=("${ALL_GROUPS[@]}")
 for g in "${GROUPS_SEL[@]}"; do
-  [[ " ${ALL_GROUPS[*]} " == *" $g "* ]] || { echo "grupo invalido: $g" >&2; exit 2; }
+  [[ " ${VALID_GROUPS[*]} " == *" $g "* ]] || { echo "grupo invalido: $g" >&2; exit 2; }
 done
 
 [[ -x "$BLENDER" ]] || { echo "blender nao encontrado: $BLENDER" >&2; exit 2; }
@@ -46,6 +48,7 @@ script_of() {
     portal) echo art/scripts/make_portal.py ;;
     props) echo art/scripts/make_props.py ;;
     fauna) echo art/scripts/make_fauna.py ;;
+    backdrop) echo art/scripts/make_backdrop.py ;;
   esac
 }
 # a muralha manteve o lote/destino historicos (lote_muralha_import.yaml -> saida/muralha_import)
@@ -114,6 +117,37 @@ PY
   if ! "$FORGE3D" verify "$(dest_of "$g")" --json >"$LOGDIR/verify_$g.json"; then
     echo "[forge3d] verify FALHOU: $g (ver $LOGDIR/verify_$g.json)" >&2
     status=1
+  else
+    python3 - "$lote" "$(dest_of "$g")" "$ROOT" <<'PY' || status=1
+import hashlib, os, re, shutil, sys
+lote_path, dest_dir, root_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+pairs, cur_id = [], None
+with open(lote_path, encoding="utf-8") as fh:
+    for raw in fh:
+        line = raw.split("#", 1)[0].strip()
+        m_id = re.match(r"^-\s+id:\s*(\S+)$", line)
+        if m_id:
+            cur_id = m_id.group(1)
+            continue
+        m_or = re.match(r"^origem:\s*(\S+)$", line)
+        if m_or and cur_id:
+            pairs.append((cur_id, m_or.group(1)))
+            cur_id = None
+if not pairs:
+    raise SystemExit(f"nenhum par id/origem encontrado em {lote_path}")
+for item_id, origem in pairs:
+    src = os.path.join(dest_dir, f"{item_id}.glb")
+    dst = os.path.join(root_dir, origem)
+    if not os.path.isfile(src):
+        raise SystemExit(f"GLB pos-processado ausente: {src}")
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copy2(src, dst)
+    h_src = hashlib.sha256(open(src, "rb").read()).hexdigest()
+    h_dst = hashlib.sha256(open(dst, "rb").read()).hexdigest()
+    if h_src != h_dst:
+        raise SystemExit(f"SHA-256 divergente para {item_id}: {h_src} != {h_dst}")
+print(f"[sync] {len(pairs)} GLBs sincronizados ({dest_dir} -> art/export/) com paridade SHA-256 OK")
+PY
   fi
 done
 
@@ -130,6 +164,7 @@ if command -v montage >/dev/null 2>&1; then
     [[ $g == wall ]] && tile="3x" && geo="480x270+4+4"
     [[ $g == props ]] && tile="3x2" && geo="320x320+4+4"
     [[ $g == fauna ]] && tile="3x3" && geo="320x320+4+4"
+    [[ $g == backdrop ]] && tile="3x3" && geo="320x320+4+4"
     out="art/renders/lineup_$g.png"
     montage -quiet -label '%t' -pointsize 14 "${pngs[@]}" -tile "$tile" -geometry "$geo" \
       -background '#1d2128' -fill '#f5e6c8' "$out" 2>/dev/null
