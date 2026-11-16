@@ -21,9 +21,9 @@ sys.dont_write_bytecode = True  # sem __pycache__ em art/scripts
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lowpoly_lib as L  # noqa: E402
 
-LIMITE = 5200
-LIMITE_TORSO = 2800
-LIMITE_PART = 1600
+LIMITE = 7200
+LIMITE_TORSO = 4200
+LIMITE_PART = 2200
 SCALE = {
     "iron_ram_colossus": 2.4,
     "slag_juggernaut": 2.5,
@@ -214,12 +214,23 @@ def iron_ram_colossus():
     for sx in (-1, 1):
         p.append(b.box((0.11, 0.62, 0.14), (sx * 0.16, 1.46, -0.62), "ironDark", bevel=0.025))
         p.append(b.box((0.28, 0.52, 0.18), (sx * 0.48, 1.48, -0.44), "iron", rot=(0.0, sx * 0.28, 0.0), bevel=0.03))
+        # Costelas blindadas de cerco e rebites frontais/dorsais
+        for r_i in range(3):
+            p.append(b.box((0.30, 0.10, 0.14), (sx * 0.44, 1.24 + r_i * 0.20, -0.48), "steel", rot=(0.0, sx * 0.24, sx * 0.18), bevel=0.02))
+        p.append(b.box((0.14, 0.14, 0.12), (sx * 0.34, 1.70, -0.56), "amberBright", bevel=0.02))
     p.append(b.box((0.72, 0.11, 0.14), (0.0, 1.46, -0.62), "ironDark", bevel=0.025))
+    p.append(b.box((0.64, 0.09, 0.12), (0.0, 1.28, -0.60), "ironDark", bevel=0.02))
+    p.append(b.box((0.64, 0.09, 0.12), (0.0, 1.64, -0.60), "ironDark", bevel=0.02))
+    # Vertebras dorsais da fornalha (+Z Roblox -> +Y Blender)
+    for v_i in range(4):
+        p.append(b.box((0.30, 0.18, 0.24), (0.0, 1.18 + v_i * 0.24, 0.56), "ironDark", bevel=0.025))
+        p.append(b.ico(0.09, (0.0, 1.18 + v_i * 0.24, 0.68), "ember", subdiv=1))
 
-    # 3. Ombreiras de cerco com chifres curvos de 18 segmentos
+    # 3. Ombreiras de cerco com chifres curvos de 18 segmentos e anel de colar
     for sx in (-1, 1):
-        p.append(b.ball(0.76, (sx * 0.82, 1.82, 0.0), "iron", seg=16, rings=10, squash=(1.06, 0.88, 1.02)))
+        p.append(b.ball(0.76, (sx * 0.82, 1.82, 0.0), "iron", seg=18, rings=12, squash=(1.06, 0.88, 1.02)))
         p.append(b.box((0.52, 0.20, 0.56), (sx * 0.86, 1.92, -0.02), "ironDark", rot=(0.0, 0.0, -sx * 0.22), bevel=0.03))
+        p.append(b.torus(0.18, 0.035, (sx * 0.88, 2.04, 0.0), "ironDark", major_seg=14, minor_seg=6, rot=(0.25, 0.0, -sx * 0.45)))
         p += _curved_siege_horn(
             b,
             (sx * 0.86, 2.02, 0.02),
@@ -232,17 +243,19 @@ def iron_ram_colossus():
             verts=18,
         )
 
-    # 4. Bracos e manoplas-ariete pesadas com cintas de ferro e runas ambar
+    # 4. Bracos e manoplas-ariete pesadas com cintas de ferro, colar torus e runas ambar
     for sx in (-1, 1):
-        p.append(b.cyl(0.24, 0.78, (sx * 0.94, 0.96, -0.18), "ironDark", verts=16, r2=0.22))
+        p.append(b.cyl(0.24, 0.78, (sx * 0.94, 0.96, -0.18), "ironDark", verts=18, r2=0.22))
         p.append(b.box((0.52, 0.48, 0.86), (sx * 0.92, 0.92, -0.62), "iron", bevel=0.035))
         p.append(b.box((0.56, 0.16, 0.22), (sx * 0.92, 0.96, -0.46), "ironDark", bevel=0.03))
         p.append(b.box((0.56, 0.16, 0.22), (sx * 0.92, 0.94, -0.78), "ironDark", bevel=0.03))
+        p.append(b.torus(0.24, 0.04, (sx * 0.92, 0.92, -0.94), "ironDark", major_seg=16, minor_seg=6, rot=(math.pi / 2, 0.0, 0.0)))
         p.append(b.box((0.12, 0.14, 0.58), (sx * 1.16, 0.96, -0.62), "amberBright", bevel=0.02))
-        p.append(b.cyl_axis_y(0.22, 0.46, (sx * 0.92, 0.92, -1.12), "steel", verts=18, r2=0.08, tilt=0.0))
+        p.append(b.cyl_axis_y(0.22, 0.46, (sx * 0.92, 0.92, -1.12), "steel", verts=18, r2=0.08, tilt=0.0, bevel=0.02))
 
-    # 5. Elmo de cerco com viseira de fornalha e chifres frontais curvos 18-seg
-    p.append(b.ball(0.62, (0.0, 2.18, -0.12), "ironDark", seg=16, rings=10, squash=(0.98, 0.94, 1.02)))
+    # 5. Elmo de cerco com crista rebitada, viseira de fornalha e chifres frontais curvos 18-seg
+    p.append(b.ball(0.62, (0.0, 2.18, -0.12), "ironDark", seg=18, rings=12, squash=(0.98, 0.94, 1.02)))
+    p.append(b.box((0.18, 0.36, 0.36), (0.0, 2.38, -0.10), "iron", bevel=0.03))
     p.append(b.box((0.46, 0.14, 0.24), (0.0, 2.16, -0.42), "amberBright", bevel=0.02))
     for sx in (-1, 1):
         p += _curved_siege_horn(
@@ -288,9 +301,12 @@ def iron_ram_colossus_torso():
     for sx in (-1, 1):
         p.append(b.box((0.11, 0.62, 0.14), (sx * 0.16, 1.46, -0.62), "ironDark", bevel=0.025))
         p.append(b.box((0.28, 0.52, 0.18), (sx * 0.48, 1.48, -0.44), "iron", rot=(0.0, sx * 0.28, 0.0), bevel=0.03))
-        p.append(b.box((0.14, 0.14, 0.12), (sx * 0.32, 1.66, -0.58), "amberBright", bevel=0.0))
-        p.append(b.box((0.14, 0.14, 0.12), (sx * 0.32, 1.26, -0.58), "amberBright", bevel=0.0))
-        p.append(b.ball(0.76, (sx * 0.82, 1.82, 0.0), "iron", seg=14, rings=8, squash=(1.06, 0.88, 1.02)))
+        for r_i in range(3):
+            p.append(b.box((0.28, 0.09, 0.13), (sx * 0.44, 1.24 + r_i * 0.20, -0.48), "steel", rot=(0.0, sx * 0.24, sx * 0.18), bevel=0.02))
+        p.append(b.box((0.14, 0.14, 0.12), (sx * 0.32, 1.66, -0.58), "amberBright", bevel=0.02))
+        p.append(b.box((0.14, 0.14, 0.12), (sx * 0.32, 1.26, -0.58), "amberBright", bevel=0.02))
+        p.append(b.ball(0.76, (sx * 0.82, 1.82, 0.0), "iron", seg=16, rings=10, squash=(1.06, 0.88, 1.02)))
+        p.append(b.torus(0.18, 0.035, (sx * 0.88, 2.04, 0.0), "ironDark", major_seg=14, minor_seg=6, rot=(0.25, 0.0, -sx * 0.45)))
         p.append(
             b.box(
                 (0.52, 0.20, 0.56),
@@ -310,7 +326,7 @@ def iron_ram_colossus_torso():
             col_base="steel",
             col_tip="hornIvory",
             verts=18,
-            three_seg=False,
+            three_seg=True,
         )
         p += _curved_siege_horn(
             b,
@@ -322,21 +338,26 @@ def iron_ram_colossus_torso():
             col_base="steel",
             col_tip="hornIvory",
             verts=18,
-            three_seg=False,
+            three_seg=True,
         )
+    for v_i in range(4):
+        p.append(b.box((0.30, 0.18, 0.24), (0.0, 1.18 + v_i * 0.24, 0.56), "ironDark", bevel=0.025))
+        p.append(b.ico(0.09, (0.0, 1.18 + v_i * 0.24, 0.68), "ember", subdiv=1))
     return p
 
 
 def iron_ram_colossus_arm_r():
-    """A1 Braco Direito: ombro em (0,0,0) + manopla-ariete pesada com cintas de ferro e runas ambar."""
+    """A1 Braco Direito: ombro em (0,0,0) + manopla-ariete pesada com cintas de ferro, rebites e runas ambar."""
     b = Rb("iron_ram_colossus")
     p = [
         b.ball(0.38, (0.0, 0.0, 0.0), "ironDark", seg=20, rings=14),
         b.box((0.36, 0.22, 0.34), (0.06, -0.14, -0.04), "iron", rot=(0.0, 0.0, -0.22), bevel=0.03),
         b.cyl(0.22, 0.52, (0.02, -0.50, -0.06), "ironDark", verts=20, r2=0.24),
+        b.torus(0.23, 0.038, (0.02, -0.34, -0.06), "steel", major_seg=16, minor_seg=6),
         b.box((0.50, 0.46, 0.80), (0.04, -0.68, -0.44), "iron", rot=(0.32, 0.0, 0.0), bevel=0.04),
         b.box((0.56, 0.20, 0.24), (0.04, -0.56, -0.28), "ironDark", rot=(0.32, 0.0, 0.0), bevel=0.03),
         b.box((0.56, 0.20, 0.24), (0.04, -0.66, -0.56), "ironDark", rot=(0.32, 0.0, 0.0), bevel=0.03),
+        b.box((0.28, 0.14, 0.64), (0.04, -0.44, -0.42), "steel", rot=(0.32, 0.0, 0.0), bevel=0.025),
         b.torus(
             0.28,
             0.045,
@@ -347,7 +368,7 @@ def iron_ram_colossus_arm_r():
             rot=(math.pi / 2 - 0.32, 0.0, 0.0),
         ),
         b.ico(0.22, (0.04, -0.72, -0.68), "ember", squash=(0.95, 0.85, 0.65), subdiv=2),
-        b.cyl_axis_y(0.22, 0.46, (0.04, -0.82, -0.92), "steel", verts=18, r2=0.08, tilt=-0.32),
+        b.cyl_axis_y(0.22, 0.46, (0.04, -0.82, -0.92), "steel", verts=18, r2=0.08, tilt=-0.32, bevel=0.02),
         b.box((0.12, 0.12, 0.54), (0.26, -0.62, -0.46), "amberBright", rot=(0.32, 0.0, 0.0), bevel=0.02),
         b.box((0.12, 0.12, 0.54), (-0.18, -0.62, -0.46), "amberBright", rot=(0.32, 0.0, 0.0), bevel=0.02),
         b.capsule_seg((0.24, -0.58, -0.56), (0.34, -0.74, -0.96), 0.09, 0.015, "hornIvory", verts=18),
@@ -363,9 +384,12 @@ def iron_ram_colossus_arm_l():
         b.ball(0.36, (0.0, 0.0, 0.0), "ironDark", seg=20, rings=14),
         b.box((0.34, 0.20, 0.32), (-0.06, -0.14, -0.04), "iron", rot=(0.0, 0.0, 0.22), bevel=0.03),
         b.cyl(0.21, 0.54, (-0.02, -0.52, -0.06), "ironDark", verts=20, r2=0.23),
+        b.torus(0.22, 0.036, (-0.02, -0.35, -0.06), "steel", major_seg=16, minor_seg=6),
         b.box((0.46, 0.44, 0.72), (-0.04, -0.68, -0.38), "iron", rot=(0.26, 0.0, 0.0), bevel=0.04),
         b.box((0.52, 0.18, 0.22), (-0.04, -0.58, -0.26), "ironDark", rot=(0.26, 0.0, 0.0), bevel=0.03),
+        b.box((0.52, 0.18, 0.22), (-0.04, -0.66, -0.50), "ironDark", rot=(0.26, 0.0, 0.0), bevel=0.03),
         b.box((0.20, 0.60, 0.62), (-0.26, -0.62, -0.36), "ironDark", rot=(0.20, 0.14, 0.0), bevel=0.035),
+        b.box((0.14, 0.52, 0.54), (-0.31, -0.62, -0.36), "steel", rot=(0.20, 0.14, 0.0), bevel=0.025),
         b.box((0.10, 0.44, 0.46), (-0.34, -0.62, -0.36), "amberBright", rot=(0.20, 0.14, 0.0), bevel=0.02),
         b.torus(
             0.25,
@@ -376,7 +400,7 @@ def iron_ram_colossus_arm_l():
             minor_seg=8,
             rot=(math.pi / 2 - 0.26, 0.0, 0.0),
         ),
-        b.cyl_axis_y(0.19, 0.42, (-0.04, -0.78, -0.80), "steel", verts=18, r2=0.07, tilt=-0.26),
+        b.cyl_axis_y(0.19, 0.42, (-0.04, -0.78, -0.80), "steel", verts=18, r2=0.07, tilt=-0.26, bevel=0.02),
         b.capsule_seg((-0.24, -0.54, -0.50), (-0.34, -0.68, -0.86), 0.085, 0.015, "hornIvory", verts=18),
     ]
 
@@ -388,8 +412,10 @@ def iron_ram_colossus_leg(sx: int):
         b.ball(0.34, (0.0, 0.0, 0.0), "ironDark", seg=20, rings=14),
         b.cyl(0.28, 0.78, (0.0, -0.78, 0.0), "ironDark", verts=20, r2=0.24),
         b.torus(0.25, 0.04, (0.0, -0.38, -0.02), "iron", major_seg=18, minor_seg=8),
+        b.torus(0.26, 0.038, (0.0, -0.64, -0.02), "steel", major_seg=16, minor_seg=6),
         b.box((0.38, 0.28, 0.26), (sx * 0.04, -0.38, -0.14), "iron", bevel=0.035),
         b.box((0.34, 0.46, 0.20), (0.0, -0.58, -0.14), "iron", bevel=0.035),
+        b.box((0.18, 0.38, 0.14), (0.0, -0.58, -0.22), "steel", bevel=0.025),
         b.box((0.12, 0.34, 0.16), (sx * 0.18, -0.56, -0.06), "amberBright", bevel=0.02),
         b.capsule_seg(
             (sx * 0.04, -0.36, -0.22),
@@ -421,17 +447,22 @@ def slag_juggernaut():
         p.append(j.box((0.38, 0.42, 0.22), (lx, 0.42, -0.16), "ironDark", bevel=0.03))
         p.append(j.ico(0.18, (lx, 0.44, -0.26), "ember", squash=(0.95, 0.80, 0.65), subdiv=2))
 
-    # 2. Caldeirao forjado de 24 segmentos com nucleo de escoria derretida e rebites no aro
+    # 2. Caldeirao forjado de 24 segmentos com grade de magma, nucleo derretido e rebites no aro
     p.append(j.cyl(0.86, 0.96, (0.0, 0.72, 0.0), "ironDark", verts=24, r2=0.78))
     p.append(j.torus(0.84, 0.072, (0.0, 1.58, 0.0), "stoneDark", major_seg=24, minor_seg=10))
     p.append(j.torus(0.82, 0.052, (0.0, 0.92, 0.0), "iron", major_seg=24, minor_seg=8))
     p.append(j.ico(0.56, (0.0, 1.24, -0.44), "danger", squash=(1.05, 0.92, 0.58), subdiv=2))
     p.append(j.ico(0.38, (0.0, 1.24, -0.58), "amberBright", squash=(0.95, 0.85, 0.45), subdiv=2))
+    p.append(j.torus(0.46, 0.048, (0.0, 1.24, -0.62), "ironDark", major_seg=20, minor_seg=8, rot=(math.pi / 2, 0.0, 0.0)))
+    p.append(j.box((0.76, 0.11, 0.14), (0.0, 1.24, -0.66), "ironDark", bevel=0.025))
+    for sx in (-1, 1):
+        p.append(j.box((0.10, 0.68, 0.14), (sx * 0.18, 1.24, -0.66), "ironDark", bevel=0.025))
     for k in range(8):
         a = 2 * math.pi * k / 8
         p.append(j.box((0.12, 0.12, 0.12), (0.86 * math.cos(a), 1.58, 0.86 * math.sin(a)), "amber", bevel=0.02))
+        p.append(j.box((0.10, 0.72, 0.10), (0.82 * math.cos(a), 1.24, 0.82 * math.sin(a)), "iron", rot=(0.0, -a, 0.0), bevel=0.02))
 
-    # 3. Chamines dorsais duplas fumegantes com colares torus
+    # 3. Chamines dorsais duplas fumegantes com colares torus e dutos de exaustao
     for sx in (-1, 1):
         p.append(
             j.capsule_seg(
@@ -441,6 +472,17 @@ def slag_juggernaut():
                 0.17,
                 "stoneDark",
                 verts=20,
+            )
+        )
+        p.append(
+            j.torus(
+                0.23,
+                0.042,
+                (sx * 0.51, 1.98, 0.50),
+                "ironDark",
+                major_seg=16,
+                minor_seg=8,
+                rot=(-0.38, sx * 0.18, 0.0),
             )
         )
         p.append(
@@ -458,8 +500,9 @@ def slag_juggernaut():
 
     # 4. Ombreiras de magma e punhos esmagadores de fundicao
     for sx in (-1, 1):
-        p.append(j.ball(0.68, (sx * 0.94, 1.62, 0.0), "stoneDark", seg=16, rings=10))
+        p.append(j.ball(0.68, (sx * 0.94, 1.62, 0.0), "stoneDark", seg=18, rings=12))
         p.append(j.box((0.46, 0.24, 0.48), (sx * 0.98, 1.74, -0.02), "ember", rot=(0.0, 0.0, -sx * 0.25), bevel=0.03))
+        p.append(j.crystal(0.15, 0.48, (sx * 1.06, 1.82, -0.04), "amberBright", tilt=(0.18, -sx * 0.52), verts=6))
         p.append(j.cyl(0.24, 0.82, (sx * 1.02, 0.82, -0.14), "ironDark", verts=18, r2=0.22))
         p.append(j.ico(0.42, (sx * 1.04, 0.76, -0.36), "ember", squash=(1.05, 0.95, 1.15), subdiv=2))
         p.append(j.box((0.48, 0.36, 0.44), (sx * 1.04, 0.74, -0.44), "stoneDark", bevel=0.035))
@@ -501,8 +544,11 @@ def slag_juggernaut_torso():
     for k in range(8):
         a = 2 * math.pi * k / 8
         p.append(j.box((0.12, 0.12, 0.12), (0.86 * math.cos(a), 1.58, 0.86 * math.sin(a)), "amber", bevel=0.0))
+        p.append(j.box((0.10, 0.70, 0.10), (0.82 * math.cos(a), 1.24, 0.82 * math.sin(a)), "iron", rot=(0.0, -a, 0.0), bevel=0.0))
+    p.append(j.torus(0.46, 0.048, (0.0, 1.24, -0.62), "ironDark", major_seg=20, minor_seg=6, rot=(math.pi / 2, 0.0, 0.0)))
     for sx in (-1, 1):
-        p.append(j.ball(0.64, (sx * 0.90, 1.62, 0.0), "stoneDark", seg=14, rings=8))
+        p.append(j.box((0.10, 0.68, 0.14), (sx * 0.18, 1.24, -0.66), "ironDark", bevel=0.025))
+        p.append(j.ball(0.64, (sx * 0.90, 1.62, 0.0), "stoneDark", seg=16, rings=10))
         p.append(
             j.box(
                 (0.46, 0.22, 0.48),
@@ -520,7 +566,7 @@ def slag_juggernaut_torso():
                 0.22,
                 0.17,
                 "stoneDark",
-                verts=18,
+                verts=20,
             )
         )
         p.append(
@@ -529,8 +575,8 @@ def slag_juggernaut_torso():
                 0.04,
                 (sx * 0.52, 1.96, 0.49),
                 "ironDark",
-                major_seg=14,
-                minor_seg=6,
+                major_seg=16,
+                minor_seg=8,
                 rot=(-0.38, sx * 0.18, 0.0),
             )
         )
@@ -540,13 +586,13 @@ def slag_juggernaut_torso():
                 0.04,
                 (sx * 0.57, 2.50, 0.69),
                 "iron",
-                major_seg=14,
-                minor_seg=6,
+                major_seg=16,
+                minor_seg=8,
                 rot=(-0.38, sx * 0.18, 0.0),
             )
         )
-        p.append(j.ico(0.20, (sx * 0.58, 2.68, 0.78), "ember", squash=(1.0, 0.85, 1.0), subdiv=1))
-        p.append(j.ico(0.11, (sx * 0.18, 1.98, -0.56), "neonAmber", squash=(1.35, 0.55, 0.55), subdiv=1))
+        p.append(j.ico(0.20, (sx * 0.58, 2.68, 0.78), "ember", squash=(1.0, 0.85, 1.0), subdiv=2))
+        p.append(j.ico(0.11, (sx * 0.18, 1.98, -0.56), "neonAmber", squash=(1.35, 0.55, 0.55), subdiv=2))
     for k in range(4):
         p.append(
             j.crystal(
@@ -565,15 +611,17 @@ def slag_juggernaut_arm_r():
     """A2 Braco Direito: ombro em (0,0,0) + punho esmagador de fundicao e malho de escoria."""
     j = Rb("slag_juggernaut")
     return [
-        j.ball(0.38, (0.0, 0.0, 0.0), "stoneDark", seg=16, rings=10),
+        j.ball(0.38, (0.0, 0.0, 0.0), "stoneDark", seg=18, rings=12),
         j.box((0.36, 0.20, 0.34), (0.06, -0.14, -0.04), "ember", rot=(0.0, 0.0, -0.22), bevel=0.03),
         j.cyl(0.22, 0.58, (0.02, -0.54, -0.08), "ironDark", verts=20, r2=0.24),
         j.torus(0.24, 0.042, (0.03, -0.44, -0.10), "stoneDark", major_seg=18, minor_seg=8),
         j.ico(0.32, (0.04, -0.62, -0.22), "ember", squash=(1.05, 0.90, 1.05), subdiv=2),
         j.box((0.40, 0.28, 0.36), (0.04, -0.60, -0.26), "stoneDark", rot=(0.32, 0.0, 0.0), bevel=0.035),
-        # Haste e cabeca do Malho Esmagador de Fundicao
+        # Haste rebitada e cabeca do Malho Esmagador de Fundicao
         j.cyl_axis_y(0.11, 0.98, (0.04, -0.66, -0.54), "ironDark", verts=20, r2=0.12, tilt=-0.38),
+        j.torus(0.13, 0.03, (0.04, -0.74, -0.74), "iron", major_seg=14, minor_seg=6, rot=(math.pi / 2 - 0.38, 0.0, 0.0)),
         j.box((0.68, 0.42, 0.44), (0.04, -0.82, -0.94), "stoneDark", rot=(0.38, 0.0, 0.0), bevel=0.04),
+        j.box((0.72, 0.14, 0.48), (0.04, -0.82, -0.94), "ironDark", rot=(0.38, 0.0, 0.0), bevel=0.03),
         j.torus(
             0.25,
             0.045,
@@ -592,7 +640,7 @@ def slag_juggernaut_arm_l():
     """A2 Braco Esquerdo: ombro em (0,0,0) + pesado punho esmagador de fundicao."""
     j = Rb("slag_juggernaut")
     return [
-        j.ball(0.38, (0.0, 0.0, 0.0), "stoneDark", seg=16, rings=10),
+        j.ball(0.38, (0.0, 0.0, 0.0), "stoneDark", seg=18, rings=12),
         j.box((0.36, 0.20, 0.34), (-0.06, -0.14, -0.04), "ember", rot=(0.0, 0.0, 0.22), bevel=0.03),
         j.cyl(0.23, 0.58, (-0.02, -0.56, -0.08), "ironDark", verts=20, r2=0.25),
         j.torus(0.25, 0.042, (-0.03, -0.44, -0.10), "stoneDark", major_seg=18, minor_seg=8),
@@ -608,6 +656,7 @@ def slag_juggernaut_arm_l():
         j.ico(0.38, (-0.04, -0.72, -0.28), "ember", squash=(1.08, 0.95, 1.12), subdiv=2),
         j.ico(0.28, (-0.04, -0.76, -0.38), "amberBright", squash=(0.95, 0.88, 0.95), subdiv=2),
         j.box((0.46, 0.34, 0.42), (-0.06, -0.70, -0.32), "stoneDark", rot=(0.24, 0.0, 0.0), bevel=0.04),
+        j.box((0.50, 0.14, 0.22), (-0.06, -0.64, -0.24), "iron", rot=(0.24, 0.0, 0.0), bevel=0.025),
         j.box((0.14, 0.24, 0.32), (-0.22, -0.78, -0.44), "ironDark", rot=(0.35, 0.0, 0.0), bevel=0.03),
         j.box((0.14, 0.24, 0.32), (0.10, -0.78, -0.44), "ironDark", rot=(0.35, 0.0, 0.0), bevel=0.03),
         j.crystal(0.13, 0.34, (-0.16, -0.82, -0.52), "amberBright", tilt=(1.35, 0.22), verts=6),
@@ -619,12 +668,13 @@ def slag_juggernaut_leg(sx: int):
     """A2 Perna: pilar de fundicao e greva de escoria a partir do quadril (0,0,0)."""
     j = Rb("slag_juggernaut")
     return [
-        j.ball(0.36, (0.0, 0.0, 0.0), "stoneDark", seg=16, rings=10),
+        j.ball(0.36, (0.0, 0.0, 0.0), "stoneDark", seg=18, rings=12),
         j.cyl(0.32, 0.74, (0.0, -0.74, 0.0), "stoneDark", verts=24, r2=0.28),
         j.torus(0.30, 0.042, (0.0, -0.34, 0.0), "ironDark", major_seg=20, minor_seg=8),
         j.torus(0.28, 0.038, (0.0, -0.58, 0.0), "iron", major_seg=18, minor_seg=8),
         j.ico(0.22, (sx * 0.05, -0.38, -0.22), "ember", squash=(0.95, 0.80, 0.65), subdiv=2),
         j.box((0.38, 0.44, 0.22), (0.0, -0.48, -0.16), "ironDark", bevel=0.035),
+        j.box((0.42, 0.12, 0.24), (0.0, -0.48, -0.18), "iron", bevel=0.025),
         j.box((0.50, 0.22, 0.62), (0.0, -0.74, -0.08), "ironDark", bevel=0.035),
         j.box((0.36, 0.14, 0.24), (0.0, -0.66, -0.32), "ember", bevel=0.025),
         j.box((0.16, 0.28, 0.24), (sx * 0.22, -0.52, -0.04), "amberBright", bevel=0.025),
@@ -690,8 +740,9 @@ def rime_matriarch():
     p.append(m.box((0.26, 0.24, 0.42), (-0.76, 1.02, -0.46), "ice", bevel=0.03))
     p.append(m.crystal(0.13, 0.48, (-0.76, 1.00, -0.68), "iceGlow", tilt=(1.38, 0.0), verts=6))
 
-    # 4. Elmo soberano, coroa de gelo chifruda e halo torus flutuante de runas
-    p.append(m.ball(0.74, (0.0, 2.22, -0.06), "ironDark", seg=18, rings=12, squash=(0.92, 1.08, 0.98)))
+    # 4. Elmo soberano, coroa de gelo chifruda em camadas e halo torus flutuante de runas
+    p.append(m.ball(0.74, (0.0, 2.22, -0.06), "ironDark", seg=20, rings=14, squash=(0.92, 1.08, 0.98)))
+    p.append(m.torus(0.34, 0.038, (0.0, 2.48, -0.04), "iceLight", major_seg=18, minor_seg=8))
     p.append(
         m.torus(
             0.66,
@@ -714,7 +765,11 @@ def rime_matriarch():
             rot=(math.pi / 2 - 0.18, 0.36, 0.0),
         )
     )
+    for k in range(6):
+        ha = 2 * math.pi * k / 6 + 0.25
+        p.append(m.ico(0.085, (0.66 * math.cos(ha), 2.38 + 0.66 * math.sin(ha), 0.32), "iceGlow", subdiv=1))
     for sx in (-1, 1):
+        p.append(m.box((0.28, 0.72, 0.12), (sx * 0.28, 1.48, 0.28), "royal", rot=(0.18, sx * 0.20, 0.0), bevel=0.03))
         p.append(m.ico(0.10, (sx * 0.14, 2.22, -0.40), "iceGlow", squash=(1.4, 0.55, 0.55), subdiv=2))
         p += _curved_siege_horn(
             m,
@@ -725,16 +780,16 @@ def rime_matriarch():
             0.11,
             col_base="ice",
             col_tip="iceGlow",
-            verts=16,
+            verts=18,
         )
-    for k in range(5):
-        ang = (k - 2) * 0.42
+    for k in range(7):
+        ang = (k - 3) * 0.32
         p.append(
             m.crystal(
                 0.12,
-                0.96 - abs(k - 2) * 0.16,
-                (math.sin(ang) * 0.24, 2.52, -0.02 + abs(k - 2) * 0.04),
-                "iceGlow" if k == 2 else ("arcaneCyan" if k % 2 == 1 else "iceLight"),
+                0.96 - abs(k - 3) * 0.12,
+                (math.sin(ang) * 0.28, 2.52, -0.02 + abs(k - 3) * 0.03),
+                "iceGlow" if k == 3 else ("arcaneCyan" if k % 2 == 1 else "iceLight"),
                 tilt=(-0.12, -ang * 0.65),
                 verts=6,
             )
@@ -749,21 +804,21 @@ def rime_matriarch_torso():
     p = [
         m.cyl(0.48, 0.44, (0.0, 0.94, 0.0), "stoneDark", verts=20, r2=0.38),
         m.cyl(0.56, 0.22, (0.0, 0.88, 0.0), "royal", verts=20, r2=0.44),
-        m.torus(0.44, 0.042, (0.0, 1.16, 0.0), "iceLight", major_seg=18, minor_seg=6),
+        m.torus(0.44, 0.042, (0.0, 1.16, 0.0), "iceLight", major_seg=20, minor_seg=8),
         m.ico(0.56, (0.0, 1.54, 0.0), "stoneDark", squash=(1.04, 1.18, 0.78), subdiv=2),
         m.ico(0.46, (0.0, 1.58, -0.10), "royal", squash=(0.92, 1.08, 0.72), subdiv=2),
         m.ico(0.22, (0.0, 1.56, -0.36), "arcaneCyan", squash=(0.90, 0.90, 0.65), subdiv=2),
         m.crystal(0.22, 0.52, (0.0, 1.56, -0.40), "iceGlow", tilt=(1.45, 0.0), verts=6),
-        m.ball(0.74, (0.0, 2.22, -0.06), "ironDark", seg=16, rings=10, squash=(0.92, 1.08, 0.98)),
-        m.torus(0.32, 0.038, (0.0, 2.48, -0.04), "iceLight", major_seg=16, minor_seg=6),
+        m.ball(0.74, (0.0, 2.22, -0.06), "ironDark", seg=18, rings=12, squash=(0.92, 1.08, 0.98)),
+        m.torus(0.32, 0.038, (0.0, 2.48, -0.04), "iceLight", major_seg=18, minor_seg=8),
         # Halo torus de runas flutuante nas costas
         m.torus(
             0.66,
             0.045,
             (0.0, 2.38, 0.32),
             "arcaneCyan",
-            major_seg=20,
-            minor_seg=6,
+            major_seg=22,
+            minor_seg=8,
             rot=(math.pi / 2 - 0.18, 0.0, 0.0),
         ),
         m.torus(
@@ -771,16 +826,19 @@ def rime_matriarch_torso():
             0.032,
             (0.0, 2.38, 0.34),
             "iceGlow",
-            major_seg=16,
-            minor_seg=6,
+            major_seg=18,
+            minor_seg=8,
             rot=(math.pi / 2 - 0.18, 0.36, 0.0),
         ),
     ]
+    for k in range(6):
+        ha = 2 * math.pi * k / 6 + 0.25
+        p.append(m.ico(0.085, (0.66 * math.cos(ha), 2.38 + 0.66 * math.sin(ha), 0.32), "iceGlow", subdiv=1))
     for sx in (-1, 1):
         p.append(m.crystal(0.24, 1.05, (sx * 0.62, 1.78, 0.06), "ice", tilt=(-0.22, -sx * 0.62), verts=6))
         p.append(m.crystal(0.18, 0.82, (sx * 0.84, 1.66, 0.16), "iceLight", tilt=(-0.38, -sx * 0.92), verts=6))
         p.append(m.box((0.28, 0.72, 0.10), (sx * 0.28, 1.48, 0.28), "royal", rot=(0.18, sx * 0.20, 0.0), bevel=0.03))
-        p.append(m.ico(0.10, (sx * 0.14, 2.22, -0.40), "iceGlow", squash=(1.4, 0.55, 0.55), subdiv=1))
+        p.append(m.ico(0.10, (sx * 0.14, 2.22, -0.40), "iceGlow", squash=(1.4, 0.55, 0.55), subdiv=2))
         p += _curved_siege_horn(
             m,
             (sx * 0.24, 2.44, -0.04),
@@ -790,17 +848,17 @@ def rime_matriarch_torso():
             0.11,
             col_base="ice",
             col_tip="iceGlow",
-            verts=16,
-            three_seg=False,
+            verts=18,
+            three_seg=True,
         )
-    for k in range(5):
-        ang = (k - 2) * 0.42
+    for k in range(7):
+        ang = (k - 3) * 0.32
         p.append(
             m.crystal(
                 0.12,
-                0.96 - abs(k - 2) * 0.16,
-                (math.sin(ang) * 0.24, 2.52, -0.02 + abs(k - 2) * 0.04),
-                "iceGlow" if k == 2 else ("arcaneCyan" if k % 2 == 1 else "iceLight"),
+                0.96 - abs(k - 3) * 0.12,
+                (math.sin(ang) * 0.28, 2.52, -0.02 + abs(k - 3) * 0.03),
+                "iceGlow" if k == 3 else ("arcaneCyan" if k % 2 == 1 else "iceLight"),
                 tilt=(-0.12, -ang * 0.65),
                 verts=6,
             )
@@ -809,10 +867,10 @@ def rime_matriarch_torso():
 
 
 def rime_matriarch_arm_r():
-    """A3 Braco Direito: ombro em (0,0,0) + Cetro Boreal multi-pontas com anel torus de runas."""
+    """A3 Braco Direito: ombro em (0,0,0) + Cetro Boreal multi-pontas com anel giroscopico de runas."""
     m = Rb("rime_matriarch")
     return [
-        m.ball(0.30, (0.0, 0.0, 0.0), "ironDark", seg=16, rings=10),
+        m.ball(0.30, (0.0, 0.0, 0.0), "ironDark", seg=18, rings=12),
         m.cyl(0.16, 0.56, (0.02, -0.52, -0.10), "ironDark", verts=20, r2=0.12),
         m.torus(0.16, 0.032, (0.03, -0.44, -0.10), "iceLight", major_seg=18, minor_seg=8),
         m.crystal(0.14, 0.42, (0.06, -0.24, -0.06), "ice", tilt=(-0.25, -0.45), verts=6),
@@ -826,6 +884,15 @@ def rime_matriarch_arm_r():
             major_seg=18,
             minor_seg=8,
             rot=(0.42, 0.0, 0.0),
+        ),
+        m.torus(
+            0.19,
+            0.028,
+            (0.04, -0.82, -0.96),
+            "iceLight",
+            major_seg=16,
+            minor_seg=6,
+            rot=(0.42, 0.65, 0.0),
         ),
         m.ico(0.22, (0.04, -0.82, -0.96), "iceGlow", squash=(0.95, 0.95, 1.15), subdiv=2),
         m.crystal(0.15, 0.56, (0.04, -0.86, -1.02), "iceGlow", tilt=(math.pi / 2 + 0.42, 0.0), verts=6),
@@ -842,8 +909,10 @@ def rime_matriarch_arm_l():
     return [
         m.ball(0.30, (0.0, 0.0, 0.0), "ironDark", seg=20, rings=14),
         m.cyl(0.16, 0.58, (-0.02, -0.54, -0.10), "ironDark", verts=20, r2=0.12),
+        m.torus(0.16, 0.03, (-0.02, -0.38, -0.08), "iceLight", major_seg=16, minor_seg=6),
         m.box((0.26, 0.24, 0.44), (-0.06, -0.58, -0.24), "royal", rot=(0.28, 0.0, 0.0), bevel=0.03),
         m.box((0.16, 0.36, 0.42), (-0.18, -0.54, -0.24), "ice", rot=(0.24, 0.22, 0.0), bevel=0.03),
+        m.box((0.12, 0.28, 0.34), (-0.22, -0.54, -0.24), "iceLight", rot=(0.24, 0.22, 0.0), bevel=0.025),
         m.torus(
             0.22,
             0.035,
@@ -855,9 +924,9 @@ def rime_matriarch_arm_l():
         ),
         m.ico(0.16, (-0.08, -0.62, -0.28), "iceGlow", subdiv=2),
         m.crystal(0.18, 0.56, (-0.16, -0.48, -0.22), "ice", tilt=(0.35, 0.42), verts=6),
-        m.capsule_seg((-0.02, -0.64, -0.28), (-0.02, -0.84, -0.64), 0.08, 0.012, "iceGlow", verts=14),
-        m.capsule_seg((-0.12, -0.64, -0.26), (-0.16, -0.82, -0.60), 0.075, 0.012, "arcaneCyan", verts=14),
-        m.capsule_seg((0.06, -0.64, -0.26), (0.10, -0.82, -0.60), 0.075, 0.012, "iceLight", verts=14),
+        m.capsule_seg((-0.02, -0.64, -0.28), (-0.02, -0.84, -0.64), 0.08, 0.012, "iceGlow", verts=16),
+        m.capsule_seg((-0.12, -0.64, -0.26), (-0.16, -0.82, -0.60), 0.075, 0.012, "arcaneCyan", verts=16),
+        m.capsule_seg((0.06, -0.64, -0.26), (0.10, -0.82, -0.60), 0.075, 0.012, "iceLight", verts=16),
     ]
 
 
@@ -866,8 +935,9 @@ def rime_matriarch_leg(sx: int):
     m = Rb("rime_matriarch")
     return [
         m.ball(0.32, (0.0, 0.0, 0.0), "stoneDark", seg=20, rings=14),
-        m.cyl(0.34, 0.44, (0.0, -0.42, 0.0), "royal", verts=20, r2=0.24),
-        m.cyl(0.38, 0.46, (0.0, -0.74, 0.0), "stoneDark", verts=20, r2=0.20),
+        m.cyl(0.34, 0.44, (0.0, -0.42, 0.0), "royal", verts=22, r2=0.24),
+        m.cyl(0.38, 0.46, (0.0, -0.74, 0.0), "stoneDark", verts=22, r2=0.20),
+        m.torus(0.30, 0.032, (0.0, -0.34, 0.0), "iceLight", major_seg=18, minor_seg=6),
         m.torus(0.34, 0.036, (0.0, -0.64, 0.0), "arcaneCyan", major_seg=18, minor_seg=8),
         m.box((0.24, 0.56, 0.14), (sx * 0.16, -0.48, -0.10), "ice", rot=(0.12, 0.0, -sx * 0.18), bevel=0.03),
         m.box((0.22, 0.52, 0.14), (-sx * 0.12, -0.52, 0.10), "iceLight", rot=(-0.12, 0.0, sx * 0.16), bevel=0.03),
@@ -893,22 +963,27 @@ def powder_baron():
     p.append(pb.cyl(0.68, 0.56, (0.0, 0.68, 0.0), "crimsonCloth", verts=20, r2=0.52))
     p.append(pb.torus(0.55, 0.05, (0.0, 1.16, 0.0), "brass", major_seg=18, minor_seg=8))
 
-    # 2. Couraca com bandoleiras de granadas e caldeiras a vapor nas costas
+    # 2. Couraca com bandoleiras de granadas e caldeiras a vapor nas costas com manometros
     p.append(pb.ico(0.64, (0.0, 1.44, 0.0), "ironDark", squash=(1.12, 1.06, 0.82), subdiv=2))
     p.append(pb.ico(0.26, (0.0, 1.46, -0.46), "goldBright", squash=(1.0, 1.0, 0.55), subdiv=2))
+    p.append(pb.capsule_seg((-0.34, 1.72, 0.42), (0.34, 1.72, 0.42), 0.075, 0.075, "bronze", verts=12))
     for sx in (-1, 1):
         p.append(pb.box((0.14, 0.72, 0.16), (sx * 0.26, 1.44, -0.42), "bronze", rot=(0.0, 0.0, sx * 0.42), bevel=0.025))
-        p.append(pb.cyl(0.11, 0.20, (sx * 0.30, 1.54, -0.48), "ironDark", verts=12))
-        p.append(pb.cyl(0.11, 0.20, (sx * 0.18, 1.30, -0.50), "danger", verts=12))
-        # Caldeiras a vapor duplas com anel torus nas costas
+        p.append(pb.cyl(0.11, 0.20, (sx * 0.30, 1.54, -0.48), "ironDark", verts=14))
+        p.append(pb.cyl(0.11, 0.20, (sx * 0.18, 1.30, -0.50), "danger", verts=14))
+        # Caldeiras a vapor duplas com anel torus e manometros nas costas
         p.append(pb.cyl(0.24, 0.68, (sx * 0.34, 1.32, 0.38), "brass", verts=18, r2=0.22))
         p.append(pb.torus(0.24, 0.036, (sx * 0.34, 1.56, 0.38), "ironDark", major_seg=16, minor_seg=8))
+        p.append(pb.torus(0.23, 0.034, (sx * 0.34, 1.82, 0.38), "ironDark", major_seg=16, minor_seg=6))
+        p.append(pb.cyl_axis_y(0.085, 0.10, (sx * 0.34, 1.68, 0.60), "gold", verts=12))
         p.append(pb.ball(0.60, (sx * 0.76, 1.72, 0.0), "bronze", seg=16, rings=10))
-        p.append(pb.cyl_axis_y(0.22, 1.08, (sx * 0.78, 2.02, -0.22), "ironDark", verts=16, r2=0.26, tilt=0.45))
-        p.append(pb.cyl_axis_y(0.27, 0.16, (sx * 0.78, 2.22, -0.64), "gold", verts=16, r2=0.27, tilt=0.45))
+        p.append(pb.cyl_axis_y(0.22, 1.08, (sx * 0.78, 2.02, -0.22), "ironDark", verts=18, r2=0.26, tilt=0.45))
+        p.append(pb.torus(0.25, 0.035, (sx * 0.78, 2.12, -0.42), "brass", major_seg=16, minor_seg=6, rot=(math.pi / 2 - 0.45, 0.0, 0.0)))
+        p.append(pb.cyl_axis_y(0.27, 0.16, (sx * 0.78, 2.22, -0.64), "gold", verts=18, r2=0.27, tilt=0.45))
 
     # 3. Canhao rotativo de 6 canos (dir) e manopla garra/escudo (esq)
     p.append(pb.cyl(0.20, 0.72, (0.84, 0.96, -0.18), "ironDark", verts=16, r2=0.18))
+    p.append(pb.cyl_axis_y(0.22, 0.24, (0.84, 0.94, -0.42), "brass", verts=16, tilt=-0.18))
     for k in range(6):
         a = 2 * math.pi * k / 6
         p.append(
@@ -936,8 +1011,8 @@ def powder_baron():
     p.append(pb.box((0.20, 0.48, 0.52), (-0.98, 0.92, -0.44), "brass", bevel=0.03))
     p.append(pb.box((0.32, 0.28, 0.44), (-0.84, 0.90, -0.48), "ironDark", bevel=0.03))
 
-    # 4. Cabeca e chapeu tricornio/bicornio com oculos de latao
-    p.append(pb.ball(0.72, (0.0, 2.12, -0.06), "ironDark", seg=16, rings=10))
+    # 4. Cabeca e chapeu tricornio/bicornio com abas chanfradas e oculos de latao
+    p.append(pb.ball(0.72, (0.0, 2.12, -0.06), "ironDark", seg=18, rings=12))
     for sx in (-1, 1):
         p.append(
             pb.torus(
@@ -951,6 +1026,7 @@ def powder_baron():
             )
         )
         p.append(pb.ico(0.09, (sx * 0.15, 2.13, -0.40), "amberBright", squash=(1.2, 0.55, 0.55), subdiv=1))
+        p.append(pb.box((0.20, 0.18, 0.58), (sx * 0.46, 2.44, -0.04), "obsidian", rot=(0.0, 0.0, -sx * 0.38), bevel=0.03))
     p.append(pb.cyl(0.80, 0.14, (0.0, 2.34, -0.04), "ironDark", verts=18, r2=0.72))
     p.append(pb.cyl(0.48, 0.36, (0.0, 2.44, -0.02), "gold", verts=18, r2=0.38))
     p.append(pb.crystal(0.16, 0.68, (0.28, 2.66, 0.12), "crimsonBright", tilt=(-0.68, -0.35), verts=6))
@@ -959,16 +1035,17 @@ def powder_baron():
 
 
 def powder_baron_torso():
-    """A4 Torso: sobretudo blindado, bandoleira de granadas, caldeiras duplas com engrenagem/torus e tricornio com oculos de latao."""
+    """A4 Torso: sobretudo blindado, bandoleira de granadas, caldeiras duplas com manometros/torus e tricornio com oculos de latao."""
     pb = Rb("powder_baron")
     p = [
-        pb.cyl(0.64, 0.44, (0.0, 0.84, 0.0), "crimsonCloth", verts=18, r2=0.52),
-        pb.torus(0.55, 0.05, (0.0, 1.18, 0.0), "brass", major_seg=16, minor_seg=6),
+        pb.cyl(0.64, 0.44, (0.0, 0.84, 0.0), "crimsonCloth", verts=20, r2=0.52),
+        pb.torus(0.55, 0.05, (0.0, 1.18, 0.0), "brass", major_seg=18, minor_seg=8),
         pb.ico(0.64, (0.0, 1.44, 0.0), "ironDark", squash=(1.12, 1.06, 0.82), subdiv=2),
-        pb.ico(0.26, (0.0, 1.46, -0.46), "goldBright", squash=(1.0, 1.0, 0.55), subdiv=1),
-        pb.ball(0.72, (0.0, 2.12, -0.06), "ironDark", seg=14, rings=8),
-        pb.cyl(0.80, 0.14, (0.0, 2.34, -0.04), "ironDark", verts=16, r2=0.72),
-        pb.cyl(0.48, 0.36, (0.0, 2.44, -0.02), "gold", verts=16, r2=0.38),
+        pb.ico(0.26, (0.0, 1.46, -0.46), "goldBright", squash=(1.0, 1.0, 0.55), subdiv=2),
+        pb.capsule_seg((-0.34, 1.72, 0.42), (0.34, 1.72, 0.42), 0.075, 0.075, "bronze", verts=12),
+        pb.ball(0.72, (0.0, 2.12, -0.06), "ironDark", seg=16, rings=10),
+        pb.cyl(0.80, 0.14, (0.0, 2.34, -0.04), "ironDark", verts=18, r2=0.72),
+        pb.cyl(0.48, 0.36, (0.0, 2.44, -0.02), "gold", verts=18, r2=0.38),
         pb.crystal(0.16, 0.68, (0.28, 2.66, 0.12), "crimsonBright", tilt=(-0.68, -0.35), verts=6),
     ]
     for sx in (-1, 1):
@@ -981,14 +1058,17 @@ def powder_baron_torso():
                 bevel=0.025,
             )
         )
-        p.append(pb.cyl(0.11, 0.20, (sx * 0.30, 1.54, -0.48), "ironDark", verts=10))
-        p.append(pb.cyl(0.11, 0.20, (sx * 0.18, 1.30, -0.50), "danger", verts=10))
-        # Caldeiras a vapor duplas nas costas com colar torus
-        p.append(pb.cyl(0.24, 0.68, (sx * 0.34, 1.32, 0.38), "brass", verts=16, r2=0.22))
-        p.append(pb.torus(0.24, 0.038, (sx * 0.34, 1.56, 0.38), "ironDark", major_seg=14, minor_seg=6))
-        p.append(pb.ball(0.60, (sx * 0.76, 1.72, 0.0), "bronze", seg=12, rings=8))
-        p.append(pb.cyl_axis_y(0.24, 1.12, (sx * 0.78, 2.02, -0.22), "ironDark", verts=14, r2=0.28, tilt=0.45))
-        p.append(pb.cyl_axis_y(0.29, 0.18, (sx * 0.78, 2.24, -0.68), "gold", verts=14, r2=0.29, tilt=0.45))
+        p.append(pb.cyl(0.11, 0.20, (sx * 0.30, 1.54, -0.48), "ironDark", verts=12))
+        p.append(pb.cyl(0.11, 0.20, (sx * 0.18, 1.30, -0.50), "danger", verts=12))
+        # Caldeiras a vapor duplas nas costas com colar torus e manometro
+        p.append(pb.cyl(0.24, 0.68, (sx * 0.34, 1.32, 0.38), "brass", verts=18, r2=0.22))
+        p.append(pb.torus(0.24, 0.038, (sx * 0.34, 1.56, 0.38), "ironDark", major_seg=16, minor_seg=8))
+        p.append(pb.torus(0.23, 0.034, (sx * 0.34, 1.82, 0.38), "ironDark", major_seg=16, minor_seg=6))
+        p.append(pb.cyl_axis_y(0.085, 0.10, (sx * 0.34, 1.68, 0.60), "gold", verts=12))
+        p.append(pb.ball(0.60, (sx * 0.76, 1.72, 0.0), "bronze", seg=14, rings=10))
+        p.append(pb.cyl_axis_y(0.24, 1.12, (sx * 0.78, 2.02, -0.22), "ironDark", verts=16, r2=0.28, tilt=0.45))
+        p.append(pb.torus(0.26, 0.035, (sx * 0.78, 2.12, -0.42), "brass", major_seg=16, minor_seg=6, rot=(math.pi / 2 - 0.45, 0.0, 0.0)))
+        p.append(pb.cyl_axis_y(0.29, 0.18, (sx * 0.78, 2.24, -0.68), "gold", verts=16, r2=0.29, tilt=0.45))
         p.append(pb.ico(0.14, (sx * 0.78, 2.16, 0.34), "danger", subdiv=1))
         # Oculos de latao no elmo bicornio/tricornio
         p.append(
@@ -997,7 +1077,7 @@ def powder_baron_torso():
                 0.028,
                 (sx * 0.15, 2.13, -0.38),
                 "brass",
-                major_seg=12,
+                major_seg=14,
                 minor_seg=6,
                 rot=(math.pi / 2, sx * 0.18, 0.0),
             )
@@ -1008,19 +1088,29 @@ def powder_baron_torso():
 
 
 def powder_baron_arm_r():
-    """A4 Braco Direito: ombro em (0,0,0) + Canhao de Cerco Rotativo de 6 Canos com cintas torus."""
+    """A4 Braco Direito: ombro em (0,0,0) + Canhao de Cerco Rotativo de 6 Canos com tambor e cintas torus."""
     pb = Rb("powder_baron")
     tilt = -0.28
     p = [
-        pb.ball(0.34, (0.0, 0.0, 0.0), "bronze", seg=16, rings=10),
+        pb.ball(0.34, (0.0, 0.0, 0.0), "bronze", seg=18, rings=12),
         pb.cyl(0.19, 0.52, (0.02, -0.48, -0.08), "ironDark", verts=18, r2=0.21),
-        pb.cyl_axis_y(0.25, 0.30, (0.04, -0.56, -0.32), "brass", verts=18, r2=0.25, tilt=tilt),
+        pb.cyl_axis_y(0.25, 0.30, (0.04, -0.56, -0.32), "brass", verts=18, r2=0.25, tilt=tilt, bevel=0.02),
+        pb.torus(0.26, 0.032, (0.04, -0.54, -0.26), "ironDark", major_seg=16, minor_seg=6, rot=(math.pi / 2 - tilt, 0.0, 0.0)),
         pb.cyl_axis_y(0.065, 0.90, (0.04, -0.68, -0.66), "steel", verts=12, tilt=tilt),
         pb.torus(
             0.20,
             0.036,
             (0.04, -0.62, -0.50),
             "brass",
+            major_seg=16,
+            minor_seg=6,
+            rot=(math.pi / 2 - tilt, 0.0, 0.0),
+        ),
+        pb.torus(
+            0.20,
+            0.034,
+            (0.04, -0.69, -0.72),
+            "ironDark",
             major_seg=16,
             minor_seg=6,
             rot=(math.pi / 2 - tilt, 0.0, 0.0),
@@ -1035,25 +1125,26 @@ def powder_baron_arm_r():
             rot=(math.pi / 2 - tilt, 0.0, 0.0),
         ),
         pb.box((0.12, 0.18, 0.46), (0.04, -0.46, -0.54), "bronze", rot=(-tilt, 0.0, 0.0), bevel=0.025),
-        pb.ico(0.14, (0.04, -0.52, -0.18), "danger", subdiv=1),
+        pb.ico(0.14, (0.04, -0.52, -0.18), "danger", subdiv=2),
     ]
     for k in range(6):
         a = 2 * math.pi * k / 6
         rx = 0.04 + 0.135 * math.cos(a)
         ry = -0.68 + 0.135 * math.sin(a) * math.cos(tilt)
         rz = -0.66 - 0.135 * math.sin(a) * math.sin(tilt)
-        p.append(pb.cyl_axis_y(0.052, 0.86, (rx, ry, rz), "ironDark", verts=12, tilt=tilt))
+        p.append(pb.cyl_axis_y(0.052, 0.86, (rx, ry, rz), "ironDark", verts=14, tilt=tilt))
     return p
 
 
 def powder_baron_arm_l():
-    """A4 Braco Esquerdo: ombro em (0,0,0) + manopla articulada de garra de ferro e escudo."""
+    """A4 Braco Esquerdo: ombro em (0,0,0) + manopla articulada de garra de ferro, pistao e escudo."""
     pb = Rb("powder_baron")
     return [
         pb.ball(0.34, (0.0, 0.0, 0.0), "bronze", seg=20, rings=14),
         pb.cyl(0.19, 0.54, (-0.02, -0.50, -0.08), "ironDark", verts=20, r2=0.21),
+        pb.torus(0.20, 0.032, (-0.02, -0.34, -0.08), "brass", major_seg=16, minor_seg=6),
         pb.ico(0.24, (-0.04, -0.60, -0.24), "bronze", subdiv=2),
-        # Escudo de pulso + anel de latao
+        # Escudo de pulso + anel de latao + rebites
         pb.box((0.18, 0.50, 0.54), (-0.22, -0.58, -0.32), "ironDark", rot=(0.24, 0.16, 0.0), bevel=0.035),
         pb.box((0.12, 0.40, 0.42), (-0.28, -0.58, -0.32), "brass", rot=(0.24, 0.16, 0.0), bevel=0.025),
         pb.torus(
@@ -1066,21 +1157,23 @@ def powder_baron_arm_l():
             rot=(0.24, 1.25, 0.0),
         ),
         pb.cyl_axis_y(0.16, 0.46, (-0.06, -0.66, -0.44), "ironDark", verts=18, r2=0.18, tilt=-0.32),
+        pb.capsule_seg((0.10, -0.32, -0.10), (0.06, -0.62, -0.42), 0.048, 0.042, "brass", verts=10),
         # Garras de ferro articuladas
-        pb.capsule_seg((-0.14, -0.68, -0.54), (-0.18, -0.82, -0.82), 0.065, 0.015, "steel", verts=14),
-        pb.capsule_seg((0.02, -0.68, -0.54), (0.06, -0.82, -0.82), 0.065, 0.015, "steel", verts=14),
-        pb.capsule_seg((-0.06, -0.58, -0.54), (-0.06, -0.70, -0.84), 0.065, 0.015, "brass", verts=14),
+        pb.capsule_seg((-0.14, -0.68, -0.54), (-0.18, -0.82, -0.82), 0.065, 0.015, "steel", verts=16),
+        pb.capsule_seg((0.02, -0.68, -0.54), (0.06, -0.82, -0.82), 0.065, 0.015, "steel", verts=16),
+        pb.capsule_seg((-0.06, -0.58, -0.54), (-0.06, -0.70, -0.84), 0.065, 0.015, "brass", verts=16),
     ]
 
 
 def powder_baron_leg(sx: int):
-    """A4 Perna: bota blindada de cerco com cano de latao e aba do sobretudo desde (0,0,0)."""
+    """A4 Perna: bota blindada de cerco com cano de latao, fivelas e aba do sobretudo desde (0,0,0)."""
     pb = Rb("powder_baron")
     return [
         pb.ball(0.32, (0.0, 0.0, 0.0), "crimsonCloth", seg=20, rings=14),
         pb.cyl(0.26, 0.76, (0.0, -0.76, 0.0), "ironDark", verts=20, r2=0.22),
         pb.cyl(0.30, 0.16, (0.0, -0.28, 0.0), "bronze", verts=20, r2=0.30),
         pb.torus(0.27, 0.038, (0.0, -0.30, 0.0), "brass", major_seg=18, minor_seg=8),
+        pb.torus(0.25, 0.034, (0.0, -0.54, 0.0), "brass", major_seg=16, minor_seg=6),
         pb.box((0.16, 0.46, 0.36), (sx * 0.18, -0.26, 0.02), "crimsonCloth", rot=(0.0, 0.0, -sx * 0.18), bevel=0.03),
         pb.box((0.26, 0.38, 0.18), (0.0, -0.52, -0.14), "brass", bevel=0.03),
         pb.box((0.38, 0.20, 0.54), (0.0, -0.76, -0.08), "ironDark", bevel=0.035),
@@ -1174,16 +1267,20 @@ def rift_titan():
             )
         )
     for sx in (-1, 1):
-        p.append(t.ball(0.56, (sx * 0.68, 2.04, -0.02), "obsidian", seg=14, rings=10, squash=(1.15, 0.95, 1.05)))
+        p.append(t.ball(0.56, (sx * 0.68, 2.04, -0.02), "obsidian", seg=16, rings=10, squash=(1.15, 0.95, 1.05)))
         p.append(t.box((0.46, 0.18, 0.56), (sx * 0.80, 2.14, 0.02), "obsidianLight", rot=(0.08, sx * 0.34, 0.0), bevel=0.03))
         p.append(t.box((0.42, 0.08, 0.44), (sx * 0.78, 2.23, -0.02), "goldBright", rot=(0.08, sx * 0.32, 0.0), bevel=0.02))
         p.append(t.crystal(0.14, 0.66, (sx * 0.84, 2.10, 0.04), "arcaneViolet", tilt=(-0.22, -sx * 0.62), verts=6))
+        # Monolitos da Fenda flutuantes flanqueando o manto dorsal
+        p.append(t.box((0.22, 0.72, 0.18), (sx * 0.62, 2.34, 0.42), "obsidian", rot=(-0.18, 0.0, -sx * 0.22), bevel=0.025))
+        p.append(t.crystal(0.11, 0.28, (sx * 0.68, 2.66, 0.48), "eyeNeon", tilt=(-0.18, -sx * 0.22), verts=4, spin=math.pi / 4))
 
     # 5. Grande elmo do vazio coroado com chifres varridos
     p.append(t.ico(0.38, (0.0, 2.40, -0.05), "obsidian", squash=(0.92, 1.08, 0.98), subdiv=2))
-    p.append(t.torus(0.28, 0.032, (0.0, 2.52, -0.05), "goldBright", major_seg=16, minor_seg=8))
+    p.append(t.torus(0.28, 0.032, (0.0, 2.52, -0.05), "goldBright", major_seg=18, minor_seg=8))
     p.append(t.crystal(0.09, 0.42, (0.0, 2.58, -0.10), "goldBright", tilt=(-0.24, 0.0), verts=6))
     for sx in (-1, 1):
+        p.append(t.box((0.12, 0.28, 0.22), (sx * 0.18, 2.32, -0.24), "obsidianLight", rot=(0.08, 0.0, -sx * 0.14), bevel=0.02))
         p.append(t.box((0.17, 0.06, 0.09), (sx * 0.11, 2.40, -0.37), "eyeNeon", rot=(0.0, 0.0, -sx * 0.28), bevel=0.015))
         p += _curved_siege_horn(
             t,
@@ -1194,8 +1291,12 @@ def rift_titan():
             0.12,
             col_base="obsidianLight",
             col_tip="eyeNeon",
-            verts=14,
+            verts=16,
         )
+    for k in range(5):
+        ang = -0.8 + 0.4 * k
+        pos_h = (0.62 * math.sin(ang), 2.74 + (1 - abs(k - 2) * 0.3) * 0.22, 0.26)
+        p.append(t.crystal(0.08, 0.38, pos_h, "eyeNeon" if k % 2 == 0 else "arcaneViolet", tilt=(-0.15, -ang * 0.35), verts=6))
 
     # 6. Garra do Vazio no braco esquerdo
     p.append(t.cyl(0.16, 0.48, (-0.74, 1.54, -0.04), "obsidian", verts=14, r2=0.19))
@@ -1265,15 +1366,17 @@ def rift_titan_torso():
                     (sx * 0.28, 1.66 + i * 0.14, -0.37),
                     rib_col,
                     rot=(0.0, 0.0, sx * 0.26),
-                    bevel=0.0,
+                    bevel=0.02,
                 )
             )
-        # Ombreiras do Vazio
-        p.append(t.ball(0.56, (sx * 0.68, 2.04, -0.02), "obsidian", seg=12, rings=8, squash=(1.15, 0.95, 1.05)))
+        # Ombreiras do Vazio + Monolitos dorsais flutuantes
+        p.append(t.ball(0.56, (sx * 0.68, 2.04, -0.02), "obsidian", seg=16, rings=10, squash=(1.15, 0.95, 1.05)))
         p.append(t.box((0.46, 0.18, 0.56), (sx * 0.80, 2.14, 0.02), "obsidianLight", rot=(0.08, sx * 0.34, 0.0), bevel=0.03))
-        p.append(t.box((0.42, 0.08, 0.44), (sx * 0.78, 2.23, -0.02), "goldBright", rot=(0.08, sx * 0.32, 0.0), bevel=0.0))
+        p.append(t.box((0.42, 0.08, 0.44), (sx * 0.78, 2.23, -0.02), "goldBright", rot=(0.08, sx * 0.32, 0.0), bevel=0.02))
         p.append(t.crystal(0.14, 0.66, (sx * 0.84, 2.10, 0.04), "arcaneViolet", tilt=(-0.22, -sx * 0.62), verts=6))
         p.append(t.crystal(0.10, 0.40, (sx * 0.82, 2.00, -0.22), "steel", tilt=(0.68, -sx * 0.46), verts=6))
+        p.append(t.box((0.22, 0.72, 0.18), (sx * 0.62, 2.34, 0.42), "obsidian", rot=(-0.18, 0.0, -sx * 0.22), bevel=0.025))
+        p.append(t.crystal(0.11, 0.28, (sx * 0.68, 2.66, 0.48), "eyeNeon", tilt=(-0.18, -sx * 0.22), verts=4, spin=math.pi / 4))
 
     for idx in (-1, 0, 1):
         u = float(idx)
@@ -1290,10 +1393,10 @@ def rift_titan_torso():
 
     # Grande elmo coroado do Vazio com chifres varridos
     p.append(t.ico(0.38, (0.0, 2.40, -0.05), "obsidian", squash=(0.90, 1.08, 0.98), subdiv=2))
-    p.append(t.torus(0.28, 0.032, (0.0, 2.52, -0.05), "goldBright", major_seg=16, minor_seg=6))
+    p.append(t.torus(0.28, 0.032, (0.0, 2.52, -0.05), "goldBright", major_seg=18, minor_seg=8))
     for sx in (-1, 1):
         p.append(t.box((0.12, 0.28, 0.22), (sx * 0.18, 2.32, -0.24), "obsidianLight", rot=(0.08, 0.0, -sx * 0.14), bevel=0.02))
-        p.append(t.box((0.17, 0.06, 0.09), (sx * 0.11, 2.40, -0.37), "eyeNeon", rot=(0.0, 0.0, -sx * 0.28), bevel=0.0))
+        p.append(t.box((0.17, 0.06, 0.09), (sx * 0.11, 2.40, -0.37), "eyeNeon", rot=(0.0, 0.0, -sx * 0.28), bevel=0.015))
         p += _curved_siege_horn(
             t,
             (sx * 0.24, 2.46, -0.04),
@@ -1303,8 +1406,8 @@ def rift_titan_torso():
             0.12,
             col_base="obsidianLight",
             col_tip="eyeNeon",
-            verts=14,
-            three_seg=False,
+            verts=16,
+            three_seg=True,
         )
     p.append(t.crystal(0.09, 0.42, (0.0, 2.58, -0.10), "goldBright", tilt=(-0.24, 0.0), verts=6))
     for k in range(5):
@@ -1329,10 +1432,11 @@ def rift_titan_arm_r():
     pitch = 0.62
     return [
         # Ombro em (0,0,0) e braco blindado
-        t.ball(0.32, (0.0, 0.0, 0.0), "obsidian", seg=16, rings=10),
+        t.ball(0.32, (0.0, 0.0, 0.0), "obsidian", seg=18, rings=12),
         t.box((0.30, 0.18, 0.30), (0.05, -0.12, -0.04), "violet", rot=(0.0, 0.0, -0.22), bevel=0.025),
-        t.cyl(0.17, 0.38, (0.02, -0.34, -0.06), "obsidian", verts=16, r2=0.19),
-        t.cyl_axis_y(0.16, 0.38, (0.04, -0.40, -0.20), "obsidianLight", verts=16, r2=0.14, tilt=-0.42),
+        t.cyl(0.17, 0.38, (0.02, -0.34, -0.06), "obsidian", verts=18, r2=0.19),
+        t.torus(0.18, 0.028, (0.03, -0.26, -0.06), "gold", major_seg=16, minor_seg=6),
+        t.cyl_axis_y(0.16, 0.38, (0.04, -0.40, -0.20), "obsidianLight", verts=18, r2=0.14, tilt=-0.42),
         t.ico(0.16, (0.06, -0.46, -0.34), "gold", subdiv=2),
         # Pomo coroado e empunhadura com anel torus
         t.crystal(0.09, 0.22, (0.06, -0.24, -0.06), "eyeNeon", tilt=(-0.95, 0.0), verts=6),
@@ -1357,14 +1461,14 @@ def rift_titan_arm_r():
             minor_seg=6,
             rot=(pitch, 0.0, 0.0),
         ),
-        t.ico(0.11, (0.06, -0.56, -0.48), "eyeNeon", squash=(0.95, 0.95, 1.35), subdiv=1),
+        t.ico(0.11, (0.06, -0.56, -0.48), "eyeNeon", squash=(0.95, 0.95, 1.35), subdiv=2),
         t.crystal(0.10, 0.38, (0.22, -0.56, -0.48), "arcaneViolet", tilt=(pitch, -1.15), verts=6),
         t.crystal(0.10, 0.38, (-0.10, -0.56, -0.48), "arcaneViolet", tilt=(pitch, 1.15), verts=6),
         # Lamina-Obelisco chanfrada, fuller e runas brilhantes da Fenda
         t.box((0.24, 0.095, 1.18), (0.06, -0.88, -0.94), "obsidian", rot=(pitch, 0.0, 0.0), bevel=0.03),
         t.box((0.30, 0.055, 1.10), (0.06, -0.88, -0.94), "steel", rot=(pitch, 0.0, 0.0), bevel=0.02),
         t.box((0.12, 0.115, 1.06), (0.06, -0.87, -0.92), "arcaneViolet", rot=(pitch, 0.0, 0.0), bevel=0.02),
-        t.box((0.065, 0.13, 1.00), (0.06, -0.86, -0.90), "eyeNeon", rot=(pitch, 0.0, 0.0), bevel=0.0),
+        t.box((0.065, 0.13, 1.00), (0.06, -0.86, -0.90), "eyeNeon", rot=(pitch, 0.0, 0.0), bevel=0.015),
         t.crystal(0.09, 0.32, (0.20, -0.74, -0.74), "tealSwarm", tilt=(pitch + 0.35, -0.85), verts=6),
         t.crystal(0.09, 0.32, (-0.08, -0.74, -0.74), "tealSwarm", tilt=(pitch + 0.35, 0.85), verts=6),
         # Ponta de obelisco na extremidade frontal
@@ -1379,8 +1483,10 @@ def rift_titan_arm_l():
         t.ball(0.32, (0.0, 0.0, 0.0), "obsidian", seg=20, rings=14),
         t.box((0.28, 0.18, 0.28), (-0.05, -0.12, -0.04), "violet", rot=(0.0, 0.0, 0.22), bevel=0.025),
         t.cyl(0.16, 0.46, (-0.02, -0.44, -0.04), "obsidian", verts=20, r2=0.19),
+        t.torus(0.18, 0.028, (-0.02, -0.32, -0.04), "gold", major_seg=16, minor_seg=6),
         t.cyl_axis_y(0.17, 0.46, (-0.05, -0.62, -0.18), "obsidianLight", verts=20, r2=0.14, tilt=-0.78),
         t.box((0.26, 0.22, 0.38), (-0.06, -0.64, -0.22), "obsidian", rot=(0.68, 0.0, 0.0), bevel=0.03),
+        t.box((0.14, 0.26, 0.34), (-0.18, -0.62, -0.22), "violet", rot=(0.68, 0.15, 0.0), bevel=0.025),
         t.torus(
             0.21,
             0.032,
@@ -1391,9 +1497,9 @@ def rift_titan_arm_l():
             rot=(math.pi / 2 - 0.78, 0.0, 0.0),
         ),
         t.ico(0.16, (-0.06, -0.76, -0.32), "eyeNeon", subdiv=2),
-        t.capsule_seg((-0.14, -0.74, -0.32), (-0.18, -0.96, -0.62), 0.065, 0.012, "tealSwarm", verts=14),
-        t.capsule_seg((-0.05, -0.76, -0.34), (-0.06, -1.00, -0.66), 0.070, 0.012, "eyeNeon", verts=14),
-        t.capsule_seg((0.04, -0.74, -0.32), (0.08, -0.96, -0.62), 0.065, 0.012, "arcaneViolet", verts=14),
+        t.capsule_seg((-0.14, -0.74, -0.32), (-0.18, -0.96, -0.62), 0.065, 0.012, "tealSwarm", verts=16),
+        t.capsule_seg((-0.05, -0.76, -0.34), (-0.06, -1.00, -0.66), 0.070, 0.012, "eyeNeon", verts=16),
+        t.capsule_seg((0.04, -0.74, -0.32), (0.08, -0.96, -0.62), 0.065, 0.012, "arcaneViolet", verts=16),
     ]
 
 
@@ -1405,6 +1511,7 @@ def rift_titan_leg(sx: int):
         t.cyl(0.24, 0.44, (0.0, -0.42, 0.0), "obsidianLight", verts=20, r2=0.26),
         t.box((0.22, 0.36, 0.24), (sx * 0.08, -0.24, -0.06), "violet", bevel=0.03),
         t.torus(0.22, 0.035, (0.0, -0.44, -0.02), "gold", major_seg=18, minor_seg=8),
+        t.torus(0.21, 0.030, (0.0, -0.68, -0.02), "arcaneViolet", major_seg=16, minor_seg=6),
         t.crystal(0.15, 0.38, (sx * 0.03, -0.44, -0.16), "tealSwarm", tilt=(0.52, -sx * 0.08), verts=6),
         t.cyl(0.20, 0.52, (0.0, -0.86, 0.0), "obsidian", verts=20, r2=0.23),
         t.box((0.18, 0.46, 0.14), (0.0, -0.64, -0.18), "steel", rot=(0.06, 0.0, 0.0), bevel=0.03),
@@ -1481,6 +1588,8 @@ def specs():
                 "glb": f"boss_{boss_id}.glb",
                 "tipo": "prop_estatico",
                 "limite": LIMITE,
+                "hero_pbr": True,
+                "quantidade_cena": 1,
                 "suavizacao_normais": sn,
                 "tags": ["muralha", "boss", boss_id],
                 "seed": L.SEED_BASE + boss_idx * 101,
@@ -1499,6 +1608,8 @@ def specs():
                     "pivot": "base" if is_torso else "origem",
                     "center_xy": is_torso,
                     "limite": LIMITE_TORSO if is_torso else LIMITE_PART,
+                    "hero_pbr": is_torso,
+                    "quantidade_cena": 1,
                     "suavizacao_normais": sn,
                     "tags": ["muralha", "boss", boss_id, part],
                     "seed": L.SEED_BASE + 9000 + len(out) * 37 + part_idx,
@@ -1508,4 +1619,4 @@ def specs():
     return out
 
 
-L.run_group("bosses", specs(), "5 bosses esculpidos + 25 sub-malhas articuladas da campanha (art/scripts/make_bosses.py)")
+L.run_group("bosses", specs(), "5 bosses esculpidos + 25 sub-malhas articuladas da campanha (art/scripts/make_bosses.py)", hero_pbr=False)
