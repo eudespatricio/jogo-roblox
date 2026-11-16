@@ -1,7 +1,7 @@
-# Forge3D 0.6.1 — rota `import`: fauna articulada e silvestre do Bastiao (art/scripts/make_fauna.py)
+# Forge3D 0.8.0 — rota `import`: fauna articulada e silvestre do Bastiao (art/scripts/make_fauna.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@4
+schema: forge3d/spec@5
 
 projeto: muralha
 perfil: roblox-r15
@@ -17,11 +17,15 @@ lote:
   - id: fauna.wyvern_body.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/wyvern_body.glb
+    origem: art/export/wyvern_body.glb
     altura_metros: 0.9304   # 3.3229 studs
     pivot: base
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -30,11 +34,15 @@ lote:
   - id: fauna.wyvern_wing_l.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/wyvern_wing_l.glb
+    origem: art/export/wyvern_wing_l.glb
     altura_metros: 0.4175   # 1.4909 studs
     pivot: origem
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -43,11 +51,15 @@ lote:
   - id: fauna.wyvern_wing_r.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/wyvern_wing_r.glb
+    origem: art/export/wyvern_wing_r.glb
     altura_metros: 0.4269   # 1.5247 studs
     pivot: origem
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -56,11 +68,15 @@ lote:
   - id: fauna.bird_body.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/bird_body.glb
+    origem: art/export/bird_body.glb
     altura_metros: 0.4085   # 1.4588 studs
     pivot: base
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,11 +85,15 @@ lote:
   - id: fauna.bird_wing_l.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/bird_wing_l.glb
+    origem: art/export/bird_wing_l.glb
     altura_metros: 0.286   # 1.0215 studs
     pivot: origem
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -82,11 +102,15 @@ lote:
   - id: fauna.bird_wing_r.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/bird_wing_r.glb
+    origem: art/export/bird_wing_r.glb
     altura_metros: 0.2862   # 1.0221 studs
     pivot: origem
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -95,11 +119,15 @@ lote:
   - id: fauna.stag.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/stag.glb
+    origem: art/export/stag.glb
     altura_metros: 1.1763   # 4.2012 studs
     pivot: base
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -108,11 +136,15 @@ lote:
   - id: fauna.pack_ox.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/pack_ox.glb
+    origem: art/export/pack_ox.glb
     altura_metros: 0.7396   # 2.6416 studs
     pivot: base
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -121,11 +153,15 @@ lote:
   - id: fauna.ram.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/ram.glb
+    origem: art/export/ram.glb
     altura_metros: 0.5149   # 1.8389 studs
     pivot: base
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]

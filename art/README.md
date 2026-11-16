@@ -64,7 +64,7 @@ Saídas: `art/calibration.blend`, `art/export/calibration.glb`, `art/export/cali
 
 ## Esteira (Blender por script → Forge3D QC)
 
-Um comando gera **todos** os itens de jogo restantes, passa pelo QC do Forge3D 0.6.1 (`spec@4`/`manifest@4`, rota
+Um comando gera **todos** os itens de jogo restantes, passa pelo QC do Forge3D 0.8.0 (`spec@5`/`manifest@5`, rota
 `import`, mesma da muralha) e monta o lineup. **Nunca faz upload** (nenhum `forge3d upload-*`).
 
 ```bash
@@ -78,7 +78,7 @@ bash tools/art-pipeline.sh --skip-blender  # só Forge3D + lineup sobre os GLB j
 | `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_{segmentl,segmentr,towerl,towerr,gate}_l<n>` (L1–L5) | ≤ 2950 tris/tier (`LIMITE_LOTE` 3000) |
 | `traps` | `art/scripts/make_traps.py` | `trap.<tipo>.l<n>.01` → `TRAP_<tipo>_l<n>` (archer, tar, frost, cannon, catapult × L1–L5) | ≤ 1500 tris, pegada ≤ 4,8 × 4,8 |
 | `horde` | `art/scripts/make_horde.py` | `horde.<tipo>.01` → `CMD_<tipo>` (runner, brute, swarm, shieldbearer, pyromancer, sapper) | ≤ 1500 tris |
-| `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` → `BOSS_<tipo>` (`iron_ram_colossus`, `slag_juggernaut`, `rime_matriarch`, `powder_baron`, `rift_titan`) | ≤ 2200 tris |
+| `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` → `BOSS_<tipo>` + `boss.<tipo>.<part>.01` → `BOSS_<tipo>_{torso,arm_r,arm_l,leg_l,leg_r}` (`iron_ram_colossus`, `slag_juggernaut`, `rime_matriarch`, `powder_baron`, `rift_titan`) | ≤ 2200 tris (legado) / ≤ 900 tris (sub-partes) |
 | `portal` | `art/scripts/make_portal.py` | `prop.rift_portal.01` → `PROP_rift_portal` | ≤ 2000 tris |
 | `props` | `art/scripts/make_props.py` | `prop.<tipo>.01` → `PROP_<tipo>` (`tree_pine`, `tree_oak`, `rock_cluster`, `siege_supply`, `iron_brazier`, `rift_obelisk`) | ≤ 900–1400 tris |
 | `fauna` | `art/scripts/make_fauna.py` | `fauna.<tipo>.01` → `FAUNA_<tipo>` (`wyvern_body`/`wing_l`/`wing_r`, `bird_body`/`wing_l`/`wing_r`, `stag`, `pack_ox`, `ram`) | ≤ 1100 tris |
@@ -93,9 +93,9 @@ lineups em `art/renders/lineup_<grupo>.png` e `lineup_all.png` (tudo ignorado no
 - **Lotes gerados:** `art/forge/lote_{muralha,traps,horde,bosses,portal,props,fauna}_import.yaml` são escritos
   pelo script com `altura_metros` = altura **medida** do GLB × 0,28. Não editar à mão; regenerar.
 - **QC já embutido:** jitter determinístico de 3–12 milésimos de stud por peça no `join()` (G1:
-  sem arestas coincidentes após a solda do Forge), pivô normalizado em Z=0 e gate de orientação sem rotação residual/`det>0` (G2 no 0.6.1), UV espalhada na
+  sem arestas coincidentes após a solda do Forge), pivô normalizado em Z=0 e gate de orientação sem rotação residual/`det>0` + `suavizacao_normais` (G2 no 0.8.0), UV espalhada na
   célula da paleta (G3), 1 material (G5). O `g1_check()` local reprova antes do Forge. As asas de
-  `fauna` usam `center_xy=False` e `pivot: origem` para manter o encaixe de ombro em `(0, 0, 0)`.
+  `fauna` e os membros de `bosses` usam `center_xy=False` e `pivot: origem` para manter o encaixe de articulação.
 - **Patente (L1–L3):** mastro + 1/2/3 chevrons ≥ 0,6 stud (`amber` / `amberBright` /
   `neonAmber`) no canto frontal-esquerdo (−1,95; −2,1). Esse é o canto que a câmera do
   `BuildClient` vê quando a frente (−Y Blender = −Z Studio) aponta para o portal (+X). No piche

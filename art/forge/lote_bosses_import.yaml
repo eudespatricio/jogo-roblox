@@ -1,7 +1,7 @@
-# Forge3D 0.6.1 — rota `import`: 5 bosses esculpidos da campanha (art/scripts/make_bosses.py)
+# Forge3D 0.8.0 — rota `import`: 5 bosses esculpidos + 25 sub-malhas articuladas da campanha (art/scripts/make_bosses.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@4
+schema: forge3d/spec@5
 
 projeto: muralha
 perfil: roblox-r15
@@ -17,64 +17,509 @@ lote:
   - id: boss.iron_ram_colossus.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/boss_iron_ram_colossus.glb
+    origem: art/export/boss_iron_ram_colossus.glb
     altura_metros: 3.4331   # 12.2609 studs
     pivot: base
     limite_triangulos: 2200
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, boss, iron_ram_colossus]
 
+  - id: boss.iron_ram_colossus.torso.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_iron_ram_colossus_torso.glb
+    altura_metros: 2.6069   # 9.3105 studs
+    pivot: base
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, iron_ram_colossus, torso]
+
+  - id: boss.iron_ram_colossus.arm_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_iron_ram_colossus_arm_r.glb
+    altura_metros: 1.4538   # 5.192 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, iron_ram_colossus, arm_r]
+
+  - id: boss.iron_ram_colossus.arm_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_iron_ram_colossus_arm_l.glb
+    altura_metros: 1.3876   # 4.9558 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, iron_ram_colossus, arm_l]
+
+  - id: boss.iron_ram_colossus.leg_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_iron_ram_colossus_leg_l.glb
+    altura_metros: 1.3297   # 4.749 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, iron_ram_colossus, leg_l]
+
+  - id: boss.iron_ram_colossus.leg_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_iron_ram_colossus_leg_r.glb
+    altura_metros: 1.33   # 4.7499 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, iron_ram_colossus, leg_r]
+
   - id: boss.slag_juggernaut.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/boss_slag_juggernaut.glb
-    altura_metros: 3.559   # 12.7106 studs
+    origem: art/export/boss_slag_juggernaut.glb
+    altura_metros: 3.5753   # 12.7691 studs
     pivot: base
     limite_triangulos: 2200
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, boss, slag_juggernaut]
 
+  - id: boss.slag_juggernaut.torso.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_slag_juggernaut_torso.glb
+    altura_metros: 2.6413   # 9.4331 studs
+    pivot: base
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, slag_juggernaut, torso]
+
+  - id: boss.slag_juggernaut.arm_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_slag_juggernaut_arm_r.glb
+    altura_metros: 1.6105   # 5.7518 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, slag_juggernaut, arm_r]
+
+  - id: boss.slag_juggernaut.arm_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_slag_juggernaut_arm_l.glb
+    altura_metros: 1.6001   # 5.7148 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, slag_juggernaut, arm_l]
+
+  - id: boss.slag_juggernaut.leg_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_slag_juggernaut_leg_l.glb
+    altura_metros: 1.301   # 4.6463 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, slag_juggernaut, leg_l]
+
+  - id: boss.slag_juggernaut.leg_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_slag_juggernaut_leg_r.glb
+    altura_metros: 1.2924   # 4.6157 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, slag_juggernaut, leg_r]
+
   - id: boss.rime_matriarch.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/boss_rime_matriarch.glb
-    altura_metros: 4.2927   # 15.3312 studs
+    origem: art/export/boss_rime_matriarch.glb
+    altura_metros: 4.3071   # 15.3826 studs
     pivot: base
     limite_triangulos: 2200
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, boss, rime_matriarch]
 
+  - id: boss.rime_matriarch.torso.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rime_matriarch_torso.glb
+    altura_metros: 3.2073   # 11.4547 studs
+    pivot: base
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rime_matriarch, torso]
+
+  - id: boss.rime_matriarch.arm_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rime_matriarch_arm_r.glb
+    altura_metros: 1.5048   # 5.3744 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rime_matriarch, arm_r]
+
+  - id: boss.rime_matriarch.arm_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rime_matriarch_arm_l.glb
+    altura_metros: 1.1234   # 4.0121 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rime_matriarch, arm_l]
+
+  - id: boss.rime_matriarch.leg_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rime_matriarch_leg_l.glb
+    altura_metros: 1.3448   # 4.803 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rime_matriarch, leg_l]
+
+  - id: boss.rime_matriarch.leg_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rime_matriarch_leg_r.glb
+    altura_metros: 1.3398   # 4.7851 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rime_matriarch, leg_r]
+
   - id: boss.powder_baron.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/boss_powder_baron.glb
-    altura_metros: 3.8235   # 13.6553 studs
+    origem: art/export/boss_powder_baron.glb
+    altura_metros: 3.6819   # 13.1498 studs
     pivot: base
     limite_triangulos: 2200
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, boss, powder_baron]
 
+  - id: boss.powder_baron.torso.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_powder_baron_torso.glb
+    altura_metros: 2.897   # 10.3465 studs
+    pivot: base
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, powder_baron, torso]
+
+  - id: boss.powder_baron.arm_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_powder_baron_arm_r.glb
+    altura_metros: 1.4764   # 5.2729 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, powder_baron, arm_r]
+
+  - id: boss.powder_baron.arm_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_powder_baron_arm_l.glb
+    altura_metros: 1.3644   # 4.873 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, powder_baron, arm_l]
+
+  - id: boss.powder_baron.leg_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_powder_baron_leg_l.glb
+    altura_metros: 1.2285   # 4.3875 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, powder_baron, leg_l]
+
+  - id: boss.powder_baron.leg_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_powder_baron_leg_r.glb
+    altura_metros: 1.2323   # 4.4009 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, powder_baron, leg_r]
+
   - id: boss.rift_titan.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/boss_rift_titan.glb
-    altura_metros: 4.7488   # 16.96 studs
+    origem: art/export/boss_rift_titan.glb
+    altura_metros: 4.5396   # 16.2128 studs
     pivot: base
     limite_triangulos: 2200
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
     tags: [muralha, boss, rift_titan]
+
+  - id: boss.rift_titan.torso.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rift_titan_torso.glb
+    altura_metros: 3.3904   # 12.1087 studs
+    pivot: base
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rift_titan, torso]
+
+  - id: boss.rift_titan.arm_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rift_titan_arm_r.glb
+    altura_metros: 2.1716   # 7.7558 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rift_titan, arm_r]
+
+  - id: boss.rift_titan.arm_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rift_titan_arm_l.glb
+    altura_metros: 1.5544   # 5.5516 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rift_titan, arm_l]
+
+  - id: boss.rift_titan.leg_l.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rift_titan_leg_l.glb
+    altura_metros: 1.6097   # 5.7488 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rift_titan, leg_l]
+
+  - id: boss.rift_titan.leg_r.01
+    tipo: prop_estatico
+    rota: import
+    origem: art/export/boss_rift_titan_leg_r.glb
+    altura_metros: 1.6023   # 5.7226 studs
+    pivot: origem
+    limite_triangulos: 900
+    material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
+    colisao: box
+    seed: 20261113
+    lod: [100]
+    tags: [muralha, boss, rift_titan, leg_r]

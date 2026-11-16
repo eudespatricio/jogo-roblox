@@ -1,7 +1,7 @@
-# Forge3D 0.6.1 — rota `import`: props de cenario e natureza esculpidos (art/scripts/make_props.py)
+# Forge3D 0.8.0 — rota `import`: props de cenario e natureza esculpidos (art/scripts/make_props.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@4
+schema: forge3d/spec@5
 
 projeto: muralha
 perfil: roblox-r15
@@ -17,11 +17,15 @@ lote:
   - id: prop.tree_pine.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/tree_pine.glb
+    origem: art/export/tree_pine.glb
     altura_metros: 2.8441   # 10.1575 studs
     pivot: base
     limite_triangulos: 1400
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -30,11 +34,15 @@ lote:
   - id: prop.tree_oak.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/tree_oak.glb
+    origem: art/export/tree_oak.glb
     altura_metros: 2.2942   # 8.1936 studs
     pivot: base
     limite_triangulos: 1400
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -43,11 +51,15 @@ lote:
   - id: prop.rock_cluster.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/rock_cluster.glb
+    origem: art/export/rock_cluster.glb
     altura_metros: 0.8186   # 2.9236 studs
     pivot: base
     limite_triangulos: 900
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -56,11 +68,15 @@ lote:
   - id: prop.siege_supply.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/siege_supply.glb
+    origem: art/export/siege_supply.glb
     altura_metros: 0.5677   # 2.0276 studs
     pivot: base
     limite_triangulos: 1300
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,11 +85,15 @@ lote:
   - id: prop.iron_brazier.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/iron_brazier.glb
+    origem: art/export/iron_brazier.glb
     altura_metros: 1.0819   # 3.8641 studs
     pivot: base
     limite_triangulos: 1100
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -82,11 +102,15 @@ lote:
   - id: prop.rift_obelisk.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/rift_obelisk.glb
+    origem: art/export/rift_obelisk.glb
     altura_metros: 2.1354   # 7.6266 studs
     pivot: base
     limite_triangulos: 1200
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]

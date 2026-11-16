@@ -1,7 +1,7 @@
-# Forge3D 0.6.1 — rota `import`: torso/capuz esculpido da horda hibrida (art/scripts/make_horde.py)
+# Forge3D 0.8.0 — rota `import`: torso/capuz esculpido da horda hibrida (art/scripts/make_horde.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@4
+schema: forge3d/spec@5
 
 projeto: muralha
 perfil: roblox-r15
@@ -17,11 +17,15 @@ lote:
   - id: horde.runner.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/horde_runner.glb
+    origem: art/export/horde_runner.glb
     altura_metros: 1.401   # 5.0036 studs
     pivot: base
     limite_triangulos: 1500
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -30,11 +34,15 @@ lote:
   - id: horde.brute.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/horde_brute.glb
+    origem: art/export/horde_brute.glb
     altura_metros: 1.7765   # 6.3447 studs
     pivot: base
     limite_triangulos: 1500
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -43,11 +51,15 @@ lote:
   - id: horde.swarm.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/horde_swarm.glb
+    origem: art/export/horde_swarm.glb
     altura_metros: 0.7321   # 2.6148 studs
     pivot: base
     limite_triangulos: 1500
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -56,11 +68,15 @@ lote:
   - id: horde.shieldbearer.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/horde_shieldbearer.glb
+    origem: art/export/horde_shieldbearer.glb
     altura_metros: 1.5371   # 5.4895 studs
     pivot: base
     limite_triangulos: 1500
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,11 +85,15 @@ lote:
   - id: horde.pyromancer.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/horde_pyromancer.glb
+    origem: art/export/horde_pyromancer.glb
     altura_metros: 1.507   # 5.382 studs
     pivot: base
     limite_triangulos: 1500
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -82,11 +102,15 @@ lote:
   - id: horde.sapper.01
     tipo: prop_estatico
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/horde_sapper.glb
+    origem: art/export/horde_sapper.glb
     altura_metros: 0.8348   # 2.9814 studs
     pivot: base
     limite_triangulos: 1500
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]

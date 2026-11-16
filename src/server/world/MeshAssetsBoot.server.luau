@@ -91,6 +91,14 @@ for bossId, assetId in pairs(MeshAssets.BOSSES) do
 	loadMesh(MeshAssets.bossModelName(bossId), assetId)
 end
 
+for bossId, parts in pairs(MeshAssets.BOSS_PARTS) do
+	loadMesh(MeshAssets.bossPartModelName(bossId, "torso"), parts.torso)
+	loadMesh(MeshAssets.bossPartModelName(bossId, "arm_r"), parts.arm_r)
+	loadMesh(MeshAssets.bossPartModelName(bossId, "arm_l"), parts.arm_l)
+	loadMesh(MeshAssets.bossPartModelName(bossId, "leg_l"), parts.leg_l)
+	loadMesh(MeshAssets.bossPartModelName(bossId, "leg_r"), parts.leg_r)
+end
+
 for key, assetId in pairs(MeshAssets.PROPS) do
 	loadMesh(MeshAssets.propModelName(key), assetId)
 end

@@ -1,7 +1,7 @@
-# Forge3D 0.6.1 — rota `import`: portal da fenda + 5 portais monumentais da campanha (art/scripts/make_portal.py)
+# Forge3D 0.8.0 — rota `import`: portal da fenda + 5 portais monumentais da campanha (art/scripts/make_portal.py)
 # GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:
 # altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).
-schema: forge3d/spec@4
+schema: forge3d/spec@5
 
 projeto: muralha
 perfil: roblox-r15
@@ -17,11 +17,15 @@ lote:
   - id: prop.rift_portal.01
     tipo: modulo_cenario
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/prop_rift_portal.glb
+    origem: art/export/prop_rift_portal.glb
     altura_metros: 3.6548   # 13.053 studs
     pivot: base
     limite_triangulos: 2000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -30,11 +34,15 @@ lote:
   - id: portal.act1_iron.01
     tipo: modulo_cenario
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act1_iron.glb
+    origem: art/export/portal_act1_iron.glb
     altura_metros: 3.7841   # 13.5145 studs
     pivot: base
     limite_triangulos: 2000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -43,11 +51,15 @@ lote:
   - id: portal.act2_slag.01
     tipo: modulo_cenario
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act2_slag.glb
+    origem: art/export/portal_act2_slag.glb
     altura_metros: 3.8121   # 13.6148 studs
     pivot: base
     limite_triangulos: 2000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -56,11 +68,15 @@ lote:
   - id: portal.act3_frost.01
     tipo: modulo_cenario
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act3_frost.glb
+    origem: art/export/portal_act3_frost.glb
     altura_metros: 3.8629   # 13.796 studs
     pivot: base
     limite_triangulos: 2000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -69,11 +85,15 @@ lote:
   - id: portal.act4_powder.01
     tipo: modulo_cenario
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act4_powder.glb
+    origem: art/export/portal_act4_powder.glb
     altura_metros: 3.6679   # 13.0995 studs
     pivot: base
     limite_triangulos: 2000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]
@@ -82,11 +102,15 @@ lote:
   - id: portal.act5_rift.01
     tipo: modulo_cenario
     rota: import
-    origem: /home/eudespatricio/jogo-roblox/art/export/portal_act5_rift.glb
+    origem: art/export/portal_act5_rift.glb
     altura_metros: 4.0713   # 14.5405 studs
     pivot: base
     limite_triangulos: 2000
     material: opaque
+    suavizacao_normais:
+      modo: hard_surface
+      angulo_graus: 38
+      weighted_normals: true
     colisao: box
     seed: 20261113
     lod: [100]

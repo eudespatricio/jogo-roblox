@@ -432,10 +432,10 @@ def export_glb(obj, filename):
 def write_lote(group, items, header_note):
     """Gera art/forge/lote_<group>_import.yaml com altura MEDIDA (G2: studs x 0,28)."""
     lines = [
-        f"# Forge3D 0.6.1 — rota `import`: {header_note}",
+        f"# Forge3D 0.8.0 — rota `import`: {header_note}",
         "# GERADO por art/scripts/lowpoly_lib.py (tools/art-pipeline.sh). Nao editar a mao:",
         "# altura_metros = altura exportada em studs x 0,28 (perfil roblox-r15).",
-        "schema: forge3d/spec@4",
+        "schema: forge3d/spec@5",
         "",
         "projeto: muralha",
         "perfil: roblox-r15",
@@ -450,15 +450,25 @@ def write_lote(group, items, header_note):
         "lote:",
     ]
     for it in items:
+        sn = it.get("suavizacao_normais") or {
+            "modo": "hard_surface",
+            "angulo_graus": 38,
+            "weighted_normals": True,
+        }
+        wn = "true" if sn.get("weighted_normals", True) else "false"
         lines += [
             f"  - id: {it['id']}",
             f"    tipo: {it['tipo']}",
             "    rota: import",
-            f"    origem: {it['glb_path']}",
+            f"    origem: {os.path.relpath(it['glb_path'], ROOT)}",
             f"    altura_metros: {it['altura_metros']}   # {it['altura_studs']} studs",
             f"    pivot: {it.get('pivot', 'base')}",
             f"    limite_triangulos: {it['limite']}",
             "    material: opaque",
+            "    suavizacao_normais:",
+            f"      modo: {sn.get('modo', 'hard_surface')}",
+            f"      angulo_graus: {sn.get('angulo_graus', 38)}",
+            f"      weighted_normals: {wn}",
             "    colisao: box",
             f"    seed: {SEED_BASE}",
             "    lod: [100]",

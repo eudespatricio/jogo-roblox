@@ -74,6 +74,52 @@ MeshAssets.BOSSES = table.freeze({
 	rift_titan = 111313406393848, -- BOSS_rift_titan (Ato 5)
 }) :: { [string]: number }
 
+export type BossPartIds = {
+	torso: number,
+	arm_r: number,
+	arm_l: number,
+	leg_l: number,
+	leg_r: number,
+}
+
+MeshAssets.BOSS_PARTS = table.freeze({
+	iron_ram_colossus = table.freeze({
+		torso = 118082598860403, -- BOSS_iron_ram_colossus_torso
+		arm_r = 107421892647308, -- BOSS_iron_ram_colossus_arm_r
+		arm_l = 123575528142667, -- BOSS_iron_ram_colossus_arm_l
+		leg_l = 102355520679916, -- BOSS_iron_ram_colossus_leg_l
+		leg_r = 82630577189880, -- BOSS_iron_ram_colossus_leg_r
+	}),
+	slag_juggernaut = table.freeze({
+		torso = 115089555412055, -- BOSS_slag_juggernaut_torso
+		arm_r = 71856204490491, -- BOSS_slag_juggernaut_arm_r
+		arm_l = 119786481682189, -- BOSS_slag_juggernaut_arm_l
+		leg_l = 86081243282811, -- BOSS_slag_juggernaut_leg_l
+		leg_r = 133414532724617, -- BOSS_slag_juggernaut_leg_r
+	}),
+	rime_matriarch = table.freeze({
+		torso = 95233767506773, -- BOSS_rime_matriarch_torso
+		arm_r = 92558985567378, -- BOSS_rime_matriarch_arm_r
+		arm_l = 108652349619784, -- BOSS_rime_matriarch_arm_l
+		leg_l = 123229517716220, -- BOSS_rime_matriarch_leg_l
+		leg_r = 79368315083591, -- BOSS_rime_matriarch_leg_r
+	}),
+	powder_baron = table.freeze({
+		torso = 79050019876386, -- BOSS_powder_baron_torso
+		arm_r = 133179548693654, -- BOSS_powder_baron_arm_r
+		arm_l = 134156341385547, -- BOSS_powder_baron_arm_l
+		leg_l = 102004682060592, -- BOSS_powder_baron_leg_l
+		leg_r = 101847959819409, -- BOSS_powder_baron_leg_r
+	}),
+	rift_titan = table.freeze({
+		torso = 140337247586893, -- BOSS_rift_titan_torso
+		arm_r = 75001715570595, -- BOSS_rift_titan_arm_r
+		arm_l = 87066649370693, -- BOSS_rift_titan_arm_l
+		leg_l = 112688731008354, -- BOSS_rift_titan_leg_l
+		leg_r = 130411877032295, -- BOSS_rift_titan_leg_r
+	}),
+}) :: { [string]: BossPartIds }
+
 MeshAssets.PROPS = table.freeze({
 	tree_pine = 87273754036948, -- PROP_tree_pine (pinheiro detalhado do bastiao)
 	tree_oak = 112395604388749, -- PROP_tree_oak (carvalho detalhado da arena)
@@ -105,6 +151,10 @@ end
 
 function MeshAssets.bossModelName(bossId: string): string
 	return string.format("BOSS_%s", bossId)
+end
+
+function MeshAssets.bossPartModelName(bossId: string, partKey: string): string
+	return "BOSS_" .. bossId .. "_" .. partKey
 end
 
 function MeshAssets.propModelName(key: string): string
