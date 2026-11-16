@@ -319,7 +319,18 @@ local function attachTrail(
 	return trail
 end
 
--- ===== Camada de texturas Forge3D (flipbooks, decals, aneis). Sem ID publicado: fallback leve. =====
+-- ===== Camada de texturas Forge3D (flipbooks 8x8/4x4, decals elementais, beams, ondas 3D). Sem ID publicado: fallback leve. =====
+local function resolveFlipbookEnums(key: string): (EnumItem, EnumItem, number, number)
+	local fb = VfxAssets.flipbookSpec(key)
+	local layout: EnumItem = if fb.layout == "Grid8x8"
+		then Enum.ParticleFlipbookLayout.Grid8x8
+		else Enum.ParticleFlipbookLayout.Grid4x4
+	local mode: EnumItem = if fb.mode == "Loop"
+		then Enum.ParticleFlipbookMode.Loop
+		else Enum.ParticleFlipbookMode.OneShot
+	return layout, mode, fb.fps, fb.frames
+end
+
 local function flipbookEmitterSpec(
 	key: string,
 	name: string,
@@ -331,12 +342,13 @@ local function flipbookEmitterSpec(
 	local texture: string = VfxAssets.contentId(key)
 	local white = Color3.new(1, 1, 1)
 	if texture ~= "" then
+		local layout, mode, fps, frames = resolveFlipbookEnums(key)
 		return {
 			name = name,
 			texture = texture,
-			flipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
-			flipbookMode = Enum.ParticleFlipbookMode.OneShot,
-			flipbookFramerate = NumberRange.new(VfxAssets.FLIPBOOK.fps),
+			flipbookLayout = layout,
+			flipbookMode = mode,
+			flipbookFramerate = NumberRange.new(fps),
 			color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, white),
 				ColorSequenceKeypoint.new(0.35, color:Lerp(white, 0.35)),
@@ -348,7 +360,7 @@ local function flipbookEmitterSpec(
 				NumberSequenceKeypoint.new(0.75, 0.1),
 				NumberSequenceKeypoint.new(1, 1),
 			}),
-			lifetime = NumberRange.new(16 / VfxAssets.FLIPBOOK.fps),
+			lifetime = NumberRange.new(frames / fps),
 			speed = NumberRange.new(0, 0.4),
 			spreadAngle = Vector2.new(0, 0),
 			drag = 1,
@@ -386,11 +398,59 @@ local function emitFlipbook(
 	sizeEnd: number,
 	burst: number?
 ): ()
-	local anchor = makeAnchor(parent, position, 1.0, "VfxFlipbook")
+	local fb = VfxAssets.flipbookSpec(key)
+	local ttl = math.max(1.0, (fb.frames / fb.fps) + 0.25)
+	local anchor = makeAnchor(parent, position, ttl, "VfxFlipbook")
 	attachEmitter(
 		anchor,
 		flipbookEmitterSpec(key, "Flipbook", color, sizeStart, sizeEnd, burst or 2)
 	)
+end
+
+local function attachFireLoopFlipbook(
+	parent: Instance,
+	color: Color3,
+	sizeStart: number,
+	sizeEnd: number,
+	rate: number,
+	activeSeconds: number,
+	burst: number?
+): ParticleEmitter
+	local texture: string = VfxAssets.contentId("fireLoopFlipbook")
+	local white = Color3.new(1, 1, 1)
+	local layout, mode, fps, _frames = resolveFlipbookEnums("fireLoopFlipbook")
+	local spec: EmitterSpec = {
+		name = "FireLoopFlipbook",
+		color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, white),
+			ColorSequenceKeypoint.new(0.4, color),
+			ColorSequenceKeypoint.new(1, rgb(VisualTheme.PALETTE.danger)),
+		}),
+		size = NumberSequence.new(sizeStart, sizeEnd),
+		transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.08),
+			NumberSequenceKeypoint.new(0.75, 0.22),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		lifetime = NumberRange.new(0.55, 0.95),
+		speed = NumberRange.new(1.5, 3.8),
+		spreadAngle = Vector2.new(22, 22),
+		acceleration = Vector3.new(0, 3.5, 0),
+		drag = 1.5,
+		lightEmission = 0.9,
+		rotSpeed = NumberRange.new(-15, 15),
+		zOffset = 0.35,
+		rate = rate,
+		activeSeconds = activeSeconds,
+		burstCount = burst or 4,
+	}
+	if texture ~= "" then
+		spec.texture = texture
+		spec.flipbookLayout = layout
+		spec.flipbookMode = mode
+		spec.flipbookFramerate = NumberRange.new(fps)
+	end
+	return attachEmitter(parent, spec)
 end
 
 local function emitExplosion(parent: Instance, position: Vector3, color: Color3, scale: number?): ()
@@ -445,10 +505,11 @@ local function emitSlashSparks(
 		burstCount = burst or 6,
 	}
 	if texture ~= "" then
+		local layout, mode, fps, _frames = resolveFlipbookEnums("slashSparkFlipbook")
 		spec.texture = texture
-		spec.flipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4
-		spec.flipbookMode = Enum.ParticleFlipbookMode.OneShot
-		spec.flipbookFramerate = NumberRange.new(VfxAssets.FLIPBOOK.fps)
+		spec.flipbookLayout = layout
+		spec.flipbookMode = mode
+		spec.flipbookFramerate = NumberRange.new(fps)
 		spec.lifetime = NumberRange.new(0.3, 0.5)
 		spec.speed = NumberRange.new(4, 9)
 	end
@@ -487,49 +548,58 @@ local function emitRingTexture(
 	})
 end
 
--- Placas de queimado no chao (Decal). Apenas Mid/High; pool circular limita o custo.
-local SCORCH_POOL_MAX = 6
-local scorchPlates: { BasePart } = {}
+-- Placas de decal no chao (cratera, piche, geada). Apenas Mid/High; pool circular limita o custo.
+local DECAL_POOL_MAX = 12
+local groundDecalPlates: { BasePart } = {}
 
-local function spawnScorchDecal(parent: Instance, position: Vector3, radius: number): ()
+local function spawnGroundDecalPlate(
+	parent: Instance,
+	position: Vector3,
+	radius: number,
+	textureKey: string,
+	plateName: string,
+	decalName: string,
+	fallbackColor: Color3,
+	baseAlpha: number?
+): ()
 	if currentTier == "Low" then
 		return
 	end
 	local alive: { BasePart } = {}
-	for _, plate in ipairs(scorchPlates) do
+	for _, plate in ipairs(groundDecalPlates) do
 		if plate.Parent ~= nil then
 			alive[#alive + 1] = plate
 		end
 	end
-	scorchPlates = alive
-	while #scorchPlates >= SCORCH_POOL_MAX do
-		local oldest = table.remove(scorchPlates, 1)
+	groundDecalPlates = alive
+	while #groundDecalPlates >= DECAL_POOL_MAX do
+		local oldest = table.remove(groundDecalPlates, 1)
 		if oldest ~= nil then
 			oldest:Destroy()
 		end
 	end
 
-	local texture: string = VfxAssets.contentId("scorchCraterDecal")
+	local texture: string = VfxAssets.contentId(textureKey)
 	local ttl = if currentTier == "High" then 4.5 else 3.0
 	local plate = makePart(
 		parent,
 		Vector3.new(radius * 2, 0.04, radius * 2),
 		position + Vector3.new(0, 0.07, 0),
-		rgb(VisualTheme.PALETTE.ink),
+		fallbackColor,
 		Enum.Material.SmoothPlastic
 	)
-	plate.Name = "VfxScorchPlate"
+	plate.Name = plateName
 	plate.CanCollide = false
 	plate.CanTouch = false
 	plate.CanQuery = false
-	scorchPlates[#scorchPlates + 1] = plate
+	groundDecalPlates[#groundDecalPlates + 1] = plate
 	if texture ~= "" then
 		plate.Transparency = 1
 		local decal = Instance.new("Decal")
-		decal.Name = "ScorchDecal"
+		decal.Name = decalName
 		decal.Texture = texture
 		decal.Face = Enum.NormalId.Top
-		decal.Transparency = 0.1
+		decal.Transparency = baseAlpha or 0.1
 		decal.Parent = plate
 		TweenService:Create(
 			decal,
@@ -549,6 +619,124 @@ local function spawnScorchDecal(parent: Instance, position: Vector3, radius: num
 		):Play()
 	end
 	Debris:AddItem(plate, ttl + 0.1)
+end
+
+local function spawnScorchDecal(parent: Instance, position: Vector3, radius: number): ()
+	spawnGroundDecalPlate(
+		parent,
+		position,
+		radius,
+		"scorchCraterDecal",
+		"VfxScorchPlate",
+		"ScorchDecal",
+		rgb(VisualTheme.PALETTE.ink),
+		0.1
+	)
+end
+
+local function spawnTarPuddleDecal(parent: Instance, position: Vector3, radius: number): ()
+	spawnGroundDecalPlate(
+		parent,
+		position,
+		radius,
+		"tarPuddleDecal",
+		"VfxTarPuddlePlate",
+		"TarPuddleDecal",
+		rgb(VisualTheme.PALETTE.tarDark),
+		0.08
+	)
+end
+
+local function spawnFrostGroundDecal(parent: Instance, position: Vector3, radius: number): ()
+	spawnGroundDecalPlate(
+		parent,
+		position,
+		radius,
+		"frostGroundDecal",
+		"VfxFrostGroundPlate",
+		"FrostGroundDecal",
+		rgb(VisualTheme.PALETTE.frost),
+		0.12
+	)
+end
+
+local function spawnLightningArc(
+	parent: Instance,
+	fromPos: Vector3,
+	toPos: Vector3,
+	color0: Color3,
+	color1: Color3,
+	width: number?,
+	duration: number?
+): Part
+	local ttl = duration or 0.26
+	local anchor = makeAnchor(parent, fromPos, ttl + 0.08, "VfxLightningArc")
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.zero
+	a0.Parent = anchor
+	local a1 = Instance.new("Attachment")
+	a1.Position = toPos - fromPos
+	a1.Parent = anchor
+
+	local beam = Instance.new("Beam")
+	beam.Name = "LightningArcBeam"
+	beam.Attachment0 = a0
+	beam.Attachment1 = a1
+	local tex: string = VfxAssets.contentId("lightningArcBeam")
+	if tex ~= "" then
+		beam.Texture = tex
+		beam.TextureMode = Enum.TextureMode.Wrap
+		beam.TextureLength = 1.6
+		beam.TextureSpeed = 6
+	end
+	beam.Color = ColorSequence.new(color0, color1)
+	local w = width or 0.65
+	beam.Width0 = w
+	beam.Width1 = w * 0.82
+	beam.LightEmission = 1
+	beam.LightInfluence = 0
+	beam.FaceCamera = true
+	beam.Segments = 6
+	beam.CurveSize0 = 0.35
+	beam.CurveSize1 = -0.35
+	beam.Enabled = true
+	beam.Parent = anchor
+	return anchor
+end
+
+local function spawnVolumeWave(
+	parent: Instance,
+	position: Vector3,
+	color: Color3,
+	startRadius: number,
+	endRadius: number,
+	duration: number
+): Part?
+	if currentTier == "Low" then
+		return nil
+	end
+	local wave = makePart(
+		parent,
+		Vector3.new(startRadius, startRadius * 0.72, startRadius),
+		position,
+		color,
+		Enum.Material.Neon,
+		Enum.PartType.Ball
+	)
+	wave.Name = "VfxVolumeWave"
+	wave.CanCollide = false
+	wave.CanTouch = false
+	wave.CanQuery = false
+	wave.CastShadow = false
+	wave.Transparency = 0.35
+	TweenService
+		:Create(wave, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = Vector3.new(endRadius * 2, endRadius * 1.35, endRadius * 2),
+			Transparency = 1,
+		})
+		:Play()
+	Debris:AddItem(wave, duration + 0.05)
+	return wave
 end
 
 local function moveCarrier(
@@ -578,6 +766,12 @@ local function moveCarrier(
 			end
 		end)
 		tween:Play()
+	elseif not IS_ROBLOX then
+		task.delay(travel, function()
+			if onArrive ~= nil and carrier.Parent ~= nil then
+				onArrive()
+			end
+		end)
 	else
 		task.spawn(function()
 			local started = time()
@@ -1292,6 +1486,24 @@ function Vfx.championDeath(
 
 	emitSlashSparks(parent, position + Vector3.new(0, 1.2, 0), gold, 14)
 	emitSlashSparks(parent, position + Vector3.new(0, 1.0, 0), teal, 8, Enum.NormalId.Right)
+	spawnLightningArc(
+		parent,
+		position + Vector3.new(0, 0.4, 0),
+		position + Vector3.new(1.8, 5.2, 1.1),
+		white,
+		gold,
+		0.65,
+		0.32
+	)
+	spawnLightningArc(
+		parent,
+		position + Vector3.new(0, 0.4, 0),
+		position + Vector3.new(-1.6, 4.8, -1.2),
+		white,
+		teal,
+		0.55,
+		0.28
+	)
 
 	-- Dual golden/teal shockwave rings
 	spawnShockwaveRing(parent, position + Vector3.new(0, 0.42, 0), gold, 1.25, 9.6, 0.16, 0.42)
@@ -1626,6 +1838,15 @@ local function spawnCrossBatteryEffect(parent: Instance, originPos: Vector3, tar
 	local amber = rgb(VisualTheme.PALETTE.amber)
 	local amberBright = rgb(VisualTheme.PALETTE.amberBright)
 	local offset = Vector3.new(0, 0.28, 0.48)
+	spawnLightningArc(
+		parent,
+		originPos + offset,
+		targetPos + offset,
+		amberBright,
+		amber,
+		0.52,
+		0.22
+	)
 	moveCarrier(
 		parent,
 		originPos + offset,
@@ -1665,6 +1886,8 @@ local function spawnIncendiaryTarEffect(parent: Instance, targetPos: Vector3): (
 	local anchor = makeAnchor(parent, targetPos + Vector3.new(0, 0.35, 0), 2.2, "VfxIncendiaryTar")
 	emitExplosion(parent, targetPos + Vector3.new(0, 0.9, 0), amberBright, 1.2)
 	spawnScorchDecal(parent, targetPos, 1.9)
+	spawnTarPuddleDecal(parent, targetPos, 2.1)
+	attachFireLoopFlipbook(anchor, amberBright, 1.4, 2.8, 14, 1.4, 5)
 	attachEmitter(anchor, {
 		name = "IncendiaryFire",
 		color = ColorSequence.new(amberBright, danger),
@@ -1730,6 +1953,25 @@ local function spawnThermalShockEffect(parent: Instance, targetPos: Vector3): ()
 
 	local anchor = makeAnchor(parent, targetPos + Vector3.new(0, 0.5, 0), 1.3, "VfxThermalShock")
 	emitFrostShatter(parent, targetPos + Vector3.new(0, 0.9, 0), frostBright, 1.3)
+	spawnFrostGroundDecal(parent, targetPos, 2.1)
+	spawnLightningArc(
+		parent,
+		targetPos + Vector3.new(0, 3.2, 0),
+		targetPos + Vector3.new(1.5, 0.25, -1.1),
+		white,
+		frostBright,
+		0.65,
+		0.26
+	)
+	spawnLightningArc(
+		parent,
+		targetPos + Vector3.new(0, 3.0, 0),
+		targetPos + Vector3.new(-1.4, 0.25, 1.2),
+		white,
+		frost,
+		0.55,
+		0.24
+	)
 	attachEmitter(anchor, {
 		name = "IceShatter",
 		color = ColorSequence.new(frostBright, frost),
@@ -1810,6 +2052,8 @@ local trapHandlers: { [string]: TrapHandler } = {
 		local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
 		local amber = rgb(VisualTheme.PALETTE.amber)
 		local anchor = makeAnchor(parent, targetPos + Vector3.new(0, 0.25, 0), 1.9, "VfxTarSplash")
+		spawnTarPuddleDecal(parent, targetPos, 1.85)
+		attachFireLoopFlipbook(anchor, amber, 0.9, 1.8, 8, 0.9, 3)
 		attachEmitter(anchor, {
 			name = "TarSplash",
 			color = ColorSequence.new(tarDark, stoneDark),
@@ -1845,6 +2089,7 @@ local trapHandlers: { [string]: TrapHandler } = {
 		local frost = rgb(VisualTheme.PALETTE.frost)
 		local frostBright = rgb(VisualTheme.PALETTE.frostBright)
 		local anchor = makeAnchor(parent, targetPos + Vector3.new(0, 0.4, 0), 1.1, "VfxFrostBurst")
+		spawnFrostGroundDecal(parent, targetPos, 1.8)
 		attachEmitter(anchor, {
 			name = "FrostShards",
 			color = ColorSequence.new(frostBright, frost),
@@ -1928,6 +2173,14 @@ local trapHandlers: { [string]: TrapHandler } = {
 				spawnLightFlash(parent, targetPos, danger, 2.4, 10, 0.18)
 				emitExplosion(parent, targetPos + Vector3.new(0, 0.9, 0), amberBright, 1)
 				spawnScorchDecal(parent, targetPos, 1.6)
+				spawnVolumeWave(
+					parent,
+					targetPos + Vector3.new(0, 0.55, 0),
+					amberBright,
+					1.1,
+					4.4,
+					0.28
+				)
 			end
 		)
 	end,
@@ -1950,6 +2203,7 @@ local trapHandlers: { [string]: TrapHandler } = {
 				Vfx.dust(parent, targetPos, 8)
 				emitExplosion(parent, targetPos + Vector3.new(0, 1.2, 0), amberBright, 1.5)
 				spawnScorchDecal(parent, targetPos, 2.2)
+				spawnVolumeWave(parent, targetPos + Vector3.new(0, 0.65, 0), danger, 1.5, 6.2, 0.34)
 				spawnLightFlash(parent, targetPos, danger, 2.6, 12, 0.2)
 			end
 		)
@@ -2083,12 +2337,41 @@ function Vfx.bossTelegraph(
 			beam.Segments = 1
 			beam.Parent = sweep
 		end
+
+		if currentTier ~= "Low" then
+			local runeTexture: string = VfxAssets.contentId("bossRuneDecal")
+			if runeTexture ~= "" then
+				local runePlate = makePart(
+					folder,
+					Vector3.new(stripWidth * 0.85, 0.04, stripWidth * 0.85),
+					Vector3.new(centerX, floorY + 0.03, pos.Z),
+					accentColor,
+					Enum.Material.SmoothPlastic
+				)
+				runePlate.Name = "VfxBossRunePlate"
+				runePlate.Transparency = 1
+				runePlate.CanCollide = false
+				runePlate.CanTouch = false
+				runePlate.CanQuery = false
+				local runeDecal = Instance.new("Decal")
+				runeDecal.Name = "BossRuneDecal"
+				runeDecal.Texture = runeTexture
+				runeDecal.Face = Enum.NormalId.Top
+				runeDecal.Color3 = accentColor
+				runeDecal.Transparency = 0.12
+				runeDecal.Parent = runePlate
+			end
+		end
 	end
 
 	local activeZone = zone :: Instance
 	telegraphExpiresAt[activeZone] = now + 0.45
 
 	local pulse = 0.5 + 0.5 * math.sin(now * (10 + p * 18))
+	local runePlatePart = activeZone:FindFirstChild("VfxBossRunePlate")
+	if runePlatePart ~= nil and runePlatePart:IsA("BasePart") then
+		runePlatePart.Position = Vector3.new(centerX, floorY + 0.03, pos.Z)
+	end
 	local fillPart = activeZone:FindFirstChild("StripFill")
 	if fillPart ~= nil and fillPart:IsA("BasePart") then
 		fillPart.Position = Vector3.new(centerX, floorY, pos.Z)
@@ -2144,9 +2427,23 @@ function Vfx.bossSlamImpact(parent: Instance, pos: Vector3, accentColor: Color3)
 	local danger = rgb(VisualTheme.PALETTE.danger)
 	local stone = rgb(VisualTheme.PALETTE.stone)
 	local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
+	local white = rgb(VisualTheme.PALETTE.white)
 	local slamPos = pos + Vector3.new(-2.2, 0.08, 0)
 	spawnScorchDecal(parent, pos, 3.2)
 	emitSlashSparks(parent, pos + Vector3.new(0, 0.9, 0), accentColor, 10)
+	spawnVolumeWave(parent, slamPos + Vector3.new(0, 0.85, 0), accentColor, 2.0, 9.5, 0.42)
+	for arcIdx = 1, 3 do
+		local ang = ((arcIdx - 1) / 3) * math.pi * 2 + 0.35
+		spawnLightningArc(
+			parent,
+			slamPos + Vector3.new(0, 1.4, 0),
+			slamPos + Vector3.new(math.cos(ang) * 4.8, 0.25, math.sin(ang) * 4.8),
+			white,
+			accentColor,
+			0.7,
+			0.3
+		)
+	end
 
 	-- Dual seismic shockwave rings
 	spawnShockwaveRing(

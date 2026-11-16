@@ -1159,7 +1159,7 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 		end
 	end
 
-	local vfxKeys = {
+	local vfxCoreKeys = {
 		"explosionFlipbook",
 		"frostShatterFlipbook",
 		"arcaneRiftFlipbook",
@@ -1170,13 +1170,65 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 		"scorchCraterDecal",
 		"beamEnergyTrail",
 	}
-	for _, vk in ipairs(vfxKeys) do
+	for _, vk in ipairs(vfxCoreKeys) do
 		addGlobal("vfx." .. vk, VfxAssets.IDS[vk])
+	end
+
+	local vfxAllKeys = {
+		"explosionFlipbook",
+		"frostShatterFlipbook",
+		"arcaneRiftFlipbook",
+		"fireLoopFlipbook",
+		"slashSparkFlipbook",
+		"shockwaveRing",
+		"softGlowFlare",
+		"smokeWispy",
+		"scorchCraterDecal",
+		"beamEnergyTrail",
+		"tarPuddleDecal",
+		"frostGroundDecal",
+		"bossRuneDecal",
+		"lightningArcBeam",
+	}
+	assert(#vfxAllKeys == 14, "esperava 14 chaves em VfxAssets.IDS")
+	for _, vk in ipairs(vfxAllKeys) do
+		local id = VfxAssets.IDS[vk]
+		assert(
+			type(id) == "number" and id > 0 and id == math.floor(id),
+			"VfxAssets.IDS invalido em " .. vk .. ": " .. tostring(id)
+		)
 		local cid = VfxAssets.contentId(vk)
 		assert(string.sub(cid, 1, 13) == "rbxassetid://", "VfxAssets.contentId invalido: " .. vk)
 	end
 
-	assert(totalAssets == 206, "esperava 206 assetIds globais, achei " .. tostring(totalAssets))
+	for _, key8x8 in ipairs({
+		"explosionFlipbook",
+		"frostShatterFlipbook",
+		"arcaneRiftFlipbook",
+		"fireLoopFlipbook",
+	}) do
+		local fb = VfxAssets.flipbookSpec(key8x8)
+		assert(
+			fb.layout == "Grid8x8" and fb.fps == 36 and fb.frames == 64,
+			"flipbookSpec 8x8 invalido: " .. key8x8
+		)
+		local expectedMode = if key8x8 == "fireLoopFlipbook" then "Loop" else "OneShot"
+		assert(fb.mode == expectedMode, "flipbookSpec.mode divergente: " .. key8x8)
+	end
+	local slashSpec = VfxAssets.flipbookSpec("slashSparkFlipbook")
+	assert(
+		slashSpec.layout == "Grid4x4"
+			and slashSpec.fps == 28
+			and slashSpec.frames == 16
+			and slashSpec.mode == "OneShot",
+		"flipbookSpec 4x4 invalido: slashSparkFlipbook"
+	)
+
+	assert(
+		totalAssets + 5 == 211,
+		"esperava 211 slots de assets Open Cloud (97 modelos + 100 PBR + 14 VFX), achei "
+			.. tostring(totalAssets + 5)
+	)
 end)
 
 check(
@@ -1228,7 +1280,7 @@ check(
 )
 
 check(
-	"Vfx v1.8: flipbooks Grid4x4, Beam/Trail texturizados e ScorchDecal apenas em Mid/High (CanQuery=false)",
+	"Vfx v1.8: flipbooks Grid8x8/Grid4x4, Lightning Beams, decals elementais e VfxVolumeWave em Mid/High (CanQuery=false)",
 	function()
 		local prevTier = Vfx.getQualityTier()
 		Vfx.setQualityTier("Mid")
@@ -1241,11 +1293,15 @@ check(
 		local accent = HeadlessMock.Color3.fromRGB(245, 158, 11)
 		local frost = HeadlessMock.Color3.fromRGB(89, 166, 230)
 		Vfx.trapEffect(scene, "cannon", p0, p1, nil)
+		Vfx.trapEffect(scene, "catapult", p0, p1, nil)
+		Vfx.trapEffect(scene, "tar", p0, p1, "incendiary_tar")
 		Vfx.trapEffect(scene, "frost", p0, p1, "thermal_shock")
+		Vfx.trapEffect(scene, "archer", p0, p1, "cross_battery")
+		Vfx.championDeath(scene, p1, accent, frost)
 		Vfx.bossTelegraph(scene, p1, accent, 0.5)
 		local telegraphZone = scene:FindFirstChild("VfxBossTelegraphZone")
 		assert(telegraphZone ~= nil, "VfxBossTelegraphZone ausente")
-		local beams = 0
+		local beams, bossRuneDecals = 0, 0
 		for _, desc in ipairs(telegraphZone:GetDescendants()) do
 			if desc.ClassName == "Beam" then
 				beams += 1
@@ -1253,16 +1309,25 @@ check(
 					string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
 					"Beam sem Texture rbxassetid"
 				)
+			elseif desc.ClassName == "Decal" and desc.Name == "BossRuneDecal" then
+				bossRuneDecals += 1
+				assert(
+					string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+					"BossRuneDecal sem Texture rbxassetid"
+				)
 			end
 		end
 		assert(beams >= 1, "esperava >=1 Beam texturizado em VfxBossTelegraphZone")
+		assert(bossRuneDecals >= 1, "esperava BossRuneDecal em VfxBossTelegraphZone (Mid)")
 
 		Vfx.bossSlamImpact(scene, p1, accent)
 		Vfx.portalBreach(scene, p1, frost, accent, false)
 		Vfx.dust(scene, p1, 6)
 		HeadlessMock.flushDelays()
 
-		local flipbooks, trails, scorchPlates, decals = 0, 0, 0, 0
+		local flipbooks8x8, flipbooksLoop, flipbooks4x4 = 0, 0, 0
+		local trails, lightningBeams, decals = 0, 0, 0
+		local scorchPlates, tarPlates, frostPlates, volumeWaves = 0, 0, 0, 0
 		for _, desc in ipairs(scene:GetDescendants()) do
 			if desc:IsA("BasePart") then
 				assert(
@@ -1281,15 +1346,36 @@ check(
 				end
 				if desc.Name == "VfxScorchPlate" then
 					scorchPlates += 1
+				elseif desc.Name == "VfxTarPuddlePlate" then
+					tarPlates += 1
+				elseif desc.Name == "VfxFrostGroundPlate" then
+					frostPlates += 1
+				elseif desc.Name == "VfxVolumeWave" then
+					volumeWaves += 1
 				end
 			elseif desc.ClassName == "ParticleEmitter" then
-				if desc.FlipbookLayout == HeadlessMock.Enum.ParticleFlipbookLayout.Grid4x4 then
-					flipbooks += 1
+				if desc.FlipbookLayout == HeadlessMock.Enum.ParticleFlipbookLayout.Grid8x8 then
+					flipbooks8x8 += 1
+					if desc.FlipbookMode == HeadlessMock.Enum.ParticleFlipbookMode.Loop then
+						flipbooksLoop += 1
+					end
 					assert(
 						string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
-						"Flipbook sem Texture rbxassetid"
+						"Flipbook 8x8 sem Texture rbxassetid"
+					)
+				elseif desc.FlipbookLayout == HeadlessMock.Enum.ParticleFlipbookLayout.Grid4x4 then
+					flipbooks4x4 += 1
+					assert(
+						string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+						"Flipbook 4x4 sem Texture rbxassetid"
 					)
 				end
+			elseif desc.ClassName == "Beam" and desc.Name == "LightningArcBeam" then
+				lightningBeams += 1
+				assert(
+					string.sub(tostring(desc.Texture), 1, 13) == "rbxassetid://",
+					"LightningArcBeam sem Texture rbxassetid"
+				)
 			elseif desc.ClassName == "Trail" then
 				trails += 1
 				assert(
@@ -1304,18 +1390,49 @@ check(
 				)
 			end
 		end
-		assert(flipbooks >= 3, "esperava >=3 flipbooks Grid4x4, achei " .. tostring(flipbooks))
+		assert(
+			flipbooks8x8 >= 5,
+			"esperava >=5 flipbooks Grid8x8, achei " .. tostring(flipbooks8x8)
+		)
+		assert(flipbooksLoop >= 1, "esperava >=1 flipbook Grid8x8 Loop (fireLoopFlipbook)")
+		assert(
+			flipbooks4x4 >= 3,
+			"esperava >=3 flipbooks Grid4x4, achei " .. tostring(flipbooks4x4)
+		)
+		assert(
+			lightningBeams >= 6,
+			"esperava >=6 LightningArcBeam, achei " .. tostring(lightningBeams)
+		)
 		assert(trails >= 1, "esperava >=1 Trail texturizado")
-		assert(scorchPlates >= 2 and decals >= 2, "esperava >=2 VfxScorchPlate+Decal em Mid")
+		assert(scorchPlates >= 2, "esperava >=2 VfxScorchPlate em Mid")
+		assert(tarPlates >= 1, "esperava >=1 VfxTarPuddlePlate em Mid")
+		assert(frostPlates >= 1, "esperava >=1 VfxFrostGroundPlate em Mid")
+		assert(volumeWaves >= 2, "esperava >=2 VfxVolumeWave em Mid")
+		assert(decals >= 4, "esperava >=4 Decals em Mid")
 
-		-- Low tier: zero scorch plates
+		-- Low tier: zero elemental decal plates and zero VfxVolumeWave
 		Vfx.setQualityTier("Low")
 		local lowScene = HeadlessMock.Instance.new("Folder")
 		Vfx.trapEffect(lowScene, "cannon", p0, p1, nil)
+		Vfx.trapEffect(lowScene, "catapult", p0, p1, nil)
+		Vfx.trapEffect(lowScene, "tar", p0, p1, "incendiary_tar")
+		Vfx.trapEffect(lowScene, "frost", p0, p1, "thermal_shock")
+		Vfx.bossTelegraph(lowScene, p1, accent, 0.5)
+		local lowZone = lowScene:FindFirstChild("VfxBossTelegraphZone")
+		assert(
+			lowZone ~= nil and lowZone:FindFirstChild("VfxBossRunePlate") == nil,
+			"Low tier nao deveria criar VfxBossRunePlate"
+		)
 		Vfx.bossSlamImpact(lowScene, p1, accent)
 		HeadlessMock.flushDelays()
 		for _, desc in ipairs(lowScene:GetDescendants()) do
 			assert(desc.Name ~= "VfxScorchPlate", "Low tier nao deveria criar VfxScorchPlate")
+			assert(desc.Name ~= "VfxTarPuddlePlate", "Low tier nao deveria criar VfxTarPuddlePlate")
+			assert(
+				desc.Name ~= "VfxFrostGroundPlate",
+				"Low tier nao deveria criar VfxFrostGroundPlate"
+			)
+			assert(desc.Name ~= "VfxVolumeWave", "Low tier nao deveria criar VfxVolumeWave")
 		end
 		Vfx.setQualityTier(prevTier)
 	end
