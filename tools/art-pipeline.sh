@@ -83,18 +83,21 @@ if [[ $SKIP_BLENDER -eq 0 ]]; then
   done
 fi
 
-# ---------------------------------------------------------------- 2. Forge3D validate -> run -> verify
-status=0
-summary=()
-for g in "${GROUPS_SEL[@]}"; do
+# ---------------------------------------------------------------- 2. Forge3D validate -> run -> verify (paralelo)
+FORGE_JOBS="${FORGE_JOBS:-4}"
+
+process_forge_group() {
+  local g="$1"
+  local lote
   lote="$(lote_of "$g")"
-  [[ -f "$lote" ]] || { echo "[forge3d] lote ausente: $lote (rode sem --skip-blender)" >&2; exit 1; }
+  [[ -f "$lote" ]] || { echo "[forge3d] lote ausente: $lote (rode sem --skip-blender)" >&2; return 1; }
   echo "[forge3d] validate $lote"
   "$FORGE3D" validate "$lote" --json >"$LOGDIR/validate_$g.json" || {
-    echo "[forge3d] validate FALHOU: $g" >&2; cat "$LOGDIR/validate_$g.json" >&2; exit 1; }
+    echo "[forge3d] validate FALHOU: $g" >&2; cat "$LOGDIR/validate_$g.json" >&2; return 1; }
   echo "[forge3d] run $lote"
-  rc=0
+  local rc=0 g_status=0
   "$FORGE3D" run "$lote" --clean-dest --json >"$LOGDIR/run_$g.json" || rc=$?
+  local line
   line="$(python3 - "$LOGDIR/run_$g.json" "$rc" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
@@ -120,15 +123,15 @@ print(f"{len(itens) - len(bad)}/{len(itens)} publicado reprovados={r.get('reprov
 g11_bad = bool(g11 and g11_st != "ok")
 sys.exit(1 if bad or g11_bad or r.get("reprovados", 0) or r.get("falhas", 0) or int(sys.argv[2]) else 0)
 PY
-)" || status=1
+)" || g_status=1
   echo "[forge3d] $g: $line"
-  summary+=("$g: $line")
+  printf '%s\n' "$g: $line" >"$LOGDIR/summary_$g.txt"
   echo "[forge3d] verify $(dest_of "$g")"
   if ! "$FORGE3D" verify "$(dest_of "$g")" --json >"$LOGDIR/verify_$g.json"; then
     echo "[forge3d] verify FALHOU: $g (ver $LOGDIR/verify_$g.json)" >&2
-    status=1
+    g_status=1
   else
-    python3 - "$lote" "$(dest_of "$g")" "$ROOT" "$LOGDIR/verify_$g.json" <<'PY' || status=1
+    python3 - "$lote" "$(dest_of "$g")" "$ROOT" "$LOGDIR/verify_$g.json" <<'PY' || g_status=1
 import hashlib, json, os, re, shutil, sys
 lote_path, dest_dir, root_dir, verify_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 vdoc = json.load(open(verify_path, encoding="utf-8"))
@@ -167,6 +170,41 @@ for item_id, origem in pairs:
         raise SystemExit(f"SHA-256 divergente para {item_id}: {h_src} != {h_dst}")
 print(f"[sync] {len(pairs)} GLBs sincronizados ({dest_dir} -> art/export/) + {len(vitens)} manifest@6 OK")
 PY
+  fi
+  return $g_status
+}
+
+status=0
+summary=()
+forge_pids=()
+for g in "${GROUPS_SEL[@]}"; do
+  rm -f "$LOGDIR/summary_$g.txt"
+  process_forge_group "$g" &
+  forge_pids+=("$!:$g")
+  while [[ ${#forge_pids[@]} -ge $FORGE_JOBS ]]; do
+    next_pids=()
+    for entry in "${forge_pids[@]}"; do
+      pid="${entry%%:*}"; eg="${entry#*:}"
+      if kill -0 "$pid" 2>/dev/null; then
+        next_pids+=("$entry")
+      else
+        wait "$pid" || status=1
+      fi
+    done
+    forge_pids=("${next_pids[@]}")
+    [[ ${#forge_pids[@]} -ge $FORGE_JOBS ]] && sleep 1
+  done
+done
+for entry in "${forge_pids[@]}"; do
+  pid="${entry%%:*}"; eg="${entry#*:}"
+  wait "$pid" || status=1
+done
+for g in "${GROUPS_SEL[@]}"; do
+  if [[ -f "$LOGDIR/summary_$g.txt" ]]; then
+    summary+=("$(cat "$LOGDIR/summary_$g.txt")")
+  else
+    summary+=("$g: FALHOU antes do resumo")
+    status=1
   fi
 done
 

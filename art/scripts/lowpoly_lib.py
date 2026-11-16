@@ -174,10 +174,10 @@ assert set(PAL_PBR_META) == set(NAMES), "PAL_PBR_META deve cobrir 100% de NAMES"
 
 DEFAULT_DETALHE_ALTO = {
     "ativo": True,
-    "subdiv_niveis": 1,
+    "subdiv_niveis": 0,
     "chanfro_bevel_m": 0.008,
     "crease_angulo_graus": 40,
-    "ao_cavidade_forca": 0.38,
+    "ao_cavidade_forca": 0.42,
 }
 
 
@@ -882,10 +882,10 @@ def write_lote(group, items, header_note, hero_pbr: bool = False):
                 f"    render_fidelity_roblox: {rf}",
                 "    detalhe_alto:",
                 f"      ativo: {det_ativo}",
-                f"      subdiv_niveis: {int(det.get('subdiv_niveis', 1))}",
+                f"      subdiv_niveis: {int(det.get('subdiv_niveis', 0))}",
                 f"      chanfro_bevel_m: {float(det.get('chanfro_bevel_m', 0.008))}",
                 f"      crease_angulo_graus: {int(det.get('crease_angulo_graus', 40))}",
-                f"      ao_cavidade_forca: {float(det.get('ao_cavidade_forca', 0.38))}",
+                f"      ao_cavidade_forca: {float(det.get('ao_cavidade_forca', 0.42))}",
             ]
             lines += format_pbr_zonas_yaml(zonas, indent="    ")
         else:
@@ -1020,7 +1020,7 @@ def run_group(group, specs, header_note, hero_pbr: bool = False):
         )
         objs.append(o)
     lote = write_lote(group, items, header_note, hero_pbr=hero_pbr)
-    renders = render_items(group, objs)
+    renders = [] if os.environ.get("FORGE_SKIP_RENDER") == "1" else render_items(group, objs)
     print("ART_REPORT " + json.dumps({"group": group, "lote": lote, "items": report, "renders": renders}))
     if failures:
         raise SystemExit(f"[{group}] reprovado localmente: {failures}")
