@@ -8,7 +8,7 @@ local Workspace = game:GetService("Workspace")
 
 local VisualSetup = {}
 
-local applied = false
+local floorConfigured = false
 
 local function rgb(value: { number }): Color3
 	return Color3.fromRGB(value[1], value[2], value[3])
@@ -62,12 +62,10 @@ function VisualSetup.configureWorldFloor(): ()
 end
 
 function VisualSetup.apply(): ()
-	if applied then
-		return
+	if not floorConfigured then
+		floorConfigured = true
+		VisualSetup.configureWorldFloor()
 	end
-	applied = true
-
-	VisualSetup.configureWorldFloor()
 
 	Lighting.Brightness = 3.2
 	Lighting.ClockTime = 16.4
@@ -76,7 +74,7 @@ function VisualSetup.apply(): ()
 	Lighting.OutdoorAmbient = rgb({ 158, 166, 178 })
 	Lighting.EnvironmentDiffuseScale = 0.7
 	Lighting.EnvironmentSpecularScale = 0.35
-	Lighting.ShadowSoftness = 0.35
+	Lighting.ShadowSoftness = 0.22
 	Lighting.GlobalShadows = true
 
 	local sky = ensureInstance("Sky", "MuraSky") :: Sky
@@ -101,9 +99,9 @@ function VisualSetup.apply(): ()
 	local colorCorrection =
 		ensureInstance("ColorCorrectionEffect", "MuralhaColor") :: ColorCorrectionEffect
 	colorCorrection.Enabled = true
-	colorCorrection.Brightness = 0.05
-	colorCorrection.Contrast = 0.12
-	colorCorrection.Saturation = 0.2
+	colorCorrection.Brightness = 0.03
+	colorCorrection.Contrast = 0.08
+	colorCorrection.Saturation = 0.08
 	colorCorrection.TintColor = Color3.fromRGB(255, 246, 232)
 
 	local bloom = ensureInstance("BloomEffect", "MuralhaBloom") :: BloomEffect

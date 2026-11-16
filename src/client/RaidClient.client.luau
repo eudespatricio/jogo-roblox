@@ -255,9 +255,10 @@ local topHud = UiKit.panel(root, "RaidTopHud")
 topHud.AnchorPoint = Vector2.zero
 topHud.Position = UDim2.fromOffset(192, 6)
 topHud.Size = UDim2.fromOffset(280, 44)
-topHud.BackgroundTransparency = 0.14
+topHud.BackgroundTransparency = 0.28
 topHud.Visible = false
 UiKit.corner(topHud, 12)
+UiKit.stroke(topHud, UiKit.color(VisualTheme.PALETTE.iron), 1, 0.32)
 
 local title = UiKit.label(
 	topHud,
@@ -267,13 +268,13 @@ local title = UiKit.label(
 	Enum.Font.GothamBlack
 )
 title.Position = UDim2.fromOffset(10, 3)
-title.Size = UDim2.new(0.58, -10, 0, 17)
+title.Size = UDim2.new(0.58, -10, 0, 18)
 title.TextScaled = true
 title.TextWrapped = false
 title.TextTruncate = Enum.TextTruncate.AtEnd
 local topTitleCap = Instance.new("UITextSizeConstraint")
-topTitleCap.MinTextSize = 9
-topTitleCap.MaxTextSize = 13
+topTitleCap.MinTextSize = 11
+topTitleCap.MaxTextSize = 15
 topTitleCap.Parent = title
 
 local status = UiKit.label(
@@ -283,20 +284,20 @@ local status = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.parchment),
 	Enum.Font.GothamBold
 )
-status.Position = UDim2.new(0.58, 0, 0, 3)
-status.Size = UDim2.new(0.42, -10, 0, 17)
+status.Position = UDim2.new(0.58, 2, 0, 3)
+status.Size = UDim2.new(0.42, -12, 0, 18)
 status.TextXAlignment = Enum.TextXAlignment.Right
 status.TextScaled = true
 status.TextWrapped = false
 status.TextTruncate = Enum.TextTruncate.AtEnd
 local topStatusCap = Instance.new("UITextSizeConstraint")
-topStatusCap.MinTextSize = 9
-topStatusCap.MaxTextSize = 13
+topStatusCap.MinTextSize = 11
+topStatusCap.MaxTextSize = 15
 topStatusCap.Parent = status
 
 local wallProgress = UiKit.progress(topHud, "WallProgress", UiKit.color(VisualTheme.PALETTE.amber))
-wallProgress.frame.Position = UDim2.fromOffset(10, 23)
-wallProgress.frame.Size = UDim2.new(1, -94, 0, 9)
+wallProgress.frame.Position = UDim2.fromOffset(10, 25)
+wallProgress.frame.Size = UDim2.new(1, -98, 0, 8)
 
 local wallLabel = UiKit.label(
 	topHud,
@@ -305,20 +306,20 @@ local wallLabel = UiKit.label(
 	UiKit.color(VisualTheme.PALETTE.parchment),
 	Enum.Font.GothamBold
 )
-wallLabel.Position = UDim2.new(1, -80, 0, 20)
-wallLabel.Size = UDim2.fromOffset(70, 14)
+wallLabel.Position = UDim2.new(1, -84, 0, 21)
+wallLabel.Size = UDim2.fromOffset(74, 16)
 wallLabel.TextXAlignment = Enum.TextXAlignment.Right
 wallLabel.TextScaled = true
 wallLabel.TextWrapped = false
 local wallLabelCap = Instance.new("UITextSizeConstraint")
-wallLabelCap.MinTextSize = 9
-wallLabelCap.MaxTextSize = 12
+wallLabelCap.MinTextSize = 11
+wallLabelCap.MaxTextSize = 14
 wallLabelCap.Parent = wallLabel
 
 local replayProgress =
 	UiKit.progress(topHud, "ReplayProgress", UiKit.color(VisualTheme.PALETTE.teal))
-replayProgress.frame.Position = UDim2.fromOffset(10, 36)
-replayProgress.frame.Size = UDim2.new(1, -20, 0, 4)
+replayProgress.frame.Position = UDim2.fromOffset(10, 38)
+replayProgress.frame.Size = UDim2.new(1, -20, 0, 3)
 
 local SPEED_OPTIONS = { 1, 2, 3, 4 }
 local speedIndex = 1
@@ -557,13 +558,13 @@ end
 
 local function updateWallHudLayout(): ()
 	if topHud.Size.X.Offset < 248 then
-		wallProgress.frame.Size = UDim2.new(1, -60, 0, 9)
-		wallLabel.Position = UDim2.new(1, -48, 0, 20)
-		wallLabel.Size = UDim2.fromOffset(40, 14)
+		wallProgress.frame.Size = UDim2.new(1, -64, 0, 8)
+		wallLabel.Position = UDim2.new(1, -52, 0, 21)
+		wallLabel.Size = UDim2.fromOffset(42, 16)
 	else
-		wallProgress.frame.Size = UDim2.new(1, -94, 0, 9)
-		wallLabel.Position = UDim2.new(1, -80, 0, 20)
-		wallLabel.Size = UDim2.fromOffset(70, 14)
+		wallProgress.frame.Size = UDim2.new(1, -98, 0, 8)
+		wallLabel.Position = UDim2.new(1, -84, 0, 21)
+		wallLabel.Size = UDim2.fromOffset(74, 16)
 	end
 end
 
@@ -659,6 +660,7 @@ type UnitLifecycle = {
 	id: number,
 	kind: string,
 	isChampion: boolean,
+	isFrozen: boolean,
 	lane: number,
 	firstIdx: number,
 	firstX: number,
@@ -689,6 +691,11 @@ local prevBossState: string? = nil
 local prevBossEnraged = false
 local prevBossAlive = false
 local lastBossPos: Vector3? = nil
+local bossDyingUntil = 0
+local bossTimeDilationStartAt = 0
+local bossTimeDilationUntil = 0
+local bossHiddenAfterDeath = false
+local bossSlammedThisCycle = false
 local lastCrowdComboAt = 0
 local unitVisuals: { [number]: any } = {}
 local unitVisible: { [number]: boolean } = {}
@@ -698,6 +705,8 @@ local breachedUnits: { [number]: boolean } = {}
 local prevUnitHp: { [number]: number } = {}
 local lastUnitPos: { [number]: Vector3? } = {}
 local unitKind: { [number]: string } = {}
+local unitFrozen: { [number]: boolean } = {}
+local unitIsChampion: { [number]: boolean } = {}
 local lastWallPct = 1
 local fracturedGate = false
 local activeBattleId: string? = nil
@@ -815,6 +824,11 @@ local function clearScene(): ()
 	prevBossEnraged = false
 	prevBossAlive = false
 	lastBossPos = nil
+	bossDyingUntil = 0
+	bossTimeDilationStartAt = 0
+	bossTimeDilationUntil = 0
+	bossHiddenAfterDeath = false
+	bossSlammedThisCycle = false
 	lastCrowdComboAt = 0
 	campaignUi.hideBossHud()
 	applyRaidLayout()
@@ -827,6 +841,8 @@ local function clearScene(): ()
 	prevUnitHp = {}
 	lastUnitPos = {}
 	unitKind = {}
+	unitFrozen = {}
+	unitIsChampion = {}
 	lastWallPct = 1
 	fracturedGate = false
 	shakeUntil = 0
@@ -858,17 +874,30 @@ local function buildFrames(result: any): (any, any)
 	})
 	local frames = {}
 	local capturedSpawn: { [number]: boolean } = {}
+	local sawBossAbility = false
 	local function snapshot()
 		local unitsFrame = {}
 		local champArr = (battle :: any).uIsChampion
+		local slowUntilArr = (battle :: any).uSlowUntil
+		local frostUntilArr = (battle :: any).uFrostUntil
 		for index = 1, battle.uCount do
 			local isChamp = type(champArr) == "table" and champArr[index] == true
+			local uSlowUntil = if type(slowUntilArr) == "table"
+				then (tonumber(slowUntilArr[index]) or 0)
+				else 0
+			local uFrostUntil = if type(frostUntilArr) == "table"
+				then (tonumber(frostUntilArr[index]) or 0)
+				else 0
+			local isFrozen = (uSlowUntil > 0 and battle.tick <= uSlowUntil + 2)
+				or (uFrostUntil > 0 and battle.tick <= uFrostUntil + 2)
 			if battle.uHp[index] > 0 then
 				capturedSpawn[index] = true
 				unitsFrame[#unitsFrame + 1] = {
 					id = index,
 					kind = battle.uType[index] or kindFromSpeed(battle.uBaseSpeed[index]),
 					isChampion = isChamp,
+					isFrozen = isFrozen,
+					uSlowUntil = uSlowUntil,
 					lane = battle.uLane[index],
 					x = battle.uX[index],
 					y = battle.uY[index],
@@ -885,6 +914,8 @@ local function buildFrames(result: any): (any, any)
 					id = index,
 					kind = kind,
 					isChampion = isChamp,
+					isFrozen = isFrozen,
+					uSlowUntil = uSlowUntil,
 					lane = battle.uLane[index],
 					x = Core.ARENA.spawnX,
 					y = battle.uY[index],
@@ -897,6 +928,9 @@ local function buildFrames(result: any): (any, any)
 		local bossSnap = if battle.boss ~= nil and battle.tick >= battle.boss.spawnTick
 			then battle:BossSnapshot()
 			else nil
+		if bossSnap ~= nil and sawBossAbility then
+			(bossSnap :: any).didAbility = true
+		end
 		frames[#frames + 1] = {
 			wallPct = math.clamp(battle.wallHp / battle.wallMax, 0, 1),
 			units = unitsFrame,
@@ -906,8 +940,12 @@ local function buildFrames(result: any): (any, any)
 	snapshot()
 	while not battle:Finished() do
 		battle:Step()
+		if battle.boss ~= nil and battle.boss.state == "ABILITY" then
+			sawBossAbility = true
+		end
 		if battle.tick % 2 == 0 or battle:Finished() then
 			snapshot()
+			sawBossAbility = false
 		end
 	end
 	local final = battle:Result()
@@ -1012,6 +1050,7 @@ local function buildScene(result: any, frames: { any }): ()
 		id: number,
 		kind: string,
 		isChampion: boolean,
+		isFrozen: boolean,
 		lane: number,
 		firstIdx: number,
 		firstX: number,
@@ -1028,12 +1067,14 @@ local function buildScene(result: any, frames: { any }): ()
 				local ux = if type(unitData.x) == "number" then unitData.x else Core.ARENA.spawnX
 				local lane = if type(unitData.lane) == "number" then unitData.lane else 3
 				local uy = if type(unitData.y) == "number" then unitData.y else Core.laneY(lane)
+				local dataFrozen = unitData.isFrozen == true
 				local existing = tracks[id]
 				if existing == nil then
 					tracks[id] = {
 						id = id,
 						kind = unitData.kind,
 						isChampion = unitData.isChampion == true,
+						isFrozen = dataFrozen,
 						lane = lane,
 						firstIdx = frameIdx,
 						firstX = ux,
@@ -1046,6 +1087,7 @@ local function buildScene(result: any, frames: { any }): ()
 					existing.lastIdx = frameIdx
 					existing.lastX = ux
 					existing.lastY = uy
+					existing.isFrozen = dataFrozen
 					if unitData.isChampion == true then
 						existing.isChampion = true
 					end
@@ -1065,6 +1107,40 @@ local function buildScene(result: any, frames: { any }): ()
 				aliveInFinal[unitData.id] = true
 			end
 		end
+	end
+
+	local function hasFrostTrapInRange(checkX: number, checkY: number): boolean
+		for _, trap in ipairs(wallTraps) do
+			if trap.type == "frost" then
+				local ax = trap.x
+				local ay = trap.y
+				if (ax == nil or ay == nil) and type(trap.cell) == "string" then
+					local cx, cy = Core.cellToPos(trap.cell)
+					ax = ax or cx
+					ay = ay or cy
+				end
+				local def = (Core.TRAP :: any).frost
+				if type(ax) == "number" and type(ay) == "number" and def ~= nil then
+					if def.omni == true then
+						local dx = checkX - ax
+						local dy = checkY - ay
+						if dx * dx + dy * dy <= def.range * def.range then
+							return true
+						end
+					else
+						local dx = checkX - ax
+						if
+							math.abs(checkY - ay) <= Core.ARENA.laneReach
+							and dx > 0
+							and dx <= def.range
+						then
+							return true
+						end
+					end
+				end
+			end
+		end
+		return false
 	end
 
 	unitLifecycle = {}
@@ -1091,10 +1167,13 @@ local function buildScene(result: any, frames: { any }): ()
 				arenaDeathX = frontKillArenaX(wallTraps, track.lane)
 			end
 			local killedByTrap = (not alive) and (track.lastX > 650)
+			local diedFrozen = track.isFrozen
+				or (killedByTrap and hasFrostTrapInRange(arenaDeathX, track.lastY))
 			unitLifecycle[id] = {
 				id = id,
 				kind = track.kind,
 				isChampion = track.isChampion,
+				isFrozen = diedFrozen,
 				lane = track.lane,
 				firstIdx = track.firstIdx,
 				firstX = track.firstX,
@@ -1301,6 +1380,11 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			if life ~= nil or unitVisuals[id] ~= nil then
 				seen[id] = true
 				unitKind[id] = unitData.kind
+				unitFrozen[id] = unitData.isFrozen == true
+					or (type(unitData.uSlowUntil) == "number" and unitData.uSlowUntil > 0)
+				if unitData.isChampion == true then
+					unitIsChampion[id] = true
+				end
 				local unit = unitVisuals[id]
 				if unit == nil then
 					unit = HordeKit.create(
@@ -1381,6 +1465,35 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			end
 		end
 	end
+	local function emitUnitDeath(
+		id: number,
+		unit: any,
+		vfxPos: Vector3,
+		resolvedKind: string,
+		isFrozen: boolean,
+		isChamp: boolean
+	): ()
+		local enemySpec = (VisualTheme.ENEMIES :: any)[resolvedKind]
+		local unitColor = if enemySpec ~= nil and type(enemySpec.color) == "table"
+			then themeRgb(enemySpec.color)
+			else Color3.fromRGB(20, 184, 166)
+		Vfx.death(activeScene, vfxPos, unitColor, isFrozen)
+		local vz = if id % 2 == 0 then 3.2 else -3.2
+		Vfx.ragdollEnemy(activeScene, vfxPos, unitColor, Vector3.new(12, 14, vz), resolvedKind)
+		if isChamp then
+			Vfx.championDeath(
+				activeScene,
+				vfxPos,
+				themeRgb(VisualTheme.CHAMPION.haloColor),
+				themeRgb(VisualTheme.CHAMPION.accentColor)
+			)
+			shakeUntil = math.max(shakeUntil, time() + 0.14)
+		end
+		AudioKit.unitDeath(resolvedKind, vfxPos)
+		HordeKit.setVisible(unit, false)
+		unitVisible[id] = false
+	end
+
 	for id, unit in pairs(unitVisuals) do
 		local life = unitLifecycle[id]
 		if life ~= nil then
@@ -1401,13 +1514,12 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 					HordeKit.hitSquash(unit)
 					fireTrapsForLane(activeScene, life.lane, deathAx, uy, vfxPos, id)
 				end
-				local teal = Color3.fromRGB(20, 184, 166)
-				Vfx.death(activeScene, vfxPos, teal)
-				local vz = if id % 2 == 0 then 2.2 else -2.2
-				Vfx.ragdollEnemy(activeScene, vfxPos, teal, Vector3.new(4, 7.5, vz))
-				AudioKit.unitDeath(life.kind or unitKind[id] or "runner", vfxPos)
-				HordeKit.setVisible(unit, false)
-				unitVisible[id] = false
+				local resolvedKind = life.kind or unitKind[id] or "runner"
+				local isFrozen = life.isFrozen or (unitFrozen[id] == true)
+				local isChamp = life.isChampion
+					or (unit.isChampion == true)
+					or (unitIsChampion[id] == true)
+				emitUnitDeath(id, unit, vfxPos, resolvedKind, isFrozen, isChamp)
 			end
 		elseif not seen[id] and unitVisible[id] then
 			local position = lastUnitPos[id]
@@ -1416,14 +1528,42 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			local vfxPos = if unit.flying
 				then position + Vector3.new(0, VisualTheme.AERIAL.hoverY, 0)
 				else position
-			local teal = Color3.fromRGB(20, 184, 166)
-			Vfx.death(activeScene, vfxPos, teal)
-			local vz = if id % 2 == 0 then 2.2 else -2.2
-			Vfx.ragdollEnemy(activeScene, vfxPos, teal, Vector3.new(4, 7.5, vz))
-			AudioKit.unitDeath(unitKind[id] or "runner", vfxPos)
-			HordeKit.setVisible(unit, false)
-			unitVisible[id] = false
+			local resolvedKind = unitKind[id] or "runner"
+			local isFrozen = unitFrozen[id] == true
+			local isChamp = (unit.isChampion == true) or (unitIsChampion[id] == true)
+			emitUnitDeath(id, unit, vfxPos, resolvedKind, isFrozen, isChamp)
 		end
+	end
+
+	local function triggerBossDeathClimax(deathPos: Vector3): ()
+		prevBossAlive = false
+		local now = time()
+		bossDyingUntil = now + 0.85
+		bossTimeDilationStartAt = now
+		bossTimeDilationUntil = now + 0.30
+		bossHiddenAfterDeath = false
+		lastBossPos = deathPos
+		AudioKit.play("boss_death")
+		AudioKit.setBossActive(false)
+		shakeUntil = math.max(shakeUntil, now + 0.28)
+		if bossVisual ~= nil then
+			HordeKit.setBossApproachScale(bossVisual, 1.0)
+			HordeKit.setBossBase(bossVisual, CFrame.new(deathPos))
+			HordeKit.stepBoss(bossVisual, now, "DYING", false)
+			Vfx.bossDeathSequence(
+				activeScene,
+				bossVisual.bossId,
+				deathPos,
+				bossVisual.color,
+				bossVisual.accent
+			)
+		else
+			Vfx.ring(activeScene, deathPos, UiKit.color(VisualTheme.PALETTE.amberBright))
+		end
+		if raidCrowd ~= nil then
+			raidCrowd:react("cheer")
+		end
+		campaignUi.hideBossHud()
 	end
 
 	local bossApproaching = bossSpawnInfo ~= nil and frameIdx < bossSpawnInfo.firstIdx
@@ -1470,23 +1610,36 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			end
 			prevBossHp = boss.hp
 			local bState = tostring(boss.state or "MARCH")
+			if bState == "TELEGRAPH" then
+				local ticksLeft = tonumber(boss.stateTicksLeft) or 20
+				local teleProgress = math.clamp(1 - (ticksLeft / 40), 0, 1)
+				Vfx.bossTelegraph(activeScene, bossPos, bossVisual.accent, teleProgress)
+			end
+			local didSlam = bState == "ABILITY"
+				or (boss.didAbility == true and not bossSlammedThisCycle)
 			if bState ~= prevBossState then
 				prevBossState = bState
 				if bState == "TELEGRAPH" then
+					bossSlammedThisCycle = false
 					AudioKit.play("boss_telegraph")
 					if raidCrowd ~= nil then
 						raidCrowd:react("gasp")
 					end
-				elseif bState == "ABILITY" then
-					AudioKit.playAt("boss_slam", bossPos)
-					shakeUntil = math.max(shakeUntil, time() + 0.25)
-					Vfx.dust(activeScene, bossPos, 8)
 				elseif bState == "VULNERABLE" then
+					bossSlammedThisCycle = false
 					AudioKit.play("boss_stagger")
 					if raidCrowd ~= nil then
 						raidCrowd:react("cheer")
 					end
 				end
+			end
+			if didSlam and not bossSlammedThisCycle then
+				bossSlammedThisCycle = true
+				AudioKit.playAt("boss_slam", bossPos)
+				shakeUntil = math.max(shakeUntil, time() + 0.28)
+				Vfx.bossSlamImpact(activeScene, bossPos, bossVisual.accent)
+			elseif bState ~= "ABILITY" and boss.didAbility ~= true and bState ~= "TELEGRAPH" then
+				bossSlammedThisCycle = false
 			end
 			if boss.enraged == true and not prevBossEnraged then
 				prevBossEnraged = true
@@ -1503,27 +1656,10 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			end
 			campaignUi.updateBossHud(boss)
 		elseif prevBossAlive and not bossApproaching then
-			prevBossAlive = false
-			HordeKit.setBossVisible(bossVisual, false)
-			AudioKit.play("boss_death")
-			AudioKit.setBossActive(false)
-			Vfx.ring(activeScene, bossPos, UiKit.color(VisualTheme.PALETTE.amberBright))
-			if raidCrowd ~= nil then
-				raidCrowd:react("cheer")
-			end
-			campaignUi.hideBossHud()
+			triggerBossDeathClimax(bossPos)
 		end
 	elseif prevBossAlive and not bossApproaching then
-		prevBossAlive = false
-		if bossVisual ~= nil then
-			HordeKit.setBossVisible(bossVisual, false)
-		end
-		AudioKit.play("boss_death")
-		AudioKit.setBossActive(false)
-		if lastBossPos ~= nil then
-			Vfx.ring(activeScene, lastBossPos, UiKit.color(VisualTheme.PALETTE.amberBright))
-		end
-		campaignUi.hideBossHud()
+		triggerBossDeathClimax(lastBossPos or (RAID_ORIGIN + Vector3.new(0, FLOOR_TOP_Y, 0)))
 	end
 end
 
@@ -1538,20 +1674,21 @@ local function stepVisualFrame(
 	if activeScene == nil then
 		return
 	end
+	local now = time()
 	local cam = Workspace.CurrentCamera
 	if cam ~= nil then
 		local baseCf, baseFov = getRaidCamera()
-		cam.FieldOfView = baseFov
-		if time() < shakeUntil then
-			local jx = (math.random() - 0.5) * 0.45
-			local jy = (math.random() - 0.5) * 0.3
-			cam.CFrame = baseCf * CFrame.new(jx, jy, 0)
+		local impulseCf, fovDelta = Vfx.sampleCameraImpulse(now)
+		cam.FieldOfView = baseFov + fovDelta
+		if now < shakeUntil then
+			local jx = (math.random() - 0.5) * 0.34
+			local jy = (math.random() - 0.5) * 0.22
+			cam.CFrame = baseCf * impulseCf * CFrame.new(jx, jy, 0)
 		else
-			cam.CFrame = baseCf
+			cam.CFrame = baseCf * impulseCf
 		end
 	end
 
-	local now = time()
 	local leadIn = PortalThemes.LEAD_IN_FRAMES
 	for id, life in pairs(unitLifecycle) do
 		if life.fromPortal then
@@ -1683,7 +1820,17 @@ local function stepVisualFrame(
 				campaignUi.stepBossBubble(cam, pos + Vector3.new(0, bossVisual.height + 0.8, 0))
 			end
 		end
-		if
+		if bossDyingUntil > 0 then
+			local deathPos = lastBossPos or (RAID_ORIGIN + Vector3.new(0, FLOOR_TOP_Y, 0))
+			if now < bossDyingUntil then
+				HordeKit.setBossApproachScale(bossVisual, 1.0)
+				HordeKit.setBossBase(bossVisual, CFrame.new(deathPos))
+				HordeKit.stepBoss(bossVisual, now, "DYING", false)
+			elseif not bossHiddenAfterDeath then
+				bossHiddenAfterDeath = true
+				HordeKit.setBossVisible(bossVisual, false)
+			end
+		elseif
 			not approachingBoss
 			and fPos >= 1
 			and frameA ~= nil
@@ -1887,7 +2034,14 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 				local now = time()
 				local dt = math.min(now - lastTick, 0.1)
 				lastTick = now
-				simElapsed += dt * speedMult
+				local dilation = 1.0
+				if bossTimeDilationUntil > now then
+					local dilAlpha = math.clamp((now - bossTimeDilationStartAt) / 0.30, 0, 1)
+					local smooth = dilAlpha * dilAlpha * (3 - 2 * dilAlpha)
+					dilation = 0.32 + (1.0 - 0.32) * smooth
+				end
+				local playbackDt = dt * speedMult * dilation
+				simElapsed += playbackDt
 				local progress = math.clamp(simElapsed / totalSeconds, 0, 1)
 				local fPos = (1 - leadInFrames) + progress * totalSpan
 				local index = math.clamp(math.floor(math.max(1, fPos)), 1, #frames)
@@ -1900,12 +2054,16 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 					lastDiscreteIndex = index
 				end
 				stepVisualFrame(frames, fPos, index, nextIndex, alpha)
-				TrapKit.step(dt * speedMult)
+				TrapKit.step(playbackDt)
 				replayProgress.set(progress)
-				if progress >= 1 then
+				if progress >= 1 and (bossDyingUntil <= 0 or time() >= bossDyingUntil) then
 					break
 				end
 				RunService.Heartbeat:Wait()
+			end
+			if bossVisual ~= nil and bossDyingUntil > 0 and not bossHiddenAfterDeath then
+				bossHiddenAfterDeath = true
+				HordeKit.setBossVisible(bossVisual, false)
 			end
 		end)
 		if replayToken ~= myToken then
