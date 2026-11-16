@@ -68,32 +68,32 @@ Um comando gera **todos** os itens de jogo restantes, passa pelo QC do Forge3D 0
 `import`, mesma da muralha) e monta o lineup. **Nunca faz upload** (nenhum `forge3d upload-*`).
 
 ```bash
-bash tools/art-pipeline.sh                 # todos os grupos: wall, traps, horde, bosses, portal, props, fauna (exit 0 = tudo publicado, 0 reprovados)
+bash tools/art-pipeline.sh                 # todos os 8 grupos: wall, traps, horde, bosses, portal, props, fauna, backdrop (97 modelos + paleta 512x512)
 bash tools/art-pipeline.sh --only traps    # um grupo (repetível)
 bash tools/art-pipeline.sh --skip-blender  # só Forge3D + lineup sobre os GLB já exportados
 ```
 
-| Grupo | Script | Itens (id Forge3D → objeto) | Orçamento |
+| Grupo | Script | Itens (id Forge3D → objeto) | Orçamento v1.7 |
 |---|---|---|---|
-| `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_{segmentl,segmentr,towerl,towerr,gate}_l<n>` (L1–L5) | ≤ 2950 tris/tier (`LIMITE_LOTE` 3000) |
-| `traps` | `art/scripts/make_traps.py` | `trap.<tipo>.l<n>.01` → `TRAP_<tipo>_l<n>` (archer, tar, frost, cannon, catapult × L1–L5) | ≤ 1500 tris, pegada ≤ 4,8 × 4,8 |
-| `horde` | `art/scripts/make_horde.py` | `horde.<tipo>.01` → `CMD_<tipo>` (runner, brute, swarm, shieldbearer, pyromancer, sapper) | ≤ 1500 tris |
-| `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` → `BOSS_<tipo>` + `boss.<tipo>.<part>.01` → `BOSS_<tipo>_{torso,arm_r,arm_l,leg_l,leg_r}` (`iron_ram_colossus`, `slag_juggernaut`, `rime_matriarch`, `powder_baron`, `rift_titan`) | ≤ 2200 tris (legado) / ≤ 900 tris (sub-partes) |
-| `portal` | `art/scripts/make_portal.py` | `prop.rift_portal.01` → `PROP_rift_portal` | ≤ 2000 tris |
-| `props` | `art/scripts/make_props.py` | `prop.<tipo>.01` → `PROP_<tipo>` (`tree_pine`, `tree_oak`, `rock_cluster`, `siege_supply`, `iron_brazier`, `rift_obelisk`) | ≤ 900–1400 tris |
-| `fauna` | `art/scripts/make_fauna.py` | `fauna.<tipo>.01` → `FAUNA_<tipo>` (`wyvern_body`/`wing_l`/`wing_r`, `bird_body`/`wing_l`/`wing_r`, `stag`, `pack_ox`, `ram`) | ≤ 1100 tris |
+| `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_l<n>` (L1–L5, 5 modelos) | ≤ 5800 tris/tier (`LIMITE_LOTE` 6000) |
+| `traps` | `art/scripts/make_traps.py` | `trap.<tipo>.l<n>.01` → `TRAP_<tipo>_l<n>` (archer, tar, frost, cannon, catapult × L1–L5, 25 modelos) | ≤ 1850 tris, pegada ≤ 4,8 × 4,8 |
+| `horde` | `art/scripts/make_horde.py` | `horde.<tipo>.01` → `CMD_<tipo>` (runner, brute, swarm, shieldbearer, pyromancer, sapper, `wisp`, `drake`, 8 modelos) | ≤ 2800 tris |
+| `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` → `BOSS_<tipo>` (5 showcases) + `boss.<tipo>.<part>.01` → `BOSS_<tipo>_{torso,arm_r,arm_l,leg_l,leg_r}` (25 sub-partes, 30 modelos) | ≤ 5200 tris (full) / ≤ 2800 torso / ≤ 1600 membros |
+| `portal` | `art/scripts/make_portal.py` | `prop.rift_portal.01` → `PROP_rift_portal` + `portal.act<1..5>_<tema>.01` → `PORTAL_act<1..5>` (6 modelos) | ≤ 3600 tris |
+| `props` | `art/scripts/make_props.py` | `prop.<tipo>.01` → `PROP_<tipo>` (`tree_pine`, `tree_oak`, `rock_cluster`, `siege_supply`, `iron_brazier`, `rift_obelisk`, `bastion_warden`, 7 modelos) | ≤ 1800–3000 tris |
+| `fauna` | `art/scripts/make_fauna.py` | `fauna.<tipo>.01` → `FAUNA_<tipo>` (`wyvern_body`/`wing_l`/`wing_r`, `bird_body`/`wing_l`/`wing_r`, `stag`, `pack_ox`, `ram`, 9 modelos) | ≤ 2200 tris |
+| `backdrop` | `art/scripts/make_backdrop.py` | `backdrop.<tipo>.01` → `BACKDROP_<tipo>` (`castle01`, `keep01`, `house01`, `house02`, `tower01`, `windmill01`, `tree01`, 7 modelos) | ≤ 2800 tris |
 
 Etapas: Blender headless (grupos em paralelo, `--python-exit-code 1`) → `forge3d validate` →
-`forge3d run` → `forge3d verify ~/.local/state/forge3d/saida/muralha_<grupo>` → `montage`.
+`forge3d run` → `forge3d verify ~/.local/state/forge3d/saida/muralha_<grupo>` → sync do GLB pós-processado (`saida/` → `art/export/` com paridade SHA-256) → `montage`.
 Logs e relatórios JSON em `art/renders/_logs/`; renders por item em `art/renders/<grupo>/`;
 lineups em `art/renders/lineup_<grupo>.png` e `lineup_all.png` (tudo ignorado no git).
 
-- **Helpers compartilhados:** `art/scripts/lowpoly_lib.py` (atlas de paleta 256², `paint()`,
-  primitivas, chevrons de patente). `make_wall_bastion.py` tem paleta estendida própria (inclui `ink`).
-- **Lotes gerados:** `art/forge/lote_{muralha,traps,horde,bosses,portal,props,fauna}_import.yaml` são escritos
+- **Helpers compartilhados:** `art/scripts/lowpoly_lib.py` (atlas de paleta `512×512` com 63 cores `PAL` em grade 8×8 de células `64px`, `paint()`, primitivas suavizadas `bevel_obj`/`tapered_cylinder`/`lathe_profile`, chevrons de patente). Todos os 97 modelos compartilham a textura unificada `LOWPOLY_PALETTE_TEXTURE_ID = 132821694339844`.
+- **Lotes gerados:** `art/forge/lote_{muralha,traps,horde,bosses,portal,props,fauna,backdrop}_import.yaml` são escritos
   pelo script com `altura_metros` = altura **medida** do GLB × 0,28. Não editar à mão; regenerar.
-- **QC já embutido:** jitter determinístico de 3–12 milésimos de stud por peça no `join()` (G1:
-  sem arestas coincidentes após a solda do Forge), pivô normalizado em Z=0 e gate de orientação sem rotação residual/`det>0` + `suavizacao_normais` (G2 no 0.8.0), UV espalhada na
+- **QC e suavização de normais (v1.7):** jitter determinístico de 3–12 milésimos de stud por peça no `join()` (G1:
+  sem arestas coincidentes após a solda do Forge), pivô normalizado em Z=0 e gate de orientação sem rotação residual/`det>0` + `suavizacao_normais: { ativo: true, angulo_graus: 46..52, weighted_normals: true, corrective_smooth: false }` (G2 no Forge3D 0.8.0 `spec@5`), UV espalhada na
   célula da paleta (G3), 1 material (G5). O `g1_check()` local reprova antes do Forge. As asas de
   `fauna` e os membros de `bosses` usam `center_xy=False` e `pivot: origem` para manter o encaixe de articulação.
 - **Patente (L1–L3):** mastro + 1/2/3 chevrons ≥ 0,6 stud (`amber` / `amberBright` /

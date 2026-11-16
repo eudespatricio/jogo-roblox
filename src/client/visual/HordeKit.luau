@@ -47,6 +47,9 @@ local ColorSequence = if IS_ROBLOX
 local NumberSequence = if IS_ROBLOX
 	then NumberSequence
 	else Mock.NumberSequence :: typeof(NumberSequence)
+local NumberSequenceKeypoint = if IS_ROBLOX
+	then NumberSequenceKeypoint
+	else Mock.NumberSequenceKeypoint :: typeof(NumberSequenceKeypoint)
 local Enum = if IS_ROBLOX then Enum else Mock.Enum :: typeof(Enum)
 local UDim = if IS_ROBLOX then UDim else Mock.UDim :: typeof(UDim)
 local UDim2 = if IS_ROBLOX then UDim2 else Mock.UDim2 :: typeof(UDim2)

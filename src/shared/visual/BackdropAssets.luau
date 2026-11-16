@@ -27,20 +27,22 @@ BackdropAssets.ROAD_WAYPOINTS = table.freeze({
 } :: { RoadWaypoint })
 
 BackdropAssets.ASSETS = table.freeze({
-	table.freeze({ key = "castle01", assetId = 106693105904074, textureId = 111593348314769 }),
-	table.freeze({ key = "house01", assetId = 116579470879926, textureId = 70964650673901 }),
-	table.freeze({ key = "house02", assetId = 121109739722294, textureId = 82299972598403 }),
-	table.freeze({ key = "tower01", assetId = 82625222995163, textureId = 75828725228493 }),
-	table.freeze({ key = "windmill01", assetId = 113466205934167, textureId = 128918177128589 }),
-	table.freeze({ key = "keep01", assetId = 0, textureId = 0 }),
-	table.freeze({ key = "tree01", assetId = 79361534255880, textureId = 96125919678314 }),
+	table.freeze({ key = "castle01", assetId = 135530891053404, textureId = 132821694339844 }),
+	table.freeze({ key = "house01", assetId = 88113262212089, textureId = 132821694339844 }),
+	table.freeze({ key = "house02", assetId = 103652086357338, textureId = 132821694339844 }),
+	table.freeze({ key = "tower01", assetId = 89001969643072, textureId = 132821694339844 }),
+	table.freeze({ key = "windmill01", assetId = 101702140849656, textureId = 132821694339844 }),
+	table.freeze({ key = "keep01", assetId = 140613750774628, textureId = 132821694339844 }),
+	table.freeze({ key = "tree01", assetId = 78778745630975, textureId = 132821694339844 }),
 } :: { Asset })
 
--- 41 entradas em 3 setores: colina da Cidadela/vila (-X), crista norte/direita (-Z) e borda
+-- 43 entradas em 3 setores: colina da Cidadela/vila (-X), crista norte/direita (-Z) e borda
 -- sul/esquerda (+Z). Validado contra cameras (42,38,44) FOV38 e (38,28,40) FOV40: zero oclusao.
 BackdropAssets.LAYOUT = table.freeze({
 	-- Colina da Cidadela & vila atras da muralha (x in [-56, -210], z in [-155, +55])
 	table.freeze({ key = "castle01", x = -148, z = -74, height = 30, yawJitter = 0 }),
+	table.freeze({ key = "keep01", x = -164, z = -92, height = 26, yawJitter = 8 }),
+	table.freeze({ key = "keep01", x = -134, z = -62, height = 24, yawJitter = -10 }),
 	table.freeze({ key = "windmill01", x = -104, z = 10, height = 22, yawJitter = 18 }),
 	table.freeze({ key = "tower01", x = -72, z = -54, height = 17, yawJitter = -12 }),
 	table.freeze({ key = "tower01", x = -96, z = -70, height = 18, yawJitter = 15 }),

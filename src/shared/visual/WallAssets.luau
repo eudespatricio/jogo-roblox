@@ -11,11 +11,11 @@ WallAssets.TIER_ATTRIBUTE = "MuralhaWallTier"
 WallAssets.MAX_TIER = 5
 
 WallAssets.ASSET_IDS = table.freeze({
-	91152473868816, -- WALL_bastion_l1 (madeira)
-	85579216731323, -- WALL_bastion_l2 (pedra)
-	137217558394569, -- WALL_bastion_l3 (ferro)
-	109417501807187, -- WALL_bastion_l4 (basalto/aco)
-	101583921902471, -- WALL_bastion_l5 (obsidiana/ouro)
+	119001943910131, -- WALL_bastion_l1 (madeira)
+	83757965400870, -- WALL_bastion_l2 (pedra)
+	83476900692309, -- WALL_bastion_l3 (ferro)
+	96269870455987, -- WALL_bastion_l4 (basalto/aco)
+	93722450747257, -- WALL_bastion_l5 (obsidiana/ouro)
 })
 
 function WallAssets.modelName(tier: number): string

@@ -128,18 +128,21 @@ fixado, todo asset nasce torto ou no tamanho errado.
 
 A doc oficial de Blender para Roblox cobre units/axes: [create.roblox.com/docs/art/blender](https://create.roblox.com/docs/art/blender).
 
-### 4.2 Convenção de asset
+### 4.2 Convenção de asset (v1.7 — 97 modelos Open Cloud + paleta 512²)
 
-| Tipo | Prefixo | Pivô | Escala | Triângulos (alvo) | Textura |
+| Tipo | Prefixo | Pivô | Escala | Triângulos (teto v1.7) | Textura |
 |---|---|---|---:|---:|---:|
-| Armadilha | `TRAP_` | base, Z=0 | 1 | ≤ 1.500 | 512² |
-| Segmento de muralha | `WALL_` | base, Z=0 | 1 | ≤ 500 | 256² |
-| Comandante | `CMD_` | pés, Z=0 | 1 | ≤ 6.000 | 1024² |
-| Prop de cenário | `PROP_` | base, Z=0 | 1 | ≤ 2.000 | 512² |
+| Armadilha (25: 5×L1..L5) | `TRAP_` | base, Z=0 | 1 | ≤ 1.850 | 512² (paleta 64 cores) |
+| Muralha completa (5: L1..L5) | `WALL_` | base, Z=0 | 1 | ≤ 5.800 | 512² (paleta 64 cores) |
+| Horda terrestre/aérea (8: incl. `wisp`/`drake`) | `CMD_` | base, Z=0 | 1 | ≤ 2.800 | 512² (paleta 64 cores) |
+| Boss completo (5) / Sub-partes (25) | `BOSS_` | base / origem | 1 | ≤ 5.200 / ≤ 2.800 torso / ≤ 1.600 membro | 512² (paleta 64 cores) |
+| Portal (6: `rift` + `act1..5`) | `PORTAL_` / `PROP_rift_portal` | base, Z=0 | 1 | ≤ 3.600 | 512² (paleta 64 cores) |
+| Prop e Guardião (7: incl. `bastion_warden`) | `PROP_` | base, Z=0 | 1 | ≤ 3.000 | 512² (paleta 64 cores) |
+| Fauna (9: corpos e asas) | `FAUNA_` | base / origem | 1 | ≤ 2.200 | 512² (paleta 64 cores) |
+| Cenário do vale (7: incl. `keep01`) | `BACKDROP_` | base, Z=0 | 1 | ≤ 2.800 | 512² (`132821694339844`) |
 | Efeito | `VFX_` | origem | 1 | — | 256² (flipbook) |
 
-Regras: aplicar transforms; sem escala negativa; nomes `PREFIXO_nome_variante` em minúsculas; um
-material por mesh quando possível; sem nós procedurais no export (bake para textura).
+Regras: aplicar transforms; sem escala negativa; nomes `PREFIXO_nome_variante`; 1 material por mesh com UV na paleta `512×512` (`LOWPOLY_PALETTE_TEXTURE_ID = 132821694339844`); suavização de normais obrigatória no Forge3D (`suavizacao_normais: { ativo: true, angulo_graus: 46..52, weighted_normals: true, corrective_smooth: false }`) e sincronização SHA-256 entre `saida/` e `art/export/*.glb`.
 
 ### 4.3 Export e versionamento
 

@@ -294,61 +294,81 @@ check("lanes: 5 trilhas em X (linha = lane), slots dentro da lane, sem xadrez", 
 	assert(total <= VisualTheme.BUDGET.arenaParts, "arena estoura BUDGET.arenaParts")
 end)
 
-check("open cloud: muralha L1..L5, 6 props, 9 fauna e vale continuo publicados", function()
-	assert(#WallAssets.ASSET_IDS == 5, "esperava 5 tiers de muralha")
-	for tier, assetId in ipairs(WallAssets.ASSET_IDS) do
-		assert(type(assetId) == "number" and assetId > 0, "WallAssets tier " .. tostring(tier))
-		assert(
-			WallAssets.modelName(tier) == "WALL_bastion_l" .. tostring(tier),
-			"WallAssets modelName tier " .. tostring(tier)
-		)
-	end
+check(
+	"open cloud: muralha L1..L5, 7 props, 9 fauna e 7 modelos do vale continuo publicados",
+	function()
+		assert(#WallAssets.ASSET_IDS == 5, "esperava 5 tiers de muralha")
+		for tier, assetId in ipairs(WallAssets.ASSET_IDS) do
+			assert(type(assetId) == "number" and assetId > 0, "WallAssets tier " .. tostring(tier))
+			assert(
+				WallAssets.modelName(tier) == "WALL_bastion_l" .. tostring(tier),
+				"WallAssets modelName tier " .. tostring(tier)
+			)
+		end
 
-	local requiredProps = {
-		"tree_pine",
-		"tree_oak",
-		"rock_cluster",
-		"siege_supply",
-		"iron_brazier",
-		"rift_obelisk",
-	}
-	for _, key in ipairs(requiredProps) do
-		local id = MeshAssets.PROPS[key]
-		assert(type(id) == "number" and id > 0, "prop nao publicado: " .. key)
-	end
+		local requiredProps = {
+			"tree_pine",
+			"tree_oak",
+			"rock_cluster",
+			"siege_supply",
+			"iron_brazier",
+			"rift_obelisk",
+			"bastion_warden",
+		}
+		for _, key in ipairs(requiredProps) do
+			local id = MeshAssets.PROPS[key]
+			assert(type(id) == "number" and id > 0, "prop nao publicado: " .. key)
+			assert(
+				MeshAssets.propModelName(key) == "PROP_" .. key,
+				"propModelName invalido: " .. key
+			)
+		end
 
-	local requiredFauna = {
-		"wyvern_body",
-		"wyvern_wing_l",
-		"wyvern_wing_r",
-		"bird_body",
-		"bird_wing_l",
-		"bird_wing_r",
-		"stag",
-		"pack_ox",
-		"ram",
-	}
-	for _, key in ipairs(requiredFauna) do
-		local id = MeshAssets.FAUNA[key]
-		assert(type(id) == "number" and id > 0, "fauna nao publicada: " .. key)
-	end
+		local requiredFauna = {
+			"wyvern_body",
+			"wyvern_wing_l",
+			"wyvern_wing_r",
+			"bird_body",
+			"bird_wing_l",
+			"bird_wing_r",
+			"stag",
+			"pack_ox",
+			"ram",
+		}
+		for _, key in ipairs(requiredFauna) do
+			local id = MeshAssets.FAUNA[key]
+			assert(type(id) == "number" and id > 0, "fauna nao publicada: " .. key)
+		end
 
-	assert(close(BackdropAssets.SHORE_Y, -0.20), "SHORE_Y esperado -0.20")
-	assert(#BackdropAssets.ROAD_WAYPOINTS >= 4, "estrada da cidadela incompleta")
-	assert(#BackdropAssets.LAYOUT >= 35, "layout de cenario reduzido")
-	assert(BackdropAssets.anyPublished() == true, "BackdropAssets nao publicado")
-	for _, asset in ipairs(BackdropAssets.ASSETS) do
-		if asset.assetId > 0 then
+		assert(close(BackdropAssets.SHORE_Y, -0.20), "SHORE_Y esperado -0.20")
+		assert(#BackdropAssets.ROAD_WAYPOINTS >= 4, "estrada da cidadela incompleta")
+		assert(#BackdropAssets.LAYOUT >= 35, "layout de cenario reduzido")
+		assert(BackdropAssets.anyPublished() == true, "BackdropAssets nao publicado")
+		assert(#BackdropAssets.ASSETS == 7, "esperava 7 modelos em BackdropAssets.ASSETS")
+		for _, asset in ipairs(BackdropAssets.ASSETS) do
+			assert(
+				type(asset.assetId) == "number" and asset.assetId > 0,
+				"modelo de backdrop nao publicado: " .. asset.key
+			)
 			assert(
 				type(asset.textureId) == "number" and asset.textureId > 0,
 				"textura de backdrop nao publicada: " .. asset.key
 			)
 		end
 	end
-end)
+)
 
-check("open cloud: 6 classes de horda e 5 bosses publicados com specs no VisualTheme", function()
-	local requiredHorde = { "runner", "brute", "swarm", "shieldbearer", "pyromancer", "sapper" }
+check("open cloud: 8 classes de horda e 5 bosses publicados com specs no VisualTheme", function()
+	local requiredHorde = {
+		"runner",
+		"brute",
+		"swarm",
+		"shieldbearer",
+		"pyromancer",
+		"sapper",
+		"wisp",
+		"drake",
+	}
 	for _, kind in ipairs(requiredHorde) do
 		local id = MeshAssets.HORDE[kind]
 		assert(type(id) == "number" and id > 0, "horda nao publicada: " .. kind)
@@ -840,6 +860,213 @@ check(
 		)
 	end
 )
+
+check(
+	"open cloud v1.7: 97 assetIds 3D unicos > 0 + paleta 512x512 (132821694339844) com paridade no Backdrop",
+	function()
+		assert(
+			MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID == 132821694339844,
+			"LOWPOLY_PALETTE_TEXTURE_ID divergente"
+		)
+		assert(
+			MeshAssets.PORTAL == MeshAssets.PORTALS.rift,
+			"MeshAssets.PORTAL != MeshAssets.PORTALS.rift"
+		)
+
+		local seenIds: { [number]: string } = {}
+		local totalModels = 0
+		local function recordId(label: string, id: number)
+			assert(
+				type(id) == "number" and id > 0 and id == math.floor(id),
+				"assetId invalido em " .. label .. ": " .. tostring(id)
+			)
+			assert(
+				seenIds[id] == nil,
+				string.format("assetId duplicado (%d): %s vs %s", id, tostring(seenIds[id]), label)
+			)
+			seenIds[id] = label
+			totalModels += 1
+		end
+
+		for tier, id in ipairs(WallAssets.ASSET_IDS) do
+			recordId("WALL_bastion_l" .. tostring(tier), id)
+		end
+		for _, trapId in ipairs({ "archer", "tar", "frost", "cannon", "catapult" }) do
+			local list = MeshAssets.TRAPS[trapId]
+			assert(list ~= nil and #list == 5, "TRAPS ausente/incompleto: " .. trapId)
+			for lvl = 1, 5 do
+				recordId(MeshAssets.trapModelName(trapId, lvl), list[lvl])
+			end
+		end
+		for _, kind in ipairs({
+			"runner",
+			"brute",
+			"swarm",
+			"shieldbearer",
+			"pyromancer",
+			"sapper",
+			"wisp",
+			"drake",
+		}) do
+			recordId(MeshAssets.hordeModelName(kind), MeshAssets.HORDE[kind])
+		end
+		local bossIds = {
+			"iron_ram_colossus",
+			"slag_juggernaut",
+			"rime_matriarch",
+			"powder_baron",
+			"rift_titan",
+		}
+		local partKeys = { "torso", "arm_r", "arm_l", "leg_l", "leg_r" }
+		for _, bossId in ipairs(bossIds) do
+			recordId(MeshAssets.bossModelName(bossId), MeshAssets.BOSSES[bossId])
+			local parts = MeshAssets.BOSS_PARTS[bossId]
+			for _, pk in ipairs(partKeys) do
+				recordId(MeshAssets.bossPartModelName(bossId, pk), (parts :: any)[pk])
+			end
+		end
+		for _, pKey in ipairs({ "rift", "act1", "act2", "act3", "act4", "act5" }) do
+			recordId(MeshAssets.portalModelName(pKey), MeshAssets.PORTALS[pKey])
+		end
+		for _, propKey in ipairs({
+			"tree_pine",
+			"tree_oak",
+			"rock_cluster",
+			"siege_supply",
+			"iron_brazier",
+			"rift_obelisk",
+			"bastion_warden",
+		}) do
+			recordId(MeshAssets.propModelName(propKey), MeshAssets.PROPS[propKey])
+		end
+		for _, faunaKey in ipairs({
+			"wyvern_body",
+			"wyvern_wing_l",
+			"wyvern_wing_r",
+			"bird_body",
+			"bird_wing_l",
+			"bird_wing_r",
+			"stag",
+			"pack_ox",
+			"ram",
+		}) do
+			recordId(MeshAssets.faunaModelName(faunaKey), MeshAssets.FAUNA[faunaKey])
+		end
+		for _, asset in ipairs(BackdropAssets.ASSETS) do
+			recordId(BackdropAssets.modelName(asset.key), asset.assetId)
+			assert(
+				asset.textureId == MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID,
+				"BackdropAssets textureId sem paridade com LOWPOLY_PALETTE_TEXTURE_ID em "
+					.. asset.key
+			)
+		end
+
+		assert(
+			totalModels == 97,
+			"esperava 97 modelos 3D Open Cloud auditados, achei " .. tostring(totalModels)
+		)
+	end
+)
+
+check(
+	"v1.7 kits: PROP_bastion_warden, montagem CMD_wisp/CMD_drake no HordeKit e fallbacks dentro de BUDGET",
+	function()
+		assert(
+			MeshAssets.propModelName("bastion_warden") == "PROP_bastion_warden",
+			"propModelName(bastion_warden) != PROP_bastion_warden"
+		)
+		assert(
+			type(MeshAssets.PROPS.bastion_warden) == "number"
+				and MeshAssets.PROPS.bastion_warden > 0,
+			"PROPS.bastion_warden invalido"
+		)
+		assert(MeshAssets.hordeModelName("wisp") == "CMD_wisp", "hordeModelName(wisp) != CMD_wisp")
+		assert(
+			MeshAssets.hordeModelName("drake") == "CMD_drake",
+			"hordeModelName(drake) != CMD_drake"
+		)
+
+		-- Verifica orcamento de partes procedurais de armadilhas e unidades
+		for _, trapId in ipairs(VisualTheme.trapIds()) do
+			local spec = VisualTheme.TRAPS[trapId]
+			assert(
+				spec.parts <= VisualTheme.BUDGET.trapParts,
+				string.format("trap %s excede trapParts: %d", trapId, spec.parts)
+			)
+		end
+
+		local repStorage = HeadlessMock.game:GetService("ReplicatedStorage")
+		local oldAssets = repStorage:FindFirstChild(MeshAssets.FOLDER)
+		if oldAssets ~= nil then
+			oldAssets:Destroy()
+		end
+
+		local fallbackScene = HeadlessMock.Instance.new("Folder")
+		for idx, kind in ipairs(VisualTheme.enemyIds()) do
+			local unit =
+				HordeKit.create(kind, fallbackScene, HeadlessMock.CFrame.identity, idx, false)
+			local partCount = 0
+			for _, desc in ipairs(unit.model:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					partCount += 1
+				end
+			end
+			local budgetLimit = if kind == "drake"
+				then VisualTheme.BUDGET.flyingUnitParts
+				else VisualTheme.BUDGET.unitParts
+			assert(
+				partCount <= budgetLimit,
+				string.format(
+					"fallback procedural %s excedeu BUDGET (%d > %d)",
+					kind,
+					partCount,
+					budgetLimit
+				)
+			)
+		end
+
+		-- Montagem de CMD_wisp e CMD_drake quando presentes em ReplicatedStorage.MuralhaAssets
+		local assetsFolder = HeadlessMock.Instance.new("Folder")
+		assetsFolder.Name = MeshAssets.FOLDER
+		assetsFolder.Parent = repStorage
+
+		for _, aerialKind in ipairs({ "wisp", "drake" }) do
+			local tpl = HeadlessMock.Instance.new("Part")
+			tpl.Name = MeshAssets.hordeModelName(aerialKind)
+			tpl.Size = HeadlessMock.Vector3.new(2, 2, 2)
+			tpl.Parent = assetsFolder
+
+			local meshScene = HeadlessMock.Instance.new("Folder")
+			local mountedUnit =
+				HordeKit.create(aerialKind, meshScene, HeadlessMock.CFrame.identity, 1, false)
+			assert(
+				mountedUnit.model:GetAttribute("HasMeshVisual") == true,
+				"HordeKit nao montou malha para " .. aerialKind
+			)
+		end
+
+		assetsFolder:Destroy()
+	end
+)
+
+check("open cloud v1.7: BackdropAssets keep01 ativo em ASSETS e posicionado em LAYOUT", function()
+	assert(BackdropAssets.assetId("keep01") > 0, "keep01 assetId deve ser > 0")
+	assert(
+		BackdropAssets.textureId("keep01") == MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID,
+		"keep01 textureId divergente da paleta"
+	)
+	assert(BackdropAssets.modelName("keep01") == "BACKDROP_keep01", "modelName(keep01)")
+
+	local keepPlacements = 0
+	for _, entry in ipairs(BackdropAssets.LAYOUT) do
+		if entry.key == "keep01" then
+			keepPlacements += 1
+			assert(entry.x <= -120 and entry.z <= -50, "keep01 fora da colina da Cidadela")
+			assert(entry.height >= 20 and entry.height <= 32, "keep01 altura fora da faixa")
+		end
+	end
+	assert(keepPlacements >= 1, "keep01 nao posicionado em BackdropAssets.LAYOUT")
+end)
 
 print(string.format("contrato visual (S8): %d checagens, %d falhas", checks, #failures))
 if #failures > 0 then
