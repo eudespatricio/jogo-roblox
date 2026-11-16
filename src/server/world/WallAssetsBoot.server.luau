@@ -8,6 +8,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local WallAssets = require(
 	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("WallAssets")
 )
+local MeshAssets = require(
+	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
+)
 
 local folder = ReplicatedStorage:FindFirstChild(WallAssets.FOLDER)
 if folder == nil then
@@ -17,14 +20,32 @@ if folder == nil then
 end
 assert(folder ~= nil)
 
+local warnedUnpublishedPlace = false
+
+local function needsPaletteTexture(textureId: string): boolean
+	return textureId == "" or string.sub(textureId, 1, 15) == "rbxassethash://"
+end
+
 local function prepare(model: Model): ()
+	local paletteTexture = if MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID > 0
+		then "rbxassetid://" .. tostring(MeshAssets.LOWPOLY_PALETTE_TEXTURE_ID)
+		else ""
 	for _, descendant in ipairs(model:GetDescendants()) do
-		if descendant:IsA("BasePart") then
+		if descendant:IsA("SurfaceAppearance") then
+			descendant:Destroy()
+		elseif descendant:IsA("BasePart") then
 			descendant.Anchored = true
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.CanQuery = false
 			descendant.CastShadow = true
+			if
+				descendant:IsA("MeshPart")
+				and paletteTexture ~= ""
+				and needsPaletteTexture(descendant.TextureID)
+			then
+				descendant.TextureID = paletteTexture
+			end
 		end
 	end
 end
@@ -35,14 +56,23 @@ for tier, assetId in ipairs(WallAssets.ASSET_IDS) do
 			return InsertService:LoadAsset(assetId)
 		end)
 		if not ok or result == nil then
-			warn(
-				string.format(
-					"[walls] malha L%d (%d) indisponivel: %s",
-					tier,
-					assetId,
-					tostring(result)
+			if game.PlaceId == 0 then
+				if not warnedUnpublishedPlace then
+					warnedUnpublishedPlace = true
+					warn(
+						"[Muralha/Walls] Place local sem PlaceId (PlaceId=0): publique no Studio sob userId 11966727684 para carregar malhas 3D Open Cloud."
+					)
+				end
+			else
+				warn(
+					string.format(
+						"[walls] malha L%d (%d) indisponivel: %s",
+						tier,
+						assetId,
+						tostring(result)
+					)
 				)
-			)
+			end
 			return
 		end
 		local container = result :: Model

@@ -256,6 +256,44 @@ local function makeBoxPart(
 	return p
 end
 
+local function makeEllipsoidPart(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	cf: CFrame,
+	color: Color3,
+	material: Enum.Material?
+): Part
+	local p = makeBoxPart(parent, name, size, cf, color, material)
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = p
+	return p
+end
+
+local function makeWedgePart(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	cf: CFrame,
+	color: Color3,
+	material: Enum.Material?
+): WedgePart
+	local p = Instance.new("WedgePart")
+	p.Name = name
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Size = size
+	p.Color = color
+	p.Material = material or Enum.Material.Metal
+	p.CFrame = cf
+	p.Parent = parent
+	return p
+end
+
 local function sanitizePortraitModel(model: Instance): ()
 	for _, desc in ipairs(model:GetDescendants()) do
 		if desc:IsA("Highlight") or desc:IsA("BillboardGui") or desc:IsA("Trail") then
@@ -298,7 +336,7 @@ local function buildBastionWardenModel(
 	facingSignZ: number,
 	topTrap: TrapChip?
 ): Model
-	-- Guardiao da Muralha: frente em -X (igual aos personagens HordeKit/CMD_*), escala heroica ~6.4 studs.
+	-- Guardiao da Muralha: frente em -X (igual aos personagens HordeKit/CMD_*), escala heroica ~6.3 studs.
 	local armorCol, trimCol, glowCol = bastionArmorPalette(wallLevel)
 	local clothCol = Color3.fromRGB(122, 24, 34)
 	local hero = Instance.new("Model")
@@ -310,201 +348,269 @@ local function buildBastionWardenModel(
 	root.Transparency = 1
 	hero.PrimaryPart = root
 
-	-- Torso blindado + faixa peitoral
-	makeBoxPart(
-		hero,
-		"Chestplate",
-		Vector3.new(1.5, 2.35, 2.45),
-		CFrame.new(0, 3.05, 0),
-		armorCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"ChestPlateTrim",
-		Vector3.new(1.62, 0.45, 2.55),
-		CFrame.new(-0.04, 3.72, 0),
-		trimCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"ChestCrest",
-		Vector3.new(0.26, 0.68, 0.68),
-		CFrame.new(-0.78, 3.25, 0) * CFrame.Angles(math.rad(45), 0, 0),
-		glowCol,
-		Enum.Material.Neon
-	)
-	makeBoxPart(
-		hero,
-		"Belt",
-		Vector3.new(1.58, 0.40, 2.50),
-		CFrame.new(0, 1.92, 0),
-		trimCol,
-		Enum.Material.Metal
-	)
+	local shieldSideZ = facingSignZ
+	local weaponSideZ = -facingSignZ
 
-	-- Manto real nas costas (+X)
-	makeBoxPart(
-		hero,
-		"Cape",
-		Vector3.new(0.22, 3.4, 2.7),
-		CFrame.new(0.95, 2.65, 0) * CFrame.Angles(0, 0, math.rad(-10)),
-		clothCol,
-		Enum.Material.Fabric
-	)
+	-- Malha 3D Open Cloud (PROP_bastion_warden) quando carregada em ReplicatedStorage.MuralhaAssets
+	local mountedMesh = false
+	local assetsFolder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
+	local wardenTemplate = if assetsFolder ~= nil
+		then assetsFolder:FindFirstChild("PROP_bastion_warden")
+		else nil
+	if wardenTemplate ~= nil then
+		local wardenClone = wardenTemplate:Clone()
+		wardenClone.Name = "WardenMesh"
+		sanitizePortraitModel(wardenClone)
+		wardenClone.Parent = hero
+		if wardenClone:IsA("Model") then
+			local _, rawSz = wardenClone:GetBoundingBox()
+			if rawSz.Y > 0.05 then
+				wardenClone:ScaleTo(wardenClone:GetScale() * (6.3 / rawSz.Y))
+			end
+			wardenClone:PivotTo(CFrame.Angles(0, math.rad(90), 0))
+			local bbCf, bbSz = wardenClone:GetBoundingBox()
+			wardenClone:PivotTo(
+				wardenClone:GetPivot()
+					+ Vector3.new(
+						-bbCf.Position.X,
+						-(bbCf.Position.Y - bbSz.Y * 0.5),
+						-bbCf.Position.Z
+					)
+			)
+			mountedMesh = true
+		elseif wardenClone:IsA("BasePart") then
+			local rawY = wardenClone.Size.Y
+			if rawY > 0.05 then
+				wardenClone.Size = wardenClone.Size * (6.3 / rawY)
+			end
+			wardenClone.CFrame = CFrame.new(0, wardenClone.Size.Y * 0.5, 0)
+				* CFrame.Angles(0, math.rad(90), 0)
+			mountedMesh = true
+		else
+			wardenClone:Destroy()
+		end
 
-	-- Ombreiras duplas estilizadas (silhueta forte de campeao)
-	for _, sz in ipairs({ -1, 1 }) do
-		makeBoxPart(
+		if mountedMesh then
+			local rimHighlight = Instance.new("Highlight")
+			rimHighlight.Name = "WardenTierRim"
+			rimHighlight.Adornee = wardenClone
+			rimHighlight.FillColor = glowCol
+			rimHighlight.FillTransparency = 0.86
+			rimHighlight.OutlineColor = trimCol
+			rimHighlight.OutlineTransparency = 0.15
+			rimHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
+			rimHighlight.Parent = hero
+
+			local crestGlow = makeBoxPart(
+				hero,
+				"TierCrestGlow",
+				Vector3.new(0.10, 1.65, 1.65),
+				CFrame.new(0.45, 5.15, 0),
+				glowCol,
+				Enum.Material.Neon,
+				Enum.PartType.Cylinder
+			)
+			crestGlow.Transparency = 0.28
+		end
+	end
+
+	if not mountedMesh then
+		-- Torso blindado esculpido + faixa peitoral
+		makeEllipsoidPart(
 			hero,
-			"Pauldron_" .. tostring(sz),
-			Vector3.new(1.72, 1.15, 1.32),
-			CFrame.new(0, 4.18, sz * 1.48) * CFrame.Angles(sz * math.rad(16), 0, 0),
+			"Chestplate",
+			Vector3.new(1.75, 2.55, 2.65),
+			CFrame.new(0, 3.05, 0),
+			armorCol,
+			Enum.Material.Metal
+		)
+		makeEllipsoidPart(
+			hero,
+			"ChestPlateTrim",
+			Vector3.new(1.84, 0.54, 2.72),
+			CFrame.new(-0.04, 3.72, 0),
+			trimCol,
+			Enum.Material.Metal
+		)
+		makeEllipsoidPart(
+			hero,
+			"ChestCrest",
+			Vector3.new(0.32, 0.72, 0.72),
+			CFrame.new(-0.84, 3.25, 0) * CFrame.Angles(math.rad(45), 0, 0),
+			glowCol,
+			Enum.Material.Neon
+		)
+		makeEllipsoidPart(
+			hero,
+			"Belt",
+			Vector3.new(1.76, 0.46, 2.64),
+			CFrame.new(0, 1.92, 0),
+			trimCol,
+			Enum.Material.Metal
+		)
+
+		-- Manto real nas costas (+X)
+		makeEllipsoidPart(
+			hero,
+			"Cape",
+			Vector3.new(0.28, 3.45, 2.75),
+			CFrame.new(0.95, 2.65, 0) * CFrame.Angles(0, 0, math.rad(-10)),
+			clothCol,
+			Enum.Material.Fabric
+		)
+
+		-- Ombreiras duplas estilizadas (silhueta forte de campeao)
+		for _, sz in ipairs({ -1, 1 }) do
+			makeEllipsoidPart(
+				hero,
+				"Pauldron_" .. tostring(sz),
+				Vector3.new(1.86, 1.24, 1.44),
+				CFrame.new(0, 4.18, sz * 1.48) * CFrame.Angles(sz * math.rad(16), 0, 0),
+				armorCol,
+				Enum.Material.Metal
+			)
+			makeEllipsoidPart(
+				hero,
+				"PauldronRim_" .. tostring(sz),
+				Vector3.new(1.94, 0.30, 1.50),
+				CFrame.new(0, 4.62, sz * 1.46) * CFrame.Angles(sz * math.rad(16), 0, 0),
+				trimCol,
+				Enum.Material.Metal
+			)
+			if wallLevel >= 3 then
+				makeWedgePart(
+					hero,
+					"PauldronHorn_" .. tostring(sz),
+					Vector3.new(0.36, 0.76, 0.42),
+					CFrame.new(-0.08, 4.98, sz * 1.62) * CFrame.Angles(sz * math.rad(28), 0, 0),
+					trimCol,
+					Enum.Material.Metal
+				)
+			end
+		end
+
+		-- Elmo com visor brilhante voltado para -X
+		makeEllipsoidPart(
+			hero,
+			"HelmBase",
+			Vector3.new(1.52, 1.60, 1.44),
+			CFrame.new(-0.06, 5.05, 0),
+			armorCol,
+			Enum.Material.Metal
+		)
+		makeEllipsoidPart(
+			hero,
+			"HelmVisorBar",
+			Vector3.new(0.32, 0.28, 1.08),
+			CFrame.new(-0.76, 5.08, 0),
+			glowCol,
+			Enum.Material.Neon
+		)
+		makeEllipsoidPart(
+			hero,
+			"HelmVisorSplit",
+			Vector3.new(0.36, 0.64, 0.20),
+			CFrame.new(-0.77, 4.88, 0),
+			trimCol,
+			Enum.Material.Metal
+		)
+		makeWedgePart(
+			hero,
+			"HelmCrest",
+			Vector3.new(0.28, 0.48, 1.48),
+			CFrame.new(0.05, 5.95, 0) * CFrame.Angles(0, math.rad(90), 0),
+			trimCol,
+			Enum.Material.Metal
+		)
+		if wallLevel >= 2 then
+			makeEllipsoidPart(
+				hero,
+				"HelmPlume",
+				Vector3.new(1.70, 0.56, 0.28),
+				CFrame.new(0.45, 6.18, 0) * CFrame.Angles(0, 0, math.rad(-14)),
+				clothCol,
+				Enum.Material.Fabric
+			)
+		end
+
+		-- Escudo Torre no braco voltado para fora da cena + Martelo de Guerra no outro braco
+		makeEllipsoidPart(
+			hero,
+			"ShieldArm",
+			Vector3.new(0.80, 1.72, 0.80),
+			CFrame.new(-0.22, 3.15, shieldSideZ * 1.62) * CFrame.Angles(math.rad(14), 0, 0),
+			armorCol,
+			Enum.Material.Metal
+		)
+		local shieldCF = CFrame.new(-0.98, 3.05, shieldSideZ * 1.45)
+			* CFrame.Angles(0, shieldSideZ * math.rad(18), 0)
+		makeEllipsoidPart(
+			hero,
+			"TowerShieldBody",
+			Vector3.new(0.42, 3.12, 2.02),
+			shieldCF,
+			armorCol,
+			Enum.Material.Metal
+		)
+		makeEllipsoidPart(
+			hero,
+			"TowerShieldFrame",
+			Vector3.new(0.38, 3.26, 2.16),
+			shieldCF * CFrame.new(0.05, 0, 0),
+			trimCol,
+			Enum.Material.Metal
+		)
+		makeEllipsoidPart(
+			hero,
+			"TowerShieldCore",
+			Vector3.new(0.46, 0.90, 0.90),
+			shieldCF * CFrame.Angles(math.rad(45), 0, 0),
+			glowCol,
+			Enum.Material.Neon
+		)
+
+		makeEllipsoidPart(
+			hero,
+			"HammerArm",
+			Vector3.new(0.78, 1.80, 0.78),
+			CFrame.new(-0.18, 3.30, weaponSideZ * 1.60)
+				* CFrame.Angles(math.rad(-18), 0, math.rad(18)),
 			armorCol,
 			Enum.Material.Metal
 		)
 		makeBoxPart(
 			hero,
-			"PauldronRim_" .. tostring(sz),
-			Vector3.new(1.80, 0.24, 1.38),
-			CFrame.new(0, 4.62, sz * 1.46) * CFrame.Angles(sz * math.rad(16), 0, 0),
+			"HammerShaft",
+			Vector3.new(3.15, 0.24, 0.24),
+			CFrame.new(-0.62, 4.05, weaponSideZ * 1.86) * CFrame.Angles(0, 0, math.rad(104)),
 			trimCol,
-			Enum.Material.Metal
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
 		)
-		if wallLevel >= 3 then
-			makeBoxPart(
-				hero,
-				"PauldronHorn_" .. tostring(sz),
-				Vector3.new(0.32, 0.72, 0.32),
-				CFrame.new(-0.08, 4.98, sz * 1.62) * CFrame.Angles(sz * math.rad(28), 0, 0),
-				trimCol,
-				Enum.Material.Metal
-			)
-		end
-	end
-
-	-- Elmo com visor brilhante voltado para -X
-	makeBoxPart(
-		hero,
-		"HelmBase",
-		Vector3.new(1.42, 1.48, 1.36),
-		CFrame.new(-0.06, 5.05, 0),
-		armorCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"HelmVisorBar",
-		Vector3.new(0.28, 0.26, 1.05),
-		CFrame.new(-0.76, 5.08, 0),
-		glowCol,
-		Enum.Material.Neon
-	)
-	makeBoxPart(
-		hero,
-		"HelmVisorSplit",
-		Vector3.new(0.34, 0.62, 0.16),
-		CFrame.new(-0.77, 4.88, 0),
-		trimCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"HelmCrest",
-		Vector3.new(1.48, 0.42, 0.26),
-		CFrame.new(0.05, 5.95, 0),
-		trimCol,
-		Enum.Material.Metal
-	)
-	if wallLevel >= 2 then
 		makeBoxPart(
 			hero,
-			"HelmPlume",
-			Vector3.new(1.65, 0.52, 0.24),
-			CFrame.new(0.45, 6.18, 0) * CFrame.Angles(0, 0, math.rad(-14)),
-			clothCol,
-			Enum.Material.Fabric
+			"HammerHead",
+			Vector3.new(1.02, 0.86, 0.86),
+			CFrame.new(-0.98, 5.45, weaponSideZ * 1.86) * CFrame.Angles(0, 0, math.rad(14)),
+			armorCol,
+			Enum.Material.Metal,
+			Enum.PartType.Cylinder
+		)
+		makeWedgePart(
+			hero,
+			"HammerEdge",
+			Vector3.new(0.28, 0.88, 1.24),
+			CFrame.new(-1.42, 5.56, weaponSideZ * 1.86) * CFrame.Angles(0, 0, math.rad(14)),
+			glowCol,
+			Enum.Material.Neon
 		)
 	end
-
-	-- Escudo Torre no braco voltado para fora da cena + Martelo de Guerra no outro braco
-	local shieldSideZ = facingSignZ
-	local weaponSideZ = -facingSignZ
-
-	makeBoxPart(
-		hero,
-		"ShieldArm",
-		Vector3.new(0.75, 1.65, 0.75),
-		CFrame.new(-0.22, 3.15, shieldSideZ * 1.62) * CFrame.Angles(math.rad(14), 0, 0),
-		armorCol,
-		Enum.Material.Metal
-	)
-	local shieldCF = CFrame.new(-0.98, 3.05, shieldSideZ * 1.45)
-		* CFrame.Angles(0, shieldSideZ * math.rad(18), 0)
-	makeBoxPart(
-		hero,
-		"TowerShieldBody",
-		Vector3.new(0.28, 2.95, 1.85),
-		shieldCF,
-		armorCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"TowerShieldFrame",
-		Vector3.new(0.32, 3.10, 2.02),
-		shieldCF * CFrame.new(0.03, 0, 0),
-		trimCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"TowerShieldCore",
-		Vector3.new(0.36, 0.85, 0.85),
-		shieldCF * CFrame.Angles(math.rad(45), 0, 0),
-		glowCol,
-		Enum.Material.Neon
-	)
-
-	makeBoxPart(
-		hero,
-		"HammerArm",
-		Vector3.new(0.72, 1.72, 0.72),
-		CFrame.new(-0.18, 3.30, weaponSideZ * 1.60) * CFrame.Angles(math.rad(-18), 0, math.rad(18)),
-		armorCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"HammerShaft",
-		Vector3.new(0.22, 3.15, 0.22),
-		CFrame.new(-0.62, 4.05, weaponSideZ * 1.86) * CFrame.Angles(0, 0, math.rad(14)),
-		trimCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"HammerHead",
-		Vector3.new(0.95, 0.78, 1.25),
-		CFrame.new(-0.98, 5.45, weaponSideZ * 1.86) * CFrame.Angles(0, 0, math.rad(14)),
-		armorCol,
-		Enum.Material.Metal
-	)
-	makeBoxPart(
-		hero,
-		"HammerEdge",
-		Vector3.new(0.22, 0.82, 1.32),
-		CFrame.new(-1.42, 5.56, weaponSideZ * 1.86) * CFrame.Angles(0, 0, math.rad(14)),
-		glowCol,
-		Enum.Material.Neon
-	)
 
 	-- Armadilha assinatura do jogador (Open Cloud 3D model TRAP_* quando carregada) ao lado do ombro
 	if topTrap ~= nil then
-		local assetsFolder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
+		local trapFolder = ReplicatedStorage:FindFirstChild(MeshAssets.FOLDER)
 		local trapName = MeshAssets.trapModelName(topTrap.type, math.max(1, topTrap.level))
-		local template = if assetsFolder ~= nil then assetsFolder:FindFirstChild(trapName) else nil
+		local template = if trapFolder ~= nil then trapFolder:FindFirstChild(trapName) else nil
 		if template ~= nil then
 			local trapClone = template:Clone()
 			trapClone.Name = "SignatureTrap"
