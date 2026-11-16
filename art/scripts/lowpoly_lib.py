@@ -22,6 +22,7 @@ import os
 import random
 import sys
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -82,6 +83,21 @@ PAL = {
     "hornIvory": (224, 214, 192),
     "wyvernScale": (158, 52, 40),
     "wyvernWing": (98, 36, 32),
+    "obsidian": (38, 34, 48),
+    "obsidianLight": (78, 70, 96),
+    "violet": (139, 92, 246),
+    "whiteStone": (228, 224, 214),
+    "whiteStoneDark": (188, 182, 168),
+    "royal": (46, 76, 168),
+    "emberDeep": (255, 130, 48),
+    "crimsonCloth": (138, 28, 38),
+    "crimsonBright": (192, 42, 52),
+    "arcaneCyan": (56, 228, 245),
+    "arcaneViolet": (168, 85, 247),
+    "brass": (198, 152, 68),
+    "slateRoof": (64, 78, 108),
+    "straw": (206, 176, 98),
+    "bone": (232, 222, 202),
 }
 NAMES = list(PAL)
 assert len(NAMES) <= 64, "atlas 8x8"
@@ -97,7 +113,7 @@ def reset_scene():
 
 
 def make_palette():
-    size, cell = 256, 32
+    size, cell = 512, 64
     img = bpy.data.images.new("lowpoly_palette", size, size, alpha=False)
     px = [0.0] * (size * size * 4)
     for i, name in enumerate(NAMES):
@@ -156,26 +172,44 @@ def _active():
     return bpy.context.view_layer.objects.active
 
 
-def _finish(obj, color, bevel=0.0):
+def _finish(obj, color, bevel=0.0, bevel_segs=1):
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-    if bevel > 0:
+    vs = obj.data.vertices
+    if vs:
+        dx = max(v.co.x for v in vs) - min(v.co.x for v in vs)
+        dy = max(v.co.y for v in vs) - min(v.co.y for v in vs)
+        dz = max(v.co.z for v in vs) - min(v.co.z for v in vs)
+        min_dim = min(dx, dy, dz)
+    else:
+        min_dim = 0.0
+    if bevel > 0 and min_dim > 0.08:
         mod = obj.modifiers.new("bv", "BEVEL")
-        mod.width = bevel
-        mod.segments = 1
+        mod.width = min(bevel, min_dim * 0.26)
+        mod.segments = bevel_segs
         mod.limit_method = "ANGLE"
+        mod.angle_limit = math.radians(30)
+        mod.use_clamp_overlap = True
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.modifier_apply(modifier=mod.name)
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+        bmesh.ops.dissolve_degenerate(bm, dist=5e-5, edges=bm.edges)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(obj.data)
+        bm.free()
+        obj.data.update()
     return paint(obj, color)
 
 
-def box(size, center, color, bevel=0.0, rot=(0, 0, 0)):
+def box(size, center, color, bevel=0.0, rot=(0, 0, 0), bevel_segs=1):
     bpy.ops.mesh.primitive_cube_add(size=1, location=center, rotation=rot)
     o = _active()
     o.scale = size
-    return _finish(o, color, bevel)
+    return _finish(o, color, bevel, bevel_segs)
 
 
-def cyl(r, h, base, color, verts=10, r2=None, bevel=0.0, rot_z=0.0):
+def cyl(r, h, base, color, verts=18, r2=None, bevel=0.0, rot_z=0.0, bevel_segs=1):
     """Cilindro/cone vertical com a base em `base`. r2=0 vira cone com apice unico."""
     loc = (base[0], base[1], base[2] + h / 2)
     if r2 is None:
@@ -186,10 +220,10 @@ def cyl(r, h, base, color, verts=10, r2=None, bevel=0.0, rot_z=0.0):
         bpy.ops.mesh.primitive_cone_add(
             vertices=verts, radius1=r, radius2=r2, depth=h, location=loc, rotation=(0, 0, rot_z)
         )
-    return _finish(_active(), color, bevel)
+    return _finish(_active(), color, bevel, bevel_segs)
 
 
-def cyl_axis(r, length, center, color, axis="x", verts=10, r2=None, tilt=0.0):
+def cyl_axis(r, length, center, color, axis="x", verts=18, r2=None, tilt=0.0, bevel=0.0, bevel_segs=1):
     """Cilindro deitado: axis 'x' (rodas, eixos) ou 'y' (canos, frente/tras).
 
     `tilt` inclina em torno de X (canos apontando para -Y e subindo)."""
@@ -203,21 +237,101 @@ def cyl_axis(r, length, center, color, axis="x", verts=10, r2=None, tilt=0.0):
         bpy.ops.mesh.primitive_cone_add(
             vertices=verts, radius1=r, radius2=r2, depth=length, location=center, rotation=rot
         )
-    return _finish(_active(), color, 0.0)
+    return _finish(_active(), color, bevel, bevel_segs)
 
 
-def ball(r, center, color, seg=8, rings=5, squash=(1.0, 1.0, 1.0)):
+def ball(r, center, color, seg=18, rings=12, squash=(1.0, 1.0, 1.0)):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=rings, radius=r, location=center)
     o = _active()
     o.scale = squash
     return _finish(o, color, 0.0)
 
 
-def ico(r, center, color, squash=(1.0, 1.0, 1.0)):
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=r, location=center)
+def ico(r, center, color, squash=(1.0, 1.0, 1.0), subdiv=2):
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=subdiv, radius=r, location=center)
     o = _active()
     o.scale = squash
     return _finish(o, color, 0.0)
+
+
+def torus(
+    r_major,
+    r_minor,
+    center,
+    color,
+    major_seg=20,
+    minor_seg=10,
+    rot=(0.0, 0.0, 0.0),
+    squash=(1.0, 1.0, 1.0),
+):
+    """Torus low-poly (aros, guarnicoes, colares, coroas)."""
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=r_major,
+        minor_radius=r_minor,
+        major_segments=major_seg,
+        minor_segments=minor_seg,
+        location=center,
+    )
+    o = _active()
+    o.scale = squash
+    o.rotation_euler = rot
+    return _finish(o, color, 0.0)
+
+
+def capsule_seg(p0, p1, r0, r1, color, verts=16, cap_ends=False):
+    """Cilindro/cone afunilado alinhado de `p0` (raio `r0`) ate `p1` (raio `r1`).
+
+    Retorna um unico Blender Object (quando `cap_ends=True`, inclui calotas esfericas
+    nas pontas com offset anti-colisao para preservar G1 manifold).
+    """
+    v0 = Vector(p0)
+    v1 = Vector(p1)
+    dv = v1 - v0
+    length = max(dv.length, 1e-4)
+    mid = (v0 + v1) * 0.5
+    rot = Vector((0.0, 0.0, 1.0)).rotation_difference(dv.normalized()).to_euler("XYZ")
+    bpy.ops.mesh.primitive_cone_add(
+        vertices=verts,
+        radius1=r0,
+        radius2=r1,
+        depth=length,
+        location=tuple(mid),
+        rotation=rot,
+    )
+    seg = _finish(_active(), color, 0.0)
+    if cap_ends:
+        caps = [seg]
+        c_seg = max(12, verts)
+        c_rings = max(8, verts // 2)
+        if r0 > 1e-4:
+            caps.append(
+                ball(
+                    r0,
+                    (v0.x + 0.0041, v0.y - 0.0037, v0.z + 0.0029),
+                    color,
+                    seg=c_seg,
+                    rings=c_rings,
+                )
+            )
+        if r1 > 1e-4:
+            caps.append(
+                ball(
+                    r1,
+                    (v1.x - 0.0039, v1.y + 0.0043, v1.z - 0.0031),
+                    color,
+                    seg=c_seg,
+                    rings=c_rings,
+                )
+            )
+        if len(caps) > 1:
+            bpy.ops.object.select_all(action="DESELECT")
+            for c in caps:
+                c.select_set(True)
+            bpy.context.view_layer.objects.active = seg
+            bpy.ops.object.join()
+            seg = _active()
+            bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    return seg
 
 
 def spike(r, h, base, color, verts=4, rot_z=math.pi / 4):
@@ -254,16 +368,16 @@ def chevron(center, color, width=0.7, arm=0.13, depth=0.14, angle=0.6):
 CHEVRON_COLOR = {1: "amber", 2: "amberBright", 3: "neonAmber"}
 
 
-def gear(r, thick, center, color, axis="z", teeth=8, hub=None):
-    """Engrenagem low-poly: disco de 12 lados + `teeth` dentes; axis 'z' (deitada) ou 'x'."""
+def gear(r, thick, center, color, axis="z", teeth=10, hub=None):
+    """Engrenagem low-poly: disco de 20 lados + `teeth` dentes; axis 'z' (deitada) ou 'x'."""
     from mathutils import Euler, Matrix
 
     cx, cy, cz = center
     parts = []
     if axis == "z":
-        parts.append(cyl(r, thick, (cx, cy, cz - thick / 2), color, verts=12))
+        parts.append(cyl(r, thick, (cx, cy, cz - thick / 2), color, verts=20))
     else:
-        parts.append(cyl_axis(r, thick, center, color, axis="x", verts=12))
+        parts.append(cyl_axis(r, thick, center, color, axis="x", verts=20))
     tooth = (r * 0.36, r * 0.34, thick * 0.9)
     for k in range(teeth):
         a = 2 * math.pi * (k + 0.5) / teeth
@@ -275,16 +389,16 @@ def gear(r, thick, center, color, axis="z", teeth=8, hub=None):
             pos = (cx, cy + (r + tooth[1] * 0.3) * math.cos(a), cz + (r + tooth[1] * 0.3) * math.sin(a))
             rot = (a, 0, 0)
             size = (tooth[2], tooth[1], tooth[0])
-        parts.append(box(size, pos, color, rot=rot))
+        parts.append(box(size, pos, color, bevel=0.02, rot=rot))
     if hub:
         if axis == "z":
-            parts.append(cyl(r * 0.35, thick * 1.4, (cx, cy, cz - thick * 0.7), hub, verts=8))
+            parts.append(cyl(r * 0.35, thick * 1.4, (cx, cy, cz - thick * 0.7), hub, verts=14))
         else:
-            parts.append(cyl_axis(r * 0.35, thick * 1.4, center, hub, axis="x", verts=8))
+            parts.append(cyl_axis(r * 0.35, thick * 1.4, center, hub, axis="x", verts=14))
     return parts
 
 
-def ring(r, center, color, n=12, tilt=(0.0, 0.0), seg=(0.12, 0.12)):
+def ring(r, center, color, n=18, tilt=(0.0, 0.0), seg=(0.12, 0.12)):
     """Anel de `n` segmentos (giroscopio, filigrana). tilt=(rot X, rot Y) do plano do anel."""
     from mathutils import Euler
 
@@ -296,7 +410,7 @@ def ring(r, center, color, n=12, tilt=(0.0, 0.0), seg=(0.12, 0.12)):
         local = Vector((r * math.cos(a), r * math.sin(a), 0.0))
         pos = base @ local + Vector(center)
         rot = (base @ Euler((0, 0, a + math.pi / 2), "XYZ").to_matrix()).to_euler("XYZ")
-        parts.append(box((length, seg[0], seg[1]), tuple(pos), color, rot=tuple(rot)))
+        parts.append(box((length, seg[0], seg[1]), tuple(pos), color, bevel=0.015, rot=tuple(rot)))
     return parts
 
 
@@ -343,6 +457,13 @@ def join(objs, name, seed):
     """Junta as pecas num mesh. Antes, desloca cada peca por um jitter deterministico de
     3-12 milesimos de stud em X/Y/Z: invisivel, mas garante que nenhuma aresta de pecas
     diferentes coincida apos a solda por posicao do Forge (QC G1)."""
+    flat = []
+    for item in objs:
+        if isinstance(item, (list, tuple)):
+            flat.extend(item)
+        else:
+            flat.append(item)
+    objs = flat
     rng = random.Random(seed)
     for o in objs:
         o.location = (
@@ -452,10 +573,12 @@ def write_lote(group, items, header_note):
     for it in items:
         sn = it.get("suavizacao_normais") or {
             "modo": "hard_surface",
-            "angulo_graus": 38,
+            "angulo_graus": 46,
             "weighted_normals": True,
+            "corrective_smooth": False,
         }
         wn = "true" if sn.get("weighted_normals", True) else "false"
+        cs = "true" if sn.get("corrective_smooth", False) else "false"
         lines += [
             f"  - id: {it['id']}",
             f"    tipo: {it['tipo']}",
@@ -467,8 +590,9 @@ def write_lote(group, items, header_note):
             "    material: opaque",
             "    suavizacao_normais:",
             f"      modo: {sn.get('modo', 'hard_surface')}",
-            f"      angulo_graus: {sn.get('angulo_graus', 38)}",
+            f"      angulo_graus: {sn.get('angulo_graus', 46)}",
             f"      weighted_normals: {wn}",
+            f"      corrective_smooth: {cs}",
             "    colisao: box",
             f"    seed: {SEED_BASE}",
             "    lod: [100]",
