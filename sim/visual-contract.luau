@@ -12,6 +12,10 @@ local UiAssets = require("../src/shared/visual/UiAssets")
 local AudioAssets = require("../src/shared/visual/AudioAssets")
 local CameraFraming = require("../src/shared/visual/CameraFraming")
 local PortalThemes = require("../src/shared/visual/PortalThemes")
+local HeadlessMock = require("../src/shared/visual/HeadlessRobloxMock")
+local cliRequire: any = require
+local HordeKit = cliRequire("../src/client/visual/HordeKit")
+local Vfx = cliRequire("../src/client/visual/Vfx")
 
 local failures = {}
 local checks = 0
@@ -641,6 +645,199 @@ check(
 		assert(total == 159, "esperava 159 partes procedurais na arena, achei " .. tostring(total))
 		assert(VisualTheme.BUDGET.arenaParts == 185, "BUDGET.arenaParts != 185")
 		assert(total <= VisualTheme.BUDGET.arenaParts, "arena excede BUDGET.arenaParts")
+	end
+)
+
+check("open cloud: 5 bosses x 5 partes articuladas (25 slots) em MeshAssets.BOSS_PARTS", function()
+	local bosses = {
+		"iron_ram_colossus",
+		"slag_juggernaut",
+		"rime_matriarch",
+		"powder_baron",
+		"rift_titan",
+	}
+	local partKeys = { "torso", "arm_r", "arm_l", "leg_l", "leg_r" }
+	local seenIds = {}
+	local count = 0
+	for _, bossId in ipairs(bosses) do
+		local parts = MeshAssets.BOSS_PARTS[bossId]
+		assert(parts ~= nil, "MeshAssets.BOSS_PARTS ausente para " .. bossId)
+		for _, partKey in ipairs(partKeys) do
+			local assetId = (parts :: any)[partKey]
+			assert(
+				type(assetId) == "number" and assetId > 0 and assetId == math.floor(assetId),
+				string.format("assetId invalido em BOSS_PARTS.%s.%s", bossId, partKey)
+			)
+			assert(
+				not seenIds[assetId],
+				string.format("assetId duplicado em BOSS_PARTS.%s.%s", bossId, partKey)
+			)
+			seenIds[assetId] = true
+			assert(
+				MeshAssets.bossPartModelName(bossId, partKey) == "BOSS_" .. bossId .. "_" .. partKey,
+				string.format("bossPartModelName divergente: %s/%s", bossId, partKey)
+			)
+			count += 1
+		end
+	end
+	assert(count == 25, "esperava 25 sub-malhas em BOSS_PARTS, achei " .. tostring(count))
+end)
+
+check(
+	"HordeKit boss rig: 5 slots, DYING, VULNERABLE sem afundar e hitSquashBoss axial sem distorcao",
+	function()
+		local bosses = {
+			"iron_ram_colossus",
+			"slag_juggernaut",
+			"rime_matriarch",
+			"powder_baron",
+			"rift_titan",
+		}
+		local slotKeys = { "torso", "armR", "armL", "legL", "legR" }
+		for _, bossId in ipairs(bosses) do
+			local scene = HeadlessMock.Instance.new("Folder")
+			HeadlessMock.setTime(100.0)
+			HeadlessMock.clearDelays()
+			local boss = HordeKit.createBoss(bossId, scene, HeadlessMock.CFrame.identity)
+			assert(boss ~= nil and boss.model ~= nil, "createBoss falhou: " .. bossId)
+			assert(boss.model.PrimaryPart == boss.rootPart, "PrimaryPart != rootPart: " .. bossId)
+			for _, sk in ipairs(slotKeys) do
+				assert(
+					type(boss.slots[sk]) == "table" and #boss.slots[sk] >= 1,
+					string.format("slot %s vazio em %s", sk, bossId)
+				)
+				assert(
+					boss.mountedSlots[sk] == false,
+					string.format("mountedSlots.%s deveria iniciar false em %s", sk, bossId)
+				)
+			end
+
+			-- Estado MARCH em repouso: salva posicoes e tamanhos base
+			HordeKit.stepBoss(boss, 100.0, "MARCH", false)
+			assert(boss.deathStartAt == nil, "deathStartAt nao deveria existir em MARCH")
+			local restRootPos = boss.rootPart.CFrame.Position
+			local baseSizes = {}
+			for _, sk in ipairs(slotKeys) do
+				baseSizes[sk] = {}
+				for i, entry in ipairs(boss.slots[sk]) do
+					baseSizes[sk][i] = entry.part.Size
+				end
+			end
+
+			-- VULNERABLE: stagger aterrado, sem afundamento -0.78 no subsolo
+			HordeKit.stepBoss(boss, 101.0, "VULNERABLE", false)
+			for _, legSlot in ipairs({ "legL", "legR" }) do
+				for _, entry in ipairs(boss.slots[legSlot]) do
+					assert(
+						entry.part.Position.Y >= 0.4,
+						string.format(
+							"%s %s afundou em VULNERABLE: Y=%.3f",
+							bossId,
+							legSlot,
+							entry.part.Position.Y
+						)
+					)
+				end
+			end
+			for _, entry in ipairs(boss.slots.torso) do
+				assert(
+					entry.part.Position.Y > boss.rigMetrics.hipY - 0.5,
+					string.format(
+						"%s torso afundou em VULNERABLE: Y=%.3f",
+						bossId,
+						entry.part.Position.Y
+					)
+				)
+			end
+
+			-- hitSquashBoss: knockback axial e preservacao uniforme de tamanhos (sem rubber sxz/sy)
+			HeadlessMock.setTime(102.0)
+			HordeKit.stepBoss(boss, 102.0, "MARCH", false)
+			HordeKit.hitSquashBoss(boss)
+			assert(boss.squashed == true, "hitSquashBoss nao ativou squashed: " .. bossId)
+			local knockedPos = boss.rootPart.CFrame.Position
+			local knockDist = (knockedPos - restRootPos).Magnitude
+			assert(
+				knockDist >= 0.25,
+				string.format("%s hitSquashBoss sem knockback axial: %.3f", bossId, knockDist)
+			)
+			for _, sk in ipairs(slotKeys) do
+				for i, entry in ipairs(boss.slots[sk]) do
+					local diff = (entry.part.Size - baseSizes[sk][i]).Magnitude
+					assert(
+						diff < 1e-4,
+						string.format(
+							"%s.%s sofreu distorcao nao uniforme no hitSquashBoss: %.4f",
+							bossId,
+							sk,
+							diff
+						)
+					)
+				end
+			end
+
+			-- DYING: registra deathStartAt e desliga stateHighlight
+			HordeKit.stepBoss(boss, 103.0, "DYING", false)
+			assert(boss.lastState == "DYING", "lastState != DYING: " .. bossId)
+			assert(boss.deathStartAt == 103.0, "deathStartAt nao registrado: " .. bossId)
+			assert(
+				boss.stateHighlight.Enabled == false,
+				"stateHighlight ativo em DYING: " .. bossId
+			)
+			HordeKit.stepBoss(boss, 103.6, "DYING", false)
+			assert(boss.deathStartAt == 103.0, "deathStartAt sobrescrito no stepBoss: " .. bossId)
+		end
+	end
+)
+
+check(
+	"Vfx helpers: championDeath, bossTelegraph, bossSlamImpact, bossDeathSequence com CanQuery=false e CanTouch=false",
+	function()
+		assert(type(Vfx.championDeath) == "function", "Vfx.championDeath ausente")
+		assert(type(Vfx.bossTelegraph) == "function", "Vfx.bossTelegraph ausente")
+		assert(type(Vfx.bossSlamImpact) == "function", "Vfx.bossSlamImpact ausente")
+		assert(type(Vfx.bossDeathSequence) == "function", "Vfx.bossDeathSequence ausente")
+
+		local scene = HeadlessMock.Instance.new("Folder")
+		HeadlessMock.setTime(200.0)
+		HeadlessMock.clearDelays()
+
+		local origin = HeadlessMock.Vector3.new(10, 0, 0)
+		local primary = HeadlessMock.Color3.fromRGB(100, 120, 140)
+		local accent = HeadlessMock.Color3.fromRGB(245, 158, 11)
+
+		Vfx.championDeath(scene, origin, accent, primary)
+		Vfx.bossTelegraph(scene, origin, accent, 0.5)
+		Vfx.bossSlamImpact(scene, origin, accent)
+		for _, bossId in ipairs({
+			"iron_ram_colossus",
+			"slag_juggernaut",
+			"rime_matriarch",
+			"powder_baron",
+			"rift_titan",
+		}) do
+			Vfx.bossDeathSequence(scene, bossId, origin, primary, accent)
+		end
+		HeadlessMock.flushDelays()
+
+		local checkedParts = 0
+		for _, desc in ipairs(scene:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				checkedParts += 1
+				assert(desc.CanQuery == false, "VFX vazou CanQuery=true em " .. tostring(desc.Name))
+				assert(desc.CanTouch == false, "VFX vazou CanTouch=true em " .. tostring(desc.Name))
+				if string.sub(tostring(desc.Name), 1, 3) ~= "F2_" then
+					assert(
+						desc.CanCollide == false,
+						"VFX nao-F2 vazou CanCollide=true em " .. tostring(desc.Name)
+					)
+				end
+			end
+		end
+		assert(
+			checkedParts >= 40,
+			"esperava >= 40 partes VFX/debris inspecionadas, achei " .. tostring(checkedParts)
+		)
 	end
 )
 

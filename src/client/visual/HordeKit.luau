@@ -3,17 +3,55 @@
 -- Malhas Open Cloud esculpem tronco/capuz/elmo; pernas, bracos, cutelo e satelites orbitais
 -- sao articulados no cliente a 60 Hz com ciclo de caminhada e golpe na muralha.
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local IS_ROBLOX = type(game) == "userdata"
+local cliRequire: any = require
+local Mock: any = if IS_ROBLOX
+	then nil
+	else cliRequire("../../shared/visual/" .. "HeadlessRobloxMock")
 
-local VisualTheme = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("VisualTheme")
-)
-local MeshAssets = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
-)
-local PortalThemes = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PortalThemes")
-)
+local VisualTheme = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("VisualTheme")
+	)
+	else Mock.shared("VisualTheme") :: any
+local MeshAssets = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("MeshAssets")
+	)
+	else Mock.shared("MeshAssets") :: any
+local PortalThemes = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("PortalThemes")
+	)
+	else Mock.shared("PortalThemes") :: any
+
+local ReplicatedStorage = if IS_ROBLOX
+	then game:GetService("ReplicatedStorage")
+	else Mock.game:GetService("ReplicatedStorage") :: typeof(game:GetService("ReplicatedStorage"))
+local Instance = if IS_ROBLOX then Instance else Mock.Instance :: typeof(Instance)
+local Vector3 = if IS_ROBLOX then Vector3 else Mock.Vector3 :: typeof(Vector3)
+local CFrame = if IS_ROBLOX then CFrame else Mock.CFrame :: typeof(CFrame)
+local Color3 = if IS_ROBLOX then Color3 else Mock.Color3 :: typeof(Color3)
+local ColorSequence = if IS_ROBLOX
+	then ColorSequence
+	else Mock.ColorSequence :: typeof(ColorSequence)
+local NumberSequence = if IS_ROBLOX
+	then NumberSequence
+	else Mock.NumberSequence :: typeof(NumberSequence)
+local Enum = if IS_ROBLOX then Enum else Mock.Enum :: typeof(Enum)
+local UDim = if IS_ROBLOX then UDim else Mock.UDim :: typeof(UDim)
+local UDim2 = if IS_ROBLOX then UDim2 else Mock.UDim2 :: typeof(UDim2)
+local task = if IS_ROBLOX then task else Mock.task :: typeof(task)
+local time = if IS_ROBLOX then time else Mock.time :: typeof(time)
 
 local HordeKit = {}
 
@@ -1145,7 +1183,7 @@ local function tryMountBossFivePartRig(unit: BossUnit): boolean
 			model,
 			"torso",
 			"torso",
-			"BOSS_" .. bossId .. "_torso",
+			MeshAssets.bossPartModelName(bossId, "torso"),
 			m.torsoHeight,
 			nil
 		)
@@ -1157,8 +1195,14 @@ local function tryMountBossFivePartRig(unit: BossUnit): boolean
 	end
 
 	if not unit.mountedSlots.legL then
-		local pieces =
-			mountBossSlotMesh(model, "legL", "leg_l", "BOSS_" .. bossId .. "_leg_l", m.hipY, nil)
+		local pieces = mountBossSlotMesh(
+			model,
+			"legL",
+			"leg_l",
+			MeshAssets.bossPartModelName(bossId, "leg_l"),
+			m.hipY,
+			nil
+		)
 		if pieces ~= nil then
 			unit.slots.legL = pieces
 			unit.mountedSlots.legL = true
@@ -1166,8 +1210,14 @@ local function tryMountBossFivePartRig(unit: BossUnit): boolean
 	end
 
 	if not unit.mountedSlots.legR then
-		local pieces =
-			mountBossSlotMesh(model, "legR", "leg_r", "BOSS_" .. bossId .. "_leg_r", m.hipY, nil)
+		local pieces = mountBossSlotMesh(
+			model,
+			"legR",
+			"leg_r",
+			MeshAssets.bossPartModelName(bossId, "leg_r"),
+			m.hipY,
+			nil
+		)
 		if pieces ~= nil then
 			unit.slots.legR = pieces
 			unit.mountedSlots.legR = true
@@ -1181,7 +1231,7 @@ local function tryMountBossFivePartRig(unit: BossUnit): boolean
 				model,
 				"armL",
 				"arm_l",
-				"BOSS_" .. bossId .. "_arm_l",
+				MeshAssets.bossPartModelName(bossId, "arm_l"),
 				nil,
 				armScale
 			)
@@ -1195,7 +1245,7 @@ local function tryMountBossFivePartRig(unit: BossUnit): boolean
 				model,
 				"armR",
 				"arm_r",
-				"BOSS_" .. bossId .. "_arm_r",
+				MeshAssets.bossPartModelName(bossId, "arm_r"),
 				nil,
 				armScale
 			)

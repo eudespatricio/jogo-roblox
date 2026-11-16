@@ -2,16 +2,47 @@
 -- S8/S8.2: VFX cosmeticos e fisica real F2 local (ragdoll/fratura isolados em CollisionGroup).
 -- Tudo local no cliente; nao altera o resultado deterministico da batalha.
 
-local Debris = game:GetService("Debris")
-local PhysicsService = game:GetService("PhysicsService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
+local IS_ROBLOX = type(game) == "userdata"
+local cliRequire: any = require
+local Mock: any = if IS_ROBLOX
+	then nil
+	else cliRequire("../../shared/visual/" .. "HeadlessRobloxMock")
 
-local VisualTheme = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("VisualTheme")
-)
+local VisualTheme = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("VisualTheme")
+	)
+	else Mock.shared("VisualTheme") :: any
+
+local activeGame = if IS_ROBLOX then game else Mock.game :: typeof(game)
+local Instance = if IS_ROBLOX then Instance else Mock.Instance :: typeof(Instance)
+local Vector3 = if IS_ROBLOX then Vector3 else Mock.Vector3 :: typeof(Vector3)
+local Vector2 = if IS_ROBLOX then Vector2 else Mock.Vector2 :: typeof(Vector2)
+local CFrame = if IS_ROBLOX then CFrame else Mock.CFrame :: typeof(CFrame)
+local Color3 = if IS_ROBLOX then Color3 else Mock.Color3 :: typeof(Color3)
+local ColorSequence = if IS_ROBLOX
+	then ColorSequence
+	else Mock.ColorSequence :: typeof(ColorSequence)
+local NumberSequence = if IS_ROBLOX
+	then NumberSequence
+	else Mock.NumberSequence :: typeof(NumberSequence)
+local NumberSequenceKeypoint = if IS_ROBLOX
+	then NumberSequenceKeypoint
+	else Mock.NumberSequenceKeypoint :: typeof(NumberSequenceKeypoint)
+local NumberRange = if IS_ROBLOX then NumberRange else Mock.NumberRange :: typeof(NumberRange)
+local TweenInfo = if IS_ROBLOX then TweenInfo else Mock.TweenInfo :: typeof(TweenInfo)
+local Enum = if IS_ROBLOX then Enum else Mock.Enum :: typeof(Enum)
+local task = if IS_ROBLOX then task else Mock.task :: typeof(task)
+local time = if IS_ROBLOX then time else Mock.time :: typeof(time)
+
+local Debris = activeGame:GetService("Debris")
+local PhysicsService = activeGame:GetService("PhysicsService")
+local RunService = activeGame:GetService("RunService")
+local TweenService = activeGame:GetService("TweenService")
+local Workspace = activeGame:GetService("Workspace")
 
 local Vfx = {}
 
