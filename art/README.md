@@ -76,7 +76,7 @@ python3 art/scripts/make_vfx_textures.py  # gera 14 texturas RGBA VFX (4 flipboo
 
 | Grupo | Script | Itens (id Forge3D → objeto) | Orçamento v1.9 (`roblox-aa-80`) |
 |---|---|---|---|
-| `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_l<n>` (L1–L5, 5 Hero PBR `ultra`) | `16.100–17.680` (teto `18.000` tris/tier) |
+| `wall` | `art/scripts/make_wall_bastion.py` | `wall.bastion.l<n>.01` → `WALL_bastion_l<n>` (L1–L5, UV triplanar no Atlas Voronoi `2048²`, `28°` `ultra`) | `16.196–17.776` (teto `18.000` tris/tier) |
 | `traps` | `art/scripts/make_traps.py` | `trap.<tipo>.l<n>.01` → `TRAP_<tipo>_l<n>` (archer, tar, frost, cannon, catapult × L1–L5, 25 modelos) | `4.536–5.496` (teto `5.600` tris, pegada ≤ 4,8) |
 | `horde` | `art/scripts/make_horde.py` | `horde.<tipo>.01` → `CMD_<tipo>` (swarm `1.650`, runner/wisp `3.118–3.256`, elites/drake `4.016–4.628`) | ≤ `2.000 / 3.600 / 5.000` tris |
 | `bosses` | `art/scripts/make_bosses.py` | `boss.<tipo>.01` (`ultra` Hero `16.096–17.068`) + `boss.<tipo>.<part>.01` (`torso` `5.316–5.546` + braços `3.152–3.512` + pernas `1.966–2.198`) | `15.776–16.596` soma 5 partes (teto `17.900`) |
@@ -90,7 +90,7 @@ Etapas: Blender headless (grupos em paralelo, `--python-exit-code 1`) → `forge
 Logs e relatórios JSON em `art/renders/_logs/`; renders por item em `art/renders/<grupo>/`;
 lineups em `art/renders/lineup_<grupo>.png` e `lineup_all.png` (tudo ignorado no git).
 
-- **Helpers compartilhados & PBR em 2 Tiers:** `art/scripts/lowpoly_lib.py` (paleta `PAL` 63 cores, UVs espaciais anti-bleed por célula, `PAL_PBR_META`, `build_pbr_zonas` ≤ 16 zonas + `detalhe_alto` `subdiv_niveis=0`). Os 73 modelos instanciados compartilham o Atlas Mestre PBR Voronoi `2048×2048` (`PbrAssets.MASTER_ATLAS`, `colorMap = 123373171413605`), enquanto os 24 modelos Hero recebem mapas Cycles dedicados (`PbrAssets.HERO_SURFACES`) via `SurfaceAppearance`; os 97 GLBs são publicados com `strip_embedded_textures=true` (`211` assets Open Cloud).
+- **Helpers compartilhados & PBR em 2 Tiers:** `art/scripts/lowpoly_lib.py` (paleta `PAL` 63 cores, UVs espaciais anti-bleed por célula, `PAL_PBR_META`, `build_pbr_zonas` ≤ 16 zonas + `detalhe_alto` `subdiv_niveis=0`). Os `78` modelos instanciados (`muralhas` com UV triplanar ping-pong + `traps`/`horde`/`fauna`/props) compartilham o Atlas Mestre PBR Voronoi `2048×2048` (`PbrAssets.MASTER_ATLAS`, `colorMap = 123373171413605`), enquanto os `19` modelos Hero recebem mapas Cycles dedicados (`PbrAssets.HERO_SURFACES`) via `SurfaceAppearances.model.json` pré-bakeado pelo Rojo; os 97 GLBs são publicados com `strip_embedded_textures=true` (`191` assets Open Cloud).
 - **Lotes gerados:** `art/forge/lote_{muralha,traps,horde,bosses,portal,props,fauna,backdrop}_import.yaml` são escritos
   pelo script com `altura_metros` = altura **medida** do GLB × 0,28. Não editar à mão; regenerar.
 - **QC e suavização de normais (v1.8):** jitter determinístico de 3–12 milésimos de stud por peça no `join()` (G1:
