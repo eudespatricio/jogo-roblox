@@ -1776,6 +1776,385 @@ function Vfx.fractureGate(parent: Instance, position: Vector3, impulseDir: Vecto
 	end
 end
 
+function Vfx.wallHit(
+	parent: Instance,
+	position: Vector3,
+	lane: number?,
+	severity: number?,
+	wallPct: number?
+): ()
+	local rawSev = tonumber(severity) or 1
+	local pctBoost = if wallPct ~= nil
+		then (1 - math.clamp(tonumber(wallPct) or 1, 0, 1)) * 0.25
+		else 0
+	local sev = math.clamp(rawSev + pctBoost, 0.6, 2.4)
+	local laneBias = (math.clamp(math.round(tonumber(lane) or 3), 1, 5) - 3) * 0.12
+
+	local amberBright = rgb(VisualTheme.PALETTE.amberBright)
+	local danger = rgb(VisualTheme.PALETTE.danger)
+	local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
+	local woodDark = rgb(VisualTheme.PALETTE.woodDark)
+	local ironDark = rgb(VisualTheme.PALETTE.ironDark)
+
+	-- Vertical impact shockwave ring flush on the wall face (Roblox Cylinder local X = axis, YZ = circular face).
+	local ringPos = position + Vector3.new(0.2, 0, 0)
+	local ringAlpha = math.clamp((sev - 0.6) / 1.8, 0.15, 0.75)
+	local ringColor = amberBright:Lerp(danger, ringAlpha)
+	local ring = makePart(
+		parent,
+		Vector3.new(0.25, 1.4, 1.4),
+		ringPos,
+		ringColor,
+		Enum.Material.Neon,
+		Enum.PartType.Cylinder
+	)
+	ring.Name = "VfxWallImpactRing"
+	ring.Transparency = 0.16
+	ring.CFrame = CFrame.new(ringPos)
+	TweenService
+		:Create(ring, TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = Vector3.new(0.12, 6.2 * sev, 6.2 * sev),
+			Transparency = 1,
+		})
+		:Play()
+	Debris:AddItem(ring, 0.29)
+
+	-- Sparks, heavy dust, light flash & ground scorch
+	emitSlashSparks(parent, position, amberBright, math.round(8 * sev))
+	Vfx.dust(parent, position + Vector3.new(0.6, -1.2, 0), math.clamp(math.round(7 * sev), 6, 10))
+	spawnLightFlash(
+		parent,
+		position + Vector3.new(1.2, 0.2, 0),
+		amberBright,
+		12 * sev,
+		3.2 * sev,
+		0.18
+	)
+	spawnScorchDecal(
+		parent,
+		Vector3.new(position.X + 0.8, math.max(0.4, position.Y - 2.6), position.Z),
+		3.4 * sev
+	)
+
+	-- Directional masonry, timber & iron shards (F2 FractureDebris)
+	Vfx.configureCollisionGroups()
+	ensureGovernor()
+	local maxBodies, ttl = tierBudget(currentTier)
+	local tierChips = if currentTier == "Low" then 3 elseif currentTier == "Mid" then 5 else 7
+	local chipCount = math.min(tierChips, maxBodies)
+	if chipCount > 0 then
+		pruneF2(time(), chipCount)
+		for i = 1, chipCount do
+			local kindMod = i % 3
+			local chipColor = if kindMod == 1
+				then stoneDark
+				elseif kindMod == 2 then woodDark
+				else ironDark
+			local chipMat = if kindMod == 1
+				then Enum.Material.Slate
+				elseif kindMod == 2 then Enum.Material.WoodPlanks
+				else Enum.Material.Metal
+			local chipSize = if kindMod == 1
+				then Vector3.new(0.54 + (i % 2) * 0.18, 0.44 + (i % 2) * 0.12, 0.64)
+				elseif kindMod == 2 then Vector3.new(0.30, 0.26, 1.15 + (i % 2) * 0.30)
+				else Vector3.new(0.24, 0.22, 0.76)
+			local spawnOffset = Vector3.new(
+				0.55 + (i % 2) * 0.25,
+				((i % 3) - 1) * 0.42,
+				(i - chipCount * 0.5) * 0.45 + laneBias
+			)
+			local chip = makePart(parent, chipSize, position + spawnOffset, chipColor, chipMat)
+			chip.Name = "F2_WallHitChip_" .. tostring(i)
+			applyF2Flags(chip, "FractureDebris")
+			local impulse = Vector3.new(
+				10 + (i % 3) * 4,
+				8 + (i % 2) * 4,
+				(i - chipCount * 0.5) * 3.5
+			) * (sev * chip.AssemblyMass)
+			chip:ApplyImpulse(impulse)
+			local spinSign = if i % 2 == 0 then 1 else -1
+			chip:ApplyAngularImpulse(
+				Vector3.new(((i % 3) - 1) * 7, spinSign * 6, -9 + (i % 4) * 4)
+					* (sev * chip.AssemblyMass)
+			)
+			trackF2(chip, ttl)
+		end
+	end
+
+	triggerCameraImpulse(0.18 * sev, 0.14, -1.2 * sev)
+end
+
+function Vfx.wallStageBreach(parent: Instance, origin: Vector3, stage: number): ()
+	local stg = math.clamp(math.round(tonumber(stage) or 1), 1, 3)
+	local wallX = origin.X - 24
+	local breachY = origin.Y + 5.2
+	local breachOffsets: { number } = if stg == 1
+		then { 0 }
+		elseif stg == 2 then { -12, 12 }
+		else { -15, 0, 15 }
+
+	local amber = rgb(VisualTheme.PALETTE.amber)
+	local amberBright = rgb(VisualTheme.PALETTE.amberBright)
+	local stone = rgb(VisualTheme.PALETTE.stone)
+	local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
+	local woodDark = rgb(VisualTheme.PALETTE.woodDark)
+
+	for _, zOff in ipairs(breachOffsets) do
+		local breachPos = Vector3.new(wallX, breachY, origin.Z + zOff)
+		emitExplosion(parent, breachPos, amber, 0.85 + stg * 0.2)
+		Vfx.dust(parent, breachPos - Vector3.new(0, 2.2, 0), 8)
+		spawnLightFlash(
+			parent,
+			breachPos + Vector3.new(1.2, 0, 0),
+			amberBright,
+			18 + stg * 4,
+			6,
+			0.25
+		)
+	end
+
+	Vfx.configureCollisionGroups()
+	ensureGovernor()
+	local maxBodies, ttl = tierBudget(currentTier)
+	local perBreach = if currentTier == "Low" then 2 else 3
+	local totalChunks = math.min(#breachOffsets * perBreach, maxBodies)
+	if totalChunks > 0 then
+		pruneF2(time(), totalChunks)
+		local idx = 0
+		for bIdx, zOff in ipairs(breachOffsets) do
+			for localIdx = 1, perBreach do
+				if idx >= totalChunks then
+					break
+				end
+				idx += 1
+				local isTimber = localIdx == 3
+				local chunkSize = if isTimber
+					then Vector3.new(0.42, 0.38, 1.65)
+					else Vector3.new(
+						1.05 + (localIdx % 2) * 0.25,
+						0.78 + (bIdx % 2) * 0.18,
+						1.28
+					)
+				local chunkColor = if isTimber
+					then woodDark
+					elseif idx % 2 == 0 then stone
+					else stoneDark
+				local chunkMat = if isTimber then Enum.Material.WoodPlanks else Enum.Material.Slate
+				local spawnPos = Vector3.new(
+					wallX + 1.25 + (localIdx % 2) * 0.45,
+					breachY + (localIdx - 1) * 0.52,
+					origin.Z + zOff + (localIdx - 2) * 1.35
+				)
+				local chunk = makePart(parent, chunkSize, spawnPos, chunkColor, chunkMat)
+				chunk.Name = "F2_WallStageChunk_" .. tostring(idx)
+				applyF2Flags(chunk, "FractureDebris")
+				local vel =
+					Vector3.new(9 + localIdx * 3.5, 5.5 + (bIdx % 2) * 3.0, (localIdx - 2) * 4.5)
+				chunk:ApplyImpulse(vel * chunk.AssemblyMass)
+				local spinY = if bIdx % 2 == 0 then 5 else -5
+				chunk:ApplyAngularImpulse(
+					Vector3.new((localIdx - 2) * 6, spinY, -8 + localIdx * 3) * chunk.AssemblyMass
+				)
+				trackF2(chunk, ttl)
+			end
+		end
+	end
+
+	triggerCameraImpulse(0.24 + stg * 0.06, 0.22, -1.6 - stg * 0.4)
+end
+
+local function spawnWallCollapseBlast(
+	parent: Instance,
+	sectionPos: Vector3,
+	groundY: number,
+	scale: number,
+	isCenter: boolean
+): ()
+	local amber = rgb(VisualTheme.PALETTE.amber)
+	local amberBright = rgb(VisualTheme.PALETTE.amberBright)
+	local danger = rgb(VisualTheme.PALETTE.danger)
+	local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
+	local ink = rgb(VisualTheme.PALETTE.ink)
+
+	local blastColor = if isCenter then amberBright else danger
+	emitExplosion(parent, sectionPos + Vector3.new(0.8, 2.8, 0), blastColor, scale)
+	emitSlashSparks(
+		parent,
+		sectionPos + Vector3.new(1.1, 3.4, 0),
+		amberBright,
+		if isCenter then 14 else 9
+	)
+	Vfx.dust(
+		parent,
+		Vector3.new(sectionPos.X + 1.0, groundY + 0.6, sectionPos.Z),
+		if isCenter then 10 else 8
+	)
+
+	local plumeAnchor =
+		makeAnchor(parent, sectionPos + Vector3.new(0.9, 1.8, 0), 1.65, "VfxWallCollapsePlume")
+	attachEmitter(plumeAnchor, {
+		name = "CollapseSmokePlume",
+		texture = VfxAssets.contentId("smokeWispy"),
+		color = ColorSequence.new(stoneDark, ink),
+		size = NumberSequence.new(1.3 * scale, 3.8 * scale),
+		transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.28),
+			NumberSequenceKeypoint.new(1, 1),
+		}),
+		lifetime = NumberRange.new(0.65, 1.25),
+		speed = NumberRange.new(4, 9),
+		spreadAngle = Vector2.new(65, 65),
+		acceleration = Vector3.new(1.5, 4.5, 0),
+		drag = 2.5,
+		lightEmission = 0.05,
+		burstCount = if isCenter then 18 else 12,
+	})
+
+	spawnScorchDecal(
+		parent,
+		Vector3.new(sectionPos.X + 1.4, groundY, sectionPos.Z),
+		if isCenter then 5.2 else 4.0
+	)
+	spawnLightFlash(
+		parent,
+		sectionPos + Vector3.new(1.8, 3.0, 0),
+		if isCenter then amberBright else amber,
+		if isCenter then 26 else 20,
+		if isCenter then 14 else 10,
+		0.32
+	)
+end
+
+function Vfx.collapseWall(parent: Instance, origin: Vector3): ()
+	local wallX = origin.X - 24
+	local waveY = origin.Y + 0.55
+	local groundY = math.max(0.4, origin.Y)
+
+	local amber = rgb(VisualTheme.PALETTE.amber)
+	local amberBright = rgb(VisualTheme.PALETTE.amberBright)
+	local danger = rgb(VisualTheme.PALETTE.danger)
+	local stone = rgb(VisualTheme.PALETTE.stone)
+	local stoneDark = rgb(VisualTheme.PALETTE.stoneDark)
+	local woodDark = rgb(VisualTheme.PALETTE.woodDark)
+	local ironDark = rgb(VisualTheme.PALETTE.ironDark)
+
+	-- Central gate fracture burst outward (+X)
+	Vfx.fractureGate(parent, Vector3.new(wallX, origin.Y + 2.2, origin.Z), Vector3.new(18, 14, 0))
+
+	-- Expanding horizontal shockwave rings + volume waves across Z = -13.5, 0, +13.5
+	for _, zOff in ipairs({ -13.5, 0, 13.5 }) do
+		local isCenter = zOff == 0
+		local wavePos = Vector3.new(wallX, waveY, origin.Z + zOff)
+		local ringColor = if isCenter then amberBright else danger:Lerp(amberBright, 0.55)
+		spawnShockwaveRing(
+			parent,
+			wavePos,
+			ringColor,
+			if isCenter then 2.8 else 2.2,
+			if isCenter then 22.0 else 16.5,
+			if isCenter then 0.28 else 0.24,
+			if isCenter then 0.52 else 0.46
+		)
+		spawnVolumeWave(
+			parent,
+			wavePos,
+			if isCenter then amber else danger,
+			if isCenter then 2.2 else 1.8,
+			if isCenter then 11.5 else 8.8,
+			if isCenter then 0.46 else 0.40
+		)
+	end
+
+	-- t = 0.0s: center blast (Z = 0)
+	spawnWallCollapseBlast(parent, Vector3.new(wallX, origin.Y, origin.Z), groundY, 1.75, true)
+
+	local hadParent = parent.Parent ~= nil
+	local function isParentValid(): boolean
+		if not hadParent then
+			return true
+		end
+		return parent.Parent ~= nil or parent == Workspace
+	end
+
+	-- t = 0.08s: left & right wings (Z = -13.5, +13.5)
+	task.delay(0.08, function()
+		if not isParentValid() then
+			return
+		end
+		for _, zOff in ipairs({ -13.5, 13.5 }) do
+			spawnWallCollapseBlast(
+				parent,
+				Vector3.new(wallX, origin.Y, origin.Z + zOff),
+				groundY,
+				1.45,
+				false
+			)
+		end
+	end)
+
+	-- t = 0.16s: left & right towers (Z = -21, +21)
+	task.delay(0.16, function()
+		if not isParentValid() then
+			return
+		end
+		for _, zOff in ipairs({ -21, 21 }) do
+			spawnWallCollapseBlast(
+				parent,
+				Vector3.new(wallX, origin.Y + 0.8, origin.Z + zOff),
+				groundY,
+				1.55,
+				false
+			)
+		end
+	end)
+
+	-- Additional F2 wing/tower masonry, timber & iron debris chunks
+	Vfx.configureCollisionGroups()
+	ensureGovernor()
+	local maxBodies, ttl = tierBudget(currentTier)
+	local desiredChunks = if currentTier == "Low" then 2 elseif currentTier == "Mid" then 6 else 10
+	local chunkCount = math.min(desiredChunks, maxBodies)
+	if chunkCount > 0 then
+		pruneF2(time(), chunkCount)
+		local zSlots = { -20, 20, -14, 14, -9, 9, -17.5, 17.5, -11.5, 11.5 }
+		for i = 1, chunkCount do
+			local zOff = zSlots[((i - 1) % #zSlots) + 1]
+			local kindMod = i % 4
+			local chunkMat = if kindMod == 0
+				then Enum.Material.Metal
+				elseif kindMod == 3 then Enum.Material.WoodPlanks
+				else Enum.Material.Slate
+			local chunkColor = if kindMod == 0
+				then ironDark
+				elseif kindMod == 3 then woodDark
+				elseif kindMod == 2 then stone
+				else stoneDark
+			local chunkSize = if kindMod == 0
+				then Vector3.new(0.36, 0.34, 1.35)
+				elseif kindMod == 3 then Vector3.new(0.48, 0.44, 2.15)
+				else Vector3.new(1.35 + (i % 2) * 0.35, 0.95 + (i % 3) * 0.22, 1.55)
+			local spawnPos = Vector3.new(
+				wallX + 1.35 + (i % 2) * 0.55,
+				origin.Y + 3.2 + (i % 4) * 1.15,
+				origin.Z + zOff
+			)
+			local chunk = makePart(parent, chunkSize, spawnPos, chunkColor, chunkMat)
+			chunk.Name = "F2_WallCollapseChunk_" .. tostring(i)
+			applyF2Flags(chunk, "FractureDebris")
+			local zSign = if zOff >= 0 then 1 else -1
+			local vel =
+				Vector3.new(13 + (i % 3) * 4.5, 10 + (i % 3) * 3.5, zSign * (3.5 + (i % 3) * 2.2))
+			chunk:ApplyImpulse(vel * chunk.AssemblyMass)
+			chunk:ApplyAngularImpulse(
+				Vector3.new(zSign * 7, ((i % 3) - 1) * 5, -9 + (i % 4) * 4) * chunk.AssemblyMass
+			)
+			trackF2(chunk, ttl)
+		end
+	end
+
+	triggerCameraImpulse(0.50, 0.36, -3.2)
+end
+
 function Vfx.ring(parent: Instance, position: Vector3, color: Color3): ()
 	local ring = makePart(
 		parent,

@@ -232,6 +232,10 @@ function CFrameClass:ToObjectSpace(worldCF: any): any
 	return self:Inverse() * worldCF
 end
 
+function CFrameClass:PointToObjectSpace(worldPoint: any): any
+	return self:Inverse() * worldPoint
+end
+
 local function cfNew(a: any, b: any?, c: any?): any
 	if a == nil then
 		return makeCF(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)
@@ -627,6 +631,7 @@ local services: { [string]: any } = {
 						completed:Fire(HeadlessRobloxMock.Enum.PlaybackState.Completed)
 					end
 				end,
+				Cancel = function() end,
 				Completed = completed,
 			}
 		end,

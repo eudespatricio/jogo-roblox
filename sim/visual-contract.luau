@@ -16,6 +16,7 @@ local PbrAssets = require("../src/shared/visual/PbrAssets")
 local VfxAssets = require("../src/shared/visual/VfxAssets")
 local HeadlessMock = require("../src/shared/visual/HeadlessRobloxMock")
 local cliRequire: any = require
+local ArenaVisual = cliRequire("../src/client/visual/ArenaVisual")
 local HordeKit = cliRequire("../src/client/visual/HordeKit")
 local Vfx = cliRequire("../src/client/visual/Vfx")
 
@@ -950,6 +951,7 @@ check(
 		}) do
 			Vfx.bossDeathSequence(scene, bossId, origin, primary, accent)
 		end
+
 		HeadlessMock.flushDelays()
 
 		local checkedParts = 0
@@ -970,6 +972,137 @@ check(
 			checkedParts >= 40,
 			"esperava >= 40 partes VFX/debris inspecionadas, achei " .. tostring(checkedParts)
 		)
+
+		local wallHitScene = HeadlessMock.Instance.new("Folder")
+		HeadlessMock.setTime(210.0)
+		Vfx.wallHit(wallHitScene, origin, 2, 1.4, 0.65)
+		local wallRings, wallHitChips = 0, 0
+		for _, desc in ipairs(wallHitScene:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				assert(desc.CanQuery == false, "wallHit CanQuery=true: " .. tostring(desc.Name))
+				assert(desc.CanTouch == false, "wallHit CanTouch=true: " .. tostring(desc.Name))
+				if string.sub(tostring(desc.Name), 1, 3) ~= "F2_" then
+					assert(
+						desc.CanCollide == false,
+						"wallHit CanCollide=true: " .. tostring(desc.Name)
+					)
+				end
+				if desc.Name == "VfxWallImpactRing" then
+					wallRings += 1
+				elseif string.sub(tostring(desc.Name), 1, 15) == "F2_WallHitChip_" then
+					wallHitChips += 1
+				end
+			end
+		end
+		assert(wallRings >= 1, "Vfx.wallHit nao gerou VfxWallImpactRing")
+		assert(wallHitChips >= 3, "Vfx.wallHit nao gerou F2_WallHitChip_*")
+
+		local wallBreachScene = HeadlessMock.Instance.new("Folder")
+		HeadlessMock.setTime(215.0)
+		Vfx.wallStageBreach(wallBreachScene, origin, 2)
+		local wallStageChunks = 0
+		for _, desc in ipairs(wallBreachScene:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				assert(desc.CanQuery == false, "wallStageBreach CanQuery=true")
+				assert(desc.CanTouch == false, "wallStageBreach CanTouch=true")
+				if string.sub(tostring(desc.Name), 1, 18) == "F2_WallStageChunk_" then
+					wallStageChunks += 1
+				elseif string.sub(tostring(desc.Name), 1, 3) ~= "F2_" then
+					assert(desc.CanCollide == false, "wallStageBreach CanCollide=true")
+				end
+			end
+		end
+		assert(wallStageChunks >= 2, "Vfx.wallStageBreach nao gerou F2_WallStageChunk_*")
+
+		local wallCollapseScene = HeadlessMock.Instance.new("Folder")
+		HeadlessMock.setTime(220.0)
+		Vfx.collapseWall(wallCollapseScene, origin)
+		HeadlessMock.flushDelays()
+		local wallCollapseChunks, gateChunks = 0, 0
+		for _, desc in ipairs(wallCollapseScene:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				assert(desc.CanQuery == false, "collapseWall CanQuery=true")
+				assert(desc.CanTouch == false, "collapseWall CanTouch=true")
+				if string.sub(tostring(desc.Name), 1, 21) == "F2_WallCollapseChunk_" then
+					wallCollapseChunks += 1
+				elseif string.sub(tostring(desc.Name), 1, 13) == "F2_GateChunk_" then
+					gateChunks += 1
+				elseif string.sub(tostring(desc.Name), 1, 3) ~= "F2_" then
+					assert(desc.CanCollide == false, "collapseWall CanCollide=true")
+				end
+			end
+		end
+		assert(wallCollapseChunks >= 2, "Vfx.collapseWall nao gerou F2_WallCollapseChunk_*")
+		assert(gateChunks >= 1, "Vfx.collapseWall nao preservou F2_GateChunk_*")
+	end
+)
+
+check(
+	"ArenaVisual: impacto localizado por lane, 4 estagios de destruicao e colapso total da muralha",
+	function()
+		local scene = HeadlessMock.Instance.new("Folder")
+		local arena = ArenaVisual.build(scene, HeadlessMock.Vector3.new(0, 0, 0), { wallTier = 1 })
+		assert(arena ~= nil, "ArenaVisual.build retornou nil")
+		assert(
+			arena:FindFirstChild("WallDamageDecor") == nil,
+			"Stage 0 nao deve ter WallDamageDecor"
+		)
+
+		local wallBlocks = arena:FindFirstChild("WallBlocks")
+		assert(wallBlocks ~= nil, "WallBlocks ausente")
+		local wallBodyL = wallBlocks:FindFirstChild("WallBodyL") :: any
+		local gate = wallBlocks:FindFirstChild("Gate") :: any
+		assert(wallBodyL ~= nil and gate ~= nil, "WallBodyL ou Gate ausente")
+		local gateRestY = gate.Position.Y
+		local wallBodyLRestX = wallBodyL.Position.X
+
+		local hitPos = ArenaVisual.pulseWallImpact(scene, 1, 1.3, 1)
+		assert(math.abs(hitPos.Z - -16) < 0.05, "pulseWallImpact lane 1 Z != -16")
+		assert(wallBodyL.Position.X < wallBodyLRestX - 0.1, "pulseWallImpact nao recuou WallBodyL")
+
+		for _, case in ipairs({
+			{ pct = 0.65, stage = 1 },
+			{ pct = 0.40, stage = 2 },
+			{ pct = 0.15, stage = 3 },
+			{ pct = 0.00, stage = 4 },
+		}) do
+			local got = ArenaVisual.setWallDamageStage(scene, case.pct, 2)
+			assert(
+				got == case.stage,
+				string.format(
+					"esperava stage %d para pct=%.2f, obteve %d",
+					case.stage,
+					case.pct,
+					got
+				)
+			)
+			assert(arena:GetAttribute("WallDamageStage") == case.stage, "atributo WallDamageStage")
+			local decor = arena:FindFirstChild("WallDamageDecor")
+			assert(decor ~= nil, "WallDamageDecor ausente no stage " .. tostring(case.stage))
+			for _, desc in ipairs(decor:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					assert(desc.CanCollide == false, "WallDamageDecor CanCollide=true")
+					assert(desc.CanQuery == false, "WallDamageDecor CanQuery=true")
+					assert(desc.CanTouch == false, "WallDamageDecor CanTouch=true")
+				end
+			end
+			if case.stage == 4 then
+				local rubble = decor:FindFirstChild("WallRubblePile")
+				assert(
+					rubble ~= nil and #rubble:GetChildren() == 18,
+					"WallRubblePile != 18 no Stage 4"
+				)
+				assert(gate.Position.Y < gateRestY - 4.0, "Gate nao desabou no Stage 4")
+			end
+		end
+
+		local restoredStage = ArenaVisual.setWallDamageStage(scene, 1.0)
+		assert(restoredStage == 0, "restauracao nao voltou para stage 0")
+		assert(
+			arena:FindFirstChild("WallDamageDecor") == nil,
+			"WallDamageDecor nao limpo no Stage 0"
+		)
+		assert(math.abs(gate.Position.Y - gateRestY) < 0.05, "Gate.Position.Y nao restaurado")
 	end
 )
 

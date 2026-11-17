@@ -708,6 +708,7 @@ local unitKind: { [number]: string } = {}
 local unitFrozen: { [number]: boolean } = {}
 local unitIsChampion: { [number]: boolean } = {}
 local lastWallPct = 1
+local lastWallStage = 0
 local fracturedGate = false
 local activeBattleId: string? = nil
 local lastResult: any = nil
@@ -844,6 +845,7 @@ local function clearScene(): ()
 	unitFrozen = {}
 	unitIsChampion = {}
 	lastWallPct = 1
+	lastWallStage = 0
 	fracturedGate = false
 	shakeUntil = 0
 end
@@ -874,6 +876,7 @@ local function buildFrames(result: any): (any, any)
 	})
 	local frames = {}
 	local capturedSpawn: { [number]: boolean } = {}
+	local prevLaneLeaks = { 0, 0, 0, 0, 0 }
 	local sawBossAbility = false
 	local function snapshot()
 		local unitsFrame = {}
@@ -931,10 +934,28 @@ local function buildFrames(result: any): (any, any)
 		if bossSnap ~= nil and sawBossAbility then
 			(bossSnap :: any).didAbility = true
 		end
+		local hitLanes: { number } = {}
+		local laneCounts = (battle :: any).laneLeakCount
+		if type(laneCounts) == "table" then
+			for laneIdx = 1, 5 do
+				local curCount = tonumber(laneCounts[laneIdx]) or 0
+				local deltaCount = curCount - prevLaneLeaks[laneIdx]
+				if deltaCount > 0 then
+					hitLanes[#hitLanes + 1] = laneIdx
+					prevLaneLeaks[laneIdx] = curCount
+				end
+			end
+		end
+		local hitSpan: number? = nil
+		if bossSnap ~= nil and (bossSnap.state == "ATTACK" or sawBossAbility) and #hitLanes > 0 then
+			hitSpan = tonumber((battle.boss :: any).laneSpan) or 3
+		end
 		frames[#frames + 1] = {
 			wallPct = math.clamp(battle.wallHp / battle.wallMax, 0, 1),
 			units = unitsFrame,
 			boss = bossSnap,
+			hitLanes = if #hitLanes > 0 then hitLanes else nil,
+			hitSpan = hitSpan,
 		}
 	end
 	snapshot()
@@ -1004,6 +1025,8 @@ local function buildScene(result: any, frames: { any }): ()
 		RAID_ORIGIN,
 		{ dropIn = false, wallTier = wallTier, portalTheme = portalThemeKey }
 	)
+	lastWallStage = 0
+	ArenaVisual.setWallDamageStage(newScene, 1.0)
 	raidCrowd = CrowdKit.build(newScene, RAID_ORIGIN)
 
 	local cells: { [string]: TrapKit.TrapData } = {}
@@ -1347,24 +1370,51 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 	local activeToken = replayToken
 	local pct = frame.wallPct or 0
 	local wallDamagedThisFrame = false
-	if math.abs(pct - lastWallPct) > 0.005 then
-		if pct < lastWallPct then
-			wallDamagedThisFrame = true
-			AudioKit.playAt("wall_hit", RAID_ORIGIN + Vector3.new(-22, 1.5, 0))
-			if (lastWallPct - pct) >= 0.04 and raidCrowd ~= nil then
-				raidCrowd:react("gasp")
-				AudioKit.play("crowd_gasp", 0.55)
-			end
+	local hitLanesRaw = if type(frame.hitLanes) == "table" and #frame.hitLanes > 0
+		then frame.hitLanes :: { number }
+		else nil
+	local fallbackLane = if type(frame.boss) == "table"
+			and type(frame.boss.laneCenter) == "number"
+		then frame.boss.laneCenter
+		else 3
+	if pct < lastWallPct - 0.0005 or hitLanesRaw ~= nil then
+		wallDamagedThisFrame = true
+		local drop = math.max(0, lastWallPct - pct)
+		local sev = math.clamp(drop * 8, 0.75, 2.2)
+		local lanes = hitLanesRaw or { fallbackLane }
+		local hitSpan = if type(frame.hitSpan) == "number" then frame.hitSpan else nil
+		for _, lane in ipairs(lanes) do
+			local hitPos = ArenaVisual.pulseWallImpact(activeScene, lane, sev, hitSpan)
+			Vfx.wallHit(activeScene, hitPos, lane, sev, pct)
+			AudioKit.playAt("wall_hit", hitPos)
+		end
+		if drop >= 0.04 and raidCrowd ~= nil then
+			raidCrowd:react("gasp")
+			AudioKit.play("crowd_gasp", 0.55)
 		end
 		lastWallPct = pct
-		Vfx.dust(activeScene, RAID_ORIGIN + Vector3.new(-22, 1.5, 0), 5)
 		shakeUntil = math.max(shakeUntil, time() + 0.14)
+	elseif math.abs(pct - lastWallPct) > 0.005 then
+		lastWallPct = pct
+	end
+	local wallStage = ArenaVisual.setWallDamageStage(
+		activeScene,
+		pct,
+		if hitLanesRaw ~= nil then hitLanesRaw[1] else fallbackLane
+	)
+	if wallStage > lastWallStage then
+		if wallStage >= 1 and wallStage <= 3 then
+			Vfx.wallStageBreach(activeScene, RAID_ORIGIN, wallStage)
+		end
+		lastWallStage = wallStage
 	end
 	AudioKit.setWallPct(pct)
 	if pct <= 0 and not fracturedGate then
 		fracturedGate = true
-		shakeUntil = math.max(shakeUntil, time() + 0.28)
-		Vfx.fractureGate(activeScene, RAID_ORIGIN + Vector3.new(-24, FLOOR_TOP_Y, 0))
+		lastWallStage = 4
+		shakeUntil = math.max(shakeUntil, time() + 0.36)
+		ArenaVisual.setWallDamageStage(activeScene, 0)
+		Vfx.collapseWall(activeScene, RAID_ORIGIN)
 		AudioKit.playAt("gate_fracture", RAID_ORIGIN + Vector3.new(-24, FLOOR_TOP_Y + 2, 0))
 	end
 	if topHud.Size.X.Offset < 248 then
@@ -1961,6 +2011,7 @@ local function startReplay(result: any, isQuickReplay: boolean?): ()
 	wallProgress.set(1)
 	replayProgress.set(0)
 	lastWallPct = 1
+	lastWallStage = 0
 
 	local ok, frames, final = pcall(buildFrames, result)
 	if not ok or type(frames) ~= "table" or type(final) ~= "table" then

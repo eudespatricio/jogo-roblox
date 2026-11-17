@@ -350,12 +350,25 @@ local defeated = false
 local finished = false
 
 local lastWallPct = 1
+local lastWallStage = 0
 
 local function setWall(pct: number): ()
 	if pct < lastWallPct - 0.005 and pct > 0 then
-		AudioKit.playAt("wall_hit", ORIGIN + Vector3.new(-22, 1.5, 0))
+		local hitLane = 1 + (math.floor(pct * 100) % 5)
+		local hitPos = ArenaVisual.pulseWallImpact(scene, hitLane, 1.15)
+		Vfx.wallHit(scene, hitPos, hitLane, 1.15, pct)
+		AudioKit.playAt("wall_hit", hitPos)
 		crowd:react("gasp")
 		AudioKit.play("crowd_gasp", 0.6)
+	end
+	local stage = ArenaVisual.setWallDamageStage(scene, pct)
+	if stage > lastWallStage and stage >= 1 and stage <= 3 then
+		Vfx.wallStageBreach(scene, ORIGIN, stage)
+	end
+	if pct >= 0.99 then
+		lastWallStage = 0
+	else
+		lastWallStage = math.max(lastWallStage, stage)
 	end
 	lastWallPct = pct
 	wallProgress.set(pct)
@@ -390,12 +403,13 @@ local function showDefeat(): ()
 	clearBanner.Visible = false
 	defeatFrame.Visible = true
 	setWall(0)
+	lastWallStage = 4
 	AudioKit.playAt("gate_fracture", ORIGIN + Vector3.new(-24, 2, 0))
 	AudioKit.play("defeat")
 	crowd:react("defeat")
-	Vfx.fractureGate(scene, ORIGIN + Vector3.new(-24, FLOOR_TOP_Y, 0))
+	ArenaVisual.setWallDamageStage(scene, 0)
+	Vfx.collapseWall(scene, ORIGIN)
 	Vfx.shake(camera, BASE_CAMERA, 0.35, 0.35)
-	Vfx.dust(scene, ORIGIN + Vector3.new(-24, 0.5, 0), 10)
 end
 
 local function cleanup(): ()

@@ -4,24 +4,81 @@
 -- (CanQuery=true) com cantoneiras de slot, SelectionIndicator, gatehouse+portcullis+torres,
 -- portal de obsidiana e 6 pinheiros low-poly. Client-side e cosmetico.
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local IS_ROBLOX = type(game) == "userdata"
+local cliRequire: any = require
+local Mock: any = if IS_ROBLOX
+	then nil
+	else cliRequire("../../shared/visual/" .. "HeadlessRobloxMock")
 
-local VisualTheme = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("VisualTheme")
-)
-local GridLayout = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("build"):WaitForChild("GridLayout")
-)
-local WallAssets = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("WallAssets")
-)
-local MeshAssets = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("MeshAssets")
-)
-local PortalThemes = require(
-	ReplicatedStorage:WaitForChild("Shared"):WaitForChild("visual"):WaitForChild("PortalThemes")
-)
-local Players = game:GetService("Players")
+local activeGame = if IS_ROBLOX then game else Mock.game :: typeof(game)
+local ReplicatedStorage = activeGame:GetService("ReplicatedStorage")
+local Players = activeGame:GetService("Players")
+local TweenService = activeGame:GetService("TweenService")
+
+local Instance = if IS_ROBLOX then Instance else Mock.Instance :: typeof(Instance)
+local Vector3 = if IS_ROBLOX then Vector3 else Mock.Vector3 :: typeof(Vector3)
+local Vector2 = if IS_ROBLOX then Vector2 else Mock.Vector2 :: typeof(Vector2)
+local CFrame = if IS_ROBLOX then CFrame else Mock.CFrame :: typeof(CFrame)
+local Color3 = if IS_ROBLOX then Color3 else Mock.Color3 :: typeof(Color3)
+local ColorSequence = if IS_ROBLOX
+	then ColorSequence
+	else Mock.ColorSequence :: typeof(ColorSequence)
+local ColorSequenceKeypoint = if IS_ROBLOX
+	then ColorSequenceKeypoint
+	else Mock.ColorSequenceKeypoint :: typeof(ColorSequenceKeypoint)
+local NumberSequence = if IS_ROBLOX
+	then NumberSequence
+	else Mock.NumberSequence :: typeof(NumberSequence)
+local NumberSequenceKeypoint = if IS_ROBLOX
+	then NumberSequenceKeypoint
+	else Mock.NumberSequenceKeypoint :: typeof(NumberSequenceKeypoint)
+local NumberRange = if IS_ROBLOX then NumberRange else Mock.NumberRange :: typeof(NumberRange)
+local TweenInfo = if IS_ROBLOX then TweenInfo else Mock.TweenInfo :: typeof(TweenInfo)
+local Enum = if IS_ROBLOX then Enum else Mock.Enum :: typeof(Enum)
+local UDim = if IS_ROBLOX then UDim else Mock.UDim :: typeof(UDim)
+local UDim2 = if IS_ROBLOX then UDim2 else Mock.UDim2 :: typeof(UDim2)
+local task = if IS_ROBLOX then task else Mock.task :: typeof(task)
+
+local VisualTheme = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("VisualTheme")
+	)
+	else Mock.shared("VisualTheme") :: any
+local GridLayout = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("build")
+			:WaitForChild("GridLayout")
+	)
+	else cliRequire("../../shared/build/" .. "GridLayout") :: any
+local WallAssets = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("WallAssets")
+	)
+	else Mock.shared("WallAssets") :: any
+local MeshAssets = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("MeshAssets")
+	)
+	else Mock.shared("MeshAssets") :: any
+local PortalThemes = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("PortalThemes")
+	)
+	else Mock.shared("PortalThemes") :: any
 
 local ArenaVisual = {}
 
@@ -30,6 +87,8 @@ export type BuildOptions = {
 	wallTier: number?, -- liga do dono da muralha; nil = atributo MuralhaWallTier do LocalPlayer
 	portalTheme: string?,
 }
+
+type PortalThemeSpec = { [string]: any }
 
 local OBSIDIAN_DARK = Color3.fromRGB(22, 24, 32)
 local PORTAL_TARGET_HEIGHT = 15.2
@@ -380,7 +439,7 @@ local function buildIsland(folder: Folder, origin: Vector3): ()
 	)
 end
 
-local function fanLaneColor(theme: PortalThemes.PortalThemeSpec): Color3
+local function fanLaneColor(theme: PortalThemeSpec): Color3
 	return LANE_EARTH:Lerp(rgb(theme.apronColor), 0.65)
 end
 
@@ -412,11 +471,7 @@ local function makeSegmentPart(
 end
 
 -- Leque de abordagem (X = +36.8 -> +21.0): dais do portal + 5x2 segmentos de trilha + 6 bermas (17 partes).
-local function buildPortalManifold(
-	folder: Folder,
-	origin: Vector3,
-	theme: PortalThemes.PortalThemeSpec
-): ()
+local function buildPortalManifold(folder: Folder, origin: Vector3, theme: PortalThemeSpec): ()
 	local manifold = Instance.new("Folder")
 	manifold.Name = "PortalManifold"
 	manifold.Parent = folder
@@ -679,7 +734,7 @@ local function findArena(parent: Instance): Instance?
 	return if parent.Name == "MuralhaArena" then parent else parent:FindFirstChild("MuralhaArena")
 end
 
-local function stylePortalVortex(att: Instance, theme: PortalThemes.PortalThemeSpec): ()
+local function stylePortalVortex(att: Instance, theme: PortalThemeSpec): ()
 	local portalLight = att:FindFirstChild("PortalVortexLight")
 	if portalLight ~= nil and portalLight:IsA("PointLight") then
 		portalLight.Color = rgb(theme.veilColor)
@@ -694,7 +749,7 @@ local function stylePortalVortex(att: Instance, theme: PortalThemes.PortalThemeS
 	end
 end
 
-local function ensurePortalVortex(arena: Instance, theme: PortalThemes.PortalThemeSpec?): ()
+local function ensurePortalVortex(arena: Instance, theme: PortalThemeSpec?): ()
 	local resolved = theme or PortalThemes.resolve(arena:GetAttribute("PortalTheme"))
 	local host = arena:FindFirstChild("GrassTerrace")
 	if host == nil or not host:IsA("BasePart") then
@@ -753,11 +808,7 @@ local function ensurePortalVortex(arena: Instance, theme: PortalThemes.PortalThe
 end
 
 -- 7 partes de moldura em PortalBlocks + 1 PortalVeil persistente (tally.portal = 8) + VFX persistente.
-local function buildRiftPortal(
-	folder: Folder,
-	origin: Vector3,
-	theme: PortalThemes.PortalThemeSpec
-): ()
+local function buildRiftPortal(folder: Folder, origin: Vector3, theme: PortalThemeSpec): ()
 	local portalBlocks = Instance.new("Folder")
 	portalBlocks.Name = "PortalBlocks"
 	portalBlocks.Parent = folder
@@ -1525,6 +1576,10 @@ local function placeWallMesh(arena: Instance, tier: number): boolean
 		blocks:ClearAllChildren()
 	end
 	ensureWallTorches(arena)
+	local hpPct = tonumber(arena:GetAttribute("WallHpPct"))
+	if hpPct ~= nil and hpPct < 1 then
+		ArenaVisual.setWallDamageStage(arena, hpPct)
+	end
 	return true
 end
 
@@ -1759,7 +1814,9 @@ function ArenaVisual.build(parent: Instance, origin: Vector3, options: BuildOpti
 	trySwapPropMeshes(folder, origin)
 
 	-- Gancho opcional: cenario de fundo (modulo irmao "Backdrop"); no-op se ausente ou com erro.
-	local backdropModule = script.Parent and script.Parent:FindFirstChild("Backdrop")
+	local backdropModule = if IS_ROBLOX and script.Parent ~= nil
+		then script.Parent:FindFirstChild("Backdrop")
+		else nil
 	if backdropModule ~= nil and backdropModule:IsA("ModuleScript") then
 		local ok, backdrop = pcall(require, backdropModule)
 		if ok and type(backdrop) == "table" and type((backdrop :: any).build) == "function" then
@@ -1902,6 +1959,734 @@ function ArenaVisual.setPlacementMode(parent: Instance, mode: string?): ()
 	end
 	arena:SetAttribute("PlacementMode", mode)
 	refreshGlow(arena)
+end
+
+local IS_ROBLOX_RUNTIME = type(game) == "userdata"
+local SOOT_TINT_COLOR = Color3.fromRGB(24, 22, 26)
+local WALL_CRACK_COLOR = Color3.fromRGB(18, 16, 20)
+local WALL_FISSURE_GLOW_COLOR = Color3.fromRGB(245, 110, 28)
+local WALL_BREACH_FIRE_COLOR = Color3.fromRGB(240, 95, 25)
+
+local STAGE_POSE_TWEEN_INFO = TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local COLLAPSE_TWEEN_INFO = TweenInfo.new(0.38, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
+local IMPACT_RECOVERY_TWEEN_INFO =
+	TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+type WallPartRest = {
+	cf: CFrame,
+	color: Color3,
+	transparency: number,
+	zone: string,
+	isUpperTrim: boolean,
+}
+
+type ZonePoseSpec = {
+	pos: Vector3,
+	rot: CFrame,
+}
+
+type StagePoseSpec = {
+	sootAlpha: number,
+	hideUpper: boolean,
+	zones: { [string]: ZonePoseSpec },
+}
+
+local wallPartRest: { [BasePart]: WallPartRest } = setmetatable({}, { __mode = "k" }) :: any
+local wallPartAppliedStage: { [BasePart]: number } = setmetatable({}, { __mode = "k" }) :: any
+local activeWallTweens: { [BasePart]: Tween? } = setmetatable({}, { __mode = "k" }) :: any
+local activeWallLookTweens: { [BasePart]: Tween? } = setmetatable({}, { __mode = "k" }) :: any
+
+local UPPER_TRIM_PREFIXES = {
+	"Merlon_",
+	"WallParapet",
+	"GatehouseCap",
+	"PortcullisPicket_",
+	"Banner_",
+	"TowerSpire_",
+	"TowerRoof_",
+}
+
+local ZONE_COLLAPSE_DELAY: { [string]: number } = {
+	gate = 0,
+	wingL = 0.07,
+	wingR = 0.07,
+	towerL = 0.14,
+	towerR = 0.14,
+}
+
+local function degAngles(rx: number, ry: number, rz: number): CFrame
+	return CFrame.Angles(math.rad(rx), math.rad(ry), math.rad(rz))
+end
+
+local STAGE_SPECS: { [number]: StagePoseSpec } = {
+	[1] = {
+		sootAlpha = 0.14,
+		hideUpper = false,
+		zones = {
+			gate = { pos = Vector3.new(-0.2, -0.2, 0), rot = degAngles(1.5, 0, 0) },
+			wingL = { pos = Vector3.new(-0.15, -0.25, 0), rot = degAngles(-1.8, 0, 1.2) },
+			wingR = { pos = Vector3.new(-0.15, -0.25, 0), rot = degAngles(1.8, 0, -1.2) },
+			towerL = { pos = Vector3.new(0, -0.1, 0), rot = degAngles(0, 0, 1.0) },
+			towerR = { pos = Vector3.new(0, -0.1, 0), rot = degAngles(0, 0, 1.0) },
+		},
+	},
+	[2] = {
+		sootAlpha = 0.30,
+		hideUpper = false,
+		zones = {
+			gate = { pos = Vector3.new(-0.85, -0.75, 0), rot = degAngles(4.5, -2, 3.5) },
+			wingL = { pos = Vector3.new(-0.65, -1.15, 0), rot = degAngles(-4.5, 2, 4.0) },
+			wingR = { pos = Vector3.new(-0.65, -1.15, 0), rot = degAngles(4.5, -2, -4.0) },
+			towerL = { pos = Vector3.new(-0.3, -0.5, 0), rot = degAngles(-2.5, 0, 2.5) },
+			towerR = { pos = Vector3.new(-0.3, -0.5, 0), rot = degAngles(2.5, 0, -2.5) },
+		},
+	},
+	[3] = {
+		sootAlpha = 0.48,
+		hideUpper = true,
+		zones = {
+			gate = { pos = Vector3.new(-1.6, -1.85, 0), rot = degAngles(9.5, -4, 8.0) },
+			wingL = { pos = Vector3.new(-1.3, -2.35, 0), rot = degAngles(-8.5, 4, 7.5) },
+			wingR = { pos = Vector3.new(-1.3, -2.35, 0), rot = degAngles(8.5, -4, -7.5) },
+			towerL = { pos = Vector3.new(-0.8, -1.35, 0), rot = degAngles(-6.0, 0, 5.5) },
+			towerR = { pos = Vector3.new(-0.8, -1.35, 0), rot = degAngles(6.0, 0, -5.5) },
+		},
+	},
+	[4] = {
+		sootAlpha = 0.68,
+		hideUpper = true,
+		zones = {
+			gate = { pos = Vector3.new(-2.8, -5.2, 0), rot = degAngles(18, -8, 38) },
+			wingL = { pos = Vector3.new(-2.2, -5.4, -0.6), rot = degAngles(-28, 10, 26) },
+			wingR = { pos = Vector3.new(-2.2, -5.4, 0.6), rot = degAngles(28, -10, -26) },
+			towerL = { pos = Vector3.new(-1.8, -6.2, 0.8), rot = degAngles(22, 6, 20) },
+			towerR = { pos = Vector3.new(-1.8, -6.2, -0.8), rot = degAngles(-22, -6, -20) },
+		},
+	},
+}
+
+local WIDE_IMPACT_WEIGHTS: { [string]: number } = {
+	wingL = 1,
+	gate = 1,
+	wingR = 1,
+	towerL = 0.45,
+	towerR = 0.45,
+}
+
+local LANE_IMPACT_WEIGHTS: { [number]: { [string]: number } } = {
+	[1] = { wingL = 1, towerL = 0.75 },
+	[2] = { wingL = 1, gate = 0.45 },
+	[3] = { gate = 1, wingL = 0.4, wingR = 0.4 },
+	[4] = { wingR = 1, gate = 0.45 },
+	[5] = { wingR = 1, towerR = 0.75 },
+}
+
+local STAGE_FIRE_Z_POSITIONS: { [number]: { number } } = {
+	[1] = { 0 },
+	[2] = { -12, 0, 12 },
+	[3] = { -16, -8, 0, 8, 16 },
+	[4] = { -18, -9, 0, 9, 18 },
+}
+
+local function getArenaOrigin(arena: Instance): Vector3
+	return Vector3.new(
+		tonumber(arena:GetAttribute("OriginX")) or 0,
+		tonumber(arena:GetAttribute("OriginY")) or 0,
+		tonumber(arena:GetAttribute("OriginZ")) or 0
+	)
+end
+
+local function containsAny(text: string, needles: { string }): boolean
+	for _, needle in ipairs(needles) do
+		if string.find(text, needle, 1, true) ~= nil then
+			return true
+		end
+	end
+	return false
+end
+
+local function classifyWallZone(piece: BasePart, originZ: number): string
+	local lower = string.lower(piece.Name)
+	-- Check gate/portcullis first so PortcullisPicket_1 does not match "_1",
+	-- and route Merlon_* through the Z fallback so Merlon_1 resolves to wingL.
+	if containsAny(lower, { "gate", "portcullis" }) then
+		return "gate"
+	end
+	local isMerlon = string.find(lower, "merlon", 1, true) ~= nil
+	if not isMerlon then
+		if containsAny(lower, { "towerl", "tower_-1", "_-1" }) then
+			return "towerL"
+		end
+		if containsAny(lower, { "towerr", "tower_1", "_1" }) then
+			return "towerR"
+		end
+	end
+	if containsAny(lower, { "segmentl", "plinthl", "bodyl", "bandl", "parapetl" }) then
+		return "wingL"
+	end
+	if containsAny(lower, { "segmentr", "plinthr", "bodyr", "bandr", "parapetr" }) then
+		return "wingR"
+	end
+
+	local dz = piece.Position.Z - originZ
+	if dz < -18 then
+		return "towerL"
+	elseif dz < -5.2 then
+		return "wingL"
+	elseif dz <= 5.2 then
+		return "gate"
+	elseif dz <= 18 then
+		return "wingR"
+	end
+	return "towerR"
+end
+
+local function isUpperTrimPart(name: string): boolean
+	for _, prefix in ipairs(UPPER_TRIM_PREFIXES) do
+		if string.sub(name, 1, #prefix) == prefix then
+			return true
+		end
+	end
+	return false
+end
+
+local function ensureWallPartRest(piece: BasePart, originZ: number): WallPartRest
+	local existing = wallPartRest[piece]
+	if existing ~= nil then
+		return existing
+	end
+	local colorAny = (piece :: any).Color
+	local transAny = (piece :: any).Transparency
+	local rest: WallPartRest = {
+		cf = piece.CFrame,
+		color = if colorAny ~= nil then colorAny else rgb(VisualTheme.PALETTE.stone),
+		transparency = if type(transAny) == "number" then transAny else 0,
+		zone = classifyWallZone(piece, originZ),
+		isUpperTrim = isUpperTrimPart(piece.Name),
+	}
+	wallPartRest[piece] = rest
+	return rest
+end
+
+local function collectWallParts(arena: Instance): { BasePart }
+	local parts: { BasePart } = {}
+	for _, containerName in ipairs({ "WallMesh", "WallBlocks" }) do
+		local container = arena:FindFirstChild(containerName)
+		if container ~= nil then
+			for _, desc in ipairs(container:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					table.insert(parts, desc)
+				end
+			end
+		end
+	end
+	return parts
+end
+
+local function computeZoneStageOffset(
+	zone: string,
+	_isUpperTrim: boolean,
+	stage: number
+): (Vector3, CFrame, number, boolean)
+	local clamped = math.clamp(math.floor(stage), 0, 4)
+	if clamped <= 0 then
+		return Vector3.zero, CFrame.identity, 0, false
+	end
+	local stageSpec = STAGE_SPECS[clamped]
+	local zoneSpec = stageSpec.zones[zone] or stageSpec.zones.gate
+	return zoneSpec.pos, zoneSpec.rot, stageSpec.sootAlpha, stageSpec.hideUpper
+end
+
+local function computeTargetCFrame(restCF: CFrame, posOffset: Vector3, rotOffset: CFrame): CFrame
+	return CFrame.new(restCF.Position + posOffset) * (restCF - restCF.Position) * rotOffset
+end
+
+local function computeStageTransparency(
+	pieceName: string,
+	rest: WallPartRest,
+	stage: number,
+	hideUpper: boolean
+): number
+	if hideUpper and rest.isUpperTrim then
+		return 1
+	end
+	if stage == 2 and rest.isUpperTrim then
+		local oddStr = string.match(pieceName, "^Merlon_(%d+)$")
+			or string.match(pieceName, "^PortcullisPicket_(%d+)$")
+		local oddIdx = if oddStr ~= nil then tonumber(oddStr) else nil
+		if oddIdx ~= nil and oddIdx % 2 == 1 then
+			return 1
+		end
+	end
+	return rest.transparency
+end
+
+local function cancelTweenInMap(map: { [BasePart]: Tween? }, piece: BasePart): ()
+	local prev = map[piece]
+	if prev ~= nil then
+		map[piece] = nil
+		local cancelFn = (prev :: any).Cancel
+		if type(cancelFn) == "function" then
+			cancelFn(prev)
+		end
+	end
+end
+
+local function cancelPartTween(piece: BasePart): ()
+	cancelTweenInMap(activeWallTweens, piece)
+end
+
+local function playTweenInMap(
+	map: { [BasePart]: Tween? },
+	piece: BasePart,
+	info: TweenInfo,
+	props: { [string]: any }
+): ()
+	cancelTweenInMap(map, piece)
+	local tween = TweenService:Create(piece, info, props)
+	map[piece] = tween
+	local completed = (tween :: any).Completed
+	if completed ~= nil and type(completed.Once) == "function" then
+		completed:Once(function()
+			if (map[piece] :: any) == tween then
+				map[piece] = nil
+			end
+		end)
+	end
+	tween:Play()
+end
+
+local function playPartTween(piece: BasePart, info: TweenInfo, props: { [string]: any }): ()
+	playTweenInMap(activeWallTweens, piece, info, props)
+end
+
+local function applyStagePoseToPart(
+	arena: Instance,
+	piece: BasePart,
+	rest: WallPartRest,
+	prevStage: number,
+	stage: number
+): ()
+	local posOffset, rotOffset, sootAlpha, hideUpper =
+		computeZoneStageOffset(rest.zone, rest.isUpperTrim, stage)
+	local targetCF = computeTargetCFrame(rest.cf, posOffset, rotOffset)
+	local targetColor = rest.color:Lerp(SOOT_TINT_COLOR, sootAlpha)
+	local targetTrans = computeStageTransparency(piece.Name, rest, stage, hideUpper)
+	local cframeProps: { [string]: any } = { CFrame = targetCF }
+	local lookProps: { [string]: any } = { Color = targetColor, Transparency = targetTrans }
+
+	if IS_ROBLOX_RUNTIME and stage == 4 and prevStage ~= 4 then
+		cancelPartTween(piece)
+		cancelTweenInMap(activeWallLookTweens, piece)
+		local delaySec = ZONE_COLLAPSE_DELAY[rest.zone] or 0
+		if delaySec <= 0 then
+			playPartTween(piece, COLLAPSE_TWEEN_INFO, cframeProps)
+			playTweenInMap(activeWallLookTweens, piece, COLLAPSE_TWEEN_INFO, lookProps)
+		else
+			task.delay(delaySec, function()
+				if piece.Parent == nil then
+					return
+				end
+				if (tonumber(arena:GetAttribute("WallDamageStage")) or 0) == 4 then
+					playPartTween(piece, COLLAPSE_TWEEN_INFO, cframeProps)
+					playTweenInMap(activeWallLookTweens, piece, COLLAPSE_TWEEN_INFO, lookProps)
+				end
+			end)
+		end
+		return
+	end
+
+	if IS_ROBLOX_RUNTIME and stage >= 1 and stage <= 3 and prevStage ~= stage then
+		playPartTween(piece, STAGE_POSE_TWEEN_INFO, cframeProps)
+		playTweenInMap(activeWallLookTweens, piece, STAGE_POSE_TWEEN_INFO, lookProps)
+		return
+	end
+
+	cancelPartTween(piece)
+	cancelTweenInMap(activeWallLookTweens, piece)
+	piece.CFrame = targetCF
+	piece.Color = targetColor
+	piece.Transparency = targetTrans
+end
+
+local function updateWallTorchFlames(arena: Instance, extinguished: boolean): ()
+	local grass = arena:FindFirstChild("GrassTerrace")
+	if grass ~= nil then
+		for _, attachName in ipairs({ "WallTorchFxL", "WallTorchFxR" }) do
+			local att = grass:FindFirstChild(attachName)
+			if att ~= nil then
+				for _, child in ipairs(att:GetChildren()) do
+					if child:IsA("PointLight") then
+						child.Brightness = if extinguished then 0 else 0.85
+					elseif child:IsA("ParticleEmitter") then
+						child.Enabled = not extinguished
+					end
+				end
+			end
+		end
+	end
+
+	local blocks = arena:FindFirstChild("WallBlocks")
+	if blocks ~= nil then
+		for _, flameName in ipairs({ "TorchGateL_Flame", "TorchGateR_Flame" }) do
+			local flame = blocks:FindFirstChild(flameName)
+			if flame ~= nil and flame:IsA("BasePart") then
+				for _, child in ipairs(flame:GetChildren()) do
+					if child:IsA("PointLight") then
+						child.Brightness = if extinguished then 0 else 0.85
+					end
+				end
+			end
+		end
+	end
+end
+
+local function decorPart(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	cframe: CFrame,
+	color: Color3,
+	material: Enum.Material
+): Part
+	local piece = part(parent, name, size, cframe, color, material)
+	piece.CastShadow = false
+	return piece
+end
+
+local function spawnWallFireEmitter(
+	parent: Instance,
+	name: string,
+	position: Vector3,
+	fireColor: Color3,
+	intensity: number
+): ()
+	local host = decorPart(
+		parent,
+		name,
+		Vector3.new(0.4, 0.4, 0.4),
+		CFrame.new(position),
+		fireColor,
+		Enum.Material.SmoothPlastic
+	)
+	host.Transparency = 1
+
+	local fire = Instance.new("ParticleEmitter")
+	fire.Name = "FireParticles"
+	fire.Enabled = true
+	fire.EmissionDirection = Enum.NormalId.Top
+	fire.LightEmission = 0.85
+	fire.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 226, 132)),
+		ColorSequenceKeypoint.new(0.45, fireColor),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(145, 36, 12)),
+	})
+	fire.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.45 * intensity),
+		NumberSequenceKeypoint.new(0.45, 0.9 * intensity),
+		NumberSequenceKeypoint.new(1, 0.18),
+	})
+	fire.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.2),
+		NumberSequenceKeypoint.new(0.6, 0.35),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	fire.Rate = math.min(40, math.round(12 * intensity))
+	fire.Lifetime = NumberRange.new(0.45, 0.85)
+	fire.Speed = NumberRange.new(1.8, 3.6)
+	fire.SpreadAngle = Vector2.new(24, 24)
+	fire.Acceleration = Vector3.new(0, 2.8, 0)
+	fire.Rotation = NumberRange.new(0, 360)
+	fire.RotSpeed = NumberRange.new(-90, 90)
+	fire.Parent = host
+
+	local smoke = Instance.new("ParticleEmitter")
+	smoke.Name = "SmokeParticles"
+	smoke.Enabled = true
+	smoke.EmissionDirection = Enum.NormalId.Top
+	smoke.LightEmission = 0
+	smoke.Color = ColorSequence.new(Color3.fromRGB(40, 36, 44), Color3.fromRGB(20, 18, 22))
+	smoke.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.65 * intensity),
+		NumberSequenceKeypoint.new(0.5, 1.35 * intensity),
+		NumberSequenceKeypoint.new(1, 1.9 * intensity),
+	})
+	smoke.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.45),
+		NumberSequenceKeypoint.new(0.55, 0.58),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	smoke.Rate = math.min(40, math.round(9 * intensity))
+	smoke.Lifetime = NumberRange.new(1.0, 1.7)
+	smoke.Speed = NumberRange.new(1.4, 2.8)
+	smoke.SpreadAngle = Vector2.new(28, 28)
+	smoke.Acceleration = Vector3.new(-0.4, 2.2, 0)
+	smoke.Rotation = NumberRange.new(0, 360)
+	smoke.RotSpeed = NumberRange.new(-45, 45)
+	smoke.Parent = host
+
+	local light = Instance.new("PointLight")
+	light.Name = "FireLight"
+	light.Color = fireColor
+	light.Brightness = 0.75 + intensity * 0.35
+	light.Range = 12 + intensity * 3
+	light.Shadows = false
+	light.Parent = host
+end
+
+local function rebuildWallDamageDecor(arena: Instance, origin: Vector3, stage: number): ()
+	local existing = arena:FindFirstChild("WallDamageDecor")
+	if existing ~= nil then
+		existing:Destroy()
+	end
+	if stage <= 0 then
+		return
+	end
+
+	local decor = Instance.new("Folder")
+	decor.Name = "WallDamageDecor"
+	decor.Parent = arena
+
+	local wallX = origin.X + GridLayout.WALL_X
+	local fireZs = STAGE_FIRE_Z_POSITIONS[stage] or STAGE_FIRE_Z_POSITIONS[4]
+
+	if stage < 4 then
+		local seamCount = 3 * stage
+		for i = 1, seamCount do
+			local frac = if seamCount > 1 then (i - 1) / (seamCount - 1) else 0.5
+			local z = -16 + frac * 32
+			local y = 2.8 + ((i * 7) % 5) * 0.85
+			local len = 2.6 + (i % 3) * 0.75
+			local tilt = (if i % 2 == 0 then 1 else -1) * (18 + (i % 4) * 7)
+			local yaw = ((i % 3) - 1) * 8
+			local seamRot = degAngles(tilt, yaw, 0)
+			decorPart(
+				decor,
+				"WallCrackSeam_" .. tostring(i),
+				Vector3.new(0.28, len, 0.26),
+				CFrame.new(wallX + 1.45, origin.Y + y, origin.Z + z) * seamRot,
+				WALL_CRACK_COLOR,
+				Enum.Material.Slate
+			)
+			if stage >= 2 then
+				local glow = decorPart(
+					decor,
+					"WallFissureGlow_" .. tostring(i),
+					Vector3.new(0.20, len * 0.72, 0.14),
+					CFrame.new(wallX + 1.38, origin.Y + y, origin.Z + z) * seamRot,
+					WALL_FISSURE_GLOW_COLOR,
+					Enum.Material.Neon
+				)
+				glow.Transparency = if stage == 2 then 0.25 else 0.10
+			end
+		end
+
+		for i, fz in ipairs(fireZs) do
+			local fy = 5.5 + ((i - 1) % 3) * 0.8
+			spawnWallFireEmitter(
+				decor,
+				"WallStageFire_" .. tostring(i),
+				Vector3.new(wallX + 1.35, origin.Y + fy, origin.Z + fz),
+				WALL_FISSURE_GLOW_COLOR,
+				0.9 + stage * 0.2
+			)
+		end
+
+		local rubbleCount = stage * 4
+		for i = 1, rubbleCount do
+			local frac = if rubbleCount > 1 then (i - 1) / (rubbleCount - 1) else 0.5
+			local rz = -17 + frac * 34
+			local rx = wallX + 1.6 + ((i * 3) % 5) * 0.3
+			local ry = origin.Y + 0.5 + ((i * 5) % 4) * 0.22
+			local useWood = i % 3 == 0
+			local color = if useWood
+				then rgb(VisualTheme.PALETTE.woodDark)
+				elseif i % 2 == 0 then rgb(VisualTheme.PALETTE.stone)
+				else rgb(VisualTheme.PALETTE.stoneDark)
+			local mat = if useWood then Enum.Material.WoodPlanks else Enum.Material.Slate
+			local size = Vector3.new(
+				0.9 + (i % 3) * 0.45,
+				0.55 + (i % 2) * 0.32,
+				1.05 + ((i + 1) % 3) * 0.48
+			)
+			local rot = degAngles((i * 17) % 35 - 15, (i * 43) % 180, (i * 23) % 30 - 15)
+			decorPart(
+				decor,
+				"WallStageRubble_" .. tostring(i),
+				size,
+				CFrame.new(rx, ry, origin.Z + rz) * rot,
+				color,
+				mat
+			)
+		end
+		return
+	end
+
+	local rubblePile = Instance.new("Folder")
+	rubblePile.Name = "WallRubblePile"
+	rubblePile.Parent = decor
+
+	for i = 1, 18 do
+		local frac = (i - 1) / 17
+		local rz = -21 + frac * 42
+		local rx = wallX - 2.0 + (((i * 7) % 13) / 12) * 4.8
+		local ry = origin.Y + 0.45 + (((i * 5) % 9) / 8) * 1.75
+		local rot = degAngles(-25 + (i * 19) % 50, (i * 47) % 180, -28 + (i * 23) % 56)
+
+		local kind = i % 3
+		local size: Vector3
+		local color: Color3
+		local mat: Enum.Material
+		if kind == 1 then
+			size = Vector3.new(2.2 + (i % 3) * 0.6, 0.65 + (i % 2) * 0.4, 2.0 + (i % 4) * 0.4)
+			color = if i % 2 == 0
+				then rgb(VisualTheme.PALETTE.stone)
+				else rgb(VisualTheme.PALETTE.stoneDark)
+			mat = Enum.Material.Slate
+		elseif kind == 2 then
+			size = Vector3.new(0.55, 0.52, 4.0 + (i % 3) * 0.7)
+			color = if i % 2 == 0
+				then rgb(VisualTheme.PALETTE.wood)
+				else rgb(VisualTheme.PALETTE.woodDark)
+			mat = Enum.Material.WoodPlanks
+		else
+			size = Vector3.new(0.34, 0.24, 3.0 + (i % 3) * 0.6)
+			color = if i % 2 == 0
+				then rgb(VisualTheme.PALETTE.iron)
+				else rgb(VisualTheme.PALETTE.ironDark)
+			mat = Enum.Material.Metal
+		end
+
+		decorPart(
+			rubblePile,
+			"WallRubble_" .. tostring(i),
+			size,
+			CFrame.new(rx, ry, origin.Z + rz) * rot,
+			color,
+			mat
+		)
+	end
+
+	for i, bz in ipairs(fireZs) do
+		local bx = wallX + 0.4 + ((i - 1) % 3) * 0.45
+		local by = origin.Y + 0.8 + ((i - 1) % 2) * 0.55
+		spawnWallFireEmitter(
+			decor,
+			"WallStageFire_" .. tostring(i),
+			Vector3.new(bx, by, origin.Z + bz),
+			WALL_BREACH_FIRE_COLOR,
+			1.35
+		)
+	end
+end
+
+function ArenaVisual.setWallDamageStage(
+	parent: Instance,
+	wallPct: number,
+	_hitLane: number?
+): number
+	local arena = findArena(parent)
+	if arena == nil then
+		return 0
+	end
+
+	local rawPct = tonumber(wallPct)
+	local pct = if rawPct ~= nil and rawPct == rawPct then math.clamp(rawPct, 0, 1) else 1
+	local stage: number
+	if pct > 0.75 then
+		stage = 0
+	elseif pct > 0.50 then
+		stage = 1
+	elseif pct > 0.25 then
+		stage = 2
+	elseif pct > 0.0001 then
+		stage = 3
+	else
+		stage = 4
+	end
+
+	local prevStage = tonumber(arena:GetAttribute("WallDamageStage")) or 0
+	arena:SetAttribute("WallDamageStage", stage)
+	arena:SetAttribute("WallHpPct", pct)
+
+	local origin = getArenaOrigin(arena)
+	for _, piece in ipairs(collectWallParts(arena)) do
+		local rest = ensureWallPartRest(piece, origin.Z)
+		local appliedStage = wallPartAppliedStage[piece] or 0
+		if appliedStage ~= stage or prevStage ~= stage then
+			wallPartAppliedStage[piece] = stage
+			applyStagePoseToPart(arena, piece, rest, prevStage, stage)
+		end
+	end
+
+	updateWallTorchFlames(arena, stage >= 4)
+
+	if stage == 0 then
+		local decor = arena:FindFirstChild("WallDamageDecor")
+		if decor ~= nil then
+			decor:Destroy()
+		end
+	elseif prevStage ~= stage or arena:FindFirstChild("WallDamageDecor") == nil then
+		rebuildWallDamageDecor(arena, origin, stage)
+	end
+
+	return stage
+end
+
+function ArenaVisual.pulseWallImpact(
+	parent: Instance,
+	lane: number?,
+	severity: number?,
+	span: number?
+): Vector3
+	local rawLane = tonumber(lane)
+	local laneClamped =
+		math.clamp(math.round(if rawLane ~= nil and rawLane == rawLane then rawLane else 3), 1, 5)
+	local hitZ = (laneClamped - 3) * 8
+
+	local arena = findArena(parent)
+	local origin = if arena ~= nil then getArenaOrigin(arena) else Vector3.zero
+	local hitPos = origin + Vector3.new(GridLayout.WALL_X + 1.6, 3.2, hitZ)
+
+	if arena == nil or (tonumber(arena:GetAttribute("WallDamageStage")) or 0) >= 4 then
+		return hitPos
+	end
+
+	local rawSev = tonumber(severity)
+	local sev = math.clamp(if rawSev ~= nil and rawSev == rawSev then rawSev else 1, 0, 2.5)
+	if sev <= 0 then
+		return hitPos
+	end
+
+	local rawSpan = tonumber(span)
+	local spanVal = if rawSpan ~= nil and rawSpan == rawSpan then math.round(rawSpan) else 1
+	local weights = if spanVal >= 3
+		then WIDE_IMPACT_WEIGHTS
+		else (LANE_IMPACT_WEIGHTS[laneClamped] or LANE_IMPACT_WEIGHTS[3])
+
+	local stage = math.clamp(tonumber(arena:GetAttribute("WallDamageStage")) or 0, 0, 4)
+
+	for _, piece in ipairs(collectWallParts(arena)) do
+		local rest = ensureWallPartRest(piece, origin.Z)
+		local w = weights[rest.zone]
+		if w ~= nil and w > 0 then
+			local posOffset, rotOffset, _, hideUpper =
+				computeZoneStageOffset(rest.zone, rest.isUpperTrim, stage)
+			local stageTrans = computeStageTransparency(piece.Name, rest, stage, hideUpper)
+			if stageTrans < 0.99 then
+				local stageCF = computeTargetCFrame(rest.cf, posOffset, rotOffset)
+				local recoilPos = Vector3.new(-0.65 * sev * w, -0.14 * sev * w, 0)
+				local recoilRot = degAngles(2.5 * sev * w, 0, 3.8 * sev * w)
+				local recoilCF = computeTargetCFrame(stageCF, recoilPos, recoilRot)
+
+				cancelPartTween(piece)
+				piece.CFrame = recoilCF
+				playPartTween(piece, IMPACT_RECOVERY_TWEEN_INFO, { CFrame = stageCF })
+			end
+		end
+	end
+
+	return hitPos
 end
 
 function ArenaVisual.destroy(parent: Instance): ()
