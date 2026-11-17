@@ -38,36 +38,6 @@ PbrAssets.MASTER_ATLAS = table.freeze({
 
 -- Chave = nome do modelo em ReplicatedStorage.MuralhaAssets.
 PbrAssets.HERO_SURFACES = {
-	WALL_bastion_l1 = table.freeze({
-		colorMap = 108477572315846,
-		normalMap = 139109650761019,
-		metalnessMap = 71441427349091,
-		roughnessMap = 135689112223081,
-	}),
-	WALL_bastion_l2 = table.freeze({
-		colorMap = 126449322731872,
-		normalMap = 134680952475104,
-		metalnessMap = 120069933695846,
-		roughnessMap = 133934136943145,
-	}),
-	WALL_bastion_l3 = table.freeze({
-		colorMap = 74465875446560,
-		normalMap = 88904164777012,
-		metalnessMap = 95429733528177,
-		roughnessMap = 134094879507993,
-	}),
-	WALL_bastion_l4 = table.freeze({
-		colorMap = 96773573869570,
-		normalMap = 122812783662249,
-		metalnessMap = 89418841835374,
-		roughnessMap = 101680035913043,
-	}),
-	WALL_bastion_l5 = table.freeze({
-		colorMap = 80755879030553,
-		normalMap = 87485369702141,
-		metalnessMap = 89815782426084,
-		roughnessMap = 120204044202405,
-	}),
 	BOSS_iron_ram_colossus = table.freeze({
 		colorMap = 89457576442638,
 		normalMap = 131074852904860,

@@ -220,61 +220,6 @@
         "MetalnessMap": "rbxassetid://127701370692048",
         "RoughnessMap": "rbxassetid://77569146089134"
       }
-    },
-    {
-      "Name": "WALL_bastion_l1",
-      "ClassName": "SurfaceAppearance",
-      "Properties": {
-        "AlphaMode": "Overlay",
-        "ColorMap": "rbxassetid://108477572315846",
-        "NormalMap": "rbxassetid://139109650761019",
-        "MetalnessMap": "rbxassetid://71441427349091",
-        "RoughnessMap": "rbxassetid://135689112223081"
-      }
-    },
-    {
-      "Name": "WALL_bastion_l2",
-      "ClassName": "SurfaceAppearance",
-      "Properties": {
-        "AlphaMode": "Overlay",
-        "ColorMap": "rbxassetid://126449322731872",
-        "NormalMap": "rbxassetid://134680952475104",
-        "MetalnessMap": "rbxassetid://120069933695846",
-        "RoughnessMap": "rbxassetid://133934136943145"
-      }
-    },
-    {
-      "Name": "WALL_bastion_l3",
-      "ClassName": "SurfaceAppearance",
-      "Properties": {
-        "AlphaMode": "Overlay",
-        "ColorMap": "rbxassetid://74465875446560",
-        "NormalMap": "rbxassetid://88904164777012",
-        "MetalnessMap": "rbxassetid://95429733528177",
-        "RoughnessMap": "rbxassetid://134094879507993"
-      }
-    },
-    {
-      "Name": "WALL_bastion_l4",
-      "ClassName": "SurfaceAppearance",
-      "Properties": {
-        "AlphaMode": "Overlay",
-        "ColorMap": "rbxassetid://96773573869570",
-        "NormalMap": "rbxassetid://122812783662249",
-        "MetalnessMap": "rbxassetid://89418841835374",
-        "RoughnessMap": "rbxassetid://101680035913043"
-      }
-    },
-    {
-      "Name": "WALL_bastion_l5",
-      "ClassName": "SurfaceAppearance",
-      "Properties": {
-        "AlphaMode": "Overlay",
-        "ColorMap": "rbxassetid://80755879030553",
-        "NormalMap": "rbxassetid://87485369702141",
-        "MetalnessMap": "rbxassetid://89815782426084",
-        "RoughnessMap": "rbxassetid://120204044202405"
-      }
     }
   ]
 }

@@ -31,20 +31,17 @@ from mathutils import Euler, Matrix, Vector
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lowpoly_lib import (  # noqa: E402
-    DEFAULT_DETALHE_ALTO,
     NAMES,
     PAL,
     _assign_poly_uv_cell,
     _collect_and_coalesce_pal_colors,
-    build_pbr_zonas,
     extract_pal_colors,
-    format_pbr_zonas_yaml,
     make_palette,
 )
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LEVELS = (1, 2, 3, 4, 5)
-TIER_TRIS_MAX = 17900
+TIER_TRIS_MAX = 17800
 LIMITE_LOTE = {lvl: 18000 for lvl in LEVELS}
 METROS_POR_STUD = 0.28  # perfil roblox-aa-80 do Forge3D
 BUDGET = {"segment": 4200, "gate": 5800, "tower": 4800}
@@ -54,124 +51,162 @@ SEG_A, SEG_B = 5.9, 19.2
 TOWER_X, TOWER_R = 22.0, 2.8
 GATE_W, GATE_D, GATE_H = 11.8, 3.8, 10.0
 
+TRIPLANAR_SCALE = 0.30
+ATLAS_CELL_PAD = 0.006
+
 assert len(NAMES) <= 64, "atlas 8x8"
 MAT = None
 
 TIER_STYLE = {
     1: {
         "plinth": "stoneDark",
-        "wall": "wood",
-        "wallAlt": "woodLight",
+        "plinthAlt": "stone",
+        "wall": "woodDark",
+        "wallAlt": "barkDark",
+        "stoneCourseA": "barkDark",
+        "stoneCourseB": "woodDark",
         "buttress": "stone",
-        "trim": "woodDark",
-        "relief": "woodLight",
+        "trim": "stoneDark",
+        "relief": "barkDark",
         "cornice": "woodDark",
-        "cap": "woodLight",
-        "roof": "woodDark",
-        "roofRib": "woodLight",
+        "cap": "stoneDark",
+        "roof": "barkDark",
+        "roofRib": "ironDark",
         "iron": "ironDark",
+        "portcullisAccent": "ironDark",
         "gatePier": "stoneDark",
-        "archRing": "stoneLight",
+        "gatePierAlt": "stone",
+        "archRing": "stone",
         "banner": "crimsonCloth",
-        "bannerTrim": "amber",
-        "slitGlow": "amberBright",
+        "bannerTrim": "bronze",
+        "slitFrame": "stoneDark",
+        "slitCap": "ironDark",
+        "slitGlow": "ink",
         "boss": "bronze",
         "shieldFace": "woodDark",
         "shieldRim": "bronze",
-        "sconceGlow": "ember",
-        "flameCore": "neonAmber",
+        "sconceGlow": "emberDeep",
+        "flameCore": "bronze",
     },
     2: {
         "plinth": "stoneDark",
+        "plinthAlt": "stone",
         "wall": "stone",
-        "wallAlt": "stoneLight",
+        "wallAlt": "stoneDark",
+        "stoneCourseA": "stoneDark",
+        "stoneCourseB": "stone",
         "buttress": "stoneDark",
         "trim": "stoneDark",
-        "relief": "stoneLight",
+        "relief": "stoneDark",
         "cornice": "stoneDark",
-        "cap": "stoneLight",
-        "roof": "roof",
-        "roofRib": "stoneLight",
-        "iron": "iron",
+        "cap": "stoneDark",
+        "roof": "slateRoof",
+        "roofRib": "ironDark",
+        "iron": "ironDark",
+        "portcullisAccent": "iron",
         "gatePier": "stone",
+        "gatePierAlt": "stoneDark",
         "archRing": "stoneLight",
-        "banner": "crimsonBright",
-        "bannerTrim": "amber",
-        "slitGlow": "amberBright",
-        "boss": "steel",
+        "banner": "crimsonCloth",
+        "bannerTrim": "bronze",
+        "slitFrame": "stoneDark",
+        "slitCap": "ironDark",
+        "slitGlow": "ink",
+        "boss": "bronze",
         "shieldFace": "crimsonCloth",
         "shieldRim": "iron",
-        "sconceGlow": "ember",
-        "flameCore": "amberBright",
+        "sconceGlow": "emberDeep",
+        "flameCore": "bronze",
     },
     3: {
         "plinth": "ironDark",
+        "plinthAlt": "stoneDark",
         "wall": "stoneDark",
-        "wallAlt": "iron",
+        "wallAlt": "stone",
+        "stoneCourseA": "stone",
+        "stoneCourseB": "ironDark",
         "buttress": "ironDark",
-        "trim": "steel",
-        "relief": "stone",
+        "trim": "iron",
+        "relief": "iron",
         "cornice": "ironDark",
-        "cap": "steel",
-        "roof": "iron",
-        "roofRib": "brass",
+        "cap": "iron",
+        "roof": "ironDark",
+        "roofRib": "bronze",
         "iron": "ironDark",
+        "portcullisAccent": "steel",
         "gatePier": "stoneDark",
+        "gatePierAlt": "iron",
         "archRing": "steel",
-        "banner": "danger",
-        "bannerTrim": "gold",
-        "slitGlow": "amberBright",
-        "boss": "gold",
+        "banner": "crimsonCloth",
+        "bannerTrim": "bronze",
+        "slitFrame": "ironDark",
+        "slitCap": "stoneDark",
+        "slitGlow": "ink",
+        "boss": "brass",
         "shieldFace": "ironDark",
         "shieldRim": "brass",
         "sconceGlow": "emberDeep",
-        "flameCore": "neonAmber",
+        "flameCore": "brass",
     },
     4: {
         "plinth": "ironDark",
+        "plinthAlt": "obsidian",
         "wall": "obsidian",
-        "wallAlt": "obsidianLight",
-        "buttress": "obsidianLight",
-        "trim": "arcaneViolet",
-        "relief": "obsidianLight",
-        "cornice": "obsidianLight",
-        "cap": "emberDeep",
-        "roof": "obsidian",
-        "roofRib": "violet",
+        "wallAlt": "stoneDark",
+        "stoneCourseA": "stoneDark",
+        "stoneCourseB": "obsidian",
+        "buttress": "ironDark",
+        "trim": "ironDark",
+        "relief": "stoneDark",
+        "cornice": "stoneDark",
+        "cap": "stoneDark",
+        "roof": "slateRoof",
+        "roofRib": "bronze",
         "iron": "ironDark",
+        "portcullisAccent": "ironDark",
         "gatePier": "obsidian",
-        "archRing": "obsidianLight",
-        "banner": "obsidianLight",
-        "bannerTrim": "emberDeep",
-        "slitGlow": "ember",
-        "boss": "arcaneViolet",
+        "gatePierAlt": "stoneDark",
+        "archRing": "stoneDark",
+        "banner": "crimsonCloth",
+        "bannerTrim": "bronze",
+        "slitFrame": "ironDark",
+        "slitCap": "stoneDark",
+        "slitGlow": "emberDeep",
+        "boss": "bronze",
         "shieldFace": "obsidian",
-        "shieldRim": "emberDeep",
+        "shieldRim": "bronze",
         "sconceGlow": "emberDeep",
-        "flameCore": "ember",
+        "flameCore": "bronze",
     },
     5: {
-        "plinth": "whiteStoneDark",
-        "wall": "whiteStone",
-        "wallAlt": "whiteStoneDark",
-        "buttress": "whiteStoneDark",
-        "trim": "gold",
-        "relief": "goldBright",
-        "cornice": "whiteStoneDark",
-        "cap": "gold",
-        "roof": "royal",
-        "roofRib": "goldBright",
-        "iron": "gold",
-        "gatePier": "whiteStone",
-        "archRing": "gold",
-        "banner": "royal",
-        "bannerTrim": "goldBright",
-        "slitGlow": "neonAmber",
-        "boss": "goldBright",
-        "shieldFace": "royal",
+        "plinth": "stoneDark",
+        "plinthAlt": "stone",
+        "wall": "stoneLight",
+        "wallAlt": "stone",
+        "stoneCourseA": "stone",
+        "stoneCourseB": "stoneDark",
+        "buttress": "stoneDark",
+        "trim": "stoneDark",
+        "relief": "stoneDark",
+        "cornice": "stoneDark",
+        "cap": "stone",
+        "roof": "slateRoof",
+        "roofRib": "bronze",
+        "iron": "ironDark",
+        "portcullisAccent": "steel",
+        "gatePier": "stoneLight",
+        "gatePierAlt": "stone",
+        "archRing": "stone",
+        "banner": "crimsonCloth",
+        "bannerTrim": "gold",
+        "slitFrame": "stoneDark",
+        "slitCap": "ironDark",
+        "slitGlow": "bronze",
+        "boss": "gold",
+        "shieldFace": "crimsonCloth",
         "shieldRim": "gold",
-        "sconceGlow": "amberBright",
-        "flameCore": "neonAmber",
+        "sconceGlow": "emberDeep",
+        "flameCore": "gold",
     },
 }
 
@@ -195,14 +230,58 @@ def make_materials():
     bsdf.inputs["Roughness"].default_value = 0.85
 
 
+def _pingpong_unit(val: float) -> float:
+    return min(1.0, max(0.0, 1.0 - abs(math.fmod(abs(val * TRIPLANAR_SCALE), 2.0) - 1.0)))
+
+
 def paint(obj, color: str):
     me = obj.data
     if not me.uv_layers:
         me.uv_layers.new(name="UVMap")
     uv = me.uv_layers.active.data
-    # UV nao colapsada (QC G3): cada face abrange [cx/8+0.008, (cx+1)/8-0.008] x [cy/8+0.008, (cy+1)/8-0.008]
+
+    idx = NAMES.index(color)
+    cx, cy = idx % 8, idx // 8
+    u0, u1 = cx / 8.0 + ATLAS_CELL_PAD, (cx + 1) / 8.0 - ATLAS_CELL_PAD
+    v0, v1 = cy / 8.0 + ATLAS_CELL_PAD, (cy + 1) / 8.0 - ATLAS_CELL_PAD
+    du_cell, dv_cell = u1 - u0, v1 - v0
+
+    mw = obj.matrix_world
+    rot_m = mw.to_3x3()
+    verts = me.vertices
+    loops = me.loops
+
     for p in me.polygons:
-        _assign_poly_uv_cell(uv, p, color)
+        n = rot_m @ p.normal
+        ax, ay, az = abs(n.x), abs(n.y), abs(n.z)
+        proj_uvs = []
+        for li in p.loop_indices:
+            co = mw @ verts[loops[li].vertex_index].co
+            if ax >= ay and ax >= az:
+                su, sv = co.y, co.z
+            elif ay >= az:
+                su, sv = co.x, co.z
+            else:
+                su, sv = co.x, co.y
+            proj_uvs.append((u0 + _pingpong_unit(su) * du_cell, v0 + _pingpong_unit(sv) * dv_cell))
+
+        us = [pt[0] for pt in proj_uvs]
+        vs = [pt[1] for pt in proj_uvs]
+        bbox_u = max(us) - min(us)
+        bbox_v = max(vs) - min(vs)
+        area_uv = 0.0
+        pu0, pv0 = proj_uvs[0]
+        for k in range(1, len(proj_uvs) - 1):
+            pu1, pv1 = proj_uvs[k]
+            pu2, pv2 = proj_uvs[k + 1]
+            area_uv += 0.5 * abs((pu1 - pu0) * (pv2 - pv0) - (pu2 - pu0) * (pv1 - pv0))
+
+        if bbox_u < 1e-7 or bbox_v < 1e-7 or area_uv < 1e-7:
+            _assign_poly_uv_cell(uv, p, color)
+        else:
+            for li, pt in zip(p.loop_indices, proj_uvs):
+                uv[li].uv = pt
+
     me.materials.clear()
     me.materials.append(MAT)  # 1 material por mesh (QC G5)
     for p in me.polygons:
@@ -217,7 +296,38 @@ def _active():
     return bpy.context.view_layer.objects.active
 
 
-def _from_bmesh(bm, name, color, bevel=0.0, bevel_segs=1, xform=None):
+def _bisect_fold_planes(bm, axes: str):
+    if not bm.verts or not axes:
+        return
+    step = 1.0 / TRIPLANAR_SCALE
+    margin = 0.25
+    axis_specs = (
+        ("x", 0, (1.0, 0.0, 0.0)),
+        ("y", 1, (0.0, 1.0, 0.0)),
+        ("z", 2, (0.0, 0.0, 1.0)),
+    )
+    for key, idx, normal in axis_specs:
+        if key not in axes:
+            continue
+        vals = [v.co[idx] for v in bm.verts]
+        lo, hi = min(vals) + margin, max(vals) - margin
+        if lo >= hi:
+            continue
+        k_start = math.ceil(lo / step)
+        k_end = math.floor(hi / step)
+        for k in range(k_start, k_end + 1):
+            pos = k * step
+            co = [0.0, 0.0, 0.0]
+            co[idx] = pos
+            bmesh.ops.bisect_plane(
+                bm,
+                geom=list(bm.verts) + list(bm.edges) + list(bm.faces),
+                plane_co=tuple(co),
+                plane_no=normal,
+            )
+
+
+def _from_bmesh(bm, name, color, bevel=0.0, bevel_segs=1, xform=None, fold_axes: str = ""):
     vs = bm.verts
     if vs and bevel > 0.0:
         dx = max(v.co.x for v in vs) - min(v.co.x for v in vs)
@@ -247,6 +357,8 @@ def _from_bmesh(bm, name, color, bevel=0.0, bevel_segs=1, xform=None):
                 )
     if xform is not None:
         bmesh.ops.transform(bm, matrix=xform, verts=list(bm.verts))
+    if fold_axes:
+        _bisect_fold_planes(bm, fold_axes)
     bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=2e-4)
     bmesh.ops.dissolve_degenerate(bm, dist=2e-4, edges=list(bm.edges))
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
@@ -258,7 +370,7 @@ def _from_bmesh(bm, name, color, bevel=0.0, bevel_segs=1, xform=None):
     return paint(obj, color)
 
 
-def box(size, center, color, bevel=0.0, rot=(0.0, 0.0, 0.0), bevel_segs=1):
+def box(size, center, color, bevel=0.0, rot=(0.0, 0.0, 0.0), bevel_segs=1, fold_axes: str = ""):
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
     sx, sy, sz = size
@@ -267,10 +379,10 @@ def box(size, center, color, bevel=0.0, rot=(0.0, 0.0, 0.0), bevel_segs=1):
         v.co.y *= sy
         v.co.z *= sz
     mat = Matrix.Translation(center) @ Euler(rot, "XYZ").to_matrix().to_4x4()
-    return _from_bmesh(bm, "box", color, bevel=bevel, bevel_segs=bevel_segs, xform=mat)
+    return _from_bmesh(bm, "box", color, bevel=bevel, bevel_segs=bevel_segs, xform=mat, fold_axes=fold_axes)
 
 
-def cyl(r, h, base, color, verts=24, r2=None, rot_z=0.0, rot_x=0.0, bevel=0.0):
+def cyl(r, h, base, color, verts=24, r2=None, rot_z=0.0, rot_x=0.0, bevel=0.0, fold_axes: str = ""):
     bm = bmesh.new()
     rad2 = r if r2 is None else r2
     bmesh.ops.create_cone(
@@ -284,7 +396,7 @@ def cyl(r, h, base, color, verts=24, r2=None, rot_z=0.0, rot_x=0.0, bevel=0.0):
     )
     loc = (base[0], base[1], base[2] + h / 2)
     mat = Matrix.Translation(loc) @ Euler((rot_x, 0.0, rot_z), "XYZ").to_matrix().to_4x4()
-    return _from_bmesh(bm, "cyl", color, bevel=bevel, xform=mat)
+    return _from_bmesh(bm, "cyl", color, bevel=bevel, xform=mat, fold_axes=fold_axes)
 
 
 def cyl_axis(r, length, center, color, axis="x", verts=16, bevel=0.0):
@@ -351,7 +463,7 @@ def torus(r_major, r_minor, center, color, major_seg=18, minor_seg=6, rot=(0.0, 
     return _from_bmesh(bm, "torus", color, xform=mat)
 
 
-def taper_box(w0, d0, w1, d1, h, base_center, color, y_shift_top=0.0, rot_z=0.0, bevel=0.0):
+def taper_box(w0, d0, w1, d1, h, base_center, color, y_shift_top=0.0, rot_z=0.0, bevel=0.0, fold_axes: str = ""):
     """Prisma retangular afunilado: base em Z=base_center[2], topo em +h."""
     hw0, hd0 = w0 / 2, d0 / 2
     hw1, hd1 = w1 / 2, d1 / 2
@@ -370,7 +482,7 @@ def taper_box(w0, d0, w1, d1, h, base_center, color, y_shift_top=0.0, rot_z=0.0,
     for f in ((0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)):
         bm.faces.new([vs[i] for i in f])
     mat = Matrix.Translation(base_center) @ Matrix.Rotation(rot_z, 4, "Z")
-    return _from_bmesh(bm, "taper_box", color, bevel=bevel, xform=mat)
+    return _from_bmesh(bm, "taper_box", color, bevel=bevel, xform=mat, fold_axes=fold_axes)
 
 
 def sloped_buttress(w, d_bot, d_top, h, x, y_back, z0, color, rot_z=0.0, bevel=0.0):
@@ -546,7 +658,7 @@ def heater_plate(w, h, depth, center, color, rot_z=0.0):
     return _from_bmesh(bm, "heater_plate", color, xform=mat)
 
 
-def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=16):
+def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=12, fold_axes: str = ""):
     """Bloco manifold do timpano acima do arco semicircular (top_z > spring_z + radius)."""
     hw = width / 2
     top_z = max(top_z, spring_z + radius + 0.25)
@@ -573,7 +685,7 @@ def arch_spandrel(width, radius, spring_z, top_z, depth, cy, color, segs=16):
         bm.faces.new((vb_bot[i], vf_bot[i], vf_bot[i + 1], vb_bot[i + 1]))
     bm.faces.new((vf_bot[0], vb_bot[0], vb_top[0], vf_top[0]))
     bm.faces.new((vf_top[m], vb_top[m], vb_bot[m], vf_bot[m]))
-    return _from_bmesh(bm, "arch_spandrel", color)
+    return _from_bmesh(bm, "arch_spandrel", color, fold_axes=fold_axes)
 
 
 def join(objs, name, seed):
@@ -694,11 +806,11 @@ def shield_crest(x, y, z, r, st, boss_col=None, rot_z=0.0):
 
 
 def sconce(x, y, z, st, tripod=False, scale=1.0):
-    """Braseiro de ferro forjado com cesto nervurado, aro e chamas duplas."""
+    """Braseiro de ferro forjado 'ironDark' com leito baixo de brasas 'emberDeep'."""
     parts = []
     if tripod:
         bx, by, bz = x, y, z
-        parts.append(cyl(0.42 * scale, 0.14 * scale, (bx, by, bz), st["iron"], verts=6))
+        parts.append(cyl(0.42 * scale, 0.14 * scale, (bx, by, bz), "ironDark", verts=6))
         for k in range(3):
             ang = 2 * math.pi * k / 3 + 0.3
             lx = bx + math.cos(ang) * 0.24 * scale
@@ -707,35 +819,33 @@ def sconce(x, y, z, st, tripod=False, scale=1.0):
                 box(
                     (0.10 * scale, 0.10 * scale, 0.70 * scale),
                     (lx, ly, bz + 0.35 * scale),
-                    st["iron"],
+                    "ironDark",
                     rot=(0.24 * math.sin(ang), -0.24 * math.cos(ang), ang),
                 )
             )
         bowl_z = bz + 0.62 * scale
     else:
         bx, by, bz = x, y - 0.50 * scale, z
-        parts.append(box((0.20 * scale, 0.58 * scale, 0.18 * scale), (x, y - 0.28 * scale, z), st["iron"]))
+        parts.append(box((0.20 * scale, 0.58 * scale, 0.18 * scale), (x, y - 0.28 * scale, z), "ironDark"))
         parts.append(
             box(
                 (0.14 * scale, 0.50 * scale, 0.14 * scale),
                 (x, y - 0.26 * scale, z - 0.22 * scale),
-                st["iron"],
+                "ironDark",
                 rot=(0.68, 0.0, 0.0),
             )
         )
         bowl_z = bz + 0.08 * scale
 
-    parts.append(cyl(0.24 * scale, 0.28 * scale, (bx, by, bowl_z), st["iron"], verts=8, r2=0.38 * scale))
-    parts.append(cyl(0.40 * scale, 0.10 * scale, (bx, by, bowl_z + 0.24 * scale), st["boss"], verts=8, r2=0.41 * scale))
+    parts.append(cyl(0.24 * scale, 0.28 * scale, (bx, by, bowl_z), "ironDark", verts=8, r2=0.38 * scale))
+    parts.append(cyl(0.40 * scale, 0.10 * scale, (bx, by, bowl_z + 0.24 * scale), "ironDark", verts=8, r2=0.41 * scale))
     for k in range(3):
         ang = 2 * math.pi * k / 3 + 0.5
         rx = bx + math.cos(ang) * 0.34 * scale
         ry = by + math.sin(ang) * 0.34 * scale
-        parts.append(box((0.08 * scale, 0.08 * scale, 0.30 * scale), (rx, ry, bowl_z + 0.20 * scale), st["iron"]))
-    parts.append(cyl(0.25 * scale, 0.52 * scale, (bx, by, bowl_z + 0.32 * scale), st["sconceGlow"], verts=6, r2=0.0))
-    parts.append(
-        cyl(0.13 * scale, 0.36 * scale, (bx, by - 0.02 * scale, bowl_z + 0.38 * scale), st["flameCore"], verts=5, r2=0.0)
-    )
+        parts.append(box((0.08 * scale, 0.08 * scale, 0.30 * scale), (rx, ry, bowl_z + 0.20 * scale), "ironDark"))
+    # Leito baixo de brasas; ArenaVisual.ensureWallTorches adiciona fogo em particulas + PointLight.
+    parts.append(cyl(0.28 * scale, 0.12 * scale, (bx, by, bowl_z + 0.18 * scale), "emberDeep", verts=6, r2=0.16 * scale))
     return parts
 
 
@@ -751,23 +861,25 @@ def banner(x, y, z_top, w, h, st):
 
 
 def arrow_slit(x, y, z, h, st, rot_z=0.0, cross=True):
-    """Seteira recuada em esconso com ombreiras inclinadas, fenda cruciforme 'ink' e lintel chanfrado."""
+    """Seteira recuada em esconso com interior 'ink' e moldura em pedra/ferro escuro."""
+    frame_jamb = st.get("slitFrame", "stoneDark")
+    frame_cap = st.get("slitCap", "ironDark")
     parts = [
         box(
             (0.20, 0.22, h + 0.12),
             _pt_rot(x, y, z, -0.24, -0.05, 0.0, rot_z),
-            st["wallAlt"],
+            frame_jamb,
             rot=(0, 0, rot_z + 0.22),
         ),
         box(
             (0.20, 0.22, h + 0.12),
             _pt_rot(x, y, z, 0.24, -0.05, 0.0, rot_z),
-            st["wallAlt"],
+            frame_jamb,
             rot=(0, 0, rot_z - 0.22),
         ),
         box((0.20, 0.16, h), _pt_rot(x, y, z, 0.0, -0.09, 0.0, rot_z), "ink", rot=(0, 0, rot_z)),
-        box((0.74, 0.26, 0.18), _pt_rot(x, y, z, 0.0, -0.10, -h / 2 - 0.10, rot_z), st["relief"], rot=(0, 0, rot_z)),
-        box((0.76, 0.28, 0.22), _pt_rot(x, y, z, 0.0, -0.10, h / 2 + 0.11, rot_z), st["relief"], rot=(0, 0, rot_z)),
+        box((0.74, 0.26, 0.18), _pt_rot(x, y, z, 0.0, -0.10, -h / 2 - 0.10, rot_z), frame_cap, rot=(0, 0, rot_z)),
+        box((0.76, 0.28, 0.22), _pt_rot(x, y, z, 0.0, -0.10, h / 2 + 0.11, rot_z), frame_cap, rot=(0, 0, rot_z)),
     ]
     if cross:
         parts.append(box((0.52, 0.16, 0.18), _pt_rot(x, y, z, 0.0, -0.09, h * 0.14, rot_z), "ink", rot=(0, 0, rot_z)))
@@ -865,7 +977,7 @@ def windlass_drum(x, y, z, st):
     for k in range(3):
         cz = z - 0.34 - k * 0.32
         rot = (0.0, math.pi / 2, 0.0) if k % 2 == 0 else (0.0, 0.0, 0.0)
-        parts.append(torus(0.12, 0.04, (x, y, cz), st["iron"], major_seg=6, minor_seg=4, rot=rot))
+        parts.append(torus(0.12, 0.04, (x, y, cz), st["iron"], major_seg=5, minor_seg=3, rot=rot))
     return parts
 
 
@@ -878,17 +990,18 @@ def build_segment(side, lvl):
     parts = []
 
     # 1. Base em talude com fundacao em silhares escalonados + musgo
-    parts.append(taper_box(length + 0.18, 4.10, length + 0.04, 2.75, 1.70, (cx, 0.0, 0.0), st["plinth"]))
+    parts.append(taper_box(length + 0.18, 4.10, length + 0.04, 2.75, 1.70, (cx, 0.0, 0.0), st["plinth"], fold_axes="x"))
     parts.append(box((length + 0.06, 2.86, 0.24), (cx, 0.0, 1.70), st["trim"], bevel=0.04))
-    for kx in (-5.2, -3.2, -1.2, 1.2, 3.2, 5.2):
-        parts.append(ashlar_block(1.60, 0.42, 0.62, (cx + side * kx, -1.74, 0.42), st["plinth"], taper=0.05))
+    for idx_x, kx in enumerate((-5.2, -3.2, -1.2, 1.2, 3.2, 5.2)):
+        col = st["plinth"] if idx_x % 2 == 0 else st["plinthAlt"]
+        parts.append(ashlar_block(1.60, 0.42, 0.62, (cx + side * kx, -1.74, 0.42), col, taper=0.05))
     parts.append(box((1.22, 0.48, 0.38), (cx + side * 3.1, -1.78, 0.90), "moss"))
     parts.append(box((1.05, 0.42, 0.34), (cx - side * 4.2, -1.76, 0.88), "moss"))
 
-    # 2. Corpo da cortina chanfrado
+    # 2. Corpo da cortina (subdividido nos planos de dobra para UV triplanar 1:1)
     wall_h = 6.25 if lvl != 4 else 6.45
     wall_d = 2.45
-    parts.append(box((length, wall_d, wall_h), (cx, 0.0, 1.70 + wall_h / 2), st["wall"], bevel=0.04))
+    parts.append(box((length, wall_d, wall_h), (cx, 0.0, 1.70 + wall_h / 2), st["wall"], fold_axes="xz"))
 
     # 3. 3 arcobotantes frontais (-Y) dentro do envelope de 3.95 studs
     for frac in (-0.34, 0.0, 0.34):
@@ -900,38 +1013,39 @@ def build_segment(side, lvl):
     bay_centers = (-length * 0.17, length * 0.17)
     outer_bays = (-length * 0.44, length * 0.44)
 
-    for row_z, xs in (
+    for row_idx, (row_z, xs) in enumerate((
         (2.40, (-5.6, -3.2, -1.3, 1.3, 3.2, 5.6)),
         (3.25, (-5.2, -2.6, -1.1, 1.1, 2.6, 5.2)),
         (4.05, (-5.7, -3.1, -1.4, 1.4, 3.1, 5.7)),
-    ):
+    )):
         for idx_k, kx in enumerate(xs):
-            col = st["relief"] if idx_k % 2 == 0 else st["wallAlt"]
+            col = st["stoneCourseA"] if (row_idx + idx_k) % 2 == 0 else st["stoneCourseB"]
             parts.append(ashlar_block(1.38, 0.24, 0.56, (cx + kx, -wall_d / 2 - 0.08, row_z), col))
 
-    for row_z, xs in (
+    for row_idx, (row_z, xs) in enumerate((
         (2.65, (-4.8, -1.8, 1.8, 4.8)),
         (3.85, (-3.6, 0.0, 3.6)),
-    ):
-        for kx in xs:
+    )):
+        for idx_k, kx in enumerate(xs):
+            col = st["stoneCourseB"] if (row_idx + idx_k) % 2 == 0 else st["stoneCourseA"]
             parts.append(
-                ashlar_block(1.52, 0.22, 0.54, (cx + kx, wall_d / 2 + 0.08, row_z), st["wallAlt"], rot_z=math.pi)
+                ashlar_block(1.52, 0.22, 0.54, (cx + kx, wall_d / 2 + 0.08, row_z), col, rot_z=math.pi)
             )
 
     for bx_off in bay_centers:
         parts += arrow_slit(cx + bx_off, -wall_d / 2, 5.75, 1.25, st, cross=(lvl >= 2))
 
-    # Progressao L1 (madeira) -> L2 (silhares completos) -> L3 (bronze/ouro) -> L4 (arcano) -> L5 (ouro real)
+    # Progressao L1 (madeira gasta) -> L2 (silhares) -> L3 (ferro/bronze) -> L4 (basalto/runas) -> L5 (granito/ouro)
     if lvl == 1:
         for kx in (-5.7, -2.9, -1.6, 1.6, 2.9, 5.7):
             parts.append(box((0.26, 0.22, 1.65), (cx + kx, -wall_d / 2 - 0.12, 5.75), st["trim"]))
     else:
-        for row_z, xs in (
+        for row_idx, (row_z, xs) in enumerate((
             (5.45, (-5.7, -3.5, -1.1, 1.1, 3.5, 5.7)),
             (6.45, (-5.4, -3.2, -1.3, 1.3, 3.2, 5.4)),
-        ):
+        )):
             for idx_k, kx in enumerate(xs):
-                col = st["wallAlt"] if idx_k % 2 == 0 else st["relief"]
+                col = st["stoneCourseB"] if (row_idx + idx_k) % 2 == 0 else st["stoneCourseA"]
                 parts.append(ashlar_block(1.22, 0.24, 0.54, (cx + kx, -wall_d / 2 - 0.08, row_z), col))
 
     if lvl >= 3:
@@ -974,7 +1088,7 @@ def build_segment(side, lvl):
 
     # 7. Passadico traseiro (rear catwalk) com maos-francesas, arcos de suporte, montantes e cunhais
     cat_z = walk_z - 1.05
-    parts.append(box((length - 0.1, 1.45, 0.30), (cx, wall_d / 2 + 0.72, cat_z), st["trim"], bevel=0.03))
+    parts.append(box((length - 0.1, 1.45, 0.30), (cx, wall_d / 2 + 0.72, cat_z), st["trim"]))
     parts.append(box((length - 0.1, 0.24, 0.78), (cx, wall_d / 2 + 1.38, cat_z + 0.52), st["wallAlt"], bevel=0.03))
     for kx in (-length * 0.34, 0.0, length * 0.34):
         parts.append(
@@ -985,9 +1099,10 @@ def build_segment(side, lvl):
         parts.append(
             arch_rib(length * 0.30, 0.45, 0.28, 0.16, (cx + kx, wall_d / 2 + 0.65, cat_z - 0.62), st["buttress"], segs=4)
         )
-    for qz in (2.30, 4.10):
+    for qz_idx, qz in enumerate((2.30, 4.10)):
         for sx in (-1, 1):
-            parts.append(ashlar_block(0.85, 0.22, 0.56, (cx + sx * (length * 0.47), -wall_d / 2 - 0.06, qz), st["plinth"]))
+            col = st["plinth"] if qz_idx % 2 == 0 else st["plinthAlt"]
+            parts.append(ashlar_block(0.85, 0.22, 0.56, (cx + sx * (length * 0.47), -wall_d / 2 - 0.06, qz), col))
 
     return parts
 
@@ -1000,8 +1115,8 @@ def build_tower(side, lvl):
 
     # 1. Talus octogonal escalonado + base cilindrica suave (verts=24) + corpo da torre
     parts.append(cyl(r + 1.12, 0.85, (x, 0, 0.0), st["plinth"], verts=8, rot_z=math.pi / 8))
-    parts.append(cyl(r + 1.06, 1.55, (x, 0, 0.80), st["plinth"], verts=24, r2=r + 0.10))
-    parts.append(cyl(r, 8.75, (x, 0, 2.35), st["wall"], verts=24))
+    parts.append(cyl(r + 1.06, 1.55, (x, 0, 0.80), st["plinthAlt"], verts=24, r2=r + 0.10))
+    parts.append(cyl(r, 8.75, (x, 0, 2.35), st["wall"], verts=24, fold_axes="z"))
     parts.append(cyl(r + 0.24, 0.36, (x, 0, 2.20), st["trim"], verts=8, rot_z=math.pi / 8))
 
     # 2. 4 nervuras de contraforte chanfradas (-Y, +X, -X, +Y) + pinaculos
@@ -1019,8 +1134,8 @@ def build_tower(side, lvl):
         )
 
     # 3. Frisos horizontais + fiadas radiais de silhares chanfrados ao redor da torre
-    parts.append(cyl(r + 0.18, 0.32, (x, 0, 5.65), st["trim"], verts=24))
-    parts.append(cyl(r + 0.14, 0.26, (x, 0, 3.85), st["wallAlt"], verts=24))
+    parts.append(cyl(r + 0.18, 0.32, (x, 0, 5.65), st["trim"], verts=16))
+    parts.append(cyl(r + 0.14, 0.26, (x, 0, 3.85), st["wallAlt"], verts=16))
     if lvl >= 3:
         parts.append(cyl(r + 0.18, 0.24, (x, 0, 8.85), st["boss"], verts=12))
 
@@ -1034,14 +1149,15 @@ def build_tower(side, lvl):
                     continue
                 qx = x + (r + 0.02) * math.cos(ang_q)
                 qy = (r + 0.02) * math.sin(ang_q)
-                col = st["relief"] if (c_idx + q_i) % 2 == 0 else st["wallAlt"]
+                col = st["stoneCourseA"] if (c_idx + q_i) % 2 == 0 else st["stoneCourseB"]
                 parts.append(ashlar_block(0.86, 0.22, 0.50, (qx, qy, z_q), col, rot_z=ang_q + math.pi / 2))
     if lvl >= 2:
         for q_i in range(4):
             ang_q = -math.pi / 2 + (q_i + 0.5) * (math.pi / 2)
             qx = x + (r + 0.02) * math.cos(ang_q)
             qy = (r + 0.02) * math.sin(ang_q)
-            parts.append(ashlar_block(0.90, 0.22, 0.50, (qx, qy, 5.15), st["relief"], rot_z=ang_q + math.pi / 2))
+            col = st["stoneCourseB"] if q_i % 2 == 0 else st["stoneCourseA"]
+            parts.append(ashlar_block(0.90, 0.22, 0.50, (qx, qy, 5.15), col, rot_z=ang_q + math.pi / 2))
 
     # 4. Seteiras recuadas em esconso nas faces frontais laterais (-Y +- pi/5) e flanco externo
     for ang_off in (-math.pi / 5, math.pi / 5, side * math.pi / 2.25):
@@ -1093,7 +1209,7 @@ def build_tower(side, lvl):
     roof_r = r + 0.90
     roof_h = 4.65
     parts.append(cyl(roof_r, roof_h, (x, 0, roof_z), st["roof"], verts=24, r2=0.0))
-    parts.append(cyl(roof_r + 0.06, 0.22, (x, 0, roof_z), st["trim"], verts=24, r2=roof_r - 0.08))
+    parts.append(cyl(roof_r + 0.06, 0.22, (x, 0, roof_z), st["trim"], verts=16, r2=roof_r - 0.08))
 
     peak = Vector((x, 0.0, roof_z + roof_h))
     for k in range(n_corb):
@@ -1109,7 +1225,7 @@ def build_tower(side, lvl):
     parts.append(box((0.52, 0.20, 0.14), (x, -r * 0.72 - 0.56, roof_z + 0.92), st["cap"]))
 
     spire_z = roof_z + roof_h - 0.15
-    parts.append(cyl(0.36, 1.20, (x, 0, spire_z), st["trim"], verts=24, r2=0.0))
+    parts.append(cyl(0.36, 1.20, (x, 0, spire_z), st["trim"], verts=12, r2=0.0))
     parts.append(box((1.35, 0.08, 0.72), (x + side * 0.68, 0, spire_z + 1.10), st["banner"]))
     if lvl >= 3:
         parts.append(torus(0.46, 0.08, (x, 0, spire_z + 0.20), st["boss"], major_seg=8, minor_seg=4))
@@ -1179,10 +1295,11 @@ def build_gate(lvl):
         # Fiadas de silhares nos flancos
         for qz_idx, qz in enumerate((2.50, 3.45, 4.45, 6.05, 8.20)):
             qx = px + sx * (pier_w * 0.34 if qz_idx % 2 == 0 else -pier_w * 0.28)
-            parts.append(ashlar_block(0.86, 0.24, 0.54, (qx, -GATE_D / 2 - 0.78, qz), st["relief"]))
+            col = st["gatePierAlt"] if qz_idx % 2 == 0 else st["stoneCourseA"]
+            parts.append(ashlar_block(0.86, 0.24, 0.54, (qx, -GATE_D / 2 - 0.78, qz), col))
             if lvl >= 2 and qz_idx < 2:
                 parts.append(
-                    ashlar_block(0.72, 0.22, 0.48, (px - sx * 0.42, -GATE_D / 2 - 0.78, qz), st["wallAlt"])
+                    ashlar_block(0.72, 0.22, 0.48, (px - sx * 0.42, -GATE_D / 2 - 0.78, qz), st["stoneCourseB"])
                 )
 
         # Frades/balizadores de pedra na entrada do arco + contraventamento do rastrilho
@@ -1198,10 +1315,10 @@ def build_gate(lvl):
         parts.append(cyl(0.24, spring_z - 0.30, (jamb_x, -GATE_D / 2 - 0.10, 0.15), st["wallAlt"], verts=10))
         parts.append(box((0.68, 0.68, 0.34), (jamb_x, -GATE_D / 2 - 0.10, spring_z - 0.10), st["trim"], bevel=0.04))
 
-    # 2. Timpano suave do arco (segs=16) + parede superior
-    parts.append(arch_spandrel(arch_r * 2, arch_r, spring_z, arch_top, GATE_D, 0.0, st["wall"], segs=16))
+    # 2. Timpano suave do arco (segs=12 com vertice central em x=0) + parede superior subdividida em x=0
+    parts.append(arch_spandrel(arch_r * 2, arch_r, spring_z, arch_top, GATE_D, 0.0, st["wall"], segs=12))
     parts.append(
-        box((arch_r * 2, GATE_D, GATE_H - arch_top), (0.0, 0.0, arch_top + (GATE_H - arch_top) / 2), st["wall"])
+        box((arch_r * 2, GATE_D, GATE_H - arch_top), (0.0, 0.0, arch_top + (GATE_H - arch_top) / 2), st["wall"], fold_axes="x")
     )
 
     # 3. Arco em pedra de multiplas ordens: ordem interna recuada + ordem externa chanfrada + guarda-po
@@ -1211,7 +1328,7 @@ def build_gate(lvl):
         vr = arch_r - 0.02
         vx = vr * math.cos(ang)
         vz = spring_z + vr * math.sin(ang)
-        col = st["wallAlt"] if k % 2 == 0 else st["gatePier"]
+        col = st["wallAlt"] if k % 2 == 0 else st["gatePierAlt"]
         parts.append(box((0.84, 0.50, 0.52), (vx, -GATE_D / 2 + 0.12, vz), col, rot=(0, -ang + math.pi / 2, 0)))
 
     n_outer = 9
@@ -1243,29 +1360,29 @@ def build_gate(lvl):
             )
         )
 
-    # Brasao esculpido da Ordem Ambar acima da pedra-chave central
+    # Brasao esculpido acima da pedra-chave central
     parts.append(
         box((1.56, 0.30, 1.56), (0.0, -GATE_D / 2 - 0.28, 8.76), st["trim"], bevel=0.04, rot=(0, math.pi / 4, 0))
     )
-    parts += shield_crest(0.0, -GATE_D / 2 - 0.40, 8.76, 0.64, st, boss_col="amberBright")
+    parts += shield_crest(0.0, -GATE_D / 2 - 0.40, 8.76, 0.64, st, boss_col=st["boss"])
 
     # Tambores de guincho com correntes visiveis flanqueando o brasao central
     for sx in (-1, 1):
         parts += windlass_drum(sx * 2.05, -GATE_D / 2 - 0.28, 8.70, st)
 
-    # 4. Portao duplo em carvalho com 8 tabuas chanfradas, cintas de ferro, cravos e aldravas
+    # 4. Portao duplo em carvalho escuro com 8 tabuas chanfradas, cintas de ferro, cravos e aldravas
     parts.append(box((arch_r * 2, 0.42, arch_top - 0.1), (0.0, 0.42, (arch_top - 0.1) / 2), "woodDark"))
-    parts.append(box((0.30, 0.56, arch_top - 0.4), (0.0, 0.32, (arch_top - 0.4) / 2), "wood"))
+    parts.append(box((0.30, 0.56, arch_top - 0.4), (0.0, 0.32, (arch_top - 0.4) / 2), "barkDark"))
     plank_xs = (-2.36, -1.68, -1.00, -0.34, 0.34, 1.00, 1.68, 2.36)
     for idx_p, px in enumerate(plank_xs):
         h_plank = spring_z + math.sqrt(max(0.0, arch_r**2 - px**2)) - 0.28
-        col = "woodLight" if idx_p % 2 == 0 else "wood"
+        col = "barkDark" if idx_p % 2 == 0 else "woodDark"
         parts.append(ashlar_block(0.62, 0.18, h_plank, (px, 0.18, h_plank / 2), col, taper=0.03))
     for sx in (-1, 1):
         parts.append(box((2.15, 0.18, 0.24), (sx * 1.42, 0.14, 2.25), "woodDark", rot=(0, sx * 0.46, 0)))
         parts.append(ashlar_block(0.40, 0.12, 0.44, (sx * 0.72, 0.04, 2.55), st["boss"]))
         parts.append(
-            torus(0.20, 0.055, (sx * 0.72, -0.04, 2.35), st["iron"], major_seg=8, minor_seg=4, rot=(math.pi / 2, 0, 0))
+            torus(0.20, 0.055, (sx * 0.72, -0.04, 2.35), st["iron"], major_seg=8, minor_seg=3, rot=(math.pi / 2, 0, 0))
         )
 
     for z in (1.15, 2.75, 4.15):
@@ -1278,37 +1395,38 @@ def build_gate(lvl):
     # 5. Grade de rastrilho (portcullis) com 7 barras, pontas forjadas e rebites
     port_y = -1.18
     bar_xs = (-2.4, -1.6, -0.8, 0.0, 0.8, 1.6, 2.4)
+    p_accent = st["portcullisAccent"]
     for px in bar_xs:
         top_z = spring_z + math.sqrt(max(0.0, (arch_r - 0.08) ** 2 - px**2)) - 0.12
         bar_h = top_z - 0.62
         parts.append(cyl(0.10, bar_h, (px, port_y, 0.62), st["iron"], verts=6))
-        parts.append(cyl(0.15, 0.48, (px, port_y, 0.14), st["iron"], verts=6, r2=0.0, rot_x=math.pi))
-        parts.append(box((0.26, 0.26, 0.14), (px, port_y, 0.64), st["boss"]))
+        parts.append(cyl(0.15, 0.48, (px, port_y, 0.14), p_accent, verts=6, r2=0.0, rot_x=math.pi))
+        parts.append(box((0.26, 0.26, 0.14), (px, port_y, 0.64), p_accent))
 
     for z in (1.95, 3.85):
         parts.append(cyl_axis(0.11, 5.45, (0.0, port_y, z), st["iron"], axis="x", verts=6))
         for px in bar_xs:
             parts.append(box((0.26, 0.26, 0.26), (px, port_y, z), st["trim"]))
-            parts.append(ashlar_block(0.18, 0.14, 0.18, (px, port_y - 0.12, z), st["boss"]))
+            parts.append(ashlar_block(0.18, 0.14, 0.18, (px, port_y - 0.12, z), p_accent))
 
-    # 6. Camara de Alavancas superior em balanco (-Y) com cachorros com arcos + 3 fendas + ameias
+    # 6. Camara de Alavancas superior em balanco (-Y) com cachorros com arcos + 3 fendas escuras + ameias
     cam_z = GATE_H
     cam_w, cam_d, cam_h = GATE_W + 0.65, GATE_D + 1.35, 2.25
     parts += machicolation_row(0.0, -GATE_D / 2, cam_z, GATE_W - 0.80, 5, st)
 
-    parts.append(box((cam_w, cam_d, cam_h), (0.0, -0.45, cam_z + cam_h / 2), st["wallAlt"], bevel=0.04))
+    parts.append(box((cam_w, cam_d, cam_h), (0.0, -0.45, cam_z + cam_h / 2), st["wallAlt"], bevel=0.04, fold_axes="x"))
     for kx in (-5.6, -2.1, 2.1, 5.6):
         parts.append(
             box((0.38, 0.28, cam_h + 0.1), (kx, -0.45 - cam_d / 2 - 0.08, cam_z + cam_h / 2), st["trim"])
         )
     parts.append(
-        box((cam_w + 0.48, cam_d + 0.42, 0.38), (0.0, -0.45, cam_z + cam_h + 0.19), st["cornice"], bevel=0.04)
+        box((cam_w + 0.48, cam_d + 0.42, 0.38), (0.0, -0.45, cam_z + cam_h + 0.19), st["cornice"], bevel=0.04, fold_axes="x")
     )
 
-    parts.append(box((8.8, 0.16, 0.88), (0.0, -0.45 - cam_d / 2 - 0.04, cam_z + 1.15), "ink"))
+    parts.append(box((8.8, 0.16, 0.88), (0.0, -0.45 - cam_d / 2 - 0.04, cam_z + 1.15), "ink", fold_axes="x"))
     for sx in (-3.8, 0.0, 3.8):
-        parts.append(box((0.68, 0.20, 0.56), (sx, -0.45 - cam_d / 2 - 0.08, cam_z + 1.15), st["slitGlow"]))
-        parts.append(box((0.92, 0.24, 0.16), (sx, -0.45 - cam_d / 2 - 0.08, cam_z + 1.54), st["relief"]))
+        parts.append(box((0.68, 0.20, 0.56), (sx, -0.45 - cam_d / 2 - 0.08, cam_z + 1.15), "ink"))
+        parts.append(box((0.92, 0.24, 0.16), (sx, -0.45 - cam_d / 2 - 0.08, cam_z + 1.54), st["slitFrame"]))
 
     # Soleira chanfrada da entrada + verga interna do rastrilho
     parts.append(box((arch_r * 2.1, 0.95, 0.14), (0.0, -0.35, 0.07), st["plinth"], bevel=0.03))
@@ -1327,8 +1445,8 @@ def build_gate(lvl):
             loophole=(abs(mx) > 4.0),
             finial=(lvl >= 3 and abs(mx) > 4.0),
         )
-    parts.append(taper_box(5.8, cam_d + 0.2, 2.2, 0.55, 2.15, (0.0, -0.45, top_base), st["roof"]))
-    parts.append(cyl(0.36, 1.10, (0.0, -0.45, top_base + 2.15), st["trim"], verts=24, r2=0.0))
+    parts.append(taper_box(5.8, cam_d + 0.2, 2.2, 0.55, 2.15, (0.0, -0.45, top_base), st["roof"], fold_axes="x"))
+    parts.append(cyl(0.36, 1.10, (0.0, -0.45, top_base + 2.15), st["trim"], verts=12, r2=0.0))
 
     if lvl >= 3:
         for sx in (-1, 1):
@@ -1392,12 +1510,10 @@ def write_lote(levels):
         "",
         "lote:",
     ]
-    det = DEFAULT_DETALHE_ALTO
     for lvl, (_coll, mods) in levels.items():
         top = max((o.matrix_world @ v.co).z for _, o in mods for v in o.data.vertices)
         h = round(top, 4)
-        pal_colors = extract_pal_colors(mods, max_colors=16)
-        zonas = build_pbr_zonas(pal_colors, max_zones=16)
+        extract_pal_colors(mods, max_colors=16)
         lines += [
             f"  - id: wall.bastion.l{lvl}.01",
             "    tipo: modulo_cenario",
@@ -1406,22 +1522,13 @@ def write_lote(levels):
             f"    altura_metros: {round(h * METROS_POR_STUD, 4)}   # {h} studs",
             "    pivot: base",
             f"    limite_triangulos: {LIMITE_LOTE[lvl]}",
-            "    material: pbr",
+            "    material: opaque",
             "    qualidade: ultra",
             f"    quantidade_cena: {1 if lvl == 5 else 0}",
             "    render_fidelity_roblox: Precise",
-            "    detalhe_alto:",
-            f"      ativo: {'true' if det.get('ativo', True) else 'false'}",
-            f"      subdiv_niveis: {int(det.get('subdiv_niveis', 0))}",
-            f"      chanfro_bevel_m: {float(det.get('chanfro_bevel_m', 0.008))}",
-            f"      crease_angulo_graus: {int(det.get('crease_angulo_graus', 40))}",
-            f"      ao_cavidade_forca: {float(det.get('ao_cavidade_forca', 0.42))}",
-        ]
-        lines += format_pbr_zonas_yaml(zonas, indent="    ")
-        lines += [
             "    suavizacao_normais:",
             "      modo: hard_surface",
-            "      angulo_graus: 46",
+            "      angulo_graus: 28",
             "      weighted_normals: true",
             "      corrective_smooth: false",
             "    colisao: box",
@@ -1436,6 +1543,20 @@ def write_lote(levels):
 
 
 # ---------------------------------------------------------------- cena
+def apply_hard_surface_normals(obj, angle_deg: float = 28.0):
+    me = obj.data
+    for poly in me.polygons:
+        poly.use_smooth = True
+    me.shade_smooth()
+    me.set_sharp_from_angle(angle=math.radians(angle_deg))
+    me.update()
+    mod = obj.modifiers.new("WeightedNormal", "WEIGHTED_NORMAL")
+    mod.mode = "FACE_AREA"
+    mod.keep_sharp = True
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+
 def build_level(lvl):
     coll = bpy.data.collections.new(f"WALL_bastion_l{lvl}")
     bpy.context.scene.collection.children.link(coll)
@@ -1454,12 +1575,13 @@ def build_level(lvl):
     set_origin(g, 0)
     mods.append(("gate", g))
 
-    # Garante pivo Z >= 0 em todo o tier apos o jitter e coalescencia <=16 cores PBR
+    # Garante pivo Z >= 0 em todo o tier apos o jitter, aplica normais 28 deg e checa <=16 cores
     min_z = min((o.matrix_world @ v.co).z for _, o in mods for v in o.data.vertices)
     for _, o in mods:
         for v in o.data.vertices:
             v.co.z -= min_z
         o.data.update()
+        apply_hard_surface_normals(o, angle_deg=28.0)
     extract_pal_colors(mods, max_colors=16)
 
     return coll, mods
