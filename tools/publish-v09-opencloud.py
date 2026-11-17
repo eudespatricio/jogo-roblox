@@ -334,6 +334,52 @@ def upload_one(job: UploadJob, api_key: str | None, ledger: dict[str, dict], loc
     raise RuntimeError(f"Falha definitiva em {job.logical_key} ({job.path}): {last_err}")
 
 
+def _extract_surface_ids(ids_or_surfaces: dict, key: str) -> dict[str, int]:
+    if key in ids_or_surfaces and isinstance(ids_or_surfaces[key], dict):
+        surf = ids_or_surfaces[key]
+        return {
+            "colorMap": int(surf["colorMap"]),
+            "normalMap": int(surf["normalMap"]),
+            "metalnessMap": int(surf["metalnessMap"]),
+            "roughnessMap": int(surf["roughnessMap"]),
+        }
+    prefix = "atlas" if key == "MASTER_ATLAS" else f"hero.{key}"
+    return {
+        "colorMap": int(ids_or_surfaces[f"{prefix}.colorMap"]),
+        "normalMap": int(ids_or_surfaces[f"{prefix}.normalMap"]),
+        "metalnessMap": int(ids_or_surfaces[f"{prefix}.metalnessMap"]),
+        "roughnessMap": int(ids_or_surfaces[f"{prefix}.roughnessMap"]),
+    }
+
+
+def write_surface_appearances_model_json(ids_or_surfaces: dict) -> pathlib.Path:
+    hero_names = sorted(model_name for model_name, _g, _fid in HERO_ITEMS)
+    ordered_keys = ["MASTER_ATLAS", *hero_names]
+    children = []
+    for name in ordered_keys:
+        surf = _extract_surface_ids(ids_or_surfaces, name)
+        children.append(
+            {
+                "Name": name,
+                "ClassName": "SurfaceAppearance",
+                "Properties": {
+                    "AlphaMode": "Overlay",
+                    "ColorMap": f"rbxassetid://{surf['colorMap']}",
+                    "NormalMap": f"rbxassetid://{surf['normalMap']}",
+                    "MetalnessMap": f"rbxassetid://{surf['metalnessMap']}",
+                    "RoughnessMap": f"rbxassetid://{surf['roughnessMap']}",
+                },
+            }
+        )
+    doc = {
+        "ClassName": "Folder",
+        "Children": children,
+    }
+    sa_path = ROOT / "src/shared/visual/SurfaceAppearances.model.json"
+    sa_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    return sa_path
+
+
 def patch_luau_catalogs(ids: dict[str, int]) -> None:
     atlas_color = ids["atlas.colorMap"]
 
@@ -447,6 +493,7 @@ def patch_luau_catalogs(ids: dict[str, int]) -> None:
     pbr_txt, n = re.subn(r"PbrAssets\.HERO_SURFACES = \{.*?\}\s*::\s*\{\s*\[string\]:\s*Surface\s*\}", "\n".join(hero_lines), pbr_txt, count=1, flags=re.S)
     assert n == 1, "HERO_SURFACES"
     pbr_p.write_text(pbr_txt, encoding="utf-8")
+    write_surface_appearances_model_json(ids)
 
     # 5. VfxAssets.luau
     vfx_p = ROOT / "src/shared/visual/VfxAssets.luau"

@@ -9,6 +9,8 @@ local cliRequire: any = require
 local Mock: any = if IS_ROBLOX then nil else cliRequire("./HeadlessRobloxMock")
 local Instance = if IS_ROBLOX then Instance else Mock.Instance :: typeof(Instance)
 local Enum = if IS_ROBLOX then Enum else Mock.Enum :: typeof(Enum)
+local scriptRef: any = if IS_ROBLOX then script else nil
+local ContentRef: any = if IS_ROBLOX then Content else nil
 
 export type Surface = {
 	colorMap: number,
@@ -18,6 +20,13 @@ export type Surface = {
 }
 
 local PbrAssets = {}
+
+local testPresetFolder: any = nil
+local runtimeSaCache: { [string]: any } = {}
+
+function PbrAssets._setPresetFolderForTest(folder: any): ()
+	testPresetFolder = folder
+end
 
 -- Atlas mestre 2048x2048 compartilhado (preenchido apos o publish dos mapas PBR).
 PbrAssets.MASTER_ATLAS = table.freeze({
@@ -195,6 +204,17 @@ function PbrAssets.surfaceFor(modelName: string): Surface?
 	return nil
 end
 
+function PbrAssets.presetKeyFor(modelName: string): string?
+	local surface = PbrAssets.HERO_SURFACES[modelName]
+	if surface ~= nil and surface.colorMap > 0 then
+		return modelName
+	end
+	if PbrAssets.MASTER_ATLAS.colorMap > 0 then
+		return "MASTER_ATLAS"
+	end
+	return nil
+end
+
 function PbrAssets.anyPublished(): boolean
 	if PbrAssets.MASTER_ATLAS.colorMap > 0 then
 		return true
@@ -207,7 +227,17 @@ function PbrAssets.anyPublished(): boolean
 	return false
 end
 
-local function removeSurfaceAppearances(meshPart: MeshPart): ()
+local function resolvePresetFolder(): any
+	if testPresetFolder ~= nil then
+		return testPresetFolder
+	end
+	if IS_ROBLOX and scriptRef ~= nil and scriptRef.Parent ~= nil then
+		return scriptRef.Parent:FindFirstChild("SurfaceAppearances")
+	end
+	return nil
+end
+
+local function removeSurfaceAppearances(meshPart: any): ()
 	for _, child in ipairs(meshPart:GetChildren()) do
 		if child:IsA("SurfaceAppearance") then
 			child:Destroy()
@@ -217,33 +247,70 @@ end
 
 -- Aplica PBR (se publicado) ou o fallback de paleta. Retorna true quando PBR foi aplicado.
 function PbrAssets.applyToMeshPart(
-	meshPart: MeshPart,
+	meshPart: any,
 	modelName: string,
 	fallbackTexId: string?
 ): boolean
 	local surface = PbrAssets.surfaceFor(modelName)
-	if surface == nil then
+	local presetKey = PbrAssets.presetKeyFor(modelName)
+	if surface == nil or presetKey == nil then
 		removeSurfaceAppearances(meshPart)
 		if fallbackTexId ~= nil and fallbackTexId ~= "" then
 			meshPart.TextureID = fallbackTexId
 		end
 		return false
 	end
-	meshPart.TextureID = ""
-	local existing = meshPart:FindFirstChildOfClass("SurfaceAppearance")
-	local appearance: SurfaceAppearance
-	if existing ~= nil then
-		appearance = existing :: SurfaceAppearance
-	else
-		appearance = Instance.new("SurfaceAppearance") :: SurfaceAppearance
-		appearance.Parent = meshPart
+
+	local saClone: any = nil
+	local folder = resolvePresetFolder()
+	if folder ~= nil then
+		local preset = folder:FindFirstChild(presetKey)
+		if preset ~= nil then
+			saClone = preset:Clone()
+		end
 	end
-	appearance.AlphaMode = Enum.AlphaMode.Opaque
-	appearance.ColorMap = contentId(surface.colorMap)
-	appearance.NormalMap = contentId(surface.normalMap)
-	appearance.MetalnessMap = contentId(surface.metalnessMap)
-	appearance.RoughnessMap = contentId(surface.roughnessMap)
+
+	if saClone == nil then
+		if IS_ROBLOX then
+			local cached = runtimeSaCache[presetKey]
+			if cached ~= nil then
+				saClone = cached:Clone()
+			else
+				local ok, created = pcall(function()
+					local assetService: any = game:GetService("AssetService")
+					local fromUri = ContentRef.fromUri
+					return assetService:CreateSurfaceAppearanceAsync({
+						ColorMap = fromUri(contentId(surface.colorMap)),
+						NormalMap = fromUri(contentId(surface.normalMap)),
+						MetalnessMap = fromUri(contentId(surface.metalnessMap)),
+						RoughnessMap = fromUri(contentId(surface.roughnessMap)),
+					})
+				end)
+				if ok and created ~= nil then
+					runtimeSaCache[presetKey] = created
+					saClone = created:Clone()
+				else
+					if fallbackTexId ~= nil and fallbackTexId ~= "" then
+						meshPart.TextureID = fallbackTexId
+					end
+					return false
+				end
+			end
+		else
+			local mockSa: any = Instance.new("SurfaceAppearance")
+			mockSa.AlphaMode = Enum.AlphaMode.Overlay
+			mockSa.ColorMap = contentId(surface.colorMap)
+			mockSa.NormalMap = contentId(surface.normalMap)
+			mockSa.MetalnessMap = contentId(surface.metalnessMap)
+			mockSa.RoughnessMap = contentId(surface.roughnessMap)
+			saClone = mockSa
+		end
+	end
+
+	removeSurfaceAppearances(meshPart)
+	meshPart.TextureID = ""
 	meshPart.Material = Enum.Material.SmoothPlastic
+	saClone.Parent = meshPart
 	return true
 end
 

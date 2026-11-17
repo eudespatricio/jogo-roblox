@@ -1262,6 +1262,112 @@ check(
 )
 
 check(
+	"PbrAssets PluginSecurity: clona presets SurfaceAppearances sem escrever ColorMap/NormalMap/MetalnessMap/RoughnessMap/AlphaMode",
+	function()
+		local lockedProps = {
+			ColorMap = true,
+			NormalMap = true,
+			MetalnessMap = true,
+			RoughnessMap = true,
+			AlphaMode = true,
+		}
+		local function lockSurfaceAppearance(sa: any): any
+			local baseMt = getmetatable(sa)
+			local origIndex = baseMt.__index
+			local origNewIndex = baseMt.__newindex
+			setmetatable(sa, {
+				__index = function(t, k: string)
+					if k == "Clone" then
+						return function(self: any)
+							local copy = HeadlessMock.Instance.new("SurfaceAppearance")
+							rawset(copy, "Name", rawget(self, "Name"))
+							rawset(copy, "ColorMap", rawget(self, "ColorMap"))
+							rawset(copy, "NormalMap", rawget(self, "NormalMap"))
+							rawset(copy, "MetalnessMap", rawget(self, "MetalnessMap"))
+							rawset(copy, "RoughnessMap", rawget(self, "RoughnessMap"))
+							rawset(copy, "AlphaMode", rawget(self, "AlphaMode"))
+							return lockSurfaceAppearance(copy)
+						end
+					end
+					return origIndex(t, k)
+				end,
+				__newindex = function(t, k: string, v: any)
+					if lockedProps[k] then
+						error(
+							"The current thread cannot write 'ColorMap' (lacking capability Plugin)"
+						)
+					end
+					origNewIndex(t, k, v)
+				end,
+			})
+			return sa
+		end
+
+		local function addLockedPreset(folder: any, presetName: string, surf: any)
+			local preset = HeadlessMock.Instance.new("SurfaceAppearance")
+			preset.Name = presetName
+			preset.AlphaMode = HeadlessMock.Enum.AlphaMode.Overlay
+			preset.ColorMap = "rbxassetid://" .. tostring(surf.colorMap)
+			preset.NormalMap = "rbxassetid://" .. tostring(surf.normalMap)
+			preset.MetalnessMap = "rbxassetid://" .. tostring(surf.metalnessMap)
+			preset.RoughnessMap = "rbxassetid://" .. tostring(surf.roughnessMap)
+			preset.Parent = folder
+			lockSurfaceAppearance(preset)
+			return preset
+		end
+
+		local folder = HeadlessMock.Instance.new("Folder")
+		folder.Name = "SurfaceAppearances"
+		local atlasPreset = addLockedPreset(folder, "MASTER_ATLAS", PbrAssets.MASTER_ATLAS)
+		local heroPreset =
+			addLockedPreset(folder, "WALL_bastion_l5", PbrAssets.HERO_SURFACES.WALL_bastion_l5)
+
+		assert(PbrAssets.presetKeyFor("WALL_bastion_l5") == "WALL_bastion_l5", "presetKeyFor Hero")
+		assert(PbrAssets.presetKeyFor("TRAP_cannon_l3") == "MASTER_ATLAS", "presetKeyFor Tier-A")
+
+		PbrAssets._setPresetFolderForTest(folder)
+		local ok, err = pcall(function()
+			local heroModel = HeadlessMock.Instance.new("Model")
+			heroModel.Name = "WALL_bastion_l5"
+			local heroMesh = HeadlessMock.Instance.new("MeshPart")
+			heroMesh.Name = "Mesh"
+			heroMesh.TextureID = "rbxassetid://999"
+			heroMesh.Parent = heroModel
+			PbrAssets.applyToModel(heroModel, "WALL_bastion_l5", "rbxassetid://999")
+			assert(heroMesh.TextureID == "", "Hero TextureID deveria limpar")
+			local heroSa = heroMesh:FindFirstChildOfClass("SurfaceAppearance")
+			assert(heroSa ~= nil and heroSa ~= heroPreset, "Hero SurfaceAppearance nao clonado")
+			assert(
+				heroSa.ColorMap
+					== "rbxassetid://"
+						.. tostring(PbrAssets.HERO_SURFACES.WALL_bastion_l5.colorMap),
+				"Hero ColorMap divergente no clone"
+			)
+
+			local tierAModel = HeadlessMock.Instance.new("Model")
+			tierAModel.Name = "TRAP_cannon_l3"
+			local tierAMesh = HeadlessMock.Instance.new("MeshPart")
+			tierAMesh.Name = "Mesh"
+			tierAMesh.TextureID = "rbxassetid://999"
+			tierAMesh.Parent = tierAModel
+			PbrAssets.applyToModel(tierAModel, "TRAP_cannon_l3", "rbxassetid://999")
+			assert(tierAMesh.TextureID == "", "Tier-A TextureID deveria limpar")
+			local tierASa = tierAMesh:FindFirstChildOfClass("SurfaceAppearance")
+			assert(
+				tierASa ~= nil and tierASa ~= atlasPreset,
+				"Tier-A SurfaceAppearance nao clonado"
+			)
+			assert(
+				tierASa.ColorMap == "rbxassetid://" .. tostring(PbrAssets.MASTER_ATLAS.colorMap),
+				"Tier-A ColorMap divergente no clone"
+			)
+		end)
+		PbrAssets._setPresetFolderForTest(nil)
+		assert(ok, "PluginSecurity regression falhou: " .. tostring(err))
+	end
+)
+
+check(
 	"Vfx v1.8: flipbooks Grid8x8/Grid4x4, Lightning Beams, decals elementais e VfxVolumeWave em Mid/High (CanQuery=false)",
 	function()
 		local prevTier = Vfx.getQualityTier()

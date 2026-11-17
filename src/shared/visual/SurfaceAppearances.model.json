@@ -1,0 +1,280 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    {
+      "Name": "MASTER_ATLAS",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://123373171413605",
+        "NormalMap": "rbxassetid://79107339864857",
+        "MetalnessMap": "rbxassetid://77910591061847",
+        "RoughnessMap": "rbxassetid://132353842584939"
+      }
+    },
+    {
+      "Name": "BACKDROP_castle01",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://92609000858731",
+        "NormalMap": "rbxassetid://103290401452603",
+        "MetalnessMap": "rbxassetid://84950921106825",
+        "RoughnessMap": "rbxassetid://128375462762002"
+      }
+    },
+    {
+      "Name": "BACKDROP_keep01",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://127591110922747",
+        "NormalMap": "rbxassetid://110409442020474",
+        "MetalnessMap": "rbxassetid://79868732991209",
+        "RoughnessMap": "rbxassetid://75732736423659"
+      }
+    },
+    {
+      "Name": "BOSS_iron_ram_colossus",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://89457576442638",
+        "NormalMap": "rbxassetid://131074852904860",
+        "MetalnessMap": "rbxassetid://107324117805454",
+        "RoughnessMap": "rbxassetid://113032191368124"
+      }
+    },
+    {
+      "Name": "BOSS_iron_ram_colossus_torso",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://96681994999029",
+        "NormalMap": "rbxassetid://131140009469222",
+        "MetalnessMap": "rbxassetid://93881533016301",
+        "RoughnessMap": "rbxassetid://132897548839459"
+      }
+    },
+    {
+      "Name": "BOSS_powder_baron",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://131045577353717",
+        "NormalMap": "rbxassetid://97114990424896",
+        "MetalnessMap": "rbxassetid://130456312960770",
+        "RoughnessMap": "rbxassetid://74915911598828"
+      }
+    },
+    {
+      "Name": "BOSS_powder_baron_torso",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://80263128797143",
+        "NormalMap": "rbxassetid://79960711408824",
+        "MetalnessMap": "rbxassetid://78388024570641",
+        "RoughnessMap": "rbxassetid://95890831957010"
+      }
+    },
+    {
+      "Name": "BOSS_rift_titan",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://123156612628598",
+        "NormalMap": "rbxassetid://99210088667636",
+        "MetalnessMap": "rbxassetid://94160315831208",
+        "RoughnessMap": "rbxassetid://134886382056006"
+      }
+    },
+    {
+      "Name": "BOSS_rift_titan_torso",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://114513878857300",
+        "NormalMap": "rbxassetid://93039401708965",
+        "MetalnessMap": "rbxassetid://86221231309456",
+        "RoughnessMap": "rbxassetid://77628139829517"
+      }
+    },
+    {
+      "Name": "BOSS_rime_matriarch",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://107579908289110",
+        "NormalMap": "rbxassetid://90614070604836",
+        "MetalnessMap": "rbxassetid://82672878359460",
+        "RoughnessMap": "rbxassetid://83995055565884"
+      }
+    },
+    {
+      "Name": "BOSS_rime_matriarch_torso",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://72585823675403",
+        "NormalMap": "rbxassetid://91901592468273",
+        "MetalnessMap": "rbxassetid://87832398038814",
+        "RoughnessMap": "rbxassetid://118590439138886"
+      }
+    },
+    {
+      "Name": "BOSS_slag_juggernaut",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://100714179334639",
+        "NormalMap": "rbxassetid://98798626604355",
+        "MetalnessMap": "rbxassetid://135543956358342",
+        "RoughnessMap": "rbxassetid://104963270356366"
+      }
+    },
+    {
+      "Name": "BOSS_slag_juggernaut_torso",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://117049366326752",
+        "NormalMap": "rbxassetid://99688642206718",
+        "MetalnessMap": "rbxassetid://96342132451788",
+        "RoughnessMap": "rbxassetid://131007343589462"
+      }
+    },
+    {
+      "Name": "PORTAL_act1",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://119965740838462",
+        "NormalMap": "rbxassetid://92912856747678",
+        "MetalnessMap": "rbxassetid://114725987064454",
+        "RoughnessMap": "rbxassetid://77740227428518"
+      }
+    },
+    {
+      "Name": "PORTAL_act2",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://98921022494859",
+        "NormalMap": "rbxassetid://137247584363698",
+        "MetalnessMap": "rbxassetid://101427162995422",
+        "RoughnessMap": "rbxassetid://108728022547854"
+      }
+    },
+    {
+      "Name": "PORTAL_act3",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://116808635099165",
+        "NormalMap": "rbxassetid://129506508106703",
+        "MetalnessMap": "rbxassetid://84260542733491",
+        "RoughnessMap": "rbxassetid://121668968209432"
+      }
+    },
+    {
+      "Name": "PORTAL_act4",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://86285586371008",
+        "NormalMap": "rbxassetid://71362950427960",
+        "MetalnessMap": "rbxassetid://91438640485864",
+        "RoughnessMap": "rbxassetid://125640655543588"
+      }
+    },
+    {
+      "Name": "PORTAL_act5",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://132721294617339",
+        "NormalMap": "rbxassetid://130147466539670",
+        "MetalnessMap": "rbxassetid://103097485368777",
+        "RoughnessMap": "rbxassetid://124598509837327"
+      }
+    },
+    {
+      "Name": "PROP_bastion_warden",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://139818374994313",
+        "NormalMap": "rbxassetid://76812660433528",
+        "MetalnessMap": "rbxassetid://104156632482057",
+        "RoughnessMap": "rbxassetid://77892457343565"
+      }
+    },
+    {
+      "Name": "PROP_rift_portal",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://128058754775979",
+        "NormalMap": "rbxassetid://126403147793719",
+        "MetalnessMap": "rbxassetid://127701370692048",
+        "RoughnessMap": "rbxassetid://77569146089134"
+      }
+    },
+    {
+      "Name": "WALL_bastion_l1",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://108477572315846",
+        "NormalMap": "rbxassetid://139109650761019",
+        "MetalnessMap": "rbxassetid://71441427349091",
+        "RoughnessMap": "rbxassetid://135689112223081"
+      }
+    },
+    {
+      "Name": "WALL_bastion_l2",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://126449322731872",
+        "NormalMap": "rbxassetid://134680952475104",
+        "MetalnessMap": "rbxassetid://120069933695846",
+        "RoughnessMap": "rbxassetid://133934136943145"
+      }
+    },
+    {
+      "Name": "WALL_bastion_l3",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://74465875446560",
+        "NormalMap": "rbxassetid://88904164777012",
+        "MetalnessMap": "rbxassetid://95429733528177",
+        "RoughnessMap": "rbxassetid://134094879507993"
+      }
+    },
+    {
+      "Name": "WALL_bastion_l4",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://96773573869570",
+        "NormalMap": "rbxassetid://122812783662249",
+        "MetalnessMap": "rbxassetid://89418841835374",
+        "RoughnessMap": "rbxassetid://101680035913043"
+      }
+    },
+    {
+      "Name": "WALL_bastion_l5",
+      "ClassName": "SurfaceAppearance",
+      "Properties": {
+        "AlphaMode": "Overlay",
+        "ColorMap": "rbxassetid://80755879030553",
+        "NormalMap": "rbxassetid://87485369702141",
+        "MetalnessMap": "rbxassetid://89815782426084",
+        "RoughnessMap": "rbxassetid://120204044202405"
+      }
+    }
+  ]
+}
