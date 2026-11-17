@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Publicador Open Cloud v1.8 (Forge3D 0.9.0 / spec@6 / roblox-aa-80).
+"""Publicador Open Cloud v1.9 (Forge3D 0.9.0 / spec@6 / roblox-aa-80).
 
-Publica os 211 assets visuais da MURALHA na Open Cloud (`creator_id=11966727684`, `user`)
+Publica os 191 assets visuais da MURALHA na Open Cloud (`creator_id=11966727684`, `user`)
 com checkpoint idempotente em `art/renders/_logs/opencloud_v09_ledger.json`, backoff
 exponencial e `strip_embedded_textures=True` nos 97 GLBs, atualizando os catálogos Luau em
-`src/shared/visual/{Wall,Mesh,Backdrop,Pbr,Vfx}Assets.luau`.
+`src/shared/visual/{Wall,Mesh,Backdrop,Pbr,Vfx}Assets.luau` e `SurfaceAppearances.model.json`.
 
 Uso:
   python3 tools/publish-v09-opencloud.py --dry-run
@@ -74,10 +74,9 @@ VFX_SPECS = (
 )
 VFX_MAP = VFX_SPECS
 
-# 24 Hero assets: (model_name, saida_group, forge_id)
+# 19 Hero assets: (model_name, saida_group, forge_id) — WALL_bastion_l1..l5 usa MASTER_ATLAS Voronoi
 HERO_ITEMS = (
-    [(f"WALL_bastion_l{lvl}", "muralha_import", f"wall.bastion.l{lvl}.01") for lvl in range(1, 6)]
-    + [(f"BOSS_{b}", "muralha_bosses", f"boss.{b}.01") for b in BOSSES]
+    [(f"BOSS_{b}", "muralha_bosses", f"boss.{b}.01") for b in BOSSES]
     + [(f"BOSS_{b}_torso", "muralha_bosses", f"boss.{b}.torso.01") for b in BOSSES]
     + [(model_name, "muralha_portal", forge_id) for _k, _glb, forge_id, model_name in PORTALS]
     + [
@@ -132,7 +131,7 @@ def collect_jobs() -> list[UploadJob]:
             )
         )
 
-    # 3. 24 Hero PBR Surfaces x 4 Channels = 96 Images
+    # 3. 19 Hero PBR Surfaces x 4 Channels = 76 Images
     for model_name, group_dir, forge_id in HERO_ITEMS:
         for field, suffix in PBR_CHANNELS:
             jobs.append(
@@ -518,7 +517,7 @@ def main() -> None:
     args = parser.parse_args()
 
     jobs = collect_jobs()
-    assert len(jobs) == 211, f"Esperava 211 jobs, achei {len(jobs)}"
+    assert len(jobs) == 191, f"Esperava 191 jobs, achei {len(jobs)}"
     missing = [str(j.path) for j in jobs if not j.path.is_file()]
     if missing:
         raise SystemExit(f"Arquivos ausentes ({len(missing)}):\n" + "\n".join(missing[:20]))
