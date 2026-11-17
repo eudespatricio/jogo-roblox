@@ -351,26 +351,29 @@ local finished = false
 
 local lastWallPct = 1
 local lastWallStage = 0
+local lastWallTier: number? = nil
 
 local function setWall(pct: number): ()
-	if pct < lastWallPct - 0.005 and pct > 0 then
-		local hitLane = 1 + (math.floor(pct * 100) % 5)
-		local hitPos = ArenaVisual.pulseWallImpact(scene, hitLane, 1.15)
-		Vfx.wallHit(scene, hitPos, hitLane, 1.15, pct)
-		AudioKit.playAt("wall_hit", hitPos)
-		crowd:react("gasp")
-		AudioKit.play("crowd_gasp", 0.6)
+	if math.abs(pct - lastWallPct) > 0.001 then
+		local stage = ArenaVisual.setWallDamageStage(scene, pct)
+		if stage > lastWallStage and stage >= 1 and stage <= 3 then
+			Vfx.wallStageBreach(scene, ORIGIN, stage)
+		end
+		if pct < lastWallPct - 0.005 and pct > 0 then
+			local hitLane = 1 + (math.floor(pct * 100) % 5)
+			local hitPos = ArenaVisual.pulseWallImpact(scene, hitLane, 1.15)
+			Vfx.wallHit(scene, hitPos, hitLane, 1.15, pct)
+			AudioKit.playAt("wall_hit", hitPos)
+			crowd:react("gasp")
+			AudioKit.play("crowd_gasp", 0.6)
+		end
+		if pct >= 0.99 then
+			lastWallStage = 0
+		else
+			lastWallStage = math.max(lastWallStage, stage)
+		end
+		lastWallPct = pct
 	end
-	local stage = ArenaVisual.setWallDamageStage(scene, pct)
-	if stage > lastWallStage and stage >= 1 and stage <= 3 then
-		Vfx.wallStageBreach(scene, ORIGIN, stage)
-	end
-	if pct >= 0.99 then
-		lastWallStage = 0
-	else
-		lastWallStage = math.max(lastWallStage, stage)
-	end
-	lastWallPct = pct
 	wallProgress.set(pct)
 	AudioKit.setWallPct(pct)
 end
@@ -492,7 +495,8 @@ local function applySnapshot(snapshot: any): ()
 	end
 	serverSnapshot = snapshot
 	phase = snapshot.phase or phase
-	if type(snapshot.wallLevel) == "number" then
+	if type(snapshot.wallLevel) == "number" and snapshot.wallLevel ~= lastWallTier then
+		lastWallTier = snapshot.wallLevel
 		ArenaVisual.setWallTier(scene, snapshot.wallLevel)
 	end
 	if snapshot.result ~= nil and type(snapshot.result.wallPct) == "number" then

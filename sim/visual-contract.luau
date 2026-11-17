@@ -1050,15 +1050,51 @@ check(
 
 		local wallBlocks = arena:FindFirstChild("WallBlocks")
 		assert(wallBlocks ~= nil, "WallBlocks ausente")
-		local wallBodyL = wallBlocks:FindFirstChild("WallBodyL") :: any
+		local merlon1 = wallBlocks:FindFirstChild("Merlon_1") :: any
+		local parapetL = wallBlocks:FindFirstChild("WallParapetL") :: any
 		local gate = wallBlocks:FindFirstChild("Gate") :: any
-		assert(wallBodyL ~= nil and gate ~= nil, "WallBodyL ou Gate ausente")
-		local gateRestY = gate.Position.Y
+		local gatehouseUpper = wallBlocks:FindFirstChild("GatehouseUpper") :: any
+		local wallBodyL = wallBlocks:FindFirstChild("WallBodyL") :: any
+		local wallBodyR = wallBlocks:FindFirstChild("WallBodyR") :: any
+		local towerBodyL = wallBlocks:FindFirstChild("TowerBody_-1") :: any
+		local gatePierL = wallBlocks:FindFirstChild("GatePierL") :: any
+		local wallPlinthL = wallBlocks:FindFirstChild("WallPlinthL") :: any
+		assert(
+			merlon1 ~= nil
+				and parapetL ~= nil
+				and gate ~= nil
+				and gatehouseUpper ~= nil
+				and wallBodyL ~= nil
+				and wallBodyR ~= nil
+				and towerBodyL ~= nil
+				and gatePierL ~= nil
+				and wallPlinthL ~= nil,
+			"partes estruturais de WallBlocks ausentes"
+		)
+
+		local wallRestY: { [any]: number } = {}
+		for _, child in ipairs(wallBlocks:GetChildren()) do
+			if child:IsA("BasePart") then
+				wallRestY[child] = (child :: any).Position.Y
+			end
+		end
 		local wallBodyLRestX = wallBodyL.Position.X
+		local wallBodyLRestY = wallBodyL.Position.Y
+		local plinthRestY = wallPlinthL.Position.Y
+
+		ArenaVisual.setWallTier(scene, 1)
+		assert(
+			arena:GetAttribute("WallTierInitialized") == true,
+			"setWallTier nao marcou WallTierInitialized"
+		)
 
 		local hitPos = ArenaVisual.pulseWallImpact(scene, 1, 1.3, 1)
 		assert(math.abs(hitPos.Z - -16) < 0.05, "pulseWallImpact lane 1 Z != -16")
 		assert(wallBodyL.Position.X < wallBodyLRestX - 0.1, "pulseWallImpact nao recuou WallBodyL")
+		assert(
+			math.abs(wallBodyL.Position.Y - wallBodyLRestY) < 0.01,
+			"pulseWallImpact afundou WallBodyL no Y"
+		)
 
 		for _, case in ipairs({
 			{ pct = 0.65, stage = 1 },
@@ -1077,22 +1113,65 @@ check(
 				)
 			)
 			assert(arena:GetAttribute("WallDamageStage") == case.stage, "atributo WallDamageStage")
+			for piece, restY in pairs(wallRestY) do
+				assert(
+					piece.Position.Y >= restY - 0.01,
+					string.format("peca afundou no chao no stage %d: %s", case.stage, piece.Name)
+				)
+			end
 			local decor = arena:FindFirstChild("WallDamageDecor")
 			assert(decor ~= nil, "WallDamageDecor ausente no stage " .. tostring(case.stage))
 			for _, desc in ipairs(decor:GetDescendants()) do
+				assert(
+					not desc:IsA("ParticleEmitter"),
+					"emissor continuo proibido em WallDamageDecor stage " .. tostring(case.stage)
+				)
 				if desc:IsA("BasePart") then
-					assert(desc.CanCollide == false, "WallDamageDecor CanCollide=true")
-					assert(desc.CanQuery == false, "WallDamageDecor CanQuery=true")
-					assert(desc.CanTouch == false, "WallDamageDecor CanTouch=true")
+					local d: any = desc
+					assert(d.CanCollide == false, "WallDamageDecor CanCollide=true")
+					assert(d.CanQuery == false, "WallDamageDecor CanQuery=true")
+					assert(d.CanTouch == false, "WallDamageDecor CanTouch=true")
+					local bottomY = d.Position.Y - d.Size.Y * 0.5
+					assert(
+						bottomY >= 0.15,
+						string.format(
+							"WallDamageDecor afundou no chao (%s bottomY=%.3f)",
+							d.Name,
+							bottomY
+						)
+					)
 				end
 			end
-			if case.stage == 4 then
+			if case.stage == 1 then
+				assert(merlon1.Transparency == 1 and parapetL.Transparency == 1, "Stage 1 ameias")
+				assert(gate.Transparency == 0 and wallBodyL.Transparency == 0, "Stage 1 corpo")
+			elseif case.stage == 2 then
+				assert(
+					gate.Transparency == 1 and gatehouseUpper.Transparency == 1,
+					"Stage 2 portao"
+				)
+				assert(wallBodyL.Transparency == 0, "Stage 2 asas")
+			elseif case.stage == 3 then
+				assert(wallBodyL.Transparency == 1 and wallBodyR.Transparency == 1, "Stage 3 asas")
+				assert(
+					towerBodyL.Transparency == 0 and wallPlinthL.Transparency == 0,
+					"Stage 3 base"
+				)
+			elseif case.stage == 4 then
+				assert(
+					towerBodyL.Transparency == 1 and gatePierL.Transparency == 1,
+					"Stage 4 torres"
+				)
+				assert(
+					wallPlinthL.Transparency == 0
+						and math.abs(wallPlinthL.Position.Y - plinthRestY) < 0.01,
+					"Stage 4 base nao preservada no chao"
+				)
 				local rubble = decor:FindFirstChild("WallRubblePile")
 				assert(
 					rubble ~= nil and #rubble:GetChildren() == 18,
 					"WallRubblePile != 18 no Stage 4"
 				)
-				assert(gate.Position.Y < gateRestY - 4.0, "Gate nao desabou no Stage 4")
 			end
 		end
 
@@ -1102,7 +1181,10 @@ check(
 			arena:FindFirstChild("WallDamageDecor") == nil,
 			"WallDamageDecor nao limpo no Stage 0"
 		)
-		assert(math.abs(gate.Position.Y - gateRestY) < 0.05, "Gate.Position.Y nao restaurado")
+		assert(
+			gate.Transparency == 0 and wallBodyL.Transparency == 0,
+			"Stage 0 restauracao visivel"
+		)
 	end
 )
 

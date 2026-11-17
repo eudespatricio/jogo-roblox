@@ -1383,6 +1383,17 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 		local sev = math.clamp(drop * 8, 0.75, 2.2)
 		local lanes = hitLanesRaw or { fallbackLane }
 		local hitSpan = if type(frame.hitSpan) == "number" then frame.hitSpan else nil
+		local wallStage = ArenaVisual.setWallDamageStage(
+			activeScene,
+			pct,
+			if hitLanesRaw ~= nil then hitLanesRaw[1] else fallbackLane
+		)
+		if wallStage > lastWallStage then
+			if wallStage >= 1 and wallStage <= 3 then
+				Vfx.wallStageBreach(activeScene, RAID_ORIGIN, wallStage)
+			end
+			lastWallStage = wallStage
+		end
 		for _, lane in ipairs(lanes) do
 			local hitPos = ArenaVisual.pulseWallImpact(activeScene, lane, sev, hitSpan)
 			Vfx.wallHit(activeScene, hitPos, lane, sev, pct)
@@ -1396,17 +1407,6 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 		shakeUntil = math.max(shakeUntil, time() + 0.14)
 	elseif math.abs(pct - lastWallPct) > 0.005 then
 		lastWallPct = pct
-	end
-	local wallStage = ArenaVisual.setWallDamageStage(
-		activeScene,
-		pct,
-		if hitLanesRaw ~= nil then hitLanesRaw[1] else fallbackLane
-	)
-	if wallStage > lastWallStage then
-		if wallStage >= 1 and wallStage <= 3 then
-			Vfx.wallStageBreach(activeScene, RAID_ORIGIN, wallStage)
-		end
-		lastWallStage = wallStage
 	end
 	AudioKit.setWallPct(pct)
 	if pct <= 0 and not fracturedGate then
