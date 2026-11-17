@@ -7,7 +7,7 @@
 física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18+). Público 13–34.
 
 ## Fase
-**P2 + Playtest v1.9 High-Budget AA 3D, Voronoi PBR & Grid8x8 VFX (16/11/2026).** `211` assets publicados no Open Cloud sob `forge3d 0.9.0` (`spec@6` / `manifest@6`, `perfil: roblox-aa-80`, `lighting_technology: Future`, Gate G1–G11 verdes): `97` malhas 3D AA (`556.066` tris catálogo · `~441k` tris em combate intenso `45 mobs + Boss` · `~88%` do teto mobile `500k`), `strip_embedded_textures=true` e paridade SHA-256 `saida/`↔`art/export/`, `SurfaceAppearance` PBR em 2 tiers (`PbrAssets`: Atlas Voronoi `2048×2048` `123373171413605` + `24` Hero Cycles `baseColor/normal/metallic/roughness` = `100` mapas PBR) e `14` texturas VFX (`VfxAssets`: 4 flipbooks `Grid8x8` + `1` `Grid4x4`, anel, glow, fumaça, 4 decals elementais/runa de Boss, 2 beams + `VfxVolumeWave` 3D em `Vfx.luau`, `visual-contract` `32/32`).
+**P2 + Playtest v1.9 High-Budget AA 3D, Voronoi PBR & Grid8x8 VFX (16/11/2026).** `211` assets publicados no Open Cloud sob `forge3d 0.9.0` (`spec@6` / `manifest@6`, `perfil: roblox-aa-80`, `Lighting.Technology = Future`, Gate G1–G11 verdes): `97` malhas 3D AA (`556.066` tris catálogo · `~441k` tris em combate intenso `45 mobs + Boss`), `strip_embedded_textures=true`, `25` presets `SurfaceAppearances.model.json` pré-bakeados para Rojo (zero `PluginSecurity` em runtime) e `14` texturas VFX (`Grid8x8`/`Grid4x4`/decals/beams/`VfxVolumeWave`, `visual-contract` `33/33`).
 ## Números atuais (16/11/2026)
 | Métrica | Valor |
 |---|---|
@@ -17,7 +17,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 | determinismo | hash `1245379674` (seed 42, 3 execuções) · `simVersion 8` |
 | acceptance P1 | 1.000 seeds × 3 · 1.000 hashes · 62,6% defensor · ~1,6s/1.000 |
 | invariantes | 20/20 (`sim/invariants.luau`) |
-| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 32/32 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 7/7 · i18n 7/7 |
+| contratos | perfil 25/25 · analytics 36/36 · muralha 16/16 · conteúdo 7/7 · build 17/17 · visual 33/33 · drop-in 11/11 · raid 17/17 · campanha 6/6 · deck 5/5 · pos-partida 7/7 · i18n 7/7 |
 | versões | schema 6 · content 3 · sim 8 · hash `1245379674` · analytics 2 (`docs/versoes.md`) |
 | perfil | schema v6 · `contentVersion 3` · store `MuralhaProfile_v1` · migração 0..5→6 |
 | analytics | contrato v2 (`40` eventos) · `ftue_step`/`ftue_skip`/`revenge_started` · sink DataStore/Memory |
@@ -33,7 +33,7 @@ física real híbrida; mobile-first (PT-BR/EN/ES), sem avatar visível (DevEx 18
 - Muralha & FTUE: `TrapCatalog.luau` (v3, `totalGoldInvested`, `MAX_LEVEL=5`) + `WallService.luau` + `WallController` + `FtueLogic`/`FtueService`/`FtueController`.
 - Dados & Inbox: `ProfileSchema.luau` (v6: `ftue`, `battleHistory`, `revengeCooldowns`) + `ProfileService.luau` + `DefenseInboxStore.luau` (`25/25`, `7/7`).
 - Analytics/i18n: `AnalyticsService`/`DataStoreSink`/`AnalyticsBoot` (v2, `36/36`, `40` eventos) + `I18n.luau` (`161` chaves, `7/7`).
-- Visual P2/Open Cloud: `211` assets Open Cloud (`97` malhas 3D AA até `17.680` tris + `100` mapas PBR `SurfaceAppearance` `PbrAssets` Voronoi + `14` texturas VFX `VfxAssets`), `HordeKit`/`TrapKit`/`CrowdKit`/`AmbientLife`, `Vfx` (flipbooks `Grid8x8`/`4×4`, `LightningArcBeam`, `Decal` piche/gelo/runa/cratera + `VfxVolumeWave` Mid/High, ragdolls/clímax Boss + `VisualSetup` PBR), `UiKit`/`BuildLayout`, `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`CampaignUi`, `TransitionKit`, 87 cues Open Cloud (`32/32`).
+- Visual P2/Open Cloud: `211` assets Open Cloud (`97` malhas 3D AA até `17.680` tris + `100` mapas PBR em `SurfaceAppearances.model.json`/`PbrAssets` + `14` texturas VFX `VfxAssets`), `Lighting.Technology = Future`, `HordeKit`/`TrapKit`/`CrowdKit`/`AmbientLife`, `Vfx` (`Grid8x8`/`4×4`, `LightningArcBeam`, `Decal` + `VfxVolumeWave` Mid/High), `UiKit`/`BuildLayout`, `PostMatchUi`/`BattleLogUi`/`FtueUi`/`DeckUi`/`CampaignUi`, `TransitionKit`, 87 cues Open Cloud (`33/33`).
 - Tooling: Rokit + CLI/GUI + Forge3D `0.9.0` (`spec@6`/`manifest@6`, `roblox-aa-80`); CI ativo; `check.sh` com `luau-lsp --platform=roblox` completo + `check-versions.py`.
 - Monetização: base 2% × US$ 2; topo 4,5% × US$ 5; gate ARPDAU líquido US$ 0,005.
 - Contexto: `skills/context-recovery/` (protocolo de auditoria portátil) + `BotPhantoms`/`PhantomStore` 8-slots.
