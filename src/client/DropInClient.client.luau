@@ -430,13 +430,36 @@ local function finishClear(): ()
 	defeatFrame.Visible = false
 	clearBanner.Visible = true
 	setWall(1)
+	local ragdollCount = 0
 	for index, item in ipairs(horde) do
-		if index > 4 then
-			break
-		end
 		local unit: any = item.unit
-		if unit ~= nil and typeof(unit.base) == "CFrame" then
-			AudioKit.unitDeath(item.kind, (unit.base :: CFrame).Position)
+		local isUnitVisible = item.breached
+			and unit ~= nil
+			and unit.model ~= nil
+			and unit.model:GetAttribute("Hidden") ~= true
+		if isUnitVisible and ragdollCount < 6 then
+			ragdollCount += 1
+			local pos = if typeof(unit.base) == "CFrame"
+				then (unit.base :: CFrame).Position
+				elseif unit.rootPart ~= nil then unit.rootPart.Position
+				else ORIGIN + Vector3.new(0, FLOOR_TOP_Y, item.z)
+			local enemySpec = (VisualTheme.ENEMIES :: any)[item.kind]
+			local unitColor = if enemySpec ~= nil and type(enemySpec.color) == "table"
+				then UiKit.color(enemySpec.color)
+				else Color3.fromRGB(20, 184, 166)
+			Vfx.death(scene, pos, unitColor, false)
+			Vfx.ragdollEnemy(
+				scene,
+				pos,
+				unitColor,
+				Vector3.new(14, 15, (if index % 2 == 0 then 3.5 else -3.5)),
+				item.kind,
+				item.unit.model,
+				false
+			)
+			if ragdollCount <= 4 then
+				AudioKit.unitDeath(item.kind, pos)
+			end
 		end
 	end
 	setHordeVisible(false)

@@ -1071,7 +1071,7 @@ check("open cloud v1.7: BackdropAssets keep01 ativo em ASSETS e posicionado em L
 	assert(keepPlacements >= 1, "keep01 nao posicionado em BackdropAssets.LAYOUT")
 end)
 
-check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 9 VFX)", function()
+check("open cloud v1.9: 191 assetIds globais unicos > 0 (97 modelos + 80 PBR + 14 VFX)", function()
 	local globalIds: { [number]: string } = {}
 	local totalAssets = 0
 	local function addGlobal(label: string, id: number)
@@ -1126,11 +1126,6 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 		addGlobal("pbr.MASTER_ATLAS." .. ch, (PbrAssets.MASTER_ATLAS :: any)[ch])
 	end
 	local heroKeys = {
-		"WALL_bastion_l1",
-		"WALL_bastion_l2",
-		"WALL_bastion_l3",
-		"WALL_bastion_l4",
-		"WALL_bastion_l5",
 		"BOSS_iron_ram_colossus",
 		"BOSS_slag_juggernaut",
 		"BOSS_rime_matriarch",
@@ -1151,12 +1146,17 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 		"BACKDROP_castle01",
 		"BACKDROP_keep01",
 	}
+	local heroSet: { [string]: boolean } = {}
 	for _, hk in ipairs(heroKeys) do
+		heroSet[hk] = true
 		local surf = PbrAssets.HERO_SURFACES[hk]
 		assert(surf ~= nil, "HERO_SURFACES sem chave: " .. hk)
 		for _, ch in ipairs({ "colorMap", "normalMap", "metalnessMap", "roughnessMap" }) do
 			addGlobal("pbr.HERO." .. hk .. "." .. ch, (surf :: any)[ch])
 		end
+	end
+	for hk in pairs(PbrAssets.HERO_SURFACES) do
+		assert(heroSet[hk] == true, "HERO_SURFACES chave inesperada: " .. tostring(hk))
 	end
 
 	local vfxAllKeys = {
@@ -1207,8 +1207,8 @@ check("open cloud v1.8: 206 assetIds globais unicos > 0 (97 modelos + 100 PBR + 
 	)
 
 	assert(
-		totalAssets == 211,
-		"esperava 211 slots de assets Open Cloud (97 modelos + 100 PBR + 14 VFX), achei "
+		totalAssets == 191,
+		"esperava 191 slots de assets Open Cloud (97 modelos + 80 PBR + 14 VFX), achei "
 			.. tostring(totalAssets)
 	)
 end)
@@ -1246,7 +1246,6 @@ check(
 		end
 
 		for _, heroName in ipairs({
-			"WALL_bastion_l5",
 			"BOSS_rift_titan",
 			"BOSS_rift_titan_torso",
 			"PORTAL_act5",
@@ -1255,7 +1254,12 @@ check(
 		}) do
 			testMount(heroName, PbrAssets.HERO_SURFACES[heroName])
 		end
-		for _, tierAName in ipairs({ "TRAP_cannon_l3", "CMD_drake", "FAUNA_wyvern_body" }) do
+		for _, tierAName in ipairs({
+			"WALL_bastion_l5",
+			"TRAP_cannon_l3",
+			"CMD_drake",
+			"FAUNA_wyvern_body",
+		}) do
 			testMount(tierAName, PbrAssets.MASTER_ATLAS)
 		end
 	end
@@ -1320,37 +1324,38 @@ check(
 		folder.Name = "SurfaceAppearances"
 		local atlasPreset = addLockedPreset(folder, "MASTER_ATLAS", PbrAssets.MASTER_ATLAS)
 		local heroPreset =
-			addLockedPreset(folder, "WALL_bastion_l5", PbrAssets.HERO_SURFACES.WALL_bastion_l5)
+			addLockedPreset(folder, "BOSS_rift_titan", PbrAssets.HERO_SURFACES.BOSS_rift_titan)
 
-		assert(PbrAssets.presetKeyFor("WALL_bastion_l5") == "WALL_bastion_l5", "presetKeyFor Hero")
+		assert(PbrAssets.presetKeyFor("BOSS_rift_titan") == "BOSS_rift_titan", "presetKeyFor Hero")
+		assert(PbrAssets.presetKeyFor("WALL_bastion_l5") == "MASTER_ATLAS", "presetKeyFor Wall")
 		assert(PbrAssets.presetKeyFor("TRAP_cannon_l3") == "MASTER_ATLAS", "presetKeyFor Tier-A")
 
 		PbrAssets._setPresetFolderForTest(folder)
 		local ok, err = pcall(function()
 			local heroModel = HeadlessMock.Instance.new("Model")
-			heroModel.Name = "WALL_bastion_l5"
+			heroModel.Name = "BOSS_rift_titan"
 			local heroMesh = HeadlessMock.Instance.new("MeshPart")
 			heroMesh.Name = "Mesh"
 			heroMesh.TextureID = "rbxassetid://999"
 			heroMesh.Parent = heroModel
-			PbrAssets.applyToModel(heroModel, "WALL_bastion_l5", "rbxassetid://999")
+			PbrAssets.applyToModel(heroModel, "BOSS_rift_titan", "rbxassetid://999")
 			assert(heroMesh.TextureID == "", "Hero TextureID deveria limpar")
 			local heroSa = heroMesh:FindFirstChildOfClass("SurfaceAppearance")
 			assert(heroSa ~= nil and heroSa ~= heroPreset, "Hero SurfaceAppearance nao clonado")
 			assert(
 				heroSa.ColorMap
 					== "rbxassetid://"
-						.. tostring(PbrAssets.HERO_SURFACES.WALL_bastion_l5.colorMap),
+						.. tostring(PbrAssets.HERO_SURFACES.BOSS_rift_titan.colorMap),
 				"Hero ColorMap divergente no clone"
 			)
 
 			local tierAModel = HeadlessMock.Instance.new("Model")
-			tierAModel.Name = "TRAP_cannon_l3"
+			tierAModel.Name = "WALL_bastion_l5"
 			local tierAMesh = HeadlessMock.Instance.new("MeshPart")
 			tierAMesh.Name = "Mesh"
 			tierAMesh.TextureID = "rbxassetid://999"
 			tierAMesh.Parent = tierAModel
-			PbrAssets.applyToModel(tierAModel, "TRAP_cannon_l3", "rbxassetid://999")
+			PbrAssets.applyToModel(tierAModel, "WALL_bastion_l5", "rbxassetid://999")
 			assert(tierAMesh.TextureID == "", "Tier-A TextureID deveria limpar")
 			local tierASa = tierAMesh:FindFirstChildOfClass("SurfaceAppearance")
 			assert(
@@ -1522,6 +1527,128 @@ check(
 			)
 			assert(desc.Name ~= "VfxVolumeWave", "Low tier nao deveria criar VfxVolumeWave")
 		end
+		Vfx.setQualityTier(prevTier)
+	end
+)
+
+check(
+	"Vfx Body-Based Mob Death: clona MeshVisual 3D real em F2_Ragdoll_<kind>, zero WedgePart/cones e driver invisivel",
+	function()
+		local prevTier = Vfx.getQualityTier()
+		Vfx.setQualityTier("Mid")
+		HeadlessMock.setTime(400.0)
+		HeadlessMock.clearDelays()
+
+		local scene = HeadlessMock.Instance.new("Folder")
+		local p1 = HeadlessMock.Vector3.new(10, 1, 0)
+		local accent = HeadlessMock.Color3.fromRGB(245, 190, 48)
+		local frost = HeadlessMock.Color3.fromRGB(89, 166, 230)
+
+		local unitModel = HeadlessMock.Instance.new("Model")
+		unitModel.Name = "DrakeUnit"
+		local rootPart = HeadlessMock.Instance.new("Part")
+		rootPart.Name = "RootPart"
+		rootPart.Transparency = 1
+		rootPart.Parent = unitModel
+		local meshVisual = HeadlessMock.Instance.new("MeshPart")
+		meshVisual.Name = "MeshVisual"
+		meshVisual.MeshId = "rbxassetid://77777"
+		meshVisual.Size = HeadlessMock.Vector3.new(2.2, 1.8, 2.6)
+		meshVisual.Position = p1
+		meshVisual.Transparency = 0
+		meshVisual.Parent = unitModel
+
+		Vfx.death(scene, p1, frost, true)
+		Vfx.ragdollEnemy(scene, p1, accent, nil, "drake", unitModel, true)
+
+		local ragdoll = scene:FindFirstChild("F2_Ragdoll_drake")
+		assert(ragdoll ~= nil, "F2_Ragdoll_drake ausente")
+
+		local foundClonedMesh = false
+		local visiblePartCount = 0
+		local weldCount = 0
+		for _, desc in ipairs(ragdoll:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				assert(
+					desc.CanQuery == false,
+					"F2_Ragdoll_drake vazou CanQuery=true em " .. tostring(desc.Name)
+				)
+				assert(
+					desc.CanTouch == false,
+					"F2_Ragdoll_drake vazou CanTouch=true em " .. tostring(desc.Name)
+				)
+				if desc.Transparency < 0.99 then
+					visiblePartCount += 1
+					assert(
+						desc:IsA("MeshPart"),
+						"parte visivel em F2_Ragdoll_drake nao e MeshPart: "
+							.. tostring(desc.ClassName)
+					)
+					if desc.MeshId == "rbxassetid://77777" and desc ~= meshVisual then
+						foundClonedMesh = true
+					end
+				end
+			elseif desc.ClassName == "WeldConstraint" then
+				weldCount += 1
+			end
+		end
+		assert(foundClonedMesh, "MeshPart clonado rbxassetid://77777 ausente em F2_Ragdoll_drake")
+		assert(visiblePartCount >= 1, "esperava >=1 MeshPart visivel em F2_Ragdoll_drake")
+		assert(weldCount >= 1, "esperava WeldConstraint soldando malha ao driver")
+
+		for _, desc in ipairs(scene:GetDescendants()) do
+			assert(
+				not desc:IsA("WedgePart"),
+				"WedgePart/cone proibido em Vfx.death/ragdollEnemy: " .. tostring(desc.Name)
+			)
+			if desc:IsA("BasePart") then
+				assert(desc.CanQuery == false, "CanQuery=true em " .. tostring(desc.Name))
+				assert(desc.CanTouch == false, "CanTouch=true em " .. tostring(desc.Name))
+			end
+		end
+
+		-- MuralhaAssets fallback (quando sourceModel == nil mas ReplicatedStorage.MuralhaAssets tem CMD_<kind>)
+		local repStorage = HeadlessMock.game:GetService("ReplicatedStorage")
+		local assetsFolder = HeadlessMock.Instance.new("Folder")
+		assetsFolder.Name = "MuralhaAssets"
+		assetsFolder.Parent = repStorage
+		local sapperMesh = HeadlessMock.Instance.new("MeshPart")
+		sapperMesh.Name = "CMD_sapper"
+		sapperMesh.MeshId = "rbxassetid://88888"
+		sapperMesh.Size = HeadlessMock.Vector3.new(1.5, 2.0, 1.5)
+		sapperMesh.Parent = assetsFolder
+
+		local assetScene = HeadlessMock.Instance.new("Folder")
+		Vfx.ragdollEnemy(assetScene, p1, accent, nil, "sapper", nil, false)
+		local sapperRagdoll = assetScene:FindFirstChild("F2_Ragdoll_sapper")
+		assert(sapperRagdoll ~= nil, "F2_Ragdoll_sapper ausente via MuralhaAssets")
+		local foundSapperMesh = false
+		for _, desc in ipairs(sapperRagdoll:GetDescendants()) do
+			if desc:IsA("MeshPart") and desc.MeshId == "rbxassetid://88888" then
+				foundSapperMesh = true
+			end
+		end
+		assert(foundSapperMesh, "CMD_sapper nao clonado de MuralhaAssets")
+		assetsFolder:Destroy()
+
+		-- Headless CLI 4/5-arg fallback (sem sourceModel e sem MuralhaAssets): driver invisivel, zero blocos/cones
+		local fallbackScene = HeadlessMock.Instance.new("Folder")
+		Vfx.ragdollEnemy(fallbackScene, p1, accent, nil, "runner")
+		local fbRagdoll = fallbackScene:FindFirstChild("F2_Ragdoll_runner")
+		assert(fbRagdoll ~= nil, "F2_Ragdoll_runner fallback ausente")
+		for _, desc in ipairs(fallbackScene:GetDescendants()) do
+			assert(not desc:IsA("WedgePart"), "WedgePart proibido no fallback headless")
+			if desc:IsA("BasePart") then
+				assert(
+					desc.Transparency >= 0.99,
+					"fallback headless nao deve criar bloco quadrado visivel: "
+						.. tostring(desc.Name)
+				)
+				assert(desc.CanQuery == false, "fallback CanQuery=true")
+				assert(desc.CanTouch == false, "fallback CanTouch=true")
+			end
+		end
+
 		Vfx.setQualityTier(prevTier)
 	end
 )

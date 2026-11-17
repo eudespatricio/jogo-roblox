@@ -26,6 +26,15 @@ local VfxAssets = if IS_ROBLOX
 	)
 	else Mock.shared("VfxAssets") :: any
 
+local PbrAssets = if IS_ROBLOX
+	then require(
+		game:GetService("ReplicatedStorage")
+			:WaitForChild("Shared")
+			:WaitForChild("visual")
+			:WaitForChild("PbrAssets")
+	)
+	else Mock.shared("PbrAssets") :: any
+
 local activeGame = if IS_ROBLOX then game else Mock.game :: typeof(game)
 local Instance = if IS_ROBLOX then Instance else Mock.Instance :: typeof(Instance)
 local Vector3 = if IS_ROBLOX then Vector3 else Mock.Vector3 :: typeof(Vector3)
@@ -46,12 +55,32 @@ local NumberSequenceKeypoint = if IS_ROBLOX
 	else Mock.NumberSequenceKeypoint :: typeof(NumberSequenceKeypoint)
 local NumberRange = if IS_ROBLOX then NumberRange else Mock.NumberRange :: typeof(NumberRange)
 local TweenInfo = if IS_ROBLOX then TweenInfo else Mock.TweenInfo :: typeof(TweenInfo)
+local PhysicalProperties: typeof(PhysicalProperties) = if IS_ROBLOX
+	then PhysicalProperties
+	else {
+		new = function(
+			density: number,
+			friction: number,
+			elasticity: number,
+			fw: number?,
+			ew: number?
+		)
+			return {
+				Density = density,
+				Friction = friction,
+				Elasticity = elasticity,
+				FrictionWeight = fw or 1,
+				ElasticityWeight = ew or 1,
+			}
+		end,
+	} :: any
 local Enum = if IS_ROBLOX then Enum else Mock.Enum :: typeof(Enum)
 local task = if IS_ROBLOX then task else Mock.task :: typeof(task)
 local time = if IS_ROBLOX then time else Mock.time :: typeof(time)
 
 local Debris = activeGame:GetService("Debris")
 local PhysicsService = activeGame:GetService("PhysicsService")
+local ReplicatedStorage = activeGame:GetService("ReplicatedStorage")
 local RunService = activeGame:GetService("RunService")
 local TweenService = activeGame:GetService("TweenService")
 local Workspace = activeGame:GetService("Workspace")
@@ -1073,34 +1102,179 @@ local function triggerCameraImpulse(intensity: number, duration: number, fovDelt
 	end)
 end
 
-local function weldRagdollAccessory(torso: BasePart, accessory: BasePart, localOffset: CFrame): ()
-	accessory.Anchored = false
-	accessory.CanCollide = false
-	accessory.CanQuery = VisualTheme.PHYSICS_F2.debrisCanQuery
-	accessory.CanTouch = VisualTheme.PHYSICS_F2.debrisCanTouch
-	accessory.Massless = true
-	accessory.CastShadow = false
-	pcall(function()
-		accessory.CollisionGroup = "RagdollBody"
-	end)
-	accessory.CFrame = torso.CFrame * localOffset
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = torso
-	weld.Part1 = accessory
-	weld.Parent = torso
+local function sanitizeClonedVisualPart(part: BasePart): BasePart
+	for _, child in ipairs(part:GetChildren()) do
+		local cls = child.ClassName
+		if
+			cls == "WeldConstraint"
+			or cls == "Motor6D"
+			or cls == "Weld"
+			or cls == "BillboardGui"
+			or cls == "Trail"
+		then
+			child:Destroy()
+		end
+	end
+	return part
+end
+
+local function computePartsBounds(parts: { BasePart }): (Vector3, Vector3)
+	if #parts == 0 then
+		return Vector3.zero, Vector3.one
+	end
+	local minX, minY, minZ = math.huge, math.huge, math.huge
+	local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
+	for _, part in ipairs(parts) do
+		local cf = part.CFrame
+		local pos = cf.Position
+		local half = part.Size * 0.5
+		local right = cf.RightVector
+		local up = cf.UpVector
+		local back = -cf.LookVector
+		local ex = math.abs(right.X) * half.X + math.abs(up.X) * half.Y + math.abs(back.X) * half.Z
+		local ey = math.abs(right.Y) * half.X + math.abs(up.Y) * half.Y + math.abs(back.Y) * half.Z
+		local ez = math.abs(right.Z) * half.X + math.abs(up.Z) * half.Y + math.abs(back.Z) * half.Z
+		if pos.X - ex < minX then
+			minX = pos.X - ex
+		end
+		if pos.X + ex > maxX then
+			maxX = pos.X + ex
+		end
+		if pos.Y - ey < minY then
+			minY = pos.Y - ey
+		end
+		if pos.Y + ey > maxY then
+			maxY = pos.Y + ey
+		end
+		if pos.Z - ez < minZ then
+			minZ = pos.Z - ez
+		end
+		if pos.Z + ez > maxZ then
+			maxZ = pos.Z + ez
+		end
+	end
+	local center = Vector3.new((minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5)
+	local size = Vector3.new(
+		math.max(0.1, maxX - minX),
+		math.max(0.1, maxY - minY),
+		math.max(0.1, maxZ - minZ)
+	)
+	return center, size
+end
+
+local function resolveRagdollVisualParts(
+	sourceModel: Model?,
+	archetype: string,
+	spawnOrigin: Vector3
+): { BasePart }
+	local parts: { BasePart } = {}
+
+	-- 1) Live MeshVisual from sourceModel (preserves live scale, pose, and PBR SurfaceAppearance)
+	if sourceModel ~= nil then
+		local meshVisual = sourceModel:FindFirstChild("MeshVisual")
+		if meshVisual ~= nil then
+			if meshVisual:IsA("BasePart") and not meshVisual:IsA("WedgePart") then
+				local cloned = sanitizeClonedVisualPart(meshVisual:Clone())
+				if cloned.Transparency >= 0.99 then
+					cloned.Transparency = 0
+				end
+				parts[#parts + 1] = cloned
+				return parts
+			else
+				local clonedContainer = meshVisual:Clone()
+				for _, desc in ipairs(clonedContainer:GetDescendants()) do
+					if desc:IsA("BasePart") and not desc:IsA("WedgePart") then
+						desc.Parent = nil
+						sanitizeClonedVisualPart(desc)
+						if desc.Transparency >= 0.99 then
+							desc.Transparency = 0
+						end
+						parts[#parts + 1] = desc
+					end
+				end
+				clonedContainer:Destroy()
+				if #parts > 0 then
+					return parts
+				end
+			end
+		end
+	end
+
+	-- 2) ReplicatedStorage.MuralhaAssets template CMD_<archetype>
+	local assetsFolder = ReplicatedStorage:FindFirstChild("MuralhaAssets")
+	local assetName = "CMD_" .. archetype
+	local template = if assetsFolder ~= nil then assetsFolder:FindFirstChild(assetName) else nil
+	if template ~= nil then
+		local enemySpec = (VisualTheme.ENEMIES :: any)[archetype]
+		local targetH = if enemySpec ~= nil and type(enemySpec.height) == "number"
+			then enemySpec.height
+			elseif enemySpec ~= nil and type(enemySpec.scale) == "number" then enemySpec.scale * 3.8
+			else 3.4
+		local tplClone = template:Clone()
+		PbrAssets.reapply(tplClone, assetName)
+		if tplClone:IsA("BasePart") and not tplClone:IsA("WedgePart") then
+			sanitizeClonedVisualPart(tplClone)
+			if tplClone.Size.Y > 0.05 then
+				tplClone.Size = tplClone.Size * (targetH / tplClone.Size.Y)
+			end
+			tplClone.CFrame =
+				CFrame.new(spawnOrigin + Vector3.new(0, tplClone.Size.Y * 0.5 + 0.16, 0))
+			tplClone.Transparency = 0
+			parts[#parts + 1] = tplClone
+			return parts
+		else
+			for _, desc in ipairs(tplClone:GetDescendants()) do
+				if desc:IsA("BasePart") and not desc:IsA("WedgePart") then
+					desc.Parent = nil
+					sanitizeClonedVisualPart(desc)
+					desc.Transparency = 0
+					parts[#parts + 1] = desc
+				end
+			end
+			tplClone:Destroy()
+			if #parts > 0 then
+				local rawCenter, rawSize = computePartsBounds(parts)
+				local scaleFactor = if rawSize.Y > 0.05 then targetH / rawSize.Y else 1
+				for _, part in ipairs(parts) do
+					local rel = (part.Position - rawCenter) * scaleFactor
+					part.Size = part.Size * scaleFactor
+					part.CFrame = CFrame.new(spawnOrigin + rel) * part.CFrame.Rotation
+				end
+				return parts
+			end
+		end
+	end
+
+	-- 3) Visible non-RootPart / non-ChampionCrest BasePart descendants from sourceModel
+	if sourceModel ~= nil then
+		for _, desc in ipairs(sourceModel:GetDescendants()) do
+			if
+				desc:IsA("BasePart")
+				and not desc:IsA("WedgePart")
+				and desc.Name ~= "RootPart"
+				and desc.Name ~= "ChampionCrest"
+				and desc.Transparency < 0.95
+			then
+				local cloned = sanitizeClonedVisualPart(desc:Clone())
+				parts[#parts + 1] = cloned
+			end
+		end
+	end
+
+	return parts
 end
 
 function Vfx.death(parent: Instance, position: Vector3, color: Color3, isFrozen: boolean?): ()
 	local frozen = isFrozen == true
 	local frostBright = rgb(VisualTheme.PALETTE.frostBright)
-	local frostColor = rgb(VisualTheme.PALETTE.frost)
 	local white = rgb(VisualTheme.PALETTE.white)
 	local burstColor = if frozen then frostBright else color
 
 	Vfx.impact(parent, position + Vector3.new(0, 0.8, 0), burstColor, 5)
 	Vfx.dust(parent, position, 3)
 	if frozen then
-		emitFrostShatter(parent, position + Vector3.new(0, 0.8, 0), color, 0.9)
+		emitFrostShatter(parent, position + Vector3.new(0, 0.8, 0), color, 1.0)
+		spawnFrostGroundDecal(parent, position, 1.8)
 	else
 		local glowAnchor =
 			makeAnchor(parent, position + Vector3.new(0, 0.8, 0), 0.7, "VfxDeathGlow")
@@ -1204,57 +1378,6 @@ function Vfx.death(parent: Instance, position: Vector3, color: Color3, isFrozen:
 			:Play()
 		Debris:AddItem(streak, 0.29)
 	end
-
-	-- Thermal Shock shatter: 5 translucent Ice crystal shards bursting upward when slowed/frozen
-	if frozen then
-		Vfx.configureCollisionGroups()
-		ensureGovernor()
-		local maxBodies, ttl = tierBudget(currentTier)
-		local shardCount = math.min(5, maxBodies)
-		if shardCount > 0 then
-			pruneF2(time(), shardCount)
-			local shardTtl = math.min(ttl, 1.35)
-			for idx = 1, shardCount do
-				local ang = ((idx - 1) / shardCount) * math.pi * 2 + 0.2
-				local spawnPos = position
-					+ Vector3.new(
-						math.cos(ang) * 0.35,
-						0.95 + (idx % 2) * 0.25,
-						math.sin(ang) * 0.35
-					)
-				local shard = makeWedge(
-					parent,
-					Vector3.new(0.30, 0.78 + (idx % 2) * 0.22, 0.36),
-					spawnPos,
-					if idx % 2 == 0 then frostBright else frostColor,
-					Enum.Material.Ice
-				)
-				shard.Name = "F2_IceShard_" .. tostring(idx)
-				shard.Transparency = 0.28
-				shard.Reflectance = 0.18
-				applyF2Flags(shard, "FractureDebris")
-				local vel = Vector3.new(
-					math.cos(ang) * 6.5 + 3.2,
-					14.5 + (idx % 3) * 3.2,
-					math.sin(ang) * 6.5
-				)
-				shard:ApplyImpulse(vel * shard.AssemblyMass)
-				shard:ApplyAngularImpulse(
-					Vector3.new(9 - (idx % 3) * 5, 7, -11 + idx * 3) * shard.AssemblyMass
-				)
-				trackF2(shard, shardTtl)
-				task.delay(math.max(0.1, shardTtl - 0.35), function()
-					if shard.Parent ~= nil then
-						TweenService:Create(
-							shard,
-							TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-							{ Transparency = 1 }
-						):Play()
-					end
-				end)
-			end
-		end
-	end
 end
 
 function Vfx.ragdollEnemy(
@@ -1262,7 +1385,9 @@ function Vfx.ragdollEnemy(
 	position: Vector3,
 	color: Color3,
 	impulse: Vector3?,
-	kind: string?
+	kind: string?,
+	sourceModel: Model?,
+	isFrozen: boolean?
 ): ()
 	Vfx.configureCollisionGroups()
 	ensureGovernor()
@@ -1273,9 +1398,7 @@ function Vfx.ragdollEnemy(
 	pruneF2(time(), 1)
 
 	local archetype = kind or "runner"
-	if archetype == "wisp" or archetype == "pyromancer" then
-		emitArcaneRift(parent, position + Vector3.new(0, 0.9, 0), color, 0.7)
-	end
+	local frozen = isFrozen == true
 	local rawDir = impulse or Vector3.new(12, 14.5, 2.5)
 	local baseX = math.max(math.abs(rawDir.X), 9.5)
 	local baseY = math.max(rawDir.Y, 11.5)
@@ -1286,192 +1409,219 @@ function Vfx.ragdollEnemy(
 		then position + Vector3.new(0, VisualTheme.AERIAL.hoverY, 0)
 		else position
 
-	local ragdoll = Instance.new("Model")
-	ragdoll.Name = "F2_Ragdoll_" .. archetype
-
-	if archetype == "wisp" then
-		-- Dissipating spectral core
-		local wispAccent = Color3.fromRGB(165, 243, 252)
-		local core = makePart(
-			ragdoll,
-			Vector3.new(0.86, 0.86, 0.86),
-			spawnOrigin + Vector3.new(0, 0.85, 0),
-			color,
-			Enum.Material.Neon,
-			Enum.PartType.Ball
-		)
-		core.Name = "SpectralCore"
-		core.Transparency = 0.14
-		core.CustomPhysicalProperties = PhysicalProperties.new(0.35, 0.2, 0.65, 1, 1)
-		applyF2Flags(core, "RagdollBody")
-
-		local cowl = makePart(
-			ragdoll,
-			Vector3.new(0.52, 0.52, 0.52),
-			spawnOrigin + Vector3.new(0, 1.45, 0),
-			wispAccent,
-			Enum.Material.Neon,
-			Enum.PartType.Ball
-		)
-		cowl.Name = "SpectralWisp"
-		cowl.Transparency = 0.22
-		cowl.CustomPhysicalProperties = PhysicalProperties.new(0.3, 0.2, 0.6, 1, 1)
-		applyF2Flags(cowl, "RagdollBody")
-
-		local a0 = Instance.new("Attachment")
-		a0.Position = Vector3.new(0, 0.42, 0)
-		a0.Parent = core
-		local a1 = Instance.new("Attachment")
-		a1.Position = Vector3.new(0, -0.26, 0)
-		a1.Parent = cowl
-		local socket = Instance.new("BallSocketConstraint")
-		socket.Attachment0 = a0
-		socket.Attachment1 = a1
-		socket.Parent = core
-
-		attachTrail(core, wispAccent, color, 0.42, 0.26)
-		ragdoll.PrimaryPart = core
-		ragdoll.Parent = parent
-
-		local wispTtl = math.min(ttl, 0.9)
-		local launch = Vector3.new(baseX * 1.15, baseY * 0.95 + 3.0, baseZ * 1.2)
-		core:ApplyImpulse(launch * core.AssemblyMass)
-		core:ApplyAngularImpulse(Vector3.new(8, 11, -9) * core.AssemblyMass)
-		TweenService:Create(
-			core,
-			TweenInfo.new(wispTtl, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ Transparency = 1, Size = Vector3.new(0.18, 0.18, 0.18) }
-		):Play()
-		TweenService:Create(
-			cowl,
-			TweenInfo.new(wispTtl * 0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-			{ Transparency = 1, Size = Vector3.new(0.12, 0.12, 0.12) }
-		):Play()
-		trackF2(ragdoll, wispTtl)
-		return
-	end
-
-	local torsoSize = Vector3.new(1.1, 1.24, 0.82)
-	local headSize = Vector3.new(0.75, 0.75, 0.75)
-	local torsoMat = Enum.Material.SmoothPlastic
 	local density = 1.0
+	local friction = if frozen then 0.22 else 0.45
+	local elasticity = if frozen then 0.32 else 0.25
 	local launchDir = Vector3.new(baseX * 1.35, baseY * 1.18 + 2.0, baseZ * 1.15)
 	local spinDir = Vector3.new(7, 4, -11)
 
-	if archetype == "brute" or archetype == "shieldbearer" then
-		local isShield = archetype == "shieldbearer"
-		torsoSize = if isShield
-			then Vector3.new(1.46, 1.48, 1.04)
-			else Vector3.new(1.66, 1.56, 1.16)
-		headSize = Vector3.new(0.90, 0.90, 0.90)
-		torsoMat = if isShield then Enum.Material.Metal else Enum.Material.SmoothPlastic
+	if archetype == "wisp" or archetype == "pyromancer" then
+		density = 0.45
+		friction = 0.25
+		elasticity = 0.5
+		launchDir = Vector3.new(baseX * 1.05, baseY * 0.92 + 3.4, baseZ * 1.15)
+		spinDir = Vector3.new(7, 11, -9)
+	elseif archetype == "sapper" then
+		density = 0.85
+		friction = 0.35
+		elasticity = 0.35
+		launchDir = Vector3.new(baseX * 1.65 + 4.0, baseY * 1.38 + 4.5, baseZ * 1.45)
+		spinDir = Vector3.new(14, 9, -16)
+	elseif archetype == "brute" or archetype == "shieldbearer" then
 		density = 2.35
 		launchDir = Vector3.new(baseX * 1.25 + 2.5, baseY * 1.05 + 1.5, baseZ)
 		spinDir = Vector3.new(5.5, 3.5, -8.5)
 	elseif archetype == "swarm" then
-		torsoSize = Vector3.new(0.70, 0.72, 0.74)
-		headSize = Vector3.new(0.48, 0.48, 0.48)
 		density = 0.55
 		launchDir = Vector3.new(baseX * 1.48 + 3.0, baseY * 1.42 + 4.5, baseZ * 1.45)
 		spinDir = Vector3.new(13, 9, -17)
 	elseif archetype == "drake" then
-		torsoSize = Vector3.new(1.36, 1.04, 1.84)
-		headSize = Vector3.new(0.76, 0.76, 0.76)
-		torsoMat = Enum.Material.Metal
 		density = 1.45
 		launchDir = Vector3.new(baseX * 1.38 + 2.5, baseY * 0.92 + 2.0, baseZ * 1.35)
 		spinDir = Vector3.new(10, 7, -14)
 	end
-
-	local torso = makePart(
-		ragdoll,
-		torsoSize,
-		spawnOrigin + Vector3.new(0, torsoSize.Y * 0.5 + 0.55, 0),
-		color,
-		torsoMat
-	)
-	torso.Name = "Torso"
-	torso.CustomPhysicalProperties = PhysicalProperties.new(density, 0.45, 0.25, 1, 1)
-	applyF2Flags(torso, "RagdollBody")
-
-	local head = makePart(
-		ragdoll,
-		headSize,
-		torso.Position + Vector3.new(0, torsoSize.Y * 0.5 + headSize.Y * 0.52, 0),
-		if archetype == "swarm" then rgb(VisualTheme.PALETTE.teal) else color,
-		if archetype == "swarm" then Enum.Material.Neon else torsoMat,
-		Enum.PartType.Ball
-	)
-	head.Name = "Head"
-	head.CustomPhysicalProperties = PhysicalProperties.new(density * 0.8, 0.4, 0.25, 1, 1)
-	applyF2Flags(head, "RagdollBody")
-
-	local neckA = Instance.new("Attachment")
-	neckA.Position = Vector3.new(0, torsoSize.Y * 0.52, if archetype == "drake" then -0.55 else 0)
-	neckA.Parent = torso
-	local neckB = Instance.new("Attachment")
-	neckB.Position = Vector3.new(0, -headSize.Y * 0.46, 0)
-	neckB.Parent = head
-
-	local socket = Instance.new("BallSocketConstraint")
-	socket.Attachment0 = neckA
-	socket.Attachment1 = neckB
-	socket.LimitsEnabled = true
-	socket.UpperAngle = 38
-	socket.TwistLimitsEnabled = true
-	socket.TwistLowerAngle = -24
-	socket.TwistUpperAngle = 24
-	socket.MaxFrictionTorque = 6
-	socket.Parent = torso
-
-	if archetype == "brute" or archetype == "shieldbearer" then
-		local plateColor = if archetype == "shieldbearer"
-			then rgb(VisualTheme.PALETTE.iron)
-			else Color3.fromRGB(28, 64, 62)
-		for _, sx in ipairs({ -1, 1 }) do
-			local plate = makePart(
-				ragdoll,
-				Vector3.new(0.62, 0.68, 0.78),
-				torso.Position,
-				plateColor,
-				Enum.Material.Metal
-			)
-			plate.Name = if sx < 0 then "ShoulderPlateL" else "ShoulderPlateR"
-			weldRagdollAccessory(
-				torso,
-				plate,
-				CFrame.new(sx * (torsoSize.X * 0.54), torsoSize.Y * 0.28, 0)
-					* CFrame.Angles(0, 0, math.rad(-sx * 14))
-			)
-		end
-	elseif archetype == "drake" then
-		local wingColor = rgb(VisualTheme.PALETTE.ironDark)
-		local goldAccent = rgb(VisualTheme.PALETTE.amberBright)
-		for _, sx in ipairs({ -1, 1 }) do
-			local wing = makeWedge(
-				ragdoll,
-				Vector3.new(1.95, 0.14, 1.18),
-				torso.Position,
-				wingColor,
-				Enum.Material.Metal
-			)
-			wing.Name = if sx < 0 then "WingL" else "WingR"
-			weldRagdollAccessory(
-				torso,
-				wing,
-				CFrame.new(sx * 1.35, 0.24, 0.12)
-					* CFrame.Angles(math.rad(8), math.rad(sx * 12), math.rad(sx * 22))
-			)
-		end
-		attachTrail(torso, goldAccent, color, 0.36, 0.22)
+	if frozen then
+		launchDir = Vector3.new(launchDir.X * 1.12, launchDir.Y * 1.05 + 1.2, launchDir.Z * 1.1)
+		spinDir = spinDir * 1.15
 	end
 
-	ragdoll.PrimaryPart = torso
+	local visualParts = resolveRagdollVisualParts(sourceModel, archetype, spawnOrigin)
+	local ragdoll = Instance.new("Model")
+	ragdoll.Name = "F2_Ragdoll_" .. archetype
+
+	if #visualParts == 0 then
+		-- Headless CLI fallback (only when zero real visual parts exist anywhere):
+		-- invisible physics driver, zero visible square blocks or wedges/cones.
+		if archetype == "wisp" or archetype == "pyromancer" then
+			emitArcaneRift(parent, spawnOrigin + Vector3.new(0, 0.9, 0), color, 0.7)
+		elseif archetype == "sapper" then
+			emitExplosion(parent, spawnOrigin + Vector3.new(0, 0.8, 0), color, 0.55)
+		end
+		if frozen then
+			emitFrostShatter(
+				parent,
+				spawnOrigin + Vector3.new(0, 0.8, 0),
+				rgb(VisualTheme.PALETTE.frostBright),
+				0.85
+			)
+		end
+		local driver = makePart(
+			ragdoll,
+			Vector3.new(1.0, 1.2, 0.9),
+			spawnOrigin + Vector3.new(0, 0.8, 0),
+			color
+		)
+		driver.Name = "RagdollDriver"
+		driver.Transparency = 1
+		driver.CustomPhysicalProperties =
+			PhysicalProperties.new(density, friction, elasticity, 1, 1)
+		applyF2Flags(driver, "RagdollBody")
+		driver.CanQuery = false
+		driver.CanTouch = false
+		ragdoll.PrimaryPart = driver
+		ragdoll.Parent = parent
+		local mass = if driver.AssemblyMass > 0 then driver.AssemblyMass else 1
+		driver:ApplyImpulse(launchDir * mass)
+		driver:ApplyAngularImpulse(spinDir * mass)
+		local fallbackTtl = if frozen
+			then math.min(ttl, 0.75)
+			elseif archetype == "wisp" or archetype == "pyromancer" then math.min(ttl, 0.75)
+			else ttl
+		trackF2(ragdoll, fallbackTtl)
+		return
+	end
+
+	local bbCenter, bbSize = computePartsBounds(visualParts)
+	local driverSize = Vector3.new(
+		math.clamp(bbSize.X, 0.6, 2.2),
+		math.clamp(bbSize.Y, 0.6, 2.4),
+		math.clamp(bbSize.Z, 0.6, 2.2)
+	)
+	local targetCenter = spawnOrigin
+		+ Vector3.new(0, math.max(driverSize.Y, bbSize.Y) * 0.5 + 0.16, 0)
+	local delta = targetCenter - bbCenter
+
+	local driver = makePart(ragdoll, driverSize, targetCenter, color)
+	driver.Name = "RagdollDriver"
+	driver.Transparency = 1
+	driver.CustomPhysicalProperties = PhysicalProperties.new(density, friction, elasticity, 1, 1)
+	applyF2Flags(driver, "RagdollBody")
+	driver.CanQuery = false
+	driver.CanTouch = false
+
+	for _, part in ipairs(visualParts) do
+		part.CFrame = part.CFrame + delta
+		part.Anchored = false
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Massless = true
+		part.CastShadow = false
+		pcall(function()
+			part.CollisionGroup = "RagdollBody"
+		end)
+		part.Parent = ragdoll
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = driver
+		weld.Part1 = part
+		weld.Parent = driver
+	end
+
+	if archetype == "drake" then
+		attachTrail(driver, rgb(VisualTheme.PALETTE.amberBright), color, 0.36, 0.22)
+	elseif archetype == "wisp" or archetype == "pyromancer" then
+		attachTrail(driver, Color3.fromRGB(165, 243, 252), color, 0.38, 0.24)
+	end
+
+	ragdoll.PrimaryPart = driver
 	ragdoll.Parent = parent
 
-	torso:ApplyImpulse(launchDir * torso.AssemblyMass)
-	torso:ApplyAngularImpulse(spinDir * torso.AssemblyMass)
-	trackF2(ragdoll, ttl)
+	-- Brief hit-flash Highlight (0.14s white or icy cyan if frozen, Occluded)
+	local okHl, rawHl: any = pcall(Instance.new, "Highlight")
+	if okHl and rawHl ~= nil then
+		local hl: any = rawHl
+		local flashColor = if frozen
+			then rgb(VisualTheme.PALETTE.frostBright)
+			else rgb(VisualTheme.PALETTE.white)
+		pcall(function()
+			hl.Name = "HitFlashHighlight"
+			hl.Adornee = ragdoll
+			hl.DepthMode = Enum.HighlightDepthMode.Occluded
+			hl.FillColor = flashColor
+			hl.OutlineColor = flashColor
+			hl.FillTransparency = 0.25
+			hl.OutlineTransparency = 0.4
+			hl.Parent = ragdoll
+			TweenService:Create(
+				hl,
+				TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ FillTransparency = 1, OutlineTransparency = 1 }
+			):Play()
+			Debris:AddItem(hl, 0.2)
+		end)
+	end
+
+	local mass = if driver.AssemblyMass > 0 then driver.AssemblyMass else 1
+	driver:ApplyImpulse(launchDir * mass)
+	driver:ApplyAngularImpulse(spinDir * mass)
+
+	local effectiveTtl = ttl
+	if archetype == "wisp" or archetype == "pyromancer" then
+		emitArcaneRift(parent, spawnOrigin + Vector3.new(0, 0.9, 0), color, 0.75)
+		if frozen then
+			emitFrostShatter(
+				parent,
+				spawnOrigin + Vector3.new(0, 0.8, 0),
+				rgb(VisualTheme.PALETTE.frostBright),
+				0.85
+			)
+		end
+		effectiveTtl = math.min(ttl, 0.75)
+		for _, part in ipairs(visualParts) do
+			TweenService:Create(
+				part,
+				TweenInfo.new(0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{ Transparency = 1 }
+			):Play()
+		end
+	else
+		if archetype == "sapper" then
+			emitExplosion(parent, spawnOrigin + Vector3.new(0, 0.8, 0), color, 0.55)
+		end
+		if frozen then
+			emitFrostShatter(
+				parent,
+				spawnOrigin + Vector3.new(0, 0.8, 0),
+				rgb(VisualTheme.PALETTE.frostBright),
+				0.85
+			)
+			effectiveTtl = math.min(ttl, 0.75)
+		end
+		local dissolveDur = 0.45
+		local dissolveDelay = math.max(0.05, effectiveTtl - dissolveDur)
+		task.delay(dissolveDelay, function()
+			if ragdoll.Parent == nil then
+				return
+			end
+			for _, part in ipairs(visualParts) do
+				if part.Parent ~= nil then
+					TweenService
+						:Create(
+							part,
+							TweenInfo.new(
+								dissolveDur,
+								Enum.EasingStyle.Quad,
+								Enum.EasingDirection.Out
+							),
+							{ Transparency = 1 }
+						)
+						:Play()
+				end
+			end
+		end)
+	end
+
+	trackF2(ragdoll, effectiveTtl)
 end
 
 function Vfx.championDeath(

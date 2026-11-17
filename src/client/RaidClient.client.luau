@@ -1479,7 +1479,15 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 			else Color3.fromRGB(20, 184, 166)
 		Vfx.death(activeScene, vfxPos, unitColor, isFrozen)
 		local vz = if id % 2 == 0 then 3.2 else -3.2
-		Vfx.ragdollEnemy(activeScene, vfxPos, unitColor, Vector3.new(12, 14, vz), resolvedKind)
+		Vfx.ragdollEnemy(
+			activeScene,
+			vfxPos,
+			unitColor,
+			Vector3.new(12, 14, vz),
+			resolvedKind,
+			if unit ~= nil then unit.model else nil,
+			isFrozen
+		)
 		if isChamp then
 			Vfx.championDeath(
 				activeScene,
