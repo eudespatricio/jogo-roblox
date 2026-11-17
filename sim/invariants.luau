@@ -678,61 +678,138 @@ check("I17 8 arquetipos de unidade, mitigacao de armadura e WaveSliceSpec", func
 	assert(ok, "CheckIntegers falhou em WaveSliceSpec")
 end)
 
--- I18 (v7): Boss Multi-Lane (laneSpan=3), AoE shotId dedup, Stagger -> VULNERABLE e ENRAGE
-check("I18 Boss Multi-Lane, shotId dedup estrito, Stagger/VULNERABLE e ENRAGE", function()
-	local b = Core.Battle.new({
-		seed = 55,
-		simVersion = Core.SIM_VERSION,
-		wall = {
-			traps = {
-				{ cell = "r3c3", type = "catapult", level = 1 },
-				{ cell = "r2c3", type = "cannon", level = 1 },
+-- I18 (v7): Boss Multi-Lane (laneSpan=3), AoE shotId dedup, Stagger -> VULNERABLE, ENRAGE e ATTACK periodico na muralha
+check(
+	"I18 Boss Multi-Lane, shotId dedup estrito, Stagger/VULNERABLE, ENRAGE e ATTACK periodico",
+	function()
+		local b = Core.Battle.new({
+			seed = 55,
+			simVersion = Core.SIM_VERSION,
+			wall = {
+				traps = {
+					{ cell = "r3c3", type = "catapult", level = 1 },
+					{ cell = "r2c3", type = "cannon", level = 1 },
+				},
 			},
-		},
-		wave = {
-			count = 0,
-			bossId = "iron_ram_colossus",
-			bossSpawnTick = 1,
-		},
-	})
-	assert(b.boss ~= nil and b.boss.laneSpan == 3 and b.boss.laneCenter == 3, "boss init")
-	b.boss.x = 6500
-	local startHp = b.boss.hp
+			wave = {
+				count = 0,
+				bossId = "iron_ram_colossus",
+				bossSpawnTick = 1,
+			},
+		})
+		assert(b.boss ~= nil and b.boss.laneSpan == 3 and b.boss.laneCenter == 3, "boss init")
+		b.boss.x = 6500
+		local startHp = b.boss.hp
 
-	-- Disparo de catapult c/ shotId=777: mesmo cobrindo multiplas lanes, so aplica dano 1 vez
-	local hit1 = b:applyTrap(b.traps[2], 777) -- catapult em r3c3
-	assert(hit1 == true, "catapult nao acertou o boss")
-	local dmgOnce = startHp - b.boss.hp
-	assert(dmgOnce > 0, "catapult causou 0 de dano no boss")
-	local hitDuplicate = b:applyTrap(b.traps[2], 777) -- mesmo shotId deve ser ignorado
-	assert(hitDuplicate == false and b.boss.hp == startHp - dmgOnce, "shotId duplicou dano no boss")
+		-- Disparo de catapult c/ shotId=777: mesmo cobrindo multiplas lanes, so aplica dano 1 vez
+		local hit1 = b:applyTrap(b.traps[2], 777) -- catapult em r3c3
+		assert(hit1 == true, "catapult nao acertou o boss")
+		local dmgOnce = startHp - b.boss.hp
+		assert(dmgOnce > 0, "catapult causou 0 de dano no boss")
+		local hitDuplicate = b:applyTrap(b.traps[2], 777) -- mesmo shotId deve ser ignorado
+		assert(
+			hitDuplicate == false and b.boss.hp == startHp - dmgOnce,
+			"shotId duplicou dano no boss"
+		)
 
-	-- Acumula stagger ate quebrar postura -> VULNERABLE (30 ticks, dano * 1300 / 1000)
-	local preVulnHp = b.boss.hp
-	b:applyTrap(b.traps[1], 778) -- cannon em r2c3 (alcanca lane 2 do boss laneCenter=3)
-	local normalCannonDmg = preVulnHp - b.boss.hp
-	assert(normalCannonDmg > 0, "cannon em lane adjacente nao atingiu boss laneSpan=3")
+		-- Acumula stagger ate quebrar postura -> VULNERABLE (30 ticks, dano * 1300 / 1000)
+		local preVulnHp = b.boss.hp
+		b:applyTrap(b.traps[1], 778) -- cannon em r2c3 (alcanca lane 2 do boss laneCenter=3)
+		local normalCannonDmg = preVulnHp - b.boss.hp
+		assert(normalCannonDmg > 0, "cannon em lane adjacente nao atingiu boss laneSpan=3")
 
-	while b.boss.state ~= "VULNERABLE" do
+		while b.boss.state ~= "VULNERABLE" do
+			b.nextShotId += 1
+			b:applyTrap(b.traps[1], b.nextShotId)
+		end
+		assert(
+			b.boss.state == "VULNERABLE" and b.boss.stateTicksLeft == 30,
+			"nao entrou em VULNERABLE"
+		)
+
+		local hpBeforeVulnHit = b.boss.hp
 		b.nextShotId += 1
 		b:applyTrap(b.traps[1], b.nextShotId)
+		local vulnCannonDmg = hpBeforeVulnHit - b.boss.hp
+		assert(
+			vulnCannonDmg == math.floor(normalCannonDmg * 1300 / 1000),
+			"dano em VULNERABLE != *1300/1000"
+		)
+
+		-- ENRAGE abaixo de 40% HP
+		b.boss.hp = math.floor(b.boss.maxHp * 390 / 1000)
+		b:Step()
+		assert(b.boss.enraged == true, "boss nao entrou em ENRAGE abaixo de 40% HP")
+
+		-- Ao alcancar x == 0 na muralha (defesa vazia, muralha padrao 500 HP > 60 HP de wallDmg):
+		-- entra em ATTACK sem hit-kill imediato e destroi a muralha somente apos multiplos golpes periodicos
+		local bAttack = Core.Battle.new({
+			seed = 56,
+			simVersion = Core.SIM_VERSION,
+			wall = { hp = 500, traps = {} },
+			wave = {
+				count = 0,
+				bossId = "iron_ram_colossus",
+				bossSpawnTick = 1,
+			},
+		})
+		local startWallHp = math.floor(bAttack.wallMax / Core.MILLI)
+		while not bAttack:Finished() and bAttack.boss.x > 0 do
+			bAttack:Step()
+		end
+		local resMid = bAttack:Result()
+		assert(
+			bAttack.boss.x == 0 and bAttack.boss.state == "ATTACK",
+			"boss nao entrou em ATTACK ao alcancar x == 0"
+		)
+		assert(
+			resMid.wallHp > 0 and resMid.wallHp < startWallHp and not bAttack:Finished(),
+			"contato inicial do boss na muralha deveria causar dano nao-letal (sem hit-kill)"
+		)
+		local strikesAfterContact = 0
+		local prevWallMilli = bAttack.wallHp
+		while not bAttack:Finished() do
+			bAttack:Step()
+			if bAttack.wallHp < prevWallMilli then
+				strikesAfterContact += 1
+				prevWallMilli = bAttack.wallHp
+			end
+			local okInt = bAttack:CheckIntegers()
+			assert(okInt, "float detectado durante estado ATTACK do boss")
+		end
+		local resEnd = bAttack:Result()
+		assert(
+			strikesAfterContact >= 2 and resEnd.wallHp == 0 and resEnd.winner == "attacker",
+			"boss em ATTACK deveria derrubar a muralha somente apos multiplos golpes periodicos"
+		)
+
+		-- Investida (executeBossAbility) do iron_ram_colossus encostando em x == 0 tambem mantem ATTACK
+		local bRam = Core.Battle.new({
+			seed = 57,
+			simVersion = Core.SIM_VERSION,
+			wall = { hp = 500, traps = {} },
+			wave = {
+				count = 0,
+				bossId = "iron_ram_colossus",
+				bossSpawnTick = 1,
+			},
+		})
+		bRam.boss.x = 400
+		bRam.boss.state = "TELEGRAPH"
+		bRam.boss.stateTicksLeft = 1
+		bRam:Step()
+		local resRamMid = bRam:Result()
+		assert(
+			bRam.boss.x == 0
+				and bRam.boss.state == "ATTACK"
+				and resRamMid.wallHp > 0
+				and resRamMid.wallHp < 500,
+			"investida do iron_ram_colossus em x<=0 falhou ao transicionar para ATTACK sem hit-kill"
+		)
+		bRam:Step()
+		assert(bRam.boss.state == "ATTACK", "estado ATTACK foi sobrescrito apos ABILITY")
 	end
-	assert(b.boss.state == "VULNERABLE" and b.boss.stateTicksLeft == 30, "nao entrou em VULNERABLE")
-
-	local hpBeforeVulnHit = b.boss.hp
-	b.nextShotId += 1
-	b:applyTrap(b.traps[1], b.nextShotId)
-	local vulnCannonDmg = hpBeforeVulnHit - b.boss.hp
-	assert(
-		vulnCannonDmg == math.floor(normalCannonDmg * 1300 / 1000),
-		"dano em VULNERABLE != *1300/1000"
-	)
-
-	-- ENRAGE abaixo de 40% HP
-	b.boss.hp = math.floor(b.boss.maxHp * 390 / 1000)
-	b:Step()
-	assert(b.boss.enraged == true, "boss nao entrou em ENRAGE abaixo de 40% HP")
-end)
+)
 
 -- I19 (v7): determinismo dos 5 Bosses e 8 Mutadores
 check("I19 determinismo dos 5 Bosses e 8 Mutadores", function()

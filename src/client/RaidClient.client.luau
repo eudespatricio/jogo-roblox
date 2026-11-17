@@ -1346,8 +1346,10 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 	end
 	local activeToken = replayToken
 	local pct = frame.wallPct or 0
+	local wallDamagedThisFrame = false
 	if math.abs(pct - lastWallPct) > 0.005 then
 		if pct < lastWallPct then
+			wallDamagedThisFrame = true
 			AudioKit.playAt("wall_hit", RAID_ORIGIN + Vector3.new(-22, 1.5, 0))
 			if (lastWallPct - pct) >= 0.04 and raidCrowd ~= nil then
 				raidCrowd:react("gasp")
@@ -1639,7 +1641,14 @@ local function applyDiscreteFrame(frame: any, frameIdx: number): ()
 					if raidCrowd ~= nil then
 						raidCrowd:react("cheer")
 					end
+				elseif bState == "ATTACK" then
+					bossSlammedThisCycle = false
 				end
+			end
+			if bState == "ATTACK" and wallDamagedThisFrame then
+				AudioKit.playAt("boss_slam", bossPos)
+				shakeUntil = math.max(shakeUntil, time() + 0.24)
+				Vfx.bossSlamImpact(activeScene, bossPos, bossVisual.accent)
 			end
 			if didSlam and not bossSlammedThisCycle then
 				bossSlammedThisCycle = true

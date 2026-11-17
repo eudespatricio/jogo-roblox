@@ -885,6 +885,7 @@ export type BossUnit = {
 	lastEnraged: boolean,
 	lastNow: number,
 	deathStartAt: number?,
+	attackStartAt: number?,
 	rigMetrics: BossRigMetrics,
 	slots: BossSlots,
 	mountedSlots: BossMountedSlots,
@@ -1054,7 +1055,7 @@ local function computeBossPartAnchor(partKey: string, bbCf: CFrame, bbSize: Vect
 	if partKey == "torso" then
 		return Vector3.new(pos.X, pos.Y - bbSize.Y * 0.5, pos.Z)
 	elseif partKey == "leg_l" or partKey == "leg_r" then
-		return Vector3.new(pos.X, pos.Y + bbSize.Y * 0.5, pos.Z)
+		return Vector3.new(pos.X, pos.Y + bbSize.Y * 0.46, pos.Z + bbSize.Z * 0.16)
 	elseif partKey == "arm_l" then
 		return Vector3.new(pos.X, pos.Y + bbSize.Y * 0.44, pos.Z)
 	end
@@ -1763,6 +1764,33 @@ local function placeBossSlot(
 	end
 end
 
+-- In rigCF (+X right, +Y up, -Z front), CFrame.Angles(+pitch, 0, 0) swings downward limbs (-Y) toward -Z front.
+-- Swing [0, pi): brisk forward lift peaking ~+26 deg with hip clearance; stance [pi, 2*pi): weighted push-back to -16 deg.
+local function sampleBossLegStride(phase: number): (number, number, number)
+	local twoPi = math.pi * 2
+	local wrapped = phase % twoPi
+	if wrapped < 0 then
+		wrapped += twoPi
+	end
+	local minExt = math.rad(-16)
+	local plantFwd = math.rad(24)
+	local swingOvershoot = math.rad(4.5)
+	if wrapped < math.pi then
+		local u = wrapped / math.pi
+		local brisk = math.pow(u, 0.78)
+		local ease = 0.5 - 0.5 * math.cos(brisk * math.pi)
+		local clearance = math.sin(u * math.pi)
+		local pitch = minExt + (plantFwd - minExt) * ease + swingOvershoot * clearance
+		local hipLift = 0.30 * math.pow(clearance, 0.8)
+		return pitch, hipLift, 0
+	end
+	local v = (wrapped - math.pi) / math.pi
+	local sweep = v * 0.65 + (0.5 - 0.5 * math.cos(v * math.pi)) * 0.35
+	local pitch = plantFwd - (plantFwd - minExt) * sweep
+	local stanceWeight = math.sin(v * math.pi)
+	return pitch, 0, stanceWeight
+end
+
 local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: boolean?): ()
 	local resolvedState = state or "MARCH"
 	local isEnraged = enraged == true
@@ -1776,6 +1804,14 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 		end
 	else
 		unit.deathStartAt = nil
+	end
+
+	if resolvedState == "ATTACK" then
+		if unit.attackStartAt == nil then
+			unit.attackStartAt = now
+		end
+	else
+		unit.attackStartAt = nil
 	end
 
 	local approach = math.clamp(unit.approachScale, 0.45, 1.25)
@@ -1917,18 +1953,106 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 		unit.stateHighlight.OutlineColor = Color3.new(1, 1, 1)
 		unit.stateHighlight.FillTransparency = 0.50 + math.sin(now * 12) * 0.18
 		unit.stateHighlight.OutlineTransparency = 0
+	elseif resolvedState == "ATTACK" then
+		local startAt = unit.attackStartAt or now
+		local elapsed = math.max(0, now - startAt)
+		local strikePeriod = if isEnraged then 0.95 else 1.35
+		local strikeIdx = math.floor(elapsed / strikePeriod)
+		local phase = (elapsed % strikePeriod) / strikePeriod
+		local dominantRight = (strikeIdx % 2) == 0
+
+		local windBody = 0
+		local slamBody = 0
+		local impactShake = 0
+		local strikeArmPitch = 0.30
+		local offArmPitch = 0.30
+		local highlightPulse = 0.25
+
+		if phase < 0.42 then
+			local u = phase / 0.42
+			local w = 0.5 - 0.5 * math.cos(u * math.pi)
+			windBody = w
+			strikeArmPitch = 0.30 + 1.38 * w
+			offArmPitch = 0.30 + 0.42 * w
+			highlightPulse = 0.25 + 0.45 * w
+		elseif phase < 0.56 then
+			local s = (phase - 0.42) / 0.14
+			local snap = s * s * (3 - 2 * s)
+			windBody = 1 - snap
+			slamBody = snap
+			strikeArmPitch = 1.68 - 1.38 * snap
+			offArmPitch = 0.72 - 0.87 * snap
+			highlightPulse = 0.70 + 0.30 * snap
+		elseif phase < 0.72 then
+			local imp = (phase - 0.56) / 0.16
+			slamBody = 1 - imp * 0.22
+			impactShake = math.sin((phase - 0.56) * 140) * 0.16 * (1 - imp)
+			strikeArmPitch = 0.30 - 0.08 * math.sin(imp * math.pi)
+			offArmPitch = -0.15 + 0.08 * imp
+			highlightPulse = 1.0 - 0.35 * imp
+		else
+			local rec = (phase - 0.72) / 0.28
+			local r = 0.5 - 0.5 * math.cos(rec * math.pi)
+			slamBody = 0.78 * (1 - r)
+			strikeArmPitch = 0.30
+			offArmPitch = -0.07 + 0.37 * r
+			highlightPulse = 0.65 - 0.40 * r
+		end
+
+		local yawDir = if dominantRight then 1 else -1
+		bobY = 0.08 * windBody - 0.22 * slamBody
+		lungeZ = 0.28 * windBody - 0.78 * slamBody
+		jitterX = impactShake
+		-- +X torsoPitch leans back (+Z) on wind-up; -X torsoPitch lunges forward (-Z) into the wall.
+		torsoPitch = math.rad(16) * windBody - math.rad(22) * slamBody + hitFlinchPitch
+		torsoYaw = yawDir * (-math.rad(14) * windBody + math.rad(16) * slamBody)
+		torsoRoll = yawDir * (math.rad(4) * windBody - math.rad(5) * slamBody)
+
+		if dominantRight then
+			armRPitch = strikeArmPitch
+			armRRoll = math.rad(8 + 10 * windBody)
+			armLPitch = offArmPitch
+			armLRoll = math.rad(-8)
+		else
+			armLPitch = strikeArmPitch
+			armLRoll = math.rad(-8 - 10 * windBody)
+			armRPitch = offArmPitch
+			armRRoll = math.rad(8)
+		end
+
+		legLPitch = math.rad(18) - math.rad(4) * slamBody
+		legRPitch = math.rad(-16) - math.rad(4) * slamBody
+		legLRoll = math.rad(-4)
+		legRRoll = math.rad(4)
+
+		unit.stateHighlight.Enabled = true
+		unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.danger)
+		unit.stateHighlight.OutlineColor = rgb(VisualTheme.PALETTE.amberBright)
+		unit.stateHighlight.FillTransparency = 0.72 - 0.34 * highlightPulse
+		unit.stateHighlight.OutlineTransparency = 0.05
 	else
 		local omega = if isEnraged then 6.2 else 4.2
 		local p = now * omega
-		local legSwing = math.sin(p) * 0.46
-		legLPitch = legSwing
-		legRPitch = -legSwing
-		bobY = -math.abs(math.cos(p)) * 0.14
-		torsoYaw = -math.sin(p) * 0.10
-		torsoPitch = math.rad(-5) + hitFlinchPitch
-		torsoRoll = math.sin(p) * math.rad(3)
-		armLPitch = -legSwing
-		armRPitch = 0.30 + math.sin(p) * 0.22
+		local legLStridePitch, legLLift, legLStance = sampleBossLegStride(p)
+		local legRStridePitch, legRLift, legRStance = sampleBossLegStride(p + math.pi)
+		legLPitch = legLStridePitch
+		legRPitch = legRStridePitch
+		legLOffset = Vector3.new(0, legLLift, 0)
+		legROffset = Vector3.new(0, legRLift, 0)
+
+		local stanceCompression = math.max(legLStance, legRStance)
+		bobY = -0.07 - 0.06 * math.cos(2 * p) - 0.04 * stanceCompression
+		local weightShift = math.sin(p)
+		jitterX = weightShift * 0.16
+		torsoRoll = -weightShift * math.rad(3.5)
+
+		local strideTurn = math.clamp((legLPitch - legRPitch) / math.rad(42), -1, 1)
+		torsoYaw = strideTurn * math.rad(6.5)
+		torsoPitch = math.rad(-6) - math.abs(weightShift) * math.rad(2) + hitFlinchPitch
+
+		local armPhase = p - 0.35
+		armLPitch = math.cos(armPhase) * 0.34
+		armRPitch = 0.28 - math.cos(armPhase) * 0.24
 		if isEnraged then
 			unit.stateHighlight.Enabled = true
 			unit.stateHighlight.FillColor = rgb(VisualTheme.PALETTE.danger)
@@ -1955,13 +2079,20 @@ local function poseBoss(unit: BossUnit, now: number, state: string?, enraged: bo
 		* CFrame.new(jitterX, m.hipY + bobY, lungeZ)
 		* CFrame.Angles(torsoPitch, torsoYaw, torsoRoll)
 
+	local isMarchPose = resolvedState ~= "DYING"
+		and resolvedState ~= "TELEGRAPH"
+		and resolvedState ~= "ABILITY"
+		and resolvedState ~= "VULNERABLE"
+		and resolvedState ~= "ATTACK"
 	local minLegLHipY = m.hipY * math.cos(legLPitch) * math.cos(legLRoll)
 	local minLegRHipY = m.hipY * math.cos(legRPitch) * math.cos(legRRoll)
 	local legLHipY = if resolvedState == "DYING"
 		then math.max(m.hipY + bobY, minLegLHipY * 0.5)
+		elseif isMarchPose then m.hipY + bobY
 		else math.max(minLegLHipY, m.hipY + bobY)
 	local legRHipY = if resolvedState == "DYING"
 		then math.max(m.hipY + bobY, minLegRHipY * 0.5)
+		elseif isMarchPose then m.hipY + bobY
 		else math.max(minLegRHipY, m.hipY + bobY)
 
 	local legLCF = rootAnimCF
@@ -3032,6 +3163,7 @@ function HordeKit.createBoss(bossId: string, parent: Instance, cframe: CFrame): 
 		lastEnraged = false,
 		lastNow = now,
 		deathStartAt = nil,
+		attackStartAt = nil,
 		rigMetrics = rigMetrics,
 		slots = slots,
 		mountedSlots = {

@@ -420,6 +420,45 @@ check("open cloud: UI thumbnail, icone e backdrop de transicao publicados", func
 			"UiAssets contentId invalido: " .. item.name
 		)
 	end
+
+	local expectedPortraits = {
+		"bastion_warden",
+		"bastion_commander",
+		"horde_brute",
+		"horde_runner",
+		"horde_shieldbearer",
+		"boss_iron_ram_colossus",
+		"boss_slag_juggernaut",
+		"boss_rime_matriarch",
+		"boss_powder_baron",
+		"boss_rift_titan",
+	}
+	assert(type(UiAssets.CARD_PORTRAIT_IDS) == "table", "CARD_PORTRAIT_IDS ausente")
+	assert(type(UiAssets.CARD_PORTRAITS) == "table", "CARD_PORTRAITS ausente")
+	assert(type(UiAssets.portraitForCard) == "function", "portraitForCard ausente")
+	for _, key in ipairs(expectedPortraits) do
+		local pid = UiAssets.CARD_PORTRAIT_IDS[key]
+		local purl = UiAssets.CARD_PORTRAITS[key]
+		assert(type(pid) == "number" and pid > 0, "portrait id invalido: " .. key)
+		assert(purl == ("rbxassetid://" .. tostring(pid)), "portrait url divergente: " .. key)
+	end
+	assert(UiAssets.portraitForCard({
+		role = "defender",
+		faction = "bastion",
+		isBot = true,
+		wallLevel = 1,
+	}) == UiAssets.CARD_PORTRAITS.bastion_warden, "portraitForCard defender L1")
+	assert(UiAssets.portraitForCard({
+		role = "defender",
+		faction = "bastion",
+		side = "left",
+		wallLevel = 1,
+	}) == UiAssets.CARD_PORTRAITS.bastion_commander, "portraitForCard commander player")
+	assert(
+		UiAssets.portraitForCard({ role = "boss", faction = "horde", bossId = "rift_titan" })
+			== UiAssets.CARD_PORTRAITS.boss_rift_titan,
+		"portraitForCard boss"
+	)
 end)
 
 check(
@@ -836,6 +875,49 @@ check(
 			)
 			HordeKit.stepBoss(boss, 103.6, "DYING", false)
 			assert(boss.deathStartAt == 103.0, "deathStartAt sobrescrito no stepBoss: " .. bossId)
+
+			-- MARCH multi-fase: stride natural e pernas acima do chao
+			HordeKit.stepBoss(boss, 100.0, "MARCH", false)
+			local marchPos0 = boss.slots.legL[1].part.Position
+			HordeKit.stepBoss(boss, 100.55, "MARCH", false)
+			local marchPos1 = boss.slots.legL[1].part.Position
+			assert(
+				(marchPos1 - marchPos0).Magnitude > 0.01,
+				"legL sem movimento em MARCH multi-fase: " .. bossId
+			)
+			for _, tMarch in ipairs({ 100.0, 100.35, 100.75, 101.10 }) do
+				HordeKit.stepBoss(boss, tMarch, "MARCH", false)
+				for _, legSlot in ipairs({ "legL", "legR" }) do
+					for _, entry in ipairs(boss.slots[legSlot]) do
+						assert(
+							entry.part.Position.Y >= 0.4,
+							string.format(
+								"%s %s afundou em MARCH t=%.2f: Y=%.3f",
+								bossId,
+								legSlot,
+								tMarch,
+								entry.part.Position.Y
+							)
+						)
+					end
+				end
+			end
+
+			-- ATTACK: animacao de golpe periodico na muralha
+			HordeKit.stepBoss(boss, 104.0, "ATTACK", false)
+			assert((boss :: any).lastState == "ATTACK", "lastState != ATTACK: " .. bossId)
+			assert((boss :: any).attackStartAt == 104.0, "attackStartAt nao registrado: " .. bossId)
+			assert(
+				(boss.stateHighlight :: any).Enabled == true,
+				"stateHighlight inativo em ATTACK: " .. bossId
+			)
+			local armWind = boss.slots.armR[1].part.Position
+			HordeKit.stepBoss(boss, 104.65, "ATTACK", false)
+			local armSlam = boss.slots.armR[1].part.Position
+			assert(
+				(armSlam - armWind).Magnitude > 0.01,
+				"armR nao animou durante ATTACK: " .. bossId
+			)
 		end
 	end
 )

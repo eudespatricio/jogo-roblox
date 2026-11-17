@@ -73,6 +73,8 @@ export type BossCatalogSpec = {
 	speedMilli: number,
 	laneSpan: number,
 	staggerCapMilli: number,
+	wallDmg: number,
+	wallAttackCdTicks: number,
 }
 
 export type CampaignProgressState = {
@@ -124,6 +126,8 @@ CampaignCatalog.BOSS_SPECS = table.freeze({
 		speedMilli = 800,
 		laneSpan = 3,
 		staggerCapMilli = 600,
+		wallDmg = 60000,
+		wallAttackCdTicks = 30,
 	}),
 	slag_juggernaut = table.freeze({
 		bossId = "slag_juggernaut" :: BossId,
@@ -134,6 +138,8 @@ CampaignCatalog.BOSS_SPECS = table.freeze({
 		speedMilli = 700,
 		laneSpan = 3,
 		staggerCapMilli = 600,
+		wallDmg = 85000,
+		wallAttackCdTicks = 34,
 	}),
 	rime_matriarch = table.freeze({
 		bossId = "rime_matriarch" :: BossId,
@@ -144,6 +150,8 @@ CampaignCatalog.BOSS_SPECS = table.freeze({
 		speedMilli = 960,
 		laneSpan = 3,
 		staggerCapMilli = 600,
+		wallDmg = 70000,
+		wallAttackCdTicks = 28,
 	}),
 	powder_baron = table.freeze({
 		bossId = "powder_baron" :: BossId,
@@ -154,6 +162,8 @@ CampaignCatalog.BOSS_SPECS = table.freeze({
 		speedMilli = 1040,
 		laneSpan = 3,
 		staggerCapMilli = 600,
+		wallDmg = 95000,
+		wallAttackCdTicks = 32,
 	}),
 	rift_titan = table.freeze({
 		bossId = "rift_titan" :: BossId,
@@ -164,6 +174,8 @@ CampaignCatalog.BOSS_SPECS = table.freeze({
 		speedMilli = 900,
 		laneSpan = 3,
 		staggerCapMilli = 600,
+		wallDmg = 130000,
+		wallAttackCdTicks = 36,
 	}),
 }) :: { [string]: BossCatalogSpec }
 

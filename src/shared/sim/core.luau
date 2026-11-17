@@ -189,6 +189,8 @@ local BOSS_SPECS = deepFreeze({
 		laneSpan = 3,
 		staggerCapMilli = 600,
 		abilityCdTicks = 240,
+		wallDmg = 60 * MILLI,
+		wallAttackCdTicks = 30,
 	},
 	slag_juggernaut = {
 		bossId = "slag_juggernaut",
@@ -200,6 +202,8 @@ local BOSS_SPECS = deepFreeze({
 		laneSpan = 3,
 		staggerCapMilli = 600,
 		abilityCdTicks = 220,
+		wallDmg = 85 * MILLI,
+		wallAttackCdTicks = 34,
 	},
 	rime_matriarch = {
 		bossId = "rime_matriarch",
@@ -211,6 +215,8 @@ local BOSS_SPECS = deepFreeze({
 		laneSpan = 3,
 		staggerCapMilli = 600,
 		abilityCdTicks = 200,
+		wallDmg = 70 * MILLI,
+		wallAttackCdTicks = 28,
 	},
 	powder_baron = {
 		bossId = "powder_baron",
@@ -222,6 +228,8 @@ local BOSS_SPECS = deepFreeze({
 		laneSpan = 3,
 		staggerCapMilli = 600,
 		abilityCdTicks = 200,
+		wallDmg = 95 * MILLI,
+		wallAttackCdTicks = 32,
 	},
 	rift_titan = {
 		bossId = "rift_titan",
@@ -233,6 +241,8 @@ local BOSS_SPECS = deepFreeze({
 		laneSpan = 3,
 		staggerCapMilli = 600,
 		abilityCdTicks = 180,
+		wallDmg = 130 * MILLI,
+		wallAttackCdTicks = 36,
 	},
 })
 local BOSS_IDS = deepFreeze({
@@ -807,6 +817,9 @@ function Battle.new(spec)
 				stateTicksLeft = 0,
 				abilityCooldownTicks = bossSpec.abilityCdTicks,
 				baseAbilityCdTicks = bossSpec.abilityCdTicks,
+				wallDmg = bossSpec.wallDmg,
+				wallAttackCdTicks = bossSpec.wallAttackCdTicks,
+				wallAttackTimer = 0,
 				speedMilli = bossSpec.speedMilli,
 				enraged = false,
 				alive = true,
@@ -1255,6 +1268,13 @@ function Battle:applyTrap(trap, shotId, trapIdx)
 	return true
 end
 
+local function strikeWallWithBoss(self, boss)
+	local dmg = boss.wallDmg
+	recordLeak(self, boss.laneCenter, boss.bossId, math.min(math.max(0, self.wallHp), dmg))
+	self.leaked += 1
+	self.wallHp = math.max(0, self.wallHp - dmg)
+end
+
 function Battle:executeBossAbility()
 	local boss = self.boss
 	if boss == nil or not boss.alive then
@@ -1271,9 +1291,16 @@ function Battle:executeBossAbility()
 			end
 		end
 		if boss.x <= 0 then
-			recordLeak(self, boss.laneCenter, boss.bossId, math.max(MILLI, self.wallHp))
-			self.leaked += 1
-			self.wallHp = 0
+			boss.x = 0
+			strikeWallWithBoss(self, boss)
+			boss.state = "ATTACK"
+			boss.wallAttackTimer = boss.wallAttackCdTicks
+			boss.stateTicksLeft = boss.wallAttackCdTicks
+			local cd = boss.baseAbilityCdTicks
+			if boss.enraged then
+				cd = math.floor(cd * 750 / 1000)
+			end
+			boss.abilityCooldownTicks = math.max(30, cd)
 		end
 	elseif id == "slag_juggernaut" then
 		boss.tempArmorBonusMilli = 200
@@ -1358,8 +1385,15 @@ function Battle:stepBoss()
 		boss.stateTicksLeft -= 1
 		if boss.stateTicksLeft <= 0 then
 			boss.staggerMilli = 0
-			boss.state = "MARCH"
-			boss.stateTicksLeft = 0
+			if boss.x <= 0 then
+				boss.x = 0
+				boss.state = "ATTACK"
+				boss.wallAttackTimer = boss.wallAttackCdTicks
+				boss.stateTicksLeft = boss.wallAttackCdTicks
+			else
+				boss.state = "MARCH"
+				boss.stateTicksLeft = 0
+			end
 		end
 		return
 	end
@@ -1377,13 +1411,38 @@ function Battle:stepBoss()
 	if boss.state == "ABILITY" then
 		boss.stateTicksLeft -= 1
 		if boss.stateTicksLeft <= 0 then
-			boss.state = "MARCH"
-			boss.stateTicksLeft = 0
 			local cd = boss.baseAbilityCdTicks
 			if boss.enraged then
 				cd = math.floor(cd * 750 / 1000)
 			end
 			boss.abilityCooldownTicks = math.max(30, cd)
+			if boss.x <= 0 then
+				boss.x = 0
+				boss.state = "ATTACK"
+				if boss.wallAttackTimer <= 0 then
+					boss.wallAttackTimer = boss.wallAttackCdTicks
+				end
+				boss.stateTicksLeft = boss.wallAttackTimer
+			else
+				boss.state = "MARCH"
+				boss.stateTicksLeft = 0
+			end
+		end
+		return
+	end
+
+	if boss.state == "ATTACK" then
+		boss.x = 0
+		boss.wallAttackTimer -= 1
+		if boss.wallAttackTimer <= 0 then
+			strikeWallWithBoss(self, boss)
+			boss.wallAttackTimer = boss.wallAttackCdTicks
+			boss.stateTicksLeft = boss.wallAttackTimer
+			if self.wallHp <= 0 then
+				return
+			end
+		else
+			boss.stateTicksLeft = math.max(0, boss.wallAttackTimer)
 		end
 		return
 	end
@@ -1411,9 +1470,10 @@ function Battle:stepBoss()
 	boss.x -= speedTick
 	if boss.x <= 0 then
 		boss.x = 0
-		recordLeak(self, boss.laneCenter, boss.bossId, math.max(MILLI, self.wallHp))
-		self.leaked += 1
-		self.wallHp = 0
+		strikeWallWithBoss(self, boss)
+		boss.state = "ATTACK"
+		boss.wallAttackTimer = boss.wallAttackCdTicks
+		boss.stateTicksLeft = boss.wallAttackCdTicks
 	end
 end
 
@@ -1434,6 +1494,9 @@ function Battle:BossSnapshot()
 		staggerCapMilli = b.staggerCapMilli,
 		state = b.state,
 		stateTicksLeft = b.stateTicksLeft,
+		wallDmg = b.wallDmg,
+		wallAttackCdTicks = b.wallAttackCdTicks,
+		wallAttackTimer = b.wallAttackTimer,
 		enraged = b.enraged,
 		alive = b.alive,
 	}
@@ -1743,6 +1806,9 @@ function Battle:CheckIntegers()
 			b.staggerCapMilli,
 			b.stateTicksLeft,
 			b.abilityCooldownTicks,
+			b.wallDmg,
+			b.wallAttackCdTicks,
+			b.wallAttackTimer,
 		}) do
 			if v ~= math.floor(v) then
 				return false, -999
