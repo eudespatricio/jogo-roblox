@@ -135,6 +135,28 @@ CameraFraming.ANCHORS_MOBILE_WALL_POV = table.freeze({
 	v3(12.0, 0.5, 0.0),
 } :: { Vec3 })
 
+-- Active battlefield anchors for CAM 1 (diagonal) & CAM 2 (corridor) in combat:
+-- Focuses tightly on the Bastion Wall/Gatehouse, 5x5 Courtyard lanes, Fan Manifold,
+-- and Portal Mouth/Archway to emphasize the battleground during fights.
+CameraFraming.ANCHORS_COMBAT_FULL = table.freeze({
+	v3(-24.0, 0.5, -20.0),
+	v3(-24.0, 10.5, -20.0),
+	v3(-22.0, 0.5, 17.5),
+	v3(-22.0, 8.0, 16.0),
+	v3(-24.0, 11.5, 0.0),
+	v3(-18.5, 0.5, -16.0),
+	v3(18.5, 0.5, -16.0),
+	v3(-18.5, 0.5, 0.0),
+	v3(0.0, 0.5, 0.0),
+	v3(18.5, 0.5, 0.0),
+	v3(-18.5, 0.5, 16.0),
+	v3(0.0, 0.5, 16.0),
+	v3(18.5, 0.5, 16.0),
+	v3(34.0, 0.8, -5.5),
+	v3(36.0, 1.0, 0.0),
+	v3(36.0, 9.5, 0.0),
+} :: { Vec3 })
+
 function CameraFraming.resolveAngle(angle: string?): string
 	if angle == "corridor" or angle == "wall" or angle == "diagonal" then
 		return angle
@@ -159,10 +181,15 @@ end
 function CameraFraming.anchorsForViewport(
 	viewportW: number,
 	viewportH: number,
-	angle: string?
+	angle: string?,
+	mode: string?
 ): { Vec3 }
+	local resolved = CameraFraming.resolveAngle(angle)
+	local isCombat = mode == "combat" or mode == "raid" or mode == "dropin"
+	if isCombat and resolved ~= "wall" then
+		return CameraFraming.ANCHORS_COMBAT_FULL
+	end
 	if CameraFraming.isCompactMobile(viewportW, viewportH) then
-		local resolved = CameraFraming.resolveAngle(angle)
 		if resolved == "wall" then
 			return CameraFraming.ANCHORS_MOBILE_WALL_POV
 		end
@@ -290,17 +317,19 @@ function CameraFraming.compute(
 	if isMobile then
 		local isPortrait = w < h
 		if resolvedAngle == "corridor" then
-			target = { x = 6.2, y = if isCombat then 1.3 else 0.6, z = -0.5 }
-			if isPortrait then
-				eye0 = if isCombat
-					then { x = 6.2, y = 36.0, z = 44.0 }
-					else { x = 6.2, y = 39.0, z = 46.0 }
+			if isCombat then
+				target = { x = 2.4, y = 2.5, z = -0.5 }
+				eye0 = if isPortrait
+					then { x = 2.4, y = 34.5, z = 41.5 }
+					else { x = 2.4, y = 33.2, z = 39.5 }
+				fov = 43
 			else
-				eye0 = if isCombat
-					then { x = 6.2, y = 29.0, z = 35.5 }
+				target = { x = 6.2, y = 0.6, z = -0.5 }
+				eye0 = if isPortrait
+					then { x = 6.2, y = 39.0, z = 46.0 }
 					else { x = 6.2, y = 32.5, z = 38.0 }
+				fov = 43
 			end
-			fov = if isCombat then 44 else 43
 		elseif resolvedAngle == "wall" then
 			target = { x = 8.5, y = if isCombat then 2.3 else 1.8, z = 0.0 }
 			eye0 = if isCombat
@@ -308,11 +337,15 @@ function CameraFraming.compute(
 				else { x = -38.0, y = 29.5, z = 0.0 }
 			fov = 48
 		else
-			target = { x = 3.6, y = if isCombat then 1.4 else 0.7, z = 0.4 }
-			eye0 = if isCombat
-				then { x = 38.5, y = 25.5, z = 38.5 }
-				else { x = 40.5, y = 30.0, z = 40.5 }
-			fov = if isCombat then 43 else 42
+			if isCombat then
+				target = { x = 5.0, y = 2.1, z = -0.3 }
+				eye0 = { x = 37.6, y = 24.5, z = 35.2 }
+				fov = 41
+			else
+				target = { x = 3.6, y = 0.7, z = 0.4 }
+				eye0 = { x = 40.5, y = 30.0, z = 40.5 }
+				fov = 42
+			end
 		end
 
 		if isPortrait then
@@ -323,9 +356,15 @@ function CameraFraming.compute(
 			maxZoom = if resolvedAngle == "corridor" then 2.12 else 2.02
 		else
 			-- Landscape phones use corner/island HUD pills rather than full-width bars.
-			allowLeft, allowRight = -0.92, 0.92
-			allowTop = if isCombat then 0.90 else 0.87
-			allowBot = if isCombat then -0.90 else -0.84
+			if isCombat and resolvedAngle ~= "wall" then
+				allowLeft, allowRight = -0.94, 0.94
+				allowTop = 0.92
+				allowBot = -0.92
+			else
+				allowLeft, allowRight = -0.92, 0.92
+				allowTop = if isCombat then 0.90 else 0.87
+				allowBot = if isCombat then -0.90 else -0.84
+			end
 			maxZoom = 1.25
 		end
 	else
@@ -335,9 +374,9 @@ function CameraFraming.compute(
 
 		if resolvedAngle == "corridor" then
 			if isCombat then
-				baseTargetX, baseTargetY, baseTargetZ = 6.5, 1.5, -0.5
-				eye0X, eye0Y, eye0Z = 6.5, 39.0, 48.0
-				baseFov = 42
+				baseTargetX, baseTargetY, baseTargetZ = 2.4, 2.5, -0.5
+				eye0X, eye0Y, eye0Z = 2.4, 33.2, 39.5
+				baseFov = 43
 			else
 				baseTargetX, baseTargetY, baseTargetZ = 6.5, 1.2, -0.5
 				eye0X, eye0Y, eye0Z = 6.5, 44.0, 50.0
@@ -355,9 +394,9 @@ function CameraFraming.compute(
 			end
 		else
 			if isCombat then
-				baseTargetX, baseTargetY, baseTargetZ = 5.5, 1.8, 0.5
-				eye0X, eye0Y, eye0Z = 46.0, 33.0, 47.0
-				baseFov = 40
+				baseTargetX, baseTargetY, baseTargetZ = 5.0, 2.1, -0.3
+				eye0X, eye0Y, eye0Z = 37.6, 24.5, 35.2
+				baseFov = 41
 			else
 				baseTargetX, baseTargetY, baseTargetZ = 5.5, 1.4, 0.5
 				eye0X, eye0Y, eye0Z = 49.0, 40.0, 49.0
@@ -366,7 +405,7 @@ function CameraFraming.compute(
 		end
 
 		local topSafePx = 56
-		local botSafePx = 56
+		local botSafePx = if isCombat then 36 else 56
 		if BuildLayout ~= nil and BuildLayout.computeHud ~= nil then
 			local hud = BuildLayout.computeHud(w, h)
 			if not isCombat then
@@ -377,7 +416,7 @@ function CameraFraming.compute(
 				botSafePx = (h - hud.trapDock.y) + 8
 			else
 				topSafePx = hud.combatTopPill.y + hud.combatTopPill.h + 6
-				botSafePx = 56
+				botSafePx = 36
 			end
 		end
 		local sideSafePx = math.max(14, math.floor(w * 0.025))
@@ -399,7 +438,7 @@ function CameraFraming.compute(
 		end
 
 		local targetYShift = 0
-		if botSafePx > topSafePx then
+		if (not isCombat or resolvedAngle == "wall") and botSafePx > topSafePx then
 			targetYShift = -(botSafePx - topSafePx) * 0.022
 		end
 		target = {
@@ -414,7 +453,7 @@ function CameraFraming.compute(
 		}
 		fov = if aspect < 1.0 then baseFov + 8 else baseFov
 
-		local margin = 1.04
+		local margin = if isCombat and resolvedAngle ~= "wall" then 1.03 else 1.04
 		allowLeft = math.min(-0.08, ndcLeft / margin)
 		allowRight = math.max(0.08, ndcRight / margin)
 		allowBot = math.min(-0.08, ndcBot / margin)
@@ -424,7 +463,7 @@ function CameraFraming.compute(
 
 	local tanHalfY = math.tan(math.rad(fov * 0.5))
 	local tanHalfX = tanHalfY * aspect
-	local anchors = CameraFraming.anchorsForViewport(w, h, resolvedAngle)
+	local anchors = CameraFraming.anchorsForViewport(w, h, resolvedAngle, mode)
 
 	local zoom = 1.0
 	for _ = 1, 3 do

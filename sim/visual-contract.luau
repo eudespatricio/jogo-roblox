@@ -518,7 +518,10 @@ check("camera multiplataforma: 10 viewports x 3 modos x 3 angulos no corredor ut
 					local dy = spec.eye.y - spec.target.y
 					local dz = spec.eye.z - spec.target.z
 					local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-					local maxDist = if mode == "build" then 76.0 else 73.0
+					local maxDist = if mode == "build"
+						then 76.0
+						elseif angle ~= "wall" then 64.0
+						else 73.0
 					assert(
 						dist <= maxDist,
 						string.format(
@@ -531,8 +534,33 @@ check("camera multiplataforma: 10 viewports x 3 modos x 3 angulos no corredor ut
 							maxDist
 						)
 					)
+					if mode ~= "build" and angle ~= "wall" and (w == 852 or w == 812) then
+						assert(
+							dist <= 54.0,
+							string.format(
+								"%dx%d %s/%s combate sem zoom aproximado: dist=%.1f > 54.0",
+								w,
+								h,
+								mode,
+								angle,
+								dist
+							)
+						)
+						if angle == "corridor" then
+							assert(
+								spec.target.x >= 1.5 and spec.target.x <= 3.0,
+								string.format(
+									"%dx%d %s/corridor target.x fora do centro: %.2f",
+									w,
+									h,
+									mode,
+									spec.target.x
+								)
+							)
+						end
+					end
 				end
-				local anchors = CameraFraming.anchorsForViewport(w, h, angle)
+				local anchors = CameraFraming.anchorsForViewport(w, h, angle, mode)
 				assert(#anchors >= 16, "ancoras insuficientes para " .. angle)
 				local vLo = if isMobile and w > h then 0.03 else (minV - 0.02)
 				local vHi = if isMobile and w > h then 0.96 else (maxV + 0.02)
